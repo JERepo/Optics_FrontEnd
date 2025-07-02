@@ -1,19 +1,43 @@
 import { configureStore } from "@reduxjs/toolkit";
-// Or from '@reduxjs/toolkit/query/react'
+import { persistStore, persistReducer } from "redux-persist";
+import storage from "redux-persist/lib/storage";
 import { setupListeners } from "@reduxjs/toolkit/query";
-import authReducer from '../features/auth/authSlice';
+import authReducer from "../features/auth/authSlice";
+import { userApi } from "../api/userApi";
+import { roleManageApi } from "../api/roleManagementApi";
+import { poolApi } from "../api/poolApi";
+import { brandApi } from "../api/brandCategory";
+import { brandGroup } from "../api/brandGroup";
+
+const persistConfig = {
+  key: "auth",
+  storage,
+  whitelist: ["token", "user", "isAuthenticated", "roles", "access"],
+};
+
+const persistedAuthReducer = persistReducer(persistConfig, authReducer);
 
 export const store = configureStore({
   reducer: {
-    auth: authReducer,
-    // Add the generated reducer as a specific top-level slice
-    // [pokemonApi.reducerPath]: pokemonApi.reducer,
+    auth: persistedAuthReducer,
+    [userApi.reducerPath]: userApi.reducer,
+    [roleManageApi.reducerPath]: roleManageApi.reducer,
+    [poolApi.reducerPath]: poolApi.reducer,
+    [brandApi.reducerPath]: brandApi.reducer,
+    [brandGroup.reducerPath]:brandGroup.reducer
   },
-  // Adding the api middleware enables caching, invalidation, polling,
-  // and other useful features of `rtk-query`.
-  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(),
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: false,
+    }).concat(
+      userApi.middleware,
+      roleManageApi.middleware,
+      poolApi.middleware,
+      brandApi.middleware,
+      brandGroup.middleware
+    ),
 });
 
-// optional, but required for refetchOnFocus/refetchOnReconnect behaviors
-// see `setupListeners` docs - takes an optional callback as the 2nd arg for customization
 setupListeners(store.dispatch);
+
+export const persistor = persistStore(store);

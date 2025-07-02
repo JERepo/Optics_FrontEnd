@@ -3,6 +3,6 @@ import { useSelector } from 'react-redux';
 
 export default function GuestRoute({ children }) {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
-  return !isAuthenticated ? children : <Navigate to="/admin/dashboard" />;
+  return !isAuthenticated ? children : <Navigate to="/dashboard" />;
 }
 

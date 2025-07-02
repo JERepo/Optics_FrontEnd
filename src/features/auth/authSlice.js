@@ -4,7 +4,7 @@ const initialState = {
   user: null,
   token: null,
   isAuthenticated: false,
-  roles: [],
+  access: {},
 };
 
 const authSlice = createSlice({
@@ -12,15 +12,16 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     setCredentials: (state, action) => {
-      const { user, token } = action.payload;
-      state.user = user;
-      state.token = token;
+      const { accessToken, access, ...user } = action.payload;
+      state.token = accessToken;
+      state.user = { ...user, access };
+      state.access = access || {};
       state.isAuthenticated = true;
-      state.roles = [user.role];
     },
     logout: (state) => {
       state.user = null;
       state.token = null;
+      state.access = {};
       state.isAuthenticated = false;
     },
   },
@@ -28,3 +29,4 @@ const authSlice = createSlice({
 
 export const { setCredentials, logout } = authSlice.actions;
 export default authSlice.reducer;
+

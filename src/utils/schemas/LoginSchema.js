@@ -1,15 +1,12 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const loginSchema = z.object({
-  email: z
-    .string()
-    .min(1, { message: "Email is required" })
-    .email({ message: "Invalid email format" }),
+  UserName: z.string().min(1, { message: "User name is required" }),
 
-  password: z
+  Password: z
     .string()
-    .min(6, { message: "Password must be at least 6 characters" })
+    .min(4, { message: "Password must be at least 4 characters" })
     .max(32, { message: "Password must be less than 32 characters" }),
 
-  rememberMe: z.boolean().optional(), 
+  rememberMe: z.boolean().optional(),
 });

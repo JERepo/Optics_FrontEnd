@@ -1,1 +1,208 @@
 @import "tailwindcss";
+
+@theme {
+
+  /* Neutral colors */
+  --neutral-50: #f9fafb;
+  --neutral-100: #f3f4f6;
+  --neutral-200: #e5e7eb;
+  --neutral-300: #d1d5db;
+  --neutral-400: #9ca3af;
+  --neutral-500: #6b7280;
+  --neutral-600: #4b5563;
+  --neutral-700: #374151;
+  --neutral-800: #1f2937;
+  --neutral-900: #111827;
+
+  /* Primary / Brand color Royal Blue*/
+  --color-primary: #1976d2;
+
+  /* Secondary / Accent */
+  --color-secondary: #E0E0E0;
+
+  /* Semantic colors */
+  --color-success: #22c55e;
+  --color-error: #ef4444;
+  --color-warning: #facc15;
+
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+
+a {
+  text-decoration: none;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-neutral-50);
+  color: var(--color-neutral-900);
+}
+body {
+  @apply bg-neutral-50 text-neutral-900 font-sans;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  @apply font-semibold text-neutral-700;
+}
+
+@layer base {
+  h1 {
+    @apply text-3xl font-bold text-neutral-700 leading-tight tracking-tight;
+  }
+
+  h2 {
+    @apply text-2xl font-semibold text-neutral-800 leading-snug;
+  }
+
+  h3 {
+    @apply text-xl font-medium text-neutral-700 leading-snug;
+  }
+
+  p {
+    @apply text-base text-neutral-600 leading-relaxed;
+  }
+
+  span {
+    @apply text-sm text-neutral-500;
+  }
+
+  a {
+    @apply text-blue-600 hover:text-blue-700 underline;
+  }
+
+  strong {
+    @apply font-semibold text-neutral-800;
+  }
+
+  small {
+    @apply text-sm text-neutral-400;
+  }
+
+  blockquote {
+    @apply text-neutral-600 italic border-l-4 border-neutral-300 pl-4;
+  }
+
+  code {
+    @apply font-mono text-sm bg-neutral-100 px-1 py-0.5 rounded;
+  }
+}
+
+
+@layer utilities {
+  /* Text Colors */
+  .text-neutral-50 {
+    color: var(--neutral-50);
+  }
+  .text-neutral-100 {
+    color: var(--neutral-100);
+  }
+  .text-neutral-200 {
+    color: var(--neutral-200);
+  }
+  .text-neutral-300 {
+    color: var(--neutral-300);
+  }
+  .text-neutral-400 {
+    color: var(--neutral-400);
+  }
+  .text-neutral-500 {
+    color: var(--neutral-500);
+  }
+  .text-neutral-600 {
+    color: var(--neutral-600);
+  }
+  .text-neutral-700 {
+    color: var(--neutral-700);
+  }
+  .text-neutral-800 {
+    color: var(--neutral-800);
+  }
+  .text-neutral-900 {
+    color: var(--neutral-900);
+  }
+
+  /* Background Colors */
+  .bg-neutral-50 {
+    background-color: var(--neutral-50);
+  }
+  .bg-neutral-100 {
+    background-color: var(--neutral-100);
+  }
+  .bg-neutral-200 {
+    background-color: var(--neutral-200);
+  }
+  .bg-neutral-300 {
+    background-color: var(--neutral-300);
+  }
+  .bg-neutral-400 {
+    background-color: var(--neutral-400);
+  }
+  .bg-neutral-500 {
+    background-color: var(--neutral-500);
+  }
+  .bg-neutral-600 {
+    background-color: var(--neutral-600);
+  }
+  .bg-neutral-700 {
+    background-color: var(--neutral-700);
+  }
+  .bg-neutral-800 {
+    background-color: var(--neutral-800);
+  }
+  .bg-neutral-900 {
+    background-color: var(--neutral-900);
+  }
+
+  /* Border Colors */
+  .border-neutral-100 {
+    border-color: var(--neutral-100);
+  }
+  .border-neutral-200 {
+    border-color: var(--neutral-200);
+  }
+  .border-neutral-300 {
+    border-color: var(--neutral-300);
+  }
+  .border-neutral-400 {
+    border-color: var(--neutral-400);
+  }
+  .border-neutral-500 {
+    border-color: var(--neutral-500);
+  }
+  .border-neutral-600 {
+    border-color: var(--neutral-600);
+  }
+  .border-neutral-700 {
+    border-color: var(--neutral-700);
+  }
+  .border-neutral-800 {
+    border-color: var(--neutral-800);
+  }
+  .border-neutral-900 {
+    border-color: var(--neutral-900);
+  }
+  .bg-primary {
+    background-color: var(--color-primary);
+  }
+
+  .bg-secondary {
+    background-color: var(--color-secondary);
+  }
+
+  .text-primary {
+    color: var(--color-primary);
+  }
+
+  .text-secondary {
+    color: var(--color-secondary);
+  }
+
+  .shadow-card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 6px rgba(0, 0, 0, 0.06);
+  }
+}
