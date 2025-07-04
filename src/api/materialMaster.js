@@ -1,0 +1,53 @@
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { customBaseQuery } from "./customBaseQuery";
+
+export const materialMasterApi = createApi({
+  reducerPath: "materialMasterApi",
+  baseQuery: customBaseQuery,
+  tagTypes: ["material"],
+  endpoints: (builder) => ({
+    creatematerialMaster: builder.mutation({
+      query: ({ id, payload }) => ({
+        url: `/api/v1/material-master/create?ApplicationUserId=${id}`,
+        method: "POST",
+        body: payload,
+      }),
+      invalidatesTags: ["material"],
+    }),
+    getAllmaterials: builder.query({
+      query: () => ({
+        url: `/api/v1/material-master`,
+      }),
+      providesTags: ["material"],
+    }),
+    getmaterialById: builder.query({
+      query: ({ id }) => ({
+        url: `/api/v1/material-master/getbyid/${id}`,
+      }),
+    }),
+    updatematerial: builder.mutation({
+      query: ({ id, payload }) => ({
+        url: `/api/v1/material-master/update/${id}`,
+        method: "PUT",
+        body: payload,
+      }),
+      invalidatesTags: ["material"],
+    }),
+    deActivate: builder.mutation({
+      query: ({ id, payload }) => ({
+        url: `/api/v1/material-master/deactivate/${id}`,
+        method: "PUT",
+        body: payload,
+      }),
+      invalidatesTags: ["material"],
+    }),
+  }),
+});
+
+export const {
+  useCreatematerialMasterMutation,
+  useGetAllmaterialsQuery,
+  useGetmaterialByIdQuery,
+  useDeActivateMutation,
+  useUpdatematerialMutation,
+} = materialMasterApi;

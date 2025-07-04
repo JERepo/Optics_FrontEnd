@@ -17,13 +17,13 @@ export const brandGroup = createApi({
     }),
     getAllBrandGroups: builder.query({
       query: () => ({
-        url: `/api/v1/brandgroup`,
+        url: `/api/v1/brandgroup/active`,
       }),
       providesTags: ["Group"],
     }),
     getBrandGroupById: builder.query({
       query: ({ id }) => ({
-        url: `/api/v1/brandgroup/${id}`,
+        url: `/api/v1/brandgroup/getbyid/${id}`,
       }),
     }),
     updateBrandGroup: builder.mutation({

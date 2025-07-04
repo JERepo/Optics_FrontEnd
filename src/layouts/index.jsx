@@ -18,6 +18,19 @@ import BrandCategory from "../pages/admin/BrandCategory/BrandCategory";
 import EditBrandCategory from "../pages/admin/BrandCategory/EditBrandCategory";
 import BrandGroup from "../pages/admin/BrandGroup/BrandGroup";
 import EditBrandGroup from "../pages/admin/BrandGroup/EditBrandGroup";
+import Brands from "../pages/admin/Brands/Brands";
+import EditBrands from "../pages/admin/Brands/EditBrands";
+import Accssories from "../pages/admin/AccsoriesVariations/Accssories";
+import EditVariations from "../pages/admin/AccsoriesVariations/EditVariations";
+import AccessoriesMaster from "../pages/admin/Master/AccessoriesMaster";
+import EditAccessoriesMaster from "../pages/admin/Master/EditAccessoriesMaster";
+import CreateVariation from "../pages/admin/Master/CreateVariation";
+import ShapeMaster from "../pages/admin/ShapeMaster/ShapeMaster";
+import EditShapeMaster from "../pages/admin/ShapeMaster/EditShapeMaster";
+import SeasonMaster from "../pages/admin/SeasonMaster/SeasonMaster";
+import EditSeasonMaster from "../pages/admin/SeasonMaster/EditSeasonMaster";
+import MaterialMaster from "../pages/admin/MaterialMaster/MaterialMaster";
+import EditmaterialMaster from "../pages/admin/MaterialMaster/EditMaterialMaster";
 
 export const router = createBrowserRouter([
   { path: "/", element: <NavigateFromRoot /> },
@@ -183,7 +196,7 @@ export const router = createBrowserRouter([
           </PermissionRoute>
         ),
       },
-       {
+      {
         path: "settings/brand-group/create",
         element: (
           <PermissionRoute module="Brand group" action="create">
@@ -204,6 +217,231 @@ export const router = createBrowserRouter([
         element: (
           <PermissionRoute module="Brand group" action="view">
             <EditBrandGroup />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/brand",
+        element: (
+          <PermissionRoute module="brand" action="view">
+            <Brands />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/brand/create",
+        element: (
+          <PermissionRoute module="brand" action="create">
+            <EditBrands />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/brand/edit/:id",
+        element: (
+          <PermissionRoute module="brand" action="edit">
+            <EditBrands />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/brand/view/:id",
+        element: (
+          <PermissionRoute module="brand" action="view">
+            <EditBrands />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/accessories",
+        element: (
+          <PermissionRoute module="brand" action="view">
+            <Accssories />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/accessories/create",
+        element: (
+          <PermissionRoute module="brand" action="view">
+            <EditVariations />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/accessories/edit/:id",
+        element: (
+          <PermissionRoute module="brand" action="view">
+            <EditVariations />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/accessories/view/:id",
+        element: (
+          <PermissionRoute module="brand" action="view">
+            <EditVariations />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/accessories-master",
+        element: (
+          <PermissionRoute module="otherproductvariation" action="view">
+            <AccessoriesMaster />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/accessories-master/create",
+        element: (
+          <PermissionRoute module="Otherproduct Master" action="create">
+            <EditAccessoriesMaster />
+          </PermissionRoute>
+        ),
+      },
+
+      {
+        path: "settings/accessories-master/edit/:id",
+        element: (
+          <PermissionRoute module="Otherproduct Master" action="edit">
+            <EditAccessoriesMaster />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/accessories-master/view/:id",
+        element: (
+          <PermissionRoute module="Otherproduct Master" action="view">
+            <EditAccessoriesMaster />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/accessories-master/edit/:id/create",
+        element: (
+          <PermissionRoute module="Otherproduct Master" action="edit">
+            <CreateVariation />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/accessories-master/edit/:id/variation",
+        element: (
+          <PermissionRoute module="Otherproduct Master" action="edit">
+            <CreateVariation />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/accessories-master/create/variation",
+        element: (
+          <PermissionRoute module="Otherproduct Master" action="create">
+            <CreateVariation />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/accessories-master/view/variation",
+        element: (
+          <PermissionRoute module="Otherproduct Master" action="view">
+            <CreateVariation />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/frameshape-master",
+        element: (
+          <PermissionRoute module="Shape Master" action="view">
+            <ShapeMaster />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/frameshape-master/create",
+        element: (
+          <PermissionRoute module="Shape Master" action="create">
+            <EditShapeMaster />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/frameshape-master/edit/:id",
+        element: (
+          <PermissionRoute module="Shape Master" action="edit">
+            <EditShapeMaster />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/frameshape-master/view/:id",
+        element: (
+          <PermissionRoute module="Shape Master" action="view">
+            <EditShapeMaster />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/season-master",
+        element: (
+          <PermissionRoute module="Season Master" action="view">
+            <SeasonMaster />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/season-master/create",
+        element: (
+          <PermissionRoute module="Season Master" action="create">
+            <EditSeasonMaster />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/season-master/edit/:id",
+        element: (
+          <PermissionRoute module="Season Master" action="edit">
+            <EditSeasonMaster />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/season-master/view/:id",
+        element: (
+          <PermissionRoute module="Season Master" action="view">
+            <EditSeasonMaster />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/material-master",
+        element: (
+          <PermissionRoute module="Material Master" action="view">
+            <MaterialMaster />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/material-master/create",
+        element: (
+          <PermissionRoute module="Material Master" action="create">
+            <EditmaterialMaster />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/material-master/edit/:id",
+        element: (
+          <PermissionRoute module="Material Master" action="edit">
+            <EditmaterialMaster />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/material-master/view/:id",
+        element: (
+          <PermissionRoute module="Material Master" action="view">
+            <EditmaterialMaster />
           </PermissionRoute>
         ),
       },

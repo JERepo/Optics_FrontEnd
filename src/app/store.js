@@ -8,6 +8,12 @@ import { roleManageApi } from "../api/roleManagementApi";
 import { poolApi } from "../api/poolApi";
 import { brandApi } from "../api/brandCategory";
 import { brandGroup } from "../api/brandGroup";
+import { brandsApi } from "../api/brandsApi";
+import { variationsApi } from "../api/variations";
+import { accessoriesMaster } from "../api/accessoriesMaster";
+import { shapeMasterApi } from "../api/shapeMasterApi";
+import { seasonMasterApi } from "../api/seasonMaster";
+import { materialMasterApi } from "../api/materialMaster";
 
 const persistConfig = {
   key: "auth",
@@ -24,7 +30,13 @@ export const store = configureStore({
     [roleManageApi.reducerPath]: roleManageApi.reducer,
     [poolApi.reducerPath]: poolApi.reducer,
     [brandApi.reducerPath]: brandApi.reducer,
-    [brandGroup.reducerPath]:brandGroup.reducer
+    [brandGroup.reducerPath]: brandGroup.reducer,
+    [brandsApi.reducerPath]: brandsApi.reducer,
+    [variationsApi.reducerPath]: variationsApi.reducer,
+    [accessoriesMaster.reducerPath]: accessoriesMaster.reducer,
+    [shapeMasterApi.reducerPath]: shapeMasterApi.reducer,
+    [seasonMasterApi.reducerPath]: seasonMasterApi.reducer,
+    [materialMasterApi.reducerPath]: materialMasterApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -34,7 +46,13 @@ export const store = configureStore({
       roleManageApi.middleware,
       poolApi.middleware,
       brandApi.middleware,
-      brandGroup.middleware
+      brandGroup.middleware,
+      brandsApi.middleware,
+      variationsApi.middleware,
+      accessoriesMaster.middleware,
+      shapeMasterApi.middleware,
+      seasonMasterApi.middleware,
+      materialMasterApi.middleware
     ),
 });
 

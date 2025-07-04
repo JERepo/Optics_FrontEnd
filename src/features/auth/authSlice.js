@@ -4,6 +4,7 @@ const initialState = {
   user: null,
   token: null,
   isAuthenticated: false,
+   refreshToken: null,
   access: {},
 };
 
@@ -17,6 +18,9 @@ const authSlice = createSlice({
       state.user = { ...user, access };
       state.access = access || {};
       state.isAuthenticated = true;
+    },
+    setRefreshTOken : (state,action) =>{
+      state.token = action.payload.accessToken;
     },
     logout: (state) => {
       state.user = null;
