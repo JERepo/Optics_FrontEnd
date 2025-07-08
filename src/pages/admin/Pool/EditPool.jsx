@@ -49,7 +49,7 @@ const EditPool = () => {
   const handleSubmit = async (e) => {
     console.log(poolName, selectedCategoryId);
     e.preventDefault();
-    if (!poolName || !selectedCategoryId) {
+    if (!poolName || selectedCategoryId === null) {
       toast.error("Please fill all fields!");
       return;
     }

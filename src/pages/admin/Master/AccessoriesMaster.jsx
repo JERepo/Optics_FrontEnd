@@ -7,6 +7,7 @@ import Toggle from "../../../components/ui/Toggle";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import HasPermission from "../../../components/HasPermission";
 import {
+  useDeActivateMainMutation,
   useDeActivateMutation,
   useGetAllMasterQuery,
 } from "../../../api/accessoriesMaster";
@@ -15,7 +16,7 @@ const AccessoriesMaster = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
+  const [pageSize, setPageSize] = useState(10);
   const locale = navigator.language || navigator.languages[0] || "en-IN";
 
   const [selectedBrandId, setSelectedBrandId] = useState(null);
@@ -24,7 +25,7 @@ const AccessoriesMaster = () => {
 
   const { data: allAccessories, isLoading } = useGetAllMasterQuery();
 
-  const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
+  const [deActivate, { isLoading: isDeActivating }] = useDeActivateMainMutation();
 
   const accessories = useMemo(() => {
     if (!allAccessories?.data) return [];
@@ -91,7 +92,7 @@ const AccessoriesMaster = () => {
               className="w-full outline-none text-sm text-neutral-700 placeholder-neutral-400 bg-transparent"
             />
           </div>
-          <HasPermission module="Otherproduct Master" action="create">
+          <HasPermission module="Accessory Master" action="create">
             <Button
               icon={FiPlus}
               iconPosition="left"
@@ -134,13 +135,13 @@ const AccessoriesMaster = () => {
             </TableCell>
             <TableCell>
               <div className="flex items-center gap-3">
-                <HasPermission module="Otherproduct Master" action="view">
+                <HasPermission module="Accessory Master" action="view">
                   <FiEye
                     onClick={() => navigate(`view/${pool.id}`)}
                     className="text-xl cursor-pointer"
                   />
                 </HasPermission>
-                <HasPermission module="Otherproduct Master" action="edit">
+                <HasPermission module="Accessory Master" action="edit">
                   <button
                     onClick={() => handleEdit(pool.id)}
                     className="text-neutral-600 hover:text-primary transition-colors"
@@ -151,7 +152,7 @@ const AccessoriesMaster = () => {
                 </HasPermission>
 
                 {/* Only show toggle if enabled field is available */}
-                <HasPermission module="Otherproduct Master" action="deactivate">
+                <HasPermission module="Accessory Master" action="deactivate">
                   <Toggle
                     enabled={pool.enabled}
                     onToggle={() => requestToggle(pool.id, pool.enabled)}

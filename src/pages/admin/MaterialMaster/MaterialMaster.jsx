@@ -13,7 +13,7 @@ const MaterialMaster = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
+  const [pageSize, setPageSize] = useState(10);
   const locale = navigator.language || navigator.languages[0] || "en-IN";
 
   const [selectedBrandId, setSelectedBrandId] = useState(null);
@@ -80,7 +80,7 @@ const MaterialMaster = () => {
             <FiSearch className="text-neutral-500 text-lg" />
             <input
               type="text"
-              placeholder="Search shapes..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full outline-none text-sm text-neutral-700 placeholder-neutral-400 bg-transparent"

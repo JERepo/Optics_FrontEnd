@@ -1,54 +1,52 @@
 import React, { useEffect } from "react";
+import FrameMasterForm from "./FrameMasterForm";
 import { useGetAllBrandsQuery } from "../../../api/brandsApi";
+import { useGetTaxQuery } from "../../../api/accessoriesMaster";
 import {
-  useCreateAccessoriesMasterMutation,
-  useDeActivateMutation,
-  useGetAllMasterQuery,
-  useGetMasterByIdQuery,
-  useGetTaxQuery,
-  useUpdateMasterMutation,
-} from "../../../api/accessoriesMaster";
-
+  useGetAllmaterialsQuery,
+  useGetAllRimTypeQuery,
+} from "../../../api/materialMaster";
+import { useGetAllShapesQuery } from "../../../api/shapeMasterApi";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { Table, TableCell, TableRow } from "../../../components/Table";
 import { FiEdit2, FiEye } from "react-icons/fi";
 import { useFrameMaster } from "../../../features/frameMasterContext";
-
+import CreateVariationForm from "./CreateVariationForm";
+import {
+  useCreateFrameMasterMutation,
+  useGetAllFrameMasterQuery,
+  useGetFrameMasterByIdQuery,
+  useUpdateFramemasterMutation,
+} from "../../../api/frameMasterApi";
+import { useGetAllLocationsQuery } from "../../../api/roleManagementApi";
 import toast from "react-hot-toast";
 import { hasPermission } from "../../../utils/permissionUtils";
 import { useSelector } from "react-redux";
 import HasPermission from "../../../components/HasPermission";
 import Toggle from "../../../components/ui/Toggle";
-import { useGetAllLocationsQuery } from "../../../api/roleManagementApi";
-import FrameAccessMasterForm from "./FrameAccessMasterForm";
-import CreateVariation from "./CreateVariation";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 
 const EditFrameMaster = () => {
+  const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation();
   const isEnabled = location.pathname.includes("/view");
   const { access } = useSelector((state) => state.auth);
-  const hasViewAccess = hasPermission(access, "Frame Master", "view");
-
-  const navigate = useNavigate();
-
+  const { data: allBrands } = useGetAllBrandsQuery();
+  const { data: allTax } = useGetTaxQuery();
+  const { data: allMaterials } = useGetAllmaterialsQuery();
+  const { data: allRimTypes } = useGetAllRimTypeQuery();
+  const { data: allShapes } = useGetAllShapesQuery();
   const { data: allLocations } = useGetAllLocationsQuery();
-  const { data: brands, isLoading: loadingBrands } = useGetAllBrandsQuery();
-  const { data: allTaxes, isLoading: loadingTaxes } = useGetTaxQuery();
-  const { data: masterData, isLoading: isMasterLoading } =
-    useGetMasterByIdQuery({ id });
-  const { data: allAccess } = useGetAllMasterQuery();
-  const [updateMaster, { isLoading: isDataUpdating }] =
-    useUpdateMasterMutation();
-  const [createAccessoriesMaster, { isLoading: isDataCreating }] =
-    useCreateAccessoriesMasterMutation();
-  const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
+  const [createFrameMaster] = useCreateFrameMasterMutation();
+  const [updateFramemaster] = useUpdateFramemasterMutation();
+  const { data: frameMaster, isLoading: isFrameLoading } =
+    useGetFrameMasterByIdQuery(id ? { id } : { skip: true });
+  const { data: allFrames } = useGetAllFrameMasterQuery();
+  const hasViewAccess = hasPermission(access, "Frame Master", "view");
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
-  const [confirmToggle, setConfirmToggle] = React.useState({
-    isOpen: false,
-    index: null,
-  });
+  const [currentVariation, setCurrentVariation] = React.useState(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = React.useState(false);
 
   const {
     variationData,
@@ -67,15 +65,25 @@ const EditFrameMaster = () => {
 
   // Transform API response to our state structure
   useEffect(() => {
-    if (masterData?.data && allLocations?.data) {
-      const { data } = masterData; // ✅ FIXED
+    if (frameMaster?.data && allLocations?.data) {
+      const { data: masterData } = frameMaster;
 
+      // Set initial form data
       setFormData({
-        BrandID: String(data.Brand.Id),
-        ProductName: data.ProductName || "",
-        ProductCode: data.ProductCode || "",
-        HSN: data.HSN || "",
-        TaxID: data.TaxID || "",
+        BrandID: String(masterData.Brand.Id),
+        ModelNo: masterData.ModelNo,
+        Category: String(masterData.Category), // ← "0" or "1"
+        Type: String(masterData.FrameRimType.Id),
+        ShapeID: String(masterData.FrameShapeMaster.Id),
+        FrontMaterialID: String(masterData.FrontMaterial.Id),
+        TempleMaterialID: String(masterData.TempleMaterial.Id),
+        Gender: String(masterData.Gender),
+        IsClipOn: masterData.IsClipOn,
+        NoOfClips: masterData.NoOfClips,
+        IsRxable: masterData.IsRxable,
+        CaptureSlNo: masterData.CaptureSlNo,
+        HSN: masterData.HSN,
+        TaxID: String(masterData.TaxMain.Id),
       });
 
       // Transform variations and pricing data
@@ -83,27 +91,34 @@ const EditFrameMaster = () => {
       const transformedStock = [];
       const transformedPricing = [];
 
-      data.OtherProductsDetails.forEach((detail) => {
+      masterData.FrameDetails.forEach((detail) => {
         // Variation data
         transformedVariations.push({
           id: detail.Id,
-          SKUCode: detail.SKUCode || "",
-          Barcode: detail.Barcode || "",
-          IsActive: detail.IsActive,
-          CreatedDate: detail.CreatedDate,
-          OPMainID: detail.OPMainID,
-          OPVariationID: detail.OPVariationID || 1,
+          ColourCode: detail.ColourCode,
+          Size: detail.Size,
+          DBL: detail.DBL,
+          TempleLength: detail.TempleLength,
+          SkuCode: detail.SkuCode,
+          Barcode: detail.Barcode,
+          FrameFrontColor: detail.FrameFrontColor,
+          TempleColor: detail.TempleColor,
+          LensColor: detail.LensColor,
+          IsPhotochromatic: detail.IsPhotochromatic,
+          IsPolarised: detail.IsPolarised,
+          LaunchSeason: detail.LaunchSeason || "",
         });
 
         // Stock data
         transformedStock.push({
           id: detail.Stock?.Id || null,
-          FrameBatch: detail.Stock?.FrameBatch || "1",
+          FrameBatch: detail.Stock?.FrameBatch || "",
           FrameSRP: detail.Stock?.FrameSRP || "0.00",
         });
 
         // Pricing data
         const pricingForVariation = [];
+
         allLocations.data.forEach((location) => {
           const locId = location.Id;
           pricingForVariation.push({
@@ -121,6 +136,7 @@ const EditFrameMaster = () => {
       setStock(transformedStock);
       setPricingData(transformedPricing);
     } else if (!id) {
+      // For new frame, reset state
       resetFrameMasterState();
     }
 
@@ -129,16 +145,25 @@ const EditFrameMaster = () => {
         resetFrameMasterState();
       }
     };
-  }, [masterData, allLocations, id]);
+  }, [frameMaster, allLocations, id]);
 
   const constructPayload = (formData) => {
     const payload = {
-      Id: id ? parseInt(id) : null,
-      ProductCode: formData.ProductCode || "",
-      ProductName: formData.ProductName || "",
-      HSN: formData.HSN || "",
-      BrandID: parseInt(formData.BrandID) || null,
-      TaxID: parseInt(formData.TaxID) || null,
+      Id: id ? parseInt(id) : null, // Include ID for updates, null for new
+      BrandID: formData.BrandID,
+      ModelNo: formData.ModelNo,
+      Category: formData.Category,
+      Type: formData.Type,
+      ShapeID: formData.ShapeID,
+      FrontMaterialID: formData.FrontMaterialID,
+      TempleMaterialID: formData.TempleMaterialID,
+      Gender: formData.Gender,
+      IsClipOn: formData.IsClipOn,
+      NoOfClips: formData.NoOfClips,
+      IsRxable: formData.IsRxable,
+      CaptureSlNo: formData.CaptureSlNo || 0,
+      HSN: formData.HSN,
+      TaxID: formData.TaxID,
       Details: variationData.map((variation, index) => {
         const stockData = stock[index] || {};
         const pricingDataForVariation = pricingData[index] || [];
@@ -147,33 +172,47 @@ const EditFrameMaster = () => {
         const locationPricing = {};
         pricingDataForVariation.forEach((price) => {
           const locId = price.id;
-          locationPricing[`BuyingPrice${locId}`] =
-            parseFloat(price.buyingPrice) || 0;
-          locationPricing[`SellingPrice${locId}`] =
-            parseFloat(price.sellingPrice) || 0;
+          locationPricing[`BuyingPrice${locId}`] = price.buyingPrice;
+          locationPricing[`SellingPrice${locId}`] = price.sellingPrice;
           locationPricing[`AvgPrice${locId}`] =
-            parseFloat(price.buyingPrice) || 0; // Set AvgPrice to BuyingPrice
-          locationPricing[`Quantity${locId}`] = 0; // Always set to 0
-          locationPricing[`DefectiveQty${locId}`] = 0; // Always set to 0
+            (parseFloat(price.buyingPrice || 0) +
+              parseFloat(price.sellingPrice || 0)) /
+            2;
+          locationPricing[`Quantity${locId}`] = 0;
+          locationPricing[`DefectiveQty${locId}`] = 0;
         });
 
         // Get the original barcode from fetched data
-        const originalDetail = masterData?.data?.OtherProductsDetails?.[index];
+        const originalDetail = frameMaster?.data?.FrameDetails?.[index];
         const isBarcodeChanged = variation.Barcode !== originalDetail?.Barcode;
 
         const baseDetail = {
           Id: variation.id || null,
-          SKUCode: variation.SKUCode || "",
-          Barcode: isBarcodeChanged ? variation.Barcode : undefined,
-          OPVariationID: variation.OPVariationID || 1, // Default to 1 if not set
+          ColourCode: variation.ColourCode,
+          Size: variation.Size,
+          DBL: variation.DBL,
+          TempleLength: variation.TempleLength,
+          SkuCode: variation.SkuCode,
+          FrameFrontColor: variation.FrameFrontColor,
+          TempleColor: variation.TempleColor,
+          LensColor: variation.LensColor,
+          IsPhotochromatic: variation.IsPhotochromatic,
+          IsPolarised: variation.IsPolarised,
+          LaunchSeason: variation.LaunchSeason || "",
           Stock: {
             Id: stockData.id || null,
-            OPBatchCode: stockData.FrameBatch || "1", // Use OPBatchCode
-            OPMRP: parseFloat(stockData.FrameSRP) || 0, // Use OPMRP
+            FrameBatch: stockData.FrameBatch || "",
+            FrameSRP: stockData.FrameSRP || "0.00",
             location: locationIds,
             ...locationPricing,
           },
+          FrameImages: variation.FrameImages || [],
         };
+
+        // Only include Barcode if it's changed
+        if (isBarcodeChanged) {
+          baseDetail.Barcode = variation.Barcode;
+        }
 
         return baseDetail;
       }),
@@ -182,64 +221,26 @@ const EditFrameMaster = () => {
     return payload;
   };
 
-  const handleToggleStatus = async () => {
-    const { index } = confirmToggle;
-    const variation = variationData[index];
-    const variationId = variation?.id;
-    console.log(variation);
-
-    if (!variationId) return;
-
-    try {
-      await deActivate({
-        id: variationId,
-        payload: { IsActive: variation.isActive == 1 ? 0 : 1 },
-      }).unwrap();
-      toast.success(
-        `Variation ${
-          variation.IsActive ? "deactivated" : "activated"
-        } successfully`
-      );
-
-      const updatedVariations = [...variationData];
-      updatedVariations[index].IsActive = !variation.IsActive;
-      setVariationData(updatedVariations);
-    } catch (error) {
-      toast.error("Failed to update variation status");
-      console.error("Deactivation error:", error);
-    } finally {
-      closeConfirmModal();
-    }
-  };
-
-  const closeConfirmModal = () => {
-    setIsConfirmOpen(false);
-    setConfirmToggle({ isOpen: false, index: null });
-  };
-
   const handleSubmit = async (formData) => {
     if (variationData.length <= 0) {
       toast.error("Add atleast one variation");
       return;
     }
     const finalPayload = constructPayload(formData);
-    const appId = allAccess?.data.find(
+    const appId = allFrames?.data.find(
       (p) => p.ApplicationUserId
     ).ApplicationUserId;
 
     try {
       if (id) {
         // Update existing frame
-        await updateMaster({
+        await updateFramemaster({
           id: parseInt(id),
           payload: finalPayload,
         }).unwrap();
       } else {
         // Create new frame
-        await createAccessoriesMaster({
-          id: appId,
-          payload: finalPayload,
-        }).unwrap();
+        await createFrameMaster({ id: appId, payload: finalPayload }).unwrap();
       }
       navigate(-1); // Redirect after success
     } catch (error) {
@@ -256,19 +257,16 @@ const EditFrameMaster = () => {
   const handleSaveVariation = (newVariation) => {
     const updatedVariation = {
       ...newVariation.variation,
-      OPVariationID: newVariation.variation.OPVariationID || 1,
+      FrameImages: newVariation.variation.FrameImages || [],
     };
 
     if (editingIndex !== null) {
+      // Update existing variation
       const updatedVariations = [...variationData];
       updatedVariations[editingIndex] = updatedVariation;
 
       const updatedStock = [...stock];
-      updatedStock[editingIndex] = {
-        ...newVariation.stock,
-        FrameBatch: newVariation.stock.OPBatchCode || "1",
-        FrameSRP: newVariation.stock.OPMRP || "0.00",
-      };
+      updatedStock[editingIndex] = newVariation.stock;
 
       const updatedPricing = [...pricingData];
       updatedPricing[editingIndex] = newVariation.pricing;
@@ -277,38 +275,56 @@ const EditFrameMaster = () => {
       setStock(updatedStock);
       setPricingData(updatedPricing);
     } else {
+      // Add new variation
       setVariationData([...variationData, updatedVariation]);
-      setStock([
-        ...stock,
-        {
-          ...newVariation.stock,
-          FrameBatch: newVariation.stock.OPBatchCode || "1",
-          FrameSRP: newVariation.stock.OPMRP || "0.00",
-        },
-      ]);
+      setStock([...stock, newVariation.stock]);
       setPricingData([...pricingData, newVariation.pricing]);
     }
     setIsEditingVariation(false);
     setEditingIndex(null);
   };
 
+  const handleToggleStatus = async () => {
+    if (!currentVariation) return;
+
+    setIsUpdatingStatus(true);
+    try {
+      // Update the enabled status locally (if needed) or make an API call here
+      const updatedVariations = variationData.map((v) =>
+        v === currentVariation ? { ...v, enabled: !v.enabled } : v
+      );
+      setVariationData(updatedVariations);
+      toast.success(
+        `Variation ${currentVariation.enabled ? "deactivated" : "activated"}`
+      );
+    } catch (err) {
+      toast.error("Failed to update variation status.");
+    } finally {
+      setIsUpdatingStatus(false);
+      setIsConfirmOpen(false);
+      setCurrentVariation(null);
+    }
+  };
+
   const handleCancelEdit = () => {
     setIsEditingVariation(false);
     setEditingIndex(null);
   };
-  const handleToggleConfirm = (index) => {
-    setConfirmToggle({ isOpen: true, index });
-    setIsConfirmOpen(true);
-  };
 
-  if (!brands?.data || !allAccess?.data || !allTaxes?.data) {
+  if (
+    !allBrands?.data ||
+    !allRimTypes?.data ||
+    !allShapes?.data ||
+    !allMaterials?.data ||
+    !allTax?.data
+  ) {
     return <div>Loading form data...</div>;
   }
 
   return (
     <div className="">
       {isEditingVariation ? (
-        <CreateVariation
+        <CreateVariationForm
           onSave={handleSaveVariation}
           onCancel={handleCancelEdit}
           initialVariation={
@@ -334,11 +350,14 @@ const EditFrameMaster = () => {
                   : "Create New Frame"}
               </h3>
             </div>
-            <FrameAccessMasterForm
+            <FrameMasterForm
               onSubmit={handleSubmit}
               initialValues={formData}
-              brands={brands}
-              taxOptions={allTaxes}
+              brands={allBrands?.data}
+              rimTypes={allRimTypes?.data}
+              rimShapes={allShapes?.data}
+              materials={allMaterials?.data}
+              taxOptions={allTax?.data}
               navigate={navigate}
               isEditMode={!!id}
               isEnabled={isEnabled}
@@ -361,22 +380,26 @@ const EditFrameMaster = () => {
             <Table
               columns={[
                 "S.No",
+                "Colour Code",
+                "Size",
+                "Frame Front Colour",
+                "SKU",
                 "Barcode",
-                "SKU Code",
-                "MRP",
-                "Buying Price",
-                "Selling Price",
+                "SRP",
+                "Buying Prices",
+                "Selling Prices",
                 "Actions",
               ]}
               data={variationData}
               renderRow={(variation, index) => (
                 <TableRow key={index}>
                   <TableCell>{index + 1}</TableCell>
+                  <TableCell>{variation.ColourCode || "-"}</TableCell>
+                  <TableCell>{variation.Size || "-"}</TableCell>
+                  <TableCell>{variation.FrameFrontColor || "-"}</TableCell>
+                  <TableCell>{variation.SkuCode || "-"}</TableCell>
                   <TableCell>{variation.Barcode || "-"}</TableCell>
-                  <TableCell>{variation.SKUCode || "-"}</TableCell>
-                  <TableCell>{variation.Stock?.OPMRP || "-"}</TableCell>
-
-                  {/* <TableCell>{stock[index]?.FrameSRP || "-"}</TableCell> */}
+                  <TableCell>{stock[index]?.FrameSRP || "-"}</TableCell>
                   <TableCell className="text-sm min-w-[200px]">
                     {pricingData[index]?.length > 0 ? (
                       <div className="space-y-1">
@@ -438,16 +461,21 @@ const EditFrameMaster = () => {
                       )}
                       {!isEnabled && (
                         <HasPermission
-                          module="Frame Master"
+                          module="Accessory Master"
                           action="deactivate"
                         >
+                          {/* {!isCreate && ( */}
                           <div className="flex-shrink-0">
                             <Toggle
-                              enabled={variation.IsActive}
-                              onToggle={() => handleToggleConfirm(index)}
+                              enabled={variation.enabled}
+                              onToggle={() => {
+                                setCurrentVariation(variation);
+                                setIsConfirmOpen(true);
+                              }}
                               className="ml-2"
                             />
                           </div>
+                          {/* )} */}
                         </HasPermission>
                       )}
                     </div>
@@ -460,28 +488,17 @@ const EditFrameMaster = () => {
       )}
       <ConfirmationModal
         isOpen={isConfirmOpen}
-        onClose={() => {
-          setIsConfirmOpen(false);
-          setConfirmToggle({ isOpen: false, index: null });
-        }}
+        onClose={() => setIsConfirmOpen(false)}
         onConfirm={handleToggleStatus}
-        isLoading={isDeActivating}
+        isLoading={isUpdatingStatus}
         title={`Confirm ${
-          variationData[confirmToggle.index]?.IsActive
-            ? "Deactivation"
-            : "Activation"
+          currentVariation?.enabled ? "Deactivation" : "Activation"
         }`}
         message={`Are you sure you want to ${
-          variationData[confirmToggle.index]?.IsActive
-            ? "deactivate"
-            : "activate"
+          currentVariation?.enabled ? "deactivate" : "activate"
         } this variation?`}
-        confirmText={
-          variationData[confirmToggle.index]?.IsActive
-            ? "Deactivate"
-            : "Activate"
-        }
-        danger={variationData[confirmToggle.index]?.IsActive}
+        confirmText={currentVariation?.enabled ? "Deactivate" : "Activate"}
+        danger={currentVariation?.enabled}
       />
     </div>
   );

@@ -36,8 +36,6 @@ export const customBaseQuery = async (args, api, extraOptions) => {
       extraOptions
     );
 
-    console.log("Refresh result:", refreshResult);
-
     // if (refreshResult?.data?.accessToken) {
     //   api.dispatch(setCredentials(refreshResult.data));
     //   result = await baseQuery(args, api, extraOptions);

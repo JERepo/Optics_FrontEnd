@@ -35,7 +35,7 @@ const EditmaterialMaster = () => {
   // Prefill values if editing
   useEffect(() => {
     if (id && isSuccess && brandCategory?.data) {
-      setBrandName(brandCategory.data.SeasonName || "");
+      setBrandName(brandCategory.data.MaterialName || "");
       setMaterialFor(
         brandCategory.data.MaterialFor !== undefined
           ? String(brandCategory.data.MaterialFor)
@@ -98,7 +98,7 @@ const EditmaterialMaster = () => {
           <FiArrowLeft className="text-gray-600" size={20} />
         </button>
         <h1 className="text-2xl font-semibold text-gray-800">
-          {id ? "Edit Season" : "Create New Season"}
+          {id ? "Edit Material" : "Create New Material"}
         </h1>
       </div>
 
@@ -106,12 +106,12 @@ const EditmaterialMaster = () => {
         {/* Season Name Field */}
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
-            Frame shape name
+            Frame material name
           </label>
           <input
             type="text"
             className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary placeholder-gray-400 transition"
-            placeholder="e.g. Summer Tournament 2023"
+            // placeholder="e.g. Summer Tournament 2023"
             value={brandName}
             onChange={(e) => setBrandName(e.target.value)}
             autoFocus
@@ -158,10 +158,10 @@ const EditmaterialMaster = () => {
               {id
                 ? isBrandCatUpdating
                   ? "Updating..."
-                  : "Update Season"
+                  : "Update material"
                 : isBrandCatCreatingLoading
                 ? "Creating..."
-                : "Create Season"}
+                : "Create material"}
             </Button>
           </HasPermission>
         </div>

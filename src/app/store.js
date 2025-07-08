@@ -14,6 +14,7 @@ import { accessoriesMaster } from "../api/accessoriesMaster";
 import { shapeMasterApi } from "../api/shapeMasterApi";
 import { seasonMasterApi } from "../api/seasonMaster";
 import { materialMasterApi } from "../api/materialMaster";
+import { frameMasterApi } from "../api/frameMasterApi";
 
 const persistConfig = {
   key: "auth",
@@ -37,6 +38,7 @@ export const store = configureStore({
     [shapeMasterApi.reducerPath]: shapeMasterApi.reducer,
     [seasonMasterApi.reducerPath]: seasonMasterApi.reducer,
     [materialMasterApi.reducerPath]: materialMasterApi.reducer,
+    [frameMasterApi.reducerPath]: frameMasterApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -52,7 +54,8 @@ export const store = configureStore({
       accessoriesMaster.middleware,
       shapeMasterApi.middleware,
       seasonMasterApi.middleware,
-      materialMasterApi.middleware
+      materialMasterApi.middleware,
+      frameMasterApi.middleware
     ),
 });
 

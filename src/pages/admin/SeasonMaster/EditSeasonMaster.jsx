@@ -92,12 +92,12 @@ const EditSeasonMaster = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
-            Frame shape name
+            Frame season name
           </label>
           <input
             type="text"
             className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary placeholder-gray-400 transition"
-            placeholder="e.g. Summer Tournament 2023"
+            // placeholder="e.g. Summer Tournament 2023"
             value={brandName}
             onChange={(e) => setBrandName(e.target.value)}
             autoFocus

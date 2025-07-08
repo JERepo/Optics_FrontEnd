@@ -117,10 +117,10 @@ const EditBrandCategory = () => {
               {id
                 ? isBrandCatUpdating
                   ? "Updating..."
-                  : "Update Pool"
+                  : "Update category"
                 : isBrandCatCreatingLoading
                 ? "Creating..."
-                : "Create Pool"}
+                : "Create category"}
             </Button>
           </HasPermission>
         </div>

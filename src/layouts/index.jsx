@@ -31,6 +31,11 @@ import SeasonMaster from "../pages/admin/SeasonMaster/SeasonMaster";
 import EditSeasonMaster from "../pages/admin/SeasonMaster/EditSeasonMaster";
 import MaterialMaster from "../pages/admin/MaterialMaster/MaterialMaster";
 import EditmaterialMaster from "../pages/admin/MaterialMaster/EditMaterialMaster";
+import FrameMaster from "../pages/admin/FrameMaster/FrameMaster";
+import EditFrameMaster from "../pages/admin/FrameMaster/EditFrameMaster";
+import CustomerGroup from "../pages/customer/customerGroup/CustomerGroup";
+import Customer from "../pages/customer/customers/Customer";
+// import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
 export const router = createBrowserRouter([
   { path: "/", element: <NavigateFromRoot /> },
@@ -255,7 +260,7 @@ export const router = createBrowserRouter([
       {
         path: "settings/accessories",
         element: (
-          <PermissionRoute module="brand" action="view">
+          <PermissionRoute module="Variation Master" action="view">
             <Accssories />
           </PermissionRoute>
         ),
@@ -263,7 +268,7 @@ export const router = createBrowserRouter([
       {
         path: "settings/accessories/create",
         element: (
-          <PermissionRoute module="brand" action="view">
+          <PermissionRoute module="Variation Master" action="view">
             <EditVariations />
           </PermissionRoute>
         ),
@@ -271,7 +276,7 @@ export const router = createBrowserRouter([
       {
         path: "settings/accessories/edit/:id",
         element: (
-          <PermissionRoute module="brand" action="view">
+          <PermissionRoute module="Variation Master" action="view">
             <EditVariations />
           </PermissionRoute>
         ),
@@ -279,7 +284,7 @@ export const router = createBrowserRouter([
       {
         path: "settings/accessories/view/:id",
         element: (
-          <PermissionRoute module="brand" action="view">
+          <PermissionRoute module="Variation Master" action="view">
             <EditVariations />
           </PermissionRoute>
         ),
@@ -287,7 +292,7 @@ export const router = createBrowserRouter([
       {
         path: "settings/accessories-master",
         element: (
-          <PermissionRoute module="otherproductvariation" action="view">
+          <PermissionRoute module="Accessory Master" action="view">
             <AccessoriesMaster />
           </PermissionRoute>
         ),
@@ -295,7 +300,7 @@ export const router = createBrowserRouter([
       {
         path: "settings/accessories-master/create",
         element: (
-          <PermissionRoute module="Otherproduct Master" action="create">
+          <PermissionRoute module="Accessory Master" action="create">
             <EditAccessoriesMaster />
           </PermissionRoute>
         ),
@@ -304,7 +309,7 @@ export const router = createBrowserRouter([
       {
         path: "settings/accessories-master/edit/:id",
         element: (
-          <PermissionRoute module="Otherproduct Master" action="edit">
+          <PermissionRoute module="Accessory Master" action="edit">
             <EditAccessoriesMaster />
           </PermissionRoute>
         ),
@@ -312,7 +317,7 @@ export const router = createBrowserRouter([
       {
         path: "settings/accessories-master/view/:id",
         element: (
-          <PermissionRoute module="Otherproduct Master" action="view">
+          <PermissionRoute module="Accessory Master" action="view">
             <EditAccessoriesMaster />
           </PermissionRoute>
         ),
@@ -320,15 +325,15 @@ export const router = createBrowserRouter([
       {
         path: "settings/accessories-master/edit/:id/create",
         element: (
-          <PermissionRoute module="Otherproduct Master" action="edit">
+          <PermissionRoute module="Accessory Master" action="edit">
             <CreateVariation />
           </PermissionRoute>
         ),
       },
       {
-        path: "settings/accessories-master/edit/:id/variation",
+        path: "settings/accessories-master/edit/:id/variation/:id",
         element: (
-          <PermissionRoute module="Otherproduct Master" action="edit">
+          <PermissionRoute module="Accessory Master" action="edit">
             <CreateVariation />
           </PermissionRoute>
         ),
@@ -336,7 +341,7 @@ export const router = createBrowserRouter([
       {
         path: "settings/accessories-master/create/variation",
         element: (
-          <PermissionRoute module="Otherproduct Master" action="create">
+          <PermissionRoute module="Accessory Master" action="create">
             <CreateVariation />
           </PermissionRoute>
         ),
@@ -344,7 +349,7 @@ export const router = createBrowserRouter([
       {
         path: "settings/accessories-master/view/variation",
         element: (
-          <PermissionRoute module="Otherproduct Master" action="view">
+          <PermissionRoute module="Accessory Master" action="view">
             <CreateVariation />
           </PermissionRoute>
         ),
@@ -445,6 +450,46 @@ export const router = createBrowserRouter([
           </PermissionRoute>
         ),
       },
+      {
+        path: "settings/frame-master",
+        element: (
+          <PermissionRoute module="Frame Master" action="view">
+            <FrameMaster />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/frame-master/create",
+        element: (
+          <PermissionRoute module="Frame Master" action="edit">
+            <EditFrameMaster />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "settings/frame-master/edit/:id",
+        element: (
+          <PermissionRoute module="Frame Master" action="edit">
+            <EditFrameMaster />
+          </PermissionRoute>
+        ),
+      },
+       {
+        path: "settings/frame-master/view/:id",
+        element: (
+          <PermissionRoute module="Frame Master" action="view">
+            <EditFrameMaster />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path : "customer-group",
+        element : <CustomerGroup />
+      },
+      {
+        path : "customer",
+        element : <Customer />
+      }
     ],
   },
 ]);

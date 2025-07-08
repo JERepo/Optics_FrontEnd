@@ -15,7 +15,7 @@ const ShapeMaster = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
+  const [pageSize, setPageSize] = useState(10);
   const locale = navigator.language || navigator.languages[0] || "en-IN";
 
   const [selectedBrandId, setSelectedBrandId] = useState(null);

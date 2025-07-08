@@ -5,6 +5,7 @@ import {
   IoPersonOutline,
   IoHomeOutline,
   IoConstructOutline,
+  IoPeopleSharp,
 } from "react-icons/io5";
 import { MdOutlineAdminPanelSettings } from "react-icons/md";
 
@@ -53,13 +54,13 @@ export const menuItems = [
       {
         name: "Variation Master",
         path: "/settings/accessories",
-        module: "otherproductvariation",
+        module: "Variation Master",
         icon: IoConstructOutline, // Suggests building/setup
       },
       {
         name: "Accessory Master",
         path: "/settings/accessories-master",
-        module: "Otherproduct Master",
+        module: "Accessory Master",
         icon: IoConstructOutline, // Suggests building/setup
       },
       {
@@ -80,6 +81,25 @@ export const menuItems = [
         module: "Material Master",
         icon: IoConstructOutline, // Suggests building/setup
       },
+      {
+        name: "Frame Master",
+        path: "/settings/frame-master",
+        module: "Frame Master",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
     ],
   },
+   {
+    name: "Other Master",
+    icon: IoPeopleOutline,
+    module: "Customer Group",
+    path: "/customer-group",
+  },
+  {
+    name: "Customer",
+    icon: IoPeopleOutline,
+    module: "Customer",
+    path: "/customer",
+  },
+ 
 ];

@@ -111,10 +111,10 @@ const EditShapeMaster = () => {
               {id
                 ? isBrandCatUpdating
                   ? "Updating..."
-                  : "Update Pool"
+                  : "Update shape"
                 : isBrandCatCreatingLoading
                 ? "Creating..."
-                : "Create Pool"}
+                : "Create shape"}
             </Button>
           </HasPermission>
         </div>

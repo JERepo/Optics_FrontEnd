@@ -9,6 +9,7 @@ const PricingTable = ({
   applyAll,
   onApplyAllChange,
   onApplyToAll,
+  isEnabled,
 }) => {
   return (
     <div className="bg-white p-6 rounded-lg border border-gray-200 mt-6">
@@ -25,11 +26,12 @@ const PricingTable = ({
           <div className="space-y-2" key={field}>
             <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
               {field === "buyingPrice" ? (
-                <LuIndianRupee  className="text-blue-500" />
+                <LuIndianRupee className="text-blue-500" />
               ) : (
                 <LuIndianRupee className="text-blue-500" />
               )}
-              Apply {field === "buyingPrice" ? "Buying" : "Selling"} Price to All
+              Apply {field === "buyingPrice" ? "Buying" : "Selling"} Price to
+              All
             </label>
             <div className="flex gap-2">
               <input
@@ -44,15 +46,18 @@ const PricingTable = ({
                   }))
                 }
                 className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={isEnabled}
               />
-              <Button
-                type="button"
-                onClick={() => onApplyToAll(field, applyAll[field])}
-                variant="primary"
-                size="sm"
-              >
-                Apply
-              </Button>
+              {!isEnabled && (
+                <Button
+                  type="button"
+                  onClick={() => onApplyToAll(field, applyAll[field])}
+                  variant="primary"
+                  size="sm"
+                >
+                  Apply
+                </Button>
+              )}
             </div>
           </div>
         ))}
@@ -84,7 +89,9 @@ const PricingTable = ({
                   <td className="px-6 py-4" key={field}>
                     <div className="relative rounded-md shadow-sm">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <span className="text-gray-500 sm:text-sm"><LuIndianRupee/></span>
+                        <span className="text-gray-500 sm:text-sm">
+                          <LuIndianRupee />
+                        </span>
                       </div>
                       <input
                         type="text"
@@ -94,6 +101,7 @@ const PricingTable = ({
                         }
                         placeholder="0.00"
                         className="block w-full pl-7 pr-12 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        disabled={isEnabled}
                       />
                     </div>
                   </td>

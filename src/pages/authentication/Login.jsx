@@ -38,7 +38,7 @@ const Login = () => {
         dispatch(setCredentials(res.data));
         console.log(res.data);
         localStorage.setItem("auth", JSON.stringify(res.data.accessToken));
-        toast.success("Login successful!");
+        toast.success(`Welcome ${res.data?.FullName}`);
         navigate("/role-management");
       } else {
         toast.error("Invalid credentials");

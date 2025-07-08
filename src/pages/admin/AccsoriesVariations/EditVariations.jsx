@@ -110,7 +110,7 @@ const EditVariations = () => {
 
         <div className="pt-4 flex justify-end">
           <HasPermission
-            module="otherproductvariation"
+            module="Variation Master"
             action={["edit", "create"]}
           >
             <Button disabled={isVariationCreating || isVariationUpdating}>

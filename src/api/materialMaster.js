@@ -41,6 +41,11 @@ export const materialMasterApi = createApi({
       }),
       invalidatesTags: ["material"],
     }),
+    getAllRimType : builder.query({
+      query : () => ({
+        url : `/api/v1/frame-rim-type`
+      })
+    })
   }),
 });
 
@@ -50,4 +55,5 @@ export const {
   useGetmaterialByIdQuery,
   useDeActivateMutation,
   useUpdatematerialMutation,
+  useGetAllRimTypeQuery
 } = materialMasterApi;

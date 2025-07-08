@@ -1,226 +1,313 @@
-import React, { useEffect, useState } from "react";
-import { useGetVariationsQuery } from "../../../api/variations";
-import { useGetBarCodeQuery } from "../../../api/accessoriesMaster";
-import Button from "../../../components/ui/Button";
-import { FiPlusCircle, FiRefreshCw } from "react-icons/fi";
-import PricingTable from "./PricingTable";
-import { useFormData } from "../../../features/dataContext";
+import { useEffect, useState } from "react";
 import { useGetAllLocationsQuery } from "../../../api/roleManagementApi";
-import { useNavigate, useParams } from "react-router-dom";
+import { useGetBarCodeQuery } from "../../../api/accessoriesMaster";
+import { FiPlusCircle, FiRefreshCw, FiX } from "react-icons/fi";
+import Button from "../../../components/ui/Button";
 import { LuIndianRupee } from "react-icons/lu";
+import PricingTable from "./PricingTable";
+import { useGetVariationsQuery } from "../../../api/variations";
 
-const CreateVariation = () => {
-  const navigate = useNavigate();
-  const { id: variationId } = useParams();
+const CreateVariation = ({
+  onSave,
+  onCancel,
+  initialVariation,
+  initialPricing,
+  initialStock,
+  isEnabled,
+}) => {
+  const { data: allLocations } = useGetAllLocationsQuery();
+  const { data: barCodeData, refetch } = useGetBarCodeQuery({ skip: true });
   const { data: allVariations, isLoading: isVariationsLoading } =
     useGetVariationsQuery();
-  const { data: barCode, refetch } = useGetBarCodeQuery({ skip: true });
-  const { data: allLocations } = useGetAllLocationsQuery();
+  const [formErrors, setFormErrors] = useState({});
 
-  const {
-    variationData,
-    setVariationData,
-    pricingData,
-    setPricingData,
-    addVariationToList,
-    variationsList,
-  } = useFormData();
+  const [variation, setVariation] = useState(() => ({
+    SKUCode: initialVariation?.SKUCode || "",
+    Barcode: initialVariation?.Barcode || "",
+    OPVariationID: initialVariation?.OPVariationID || "",
+  }));
+
+  const [stock, setLocalStock] = useState({
+    OPBatchCode: initialStock?.FrameBatch || "1",
+    OPMRP: initialStock?.FrameSRP || "",
+  });
+
+  const [pricing, setPricing] = useState(initialPricing || []);
+  const [applyAll, setApplyAll] = useState({
+    buyingPrice: "",
+    sellingPrice: "",
+  });
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
-    // Only initialize for new variations (when variationId is not present or variationData is empty)
-    if (!variationId || !variationData.OPVariationID) {
-      // Initialize pricingData for all locations if creating a new variation
-      const initialPricing =
-        allLocations?.data?.map((location) => ({
-          id: location.Id,
-          location: location.LocationName,
-          buyingPrice: "",
-          sellingPrice: "",
-        })) || [];
-
-      setPricingData(initialPricing);
+    if (allLocations?.data?.length && pricing.length === 0) {
+      const initialPricing = allLocations.data.map((loc) => ({
+        id: loc.Id,
+        location: loc.LocationName,
+        buyingPrice: "",
+        sellingPrice: "",
+      }));
+      setPricing(initialPricing);
     }
-  }, [allLocations, variationId, variationData.OPVariationID, setPricingData]);
+  }, [allLocations, pricing.length]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    if (name === "OPMRP" && value && !/^\d{0,10}(\.\d{0,2})?$/.test(value))
-      return;
-
-    setVariationData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const handleChange = (field, value) => {
+    setVariation((prev) => ({ ...prev, [field]: value }));
+    if (formErrors[field]) {
+      setFormErrors((prev) => ({ ...prev, [field]: "" }));
+    }
   };
 
-  const handlePriceChange = (index, field, value) => {
-    if (value && !/^\d{0,10}(\.\d{0,2})?$/.test(value)) return;
-
-    const updated = pricingData.map((item, idx) =>
-      idx === index ? { ...item, [field]: value } : item
-    );
-    setPricingData(updated);
+  const handleStockChange = (field, value) => {
+    setLocalStock((prev) => ({ ...prev, [field]: value }));
+    if (formErrors[field]) {
+      setFormErrors((prev) => ({ ...prev, [field]: "" }));
+    }
   };
-
-  const [isGenerating, setIsGenerating] = useState(false);
 
   const handleGenerateBarCode = async () => {
     setIsGenerating(true);
     try {
-      await refetch();
-      setVariationData((prev) => ({
-        ...prev,
-        Barcode: barCode?.data?.barcode || "",
-      }));
+      const result = await refetch();
+      const newCode = result?.data?.data?.barcode || "";
+      setVariation((prev) => ({ ...prev, Barcode: newCode }));
+      setFormErrors((prev) => ({ ...prev, Barcode: "" }));
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const [applyAll, setApplyAll] = useState({
-    buyingPrice: "",
-    sellingPrice: "",
-  });
+  const validateForm = () => {
+    const errors = {};
+    if (!variation.OPVariationID || variation.OPVariationID === "") {
+      errors.OPVariationID = "Variation selection is required.";
+    }
+    if (!variation.SKUCode) {
+      errors.SKUCode = "SKU Code is required.";
+    }
+    if (!variation.Barcode) {
+      errors.Barcode = "Barcode is required.";
+    }
+    if (!stock.OPMRP || isNaN(parseFloat(stock.OPMRP)) || parseFloat(stock.OPMRP) <= 0) {
+      errors.OPMRP = "MRP is required and must be a valid positive number.";
+    }
 
-  const handleApplyToAll = (field, value) => {
-    if (value && !/^\d{0,10}(\.\d{0,2})?$/.test(value)) return;
-    const updated = pricingData.map((item) => ({
-      ...item,
-      [field]: value,
-    }));
-    setPricingData(updated);
+    let hasPricingError = false;
+    pricing.forEach((p) => {
+      if (!p.buyingPrice || isNaN(parseFloat(p.buyingPrice)) || parseFloat(p.buyingPrice) <= 0) {
+        hasPricingError = true;
+      }
+      if (!p.sellingPrice || isNaN(parseFloat(p.sellingPrice)) || parseFloat(p.sellingPrice) <= 0) {
+        hasPricingError = true;
+      }
+    });
+
+    if (hasPricingError) {
+      errors.pricing = "Valid buying and selling prices are required for all locations.";
+    }
+
+    return errors;
   };
 
-  const handleSubmit = () => {
-    addVariationToList();
-    navigate(-1);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const errors = validateForm();
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
+    const payload = {
+      variation: {
+        ...variation,
+        OPVariationID: variation.OPVariationID || "1", // Fallback to "1" as string
+      },
+      stock: {
+        ...stock,
+        OPMRP: parseFloat(stock.OPMRP) || 0,
+      },
+      pricing: pricing.map((p) => ({
+        ...p,
+        buyingPrice: parseFloat(p.buyingPrice) || 0,
+        sellingPrice: parseFloat(p.sellingPrice) || 0,
+      })),
+    };
+
+    onSave(payload);
   };
+
+  const requiredFields = ["SKUCode", "Barcode", "OPVariationID"];
+  const renderInputField = (field, label = field) => (
+    <div key={field}>
+      <label className="block text-sm font-medium text-gray-700">
+        {label}
+        {requiredFields.includes(field) && (
+          <span className="text-red-500">*</span>
+        )}
+      </label>
+      <input
+        type="text"
+        value={variation[field] || ""}
+        onChange={(e) => handleChange(field, e.target.value)}
+        className={`mt-1 block w-full border ${
+          formErrors[field] ? "border-red-500" : "border-gray-300"
+        } rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500`}
+        disabled={isEnabled}
+      />
+      {formErrors[field] && (
+        <p className="text-red-500 text-sm mt-1">{formErrors[field]}</p>
+      )}
+    </div>
+  );
 
   return (
     <div className="max-w-6xl p-6 bg-white rounded-lg border border-gray-200">
-      <div className="flex items-center gap-3 mb-6 justify-between">
-        <div className="flex gap-3 items-center">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
           <FiPlusCircle className="text-blue-600 text-2xl" />
           <h2 className="text-2xl font-bold text-gray-800">
-            {variationId ? "Edit Variation" : "Create Variation"}
+            {initialVariation
+              ? isEnabled
+                ? "View Variation"
+                : "Edit Variation"
+              : "Create Variation"}
           </h2>
         </div>
-        <Button onClick={() => navigate(-1)}>
-          Back
-        </Button>
+        <button
+          onClick={onCancel}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          <FiX size={24} />
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Variation Dropdown */}
-        <div className="space-y-2">
+      <form onSubmit={handleSubmit}>
+        <div className="space-y-2 mb-4">
           <label className="block text-sm font-medium text-gray-700">
-            Select Variation
+            Select Variation <span className="text-red-500">*</span>
           </label>
           <select
             name="OPVariationID"
-            value={variationData?.OPVariationID || ""}
-            onChange={handleChange}
-            className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-md"
-            disabled={isVariationsLoading}
+            value={variation?.OPVariationID || ""}
+            onChange={(e) => handleChange("OPVariationID", e.target.value)}
+            className={`block w-full pl-3 pr-10 py-2 text-base border ${
+              formErrors.OPVariationID ? "border-red-500" : "border-gray-300"
+            } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-md`}
+            disabled={isEnabled || isVariationsLoading}
           >
             <option value="">Select variation</option>
-            {!isVariationsLoading &&
-              allVariations?.data?.map(
-                (variation) =>
-                  variation.IsActive === 1 && (
-                    <option key={variation.Id} value={variation.Id}>
-                      {variation.VariationName}
-                    </option>
-                  )
-              )}
+            {allVariations?.data?.map(
+              (variation) =>
+                variation.IsActive === 1 && (
+                  <option key={variation.Id} value={variation.Id}>
+                    {variation.VariationName}
+                  </option>
+                )
+            )}
           </select>
+          {formErrors.OPVariationID && (
+            <p className="text-red-500 text-sm mt-1">
+              {formErrors.OPVariationID}
+            </p>
+          )}
         </div>
-
-        {/* SKU Code Field */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            SKU Code
-          </label>
-          <input
-            type="text"
-            name="SKUCode"
-            value={variationData?.SKUCode || ""}
-            onChange={handleChange}
-            placeholder="Enter SKU Code"
-            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
-
-        {/* Barcode Field + Generate Button */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Barcode
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              name="Barcode"
-              value={variationData?.Barcode || ""}
-              onChange={handleChange}
-              placeholder="Barcode will be generated"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-            <Button
-              type="button"
-              onClick={handleGenerateBarCode}
-              variant="primary"
-              loading={isGenerating}
-              loadingText="Generating..."
-              className="flex items-center gap-2"
-            >
-              <FiRefreshCw className="h-4 w-4" />
-              Generate
-            </Button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          {renderInputField("SKUCode", "SKU Code")}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Barcode <span className="text-red-500">*</span>
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={variation.Barcode || ""}
+                onChange={(e) => handleChange("Barcode", e.target.value)}
+                className={`mt-1 block w-full border ${
+                  formErrors.Barcode ? "border-red-500" : "border-gray-300"
+                } rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500`}
+                disabled={isEnabled}
+              />
+              {!isEnabled && (
+                <Button
+                  type="button"
+                  onClick={handleGenerateBarCode}
+                  variant="primary"
+                  size="sm"
+                  disabled={isGenerating}
+                >
+                  <FiRefreshCw
+                    className={`animate-spin ${
+                      isGenerating ? "inline" : "hidden"
+                    }`}
+                  />
+                  {!isGenerating && "Generate"}
+                </Button>
+              )}
+            </div>
+            {formErrors.Barcode && (
+              <p className="text-red-500 text-sm mt-1">{formErrors.Barcode}</p>
+            )}
           </div>
         </div>
 
-        {/* SRP Field */}
-        <div className="space-y-2">
+        <div className="mb-6 md:w-1/2">
           <label className="block text-sm font-medium text-gray-700">
-            SRP (Price)
+            MRP <span className="text-red-500">*</span>
           </label>
-          <div className="relative rounded-md shadow-sm">
+          <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <span className="text-gray-500 sm:text-sm"><LuIndianRupee /></span>
+              <LuIndianRupee className="text-gray-400" />
             </div>
             <input
-              type="text"
-              name="OPMRP"
-              value={variationData?.OPMRP || ""}
-              onChange={handleChange}
+              type="number"
+              step="0.01"
+              value={stock.OPMRP || ""}
+              onChange={(e) => handleStockChange("OPMRP", e.target.value)}
               placeholder="0.00"
-              className="block w-full pl-7 pr-12 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className={`pl-7 pr-4 py-2 block w-full border ${
+                formErrors.OPMRP ? "border-red-500" : "border-gray-300"
+              } rounded-md focus:ring-blue-500 focus:border-blue-500`}
+              disabled={isEnabled}
             />
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-              <span className="text-gray-500 sm:text-sm">INR</span>
-            </div>
+            {formErrors.OPMRP && (
+              <p className="text-red-500 text-sm mt-1">{formErrors.OPMRP}</p>
+            )}
           </div>
-          <p className="mt-1 text-xs text-gray-500">
-            Format: 9999.99 (max 2 decimal places)
-          </p>
         </div>
-      </div>
 
-      {pricingData && (
         <PricingTable
-          pricing={pricingData}
-          onPriceChange={handlePriceChange}
+          pricing={pricing}
+          onPriceChange={(idx, field, val) => {
+            const updated = [...pricing];
+            updated[idx][field] = val;
+            setPricing(updated);
+            if (formErrors.pricing) {
+              setFormErrors((prev) => ({ ...prev, pricing: "" }));
+            }
+          }}
           applyAll={applyAll}
           onApplyAllChange={setApplyAll}
-          onApplyToAll={handleApplyToAll}
+          onApplyToAll={(field, value) =>
+            setPricing(pricing.map((row) => ({ ...row, [field]: value })))
+          }
+          isEnabled={isEnabled}
         />
-      )}
+        {formErrors.pricing && (
+          <p className="text-red-500 text-sm mt-2">{formErrors.pricing}</p>
+        )}
 
-      <div className="mt-6 flex justify-end">
-        <Button variant="primary" size="lg" onClick={handleSubmit}>
-          {variationId ? "Update Variation" : "Create Variation"}
-        </Button>
-      </div>
+        {!isEnabled && (
+          <div className="mt-6 flex justify-end gap-4">
+            <Button type="button" onClick={onCancel} variant="secondary">
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" size="lg">
+              {initialVariation ? "Update Variation" : "Create Variation"}
+            </Button>
+          </div>
+        )}
+      </form>
     </div>
   );
 };

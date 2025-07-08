@@ -1,14 +1,23 @@
 import { createContext, useContext, useState } from "react";
 
-const FormContext = createContext();
+const FormMasterContext = createContext();
 
-export const useFormData = () => useContext(FormContext);
+export const useFrameMaster = () => useContext(FormMasterContext);
 
-export const FormProvider = ({ children }) => {
+export const FormMasterProvider = ({ children }) => {
   const [formData, setFormData] = useState({
     BrandID: "",
-    ProductName: "",
-    ProductCode: "",
+    ModelNo: "",
+    Category: "",
+    Type: "",
+    ShapeID: "",
+    FrontMaterialID: "",
+    TempleMaterialID: "",
+    Gender: "",
+    IsClipOn: false,
+    NoOfClips: null,
+    IsRxable: true,
+    CaptureSlNo: "",
     HSN: "",
     TaxID: "",
   });
@@ -16,7 +25,9 @@ export const FormProvider = ({ children }) => {
   const [variationData, setVariationData] = useState([]);
   const [stock, setStock] = useState([]);
 
+  // ✅ Add pricingData and its setter
   const [pricingData, setPricingData] = useState([]);
+
   const resetFrameMasterState = () => {
     setVariationData([]);
     setPricingData([]);
@@ -25,7 +36,7 @@ export const FormProvider = ({ children }) => {
   };
 
   return (
-    <FormContext.Provider
+    <FormMasterContext.Provider
       value={{
         formData,
         setFormData,
@@ -34,11 +45,11 @@ export const FormProvider = ({ children }) => {
         stock,
         setStock,
         pricingData,
-        setPricingData,
+        setPricingData, // ✅ expose it
         resetFrameMasterState,
       }}
     >
       {children}
-    </FormContext.Provider>
+    </FormMasterContext.Provider>
   );
 };

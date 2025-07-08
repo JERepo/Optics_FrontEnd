@@ -15,7 +15,7 @@ const Accssories = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
+  const [pageSize, setPageSize] = useState(10);
   const locale = navigator.language || navigator.languages[0] || "en-IN";
 
   const [selectedBrandId, setSelectedBrandId] = useState(null);
@@ -80,13 +80,13 @@ const Accssories = () => {
             <FiSearch className="text-neutral-500 text-lg" />
             <input
               type="text"
-              placeholder="Search pools..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full outline-none text-sm text-neutral-700 placeholder-neutral-400 bg-transparent"
             />
           </div>
-          <HasPermission module="otherproductvariation" action="create">
+          <HasPermission module="Variation Master" action="create">
             <Button
               icon={FiPlus}
               iconPosition="left"
@@ -116,13 +116,13 @@ const Accssories = () => {
             </TableCell>
             <TableCell>
               <div className="flex items-center gap-3">
-                <HasPermission module="otherproductvariation" action="view">
+                <HasPermission module="Variation Master" action="view">
                   <FiEye
                     onClick={() => navigate(`view/${pool.id}`)}
                     className="text-xl cursor-pointer"
                   />
                 </HasPermission>
-                <HasPermission module="otherproductvariation" action="edit">
+                <HasPermission module="Variation Master" action="edit">
                   <button
                     onClick={() => handleEdit(pool.id)}
                     className="text-neutral-600 hover:text-primary transition-colors"
@@ -133,7 +133,7 @@ const Accssories = () => {
                 </HasPermission>
 
                 {/* Only show toggle if enabled field is available */}
-                <HasPermission module="otherproductvariation" action="deactivate">
+                <HasPermission module="Variation Master" action="deactivate">
                   <Toggle
                     enabled={pool.enabled}
                     onToggle={() => requestToggle(pool.id, pool.enabled)}
@@ -145,10 +145,10 @@ const Accssories = () => {
         )}
         emptyMessage={
           isLoading
-            ? "Loading brands..."
+            ? "Loading..."
             : searchQuery
-            ? "No brands match your search criteria"
-            : "No brands found. Click 'Add brands' to create one."
+            ? "No Accessories match your search criteria"
+            : "No Accessories found. Click 'Add Accessories' to create one."
         }
         pagination={true}
         currentPage={currentPage}

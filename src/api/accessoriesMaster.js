@@ -51,6 +51,14 @@ export const accessoriesMaster = createApi({
       }),
       invalidatesTags: ["Accessory"],
     }),
+    deActivateMain: builder.mutation({
+      query: ({ id, payload }) => ({
+        url: `/api/v1/other-products/deactivate/${id}`,
+        method: "PUT",
+        body: payload,
+      }),
+      invalidatesTags: ["Accessory"],
+    }),
   }),
 });
 
@@ -62,4 +70,5 @@ export const {
   useGetMasterByIdQuery,
   useUpdateMasterMutation,
   useDeActivateMutation,
+  useDeActivateMainMutation,
 } = accessoriesMaster;
