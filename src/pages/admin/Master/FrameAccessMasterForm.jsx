@@ -9,6 +9,7 @@ const FrameAccessMasterForm = ({
   taxOptions = [],
   isEditMode,
   isEnabled,
+  id
 }) => {
   const { formData, setFormData } = useFrameMaster();
 
@@ -26,15 +27,25 @@ const FrameAccessMasterForm = ({
     }
   };
 
-const validate = () => {
-  const newErrors = {};
-  if (!formData.BrandID) newErrors.BrandID = "Brand is required.";
-  if (!formData.ProductName) newErrors.ProductName = "Product Name is required.";
-  if (!formData.ProductCode) newErrors.ProductCode = "Product Code is required.";
-  if (!formData.HSN) newErrors.HSN = "HSN Code is required.";
-  if (!formData.TaxID) newErrors.TaxID = "Tax is required.";
-  return newErrors;
-};
+  const validate = () => {
+    const newErrors = {};
+    if (!formData.BrandID) {
+      newErrors.BrandID = "Brand is required.";
+    }
+    if (!formData.ProductName) {
+      newErrors.ProductName = "Product Name is required.";
+    } else if (formData.ProductName.length > 100) {
+      newErrors.ProductName = "Product Name cannot exceed 100 characters";
+    }
+    if (!formData.ProductCode) {
+      newErrors.ProductCode = "Product Code is required.";
+    } else if (formData.ProductCode.length > 30) {
+      newErrors.ProductCode = "Product Code cannot exceed 30 characters";
+    }
+    if (!formData.HSN) newErrors.HSN = "HSN Code is required.";
+    if (!formData.TaxID) newErrors.TaxID = "Tax is required.";
+    return newErrors;
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -44,7 +55,7 @@ const validate = () => {
       return;
     }
     setErrors({});
-    setFormData(formData);
+    // setFormData(formData);
     onSubmit(formData);
   };
 
@@ -55,6 +66,7 @@ const validate = () => {
           <label>Brand *</label>
           <select
             value={formData.BrandID}
+            name="BrandID"
             onChange={handleChange}
             className="block w-full py-2 pl-3 pr-10 border border-gray-300 rounded-md"
             disabled={isEnabled}
@@ -70,6 +82,9 @@ const validate = () => {
                 </option>
               ))}
           </select>
+          {errors.BrandID && (
+            <p className="text-red-500 text-sm">{errors.BrandID}</p>
+          )}
         </div>
 
         <div>
@@ -82,8 +97,8 @@ const validate = () => {
             className="input"
             disabled={isEnabled}
           />
-          {errors.ModelNo && (
-            <p className="text-red-500 text-sm">{errors.ModelNo}</p>
+          {errors.ProductName && (
+            <p className="text-red-500 text-sm">{errors.ProductName}</p>
           )}
         </div>
       </div>
@@ -99,9 +114,12 @@ const validate = () => {
           placeholder="Enter product code"
           disabled={isEnabled}
         />
+        {errors.ProductCode && (
+          <p className="text-red-500 text-sm">{errors.ProductCode}</p>
+        )}
       </div>
       <div>
-        <label>Product Code</label>
+        <label>HSN Code</label>
         <input
           type="text"
           name="HSN"
@@ -111,6 +129,7 @@ const validate = () => {
           placeholder="Enter HSN code"
           disabled={isEnabled}
         />
+        {errors.HSN && <p className="text-red-500 text-sm">{errors.HSN}</p>}
       </div>
 
       <div>
@@ -131,6 +150,7 @@ const validate = () => {
               </option>
             ))}
         </select>
+        {errors.TaxID && <p className="text-red-500 text-sm">{errors.TaxID}</p>}
       </div>
 
       <div className="flex justify-end pt-4">
@@ -139,7 +159,7 @@ const validate = () => {
             type="submit"
             className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded"
           >
-            {initialValues.BrandID ? "Update Frame" : "Save Frame"}
+            {id ? "Update Accessory" : "Save Accessory"}
           </button>
         )}
       </div>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
@@ -8,12 +8,17 @@ import { loginSchema } from "../../utils/schemas/LoginSchema";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { useLoginMutation } from "../../api/userApi";
 import { useDispatch } from "react-redux";
-import { setCredentials } from "../../features/auth/authSlice";
+import { setCredentials, setLocations } from "../../features/auth/authSlice";
 import toast from "react-hot-toast";
+import { useGetLocationByIdQuery } from "../../api/roleManagementApi";
+import { skipToken } from "@reduxjs/toolkit/query";
 
 const Login = () => {
   const [login, { isLoading, isError }] = useLoginMutation();
   const [showPassword, setShowPassword] = useState(false);
+  const [userId, setUserId] = useState(null);
+  const { data: Location, isSuccess: isLocationLoaded } =
+    useGetLocationByIdQuery(userId ? { id: userId } : skipToken);
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -36,10 +41,9 @@ const Login = () => {
       const res = await login(formData).unwrap();
       if (res.status === "success") {
         dispatch(setCredentials(res.data));
-        console.log(res.data);
+        setUserId(res.data.Id);
         localStorage.setItem("auth", JSON.stringify(res.data.accessToken));
         toast.success(`Welcome ${res.data?.FullName}`);
-        navigate("/role-management");
       } else {
         toast.error("Invalid credentials");
       }
@@ -56,7 +60,6 @@ const Login = () => {
           <h2 className="mt-6 text-3xl font-semibold text-neutral-900">
             Sign in to your account
           </h2>
-         
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>

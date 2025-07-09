@@ -85,14 +85,18 @@ const EditSeasonMaster = () => {
           <FiArrowLeft className="text-gray-600" size={20} />
         </button>
         <h1 className="text-2xl font-semibold text-gray-800">
-          {id ? "Edit Season" : "Create New season"}
+          {id
+            ? isEnabled
+              ? "View Season Master"
+              : "Edit Season Master"
+            : "Create New Season Master"}
         </h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
-            Frame season name
+            Frame Season Master
           </label>
           <input
             type="text"
@@ -106,17 +110,21 @@ const EditSeasonMaster = () => {
         </div>
 
         <div className="pt-4 flex justify-end">
-          <HasPermission module="Brand group" action={["edit", "create"]}>
-            <Button disabled={isBrandCatCreatingLoading || isBrandCatUpdating}>
-              {id
-                ? isBrandCatUpdating
-                  ? "Updating..."
-                  : "Update Seasons"
-                : isBrandCatCreatingLoading
-                ? "Creating..."
-                : "Create Seasons"}
-            </Button>
-          </HasPermission>
+          {!isEnabled && (
+            <HasPermission module="Brand group" action={["edit", "create"]}>
+              <Button
+                disabled={isBrandCatCreatingLoading || isBrandCatUpdating}
+              >
+                {id
+                  ? isBrandCatUpdating
+                    ? "Updating..."
+                    : "Update Seasons"
+                  : isBrandCatCreatingLoading
+                  ? "Creating..."
+                  : "Create Seasons"}
+              </Button>
+            </HasPermission>
+          )}
         </div>
       </form>
     </div>

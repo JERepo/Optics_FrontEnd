@@ -23,6 +23,7 @@ import { useGetAllLocationsQuery } from "../../../api/roleManagementApi";
 import FrameAccessMasterForm from "./FrameAccessMasterForm";
 import CreateVariation from "./CreateVariation";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
+import Button from "../../../components/ui/Button";
 
 const EditFrameMaster = () => {
   const { id } = useParams();
@@ -152,24 +153,25 @@ const EditFrameMaster = () => {
           locationPricing[`SellingPrice${locId}`] =
             parseFloat(price.sellingPrice) || 0;
           locationPricing[`AvgPrice${locId}`] =
-            parseFloat(price.buyingPrice) || 0; // Set AvgPrice to BuyingPrice
-          locationPricing[`Quantity${locId}`] = 0; // Always set to 0
-          locationPricing[`DefectiveQty${locId}`] = 0; // Always set to 0
+            parseFloat(price.buyingPrice) || 0;
+          locationPricing[`Quantity${locId}`] = 0;
+          locationPricing[`DefectiveQty${locId}`] = 0;
         });
 
-        // Get the original barcode from fetched data
         const originalDetail = masterData?.data?.OtherProductsDetails?.[index];
         const isBarcodeChanged = variation.Barcode !== originalDetail?.Barcode;
 
         const baseDetail = {
-          Id: variation.id || null,
+          Id: variation.id || null, // Ensure id is included
           SKUCode: variation.SKUCode || "",
           Barcode: isBarcodeChanged ? variation.Barcode : undefined,
-          OPVariationID: variation.OPVariationID || 1, // Default to 1 if not set
+          OPVariationID: variation.OPVariationID || 1,
+          OPMainID: variation.OPMainID || null, // Preserve OPMainID
+          IsActive: variation.IsActive ?? 1, // Ensure IsActive is included
           Stock: {
             Id: stockData.id || null,
-            OPBatchCode: stockData.FrameBatch || "1", // Use OPBatchCode
-            OPMRP: parseFloat(stockData.FrameSRP) || 0, // Use OPMRP
+            OPBatchCode: stockData.FrameBatch || "1",
+            OPMRP: parseFloat(stockData.FrameSRP) || 0,
             location: locationIds,
             ...locationPricing,
           },
@@ -218,6 +220,7 @@ const EditFrameMaster = () => {
   };
 
   const handleSubmit = async (formData) => {
+    console.log("save frame clicked:", formData);
     if (variationData.length <= 0) {
       toast.error("Add atleast one variation");
       return;
@@ -234,12 +237,14 @@ const EditFrameMaster = () => {
           id: parseInt(id),
           payload: finalPayload,
         }).unwrap();
+        toast.success("Accessory updated");
       } else {
         // Create new frame
         await createAccessoriesMaster({
           id: appId,
           payload: finalPayload,
         }).unwrap();
+        toast.success("Accessory created");
       }
       navigate(-1); // Redirect after success
     } catch (error) {
@@ -257,6 +262,10 @@ const EditFrameMaster = () => {
     const updatedVariation = {
       ...newVariation.variation,
       OPVariationID: newVariation.variation.OPVariationID || 1,
+      IsActive: newVariation.variation.IsActive ?? 1, // Ensure IsActive is set
+      id: newVariation.variation.id || null, // Preserve id
+      OPMainID: newVariation.variation.OPMainID || null, // Preserve OPMainID
+      CreatedDate: newVariation.variation.CreatedDate || null, // Preserve CreatedDate
     };
 
     if (editingIndex !== null) {
@@ -268,6 +277,7 @@ const EditFrameMaster = () => {
         ...newVariation.stock,
         FrameBatch: newVariation.stock.OPBatchCode || "1",
         FrameSRP: newVariation.stock.OPMRP || "0.00",
+        id: newVariation.stock.id || null, // Preserve stock id
       };
 
       const updatedPricing = [...pricingData];
@@ -284,6 +294,7 @@ const EditFrameMaster = () => {
           ...newVariation.stock,
           FrameBatch: newVariation.stock.OPBatchCode || "1",
           FrameSRP: newVariation.stock.OPMRP || "0.00",
+          id: null, // New stock has no id
         },
       ]);
       setPricingData([...pricingData, newVariation.pricing]);
@@ -325,14 +336,17 @@ const EditFrameMaster = () => {
       ) : (
         <div className="max-w-6xl">
           <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:px-6 bg-gray-50 border-b border-gray-200">
+            <div className="flex justify-between items-center px-4 py-5 sm:px-6 bg-gray-50 border-b border-gray-200">
               <h3 className="text-lg leading-6 font-medium text-gray-900">
                 {id
                   ? isEnabled
-                    ? "View Frame"
-                    : "Edit Frame"
-                  : "Create New Frame"}
+                    ? "View Accessory"
+                    : "Edit Accessory"
+                  : "Create New Accessory"}
               </h3>
+              <Button onClick={() => navigate(-1)}>
+                Back
+              </Button>
             </div>
             <FrameAccessMasterForm
               onSubmit={handleSubmit}
@@ -342,6 +356,7 @@ const EditFrameMaster = () => {
               navigate={navigate}
               isEditMode={!!id}
               isEnabled={isEnabled}
+              id={id}
             />
           </div>
 
@@ -423,10 +438,12 @@ const EditFrameMaster = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <FiEye
-                        className="text-xl cursor-pointer"
-                        onClick={() => handleEditVariation(index)}
-                      />
+                      {isEnabled && (
+                        <FiEye
+                          className="text-xl cursor-pointer"
+                          onClick={() => handleEditVariation(index)}
+                        />
+                      )}
                       {!isEnabled && (
                         <button
                           onClick={() => handleEditVariation(index)}

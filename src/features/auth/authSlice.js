@@ -4,8 +4,9 @@ const initialState = {
   user: null,
   token: null,
   isAuthenticated: false,
-   refreshToken: null,
+  refreshToken: null,
   access: {},
+  hasMultipleLocations: null,
 };
 
 const authSlice = createSlice({
@@ -19,8 +20,11 @@ const authSlice = createSlice({
       state.access = access || {};
       state.isAuthenticated = true;
     },
-    setRefreshTOken : (state,action) =>{
+    setRefreshTOken: (state, action) => {
       state.token = action.payload.accessToken;
+    },
+    setLocations: (state,action) => {
+      state.hasMultipleLocations = action.payload;
     },
     logout: (state) => {
       state.user = null;
@@ -31,6 +35,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setCredentials, logout } = authSlice.actions;
+export const { setCredentials, logout, setLocations } = authSlice.actions;
 export default authSlice.reducer;
-

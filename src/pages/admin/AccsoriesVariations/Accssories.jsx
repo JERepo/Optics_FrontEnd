@@ -42,6 +42,7 @@ const Accssories = () => {
     }));
   }, [data, searchQuery]);
 
+
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedPools = brands.slice(startIndex, startIndex + pageSize);
   const totalPages = Math.ceil(brands.length / pageSize);

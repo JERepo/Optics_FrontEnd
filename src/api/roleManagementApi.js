@@ -45,6 +45,11 @@ export const roleManageApi = createApi({
     getAllLocations: builder.query({
       query: () => "/api/v1/user-management/all/location",
     }),
+    getLocationById : builder.query({
+      query : ({id}) => ({
+        url : `/api/v1/user-management/location/${id}`
+      })
+    }),
     getUserById: builder.query({
       query: ({ id }) => `/api/v1/user-management/${id}`,
     }),
@@ -107,4 +112,5 @@ export const {
   useDeactiveUserMutation,
   useDeactiveRoleMutation,
   useUpdateRoleMutation,
+  useGetLocationByIdQuery
 } = roleManageApi;

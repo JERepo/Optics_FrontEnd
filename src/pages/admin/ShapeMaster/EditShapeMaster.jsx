@@ -85,14 +85,18 @@ const EditShapeMaster = () => {
           <FiArrowLeft className="text-gray-600" size={20} />
         </button>
         <h1 className="text-2xl font-semibold text-gray-800">
-          {id ? "Edit Shape" : "Create New Shape"}
+          {id
+            ? isEnabled
+              ? "View Shape Master"
+              : "Edit Shape Master"
+            : "Create New Shape Master"}
         </h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
-            Frame shape name
+            Frame Shape Master
           </label>
           <input
             type="text"
@@ -106,17 +110,21 @@ const EditShapeMaster = () => {
         </div>
 
         <div className="pt-4 flex justify-end">
-          <HasPermission module="Brand group" action={["edit", "create"]}>
-            <Button disabled={isBrandCatCreatingLoading || isBrandCatUpdating}>
-              {id
-                ? isBrandCatUpdating
-                  ? "Updating..."
-                  : "Update shape"
-                : isBrandCatCreatingLoading
-                ? "Creating..."
-                : "Create shape"}
-            </Button>
-          </HasPermission>
+          {!isEnabled && (
+            <HasPermission module="Brand group" action={["edit", "create"]}>
+              <Button
+                disabled={isBrandCatCreatingLoading || isBrandCatUpdating}
+              >
+                {id
+                  ? isBrandCatUpdating
+                    ? "Updating..."
+                    : "Update shape"
+                  : isBrandCatCreatingLoading
+                  ? "Creating..."
+                  : "Create shape"}
+              </Button>
+            </HasPermission>
+          )}
         </div>
       </form>
     </div>

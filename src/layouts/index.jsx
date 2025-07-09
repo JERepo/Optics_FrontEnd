@@ -35,6 +35,7 @@ import FrameMaster from "../pages/admin/FrameMaster/FrameMaster";
 import EditFrameMaster from "../pages/admin/FrameMaster/EditFrameMaster";
 import CustomerGroup from "../pages/customer/customerGroup/CustomerGroup";
 import Customer from "../pages/customer/customers/Customer";
+import EditCustomerGroup from "../pages/customer/customerGroup/EditCustomerGroup";
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
 export const router = createBrowserRouter([
@@ -228,7 +229,7 @@ export const router = createBrowserRouter([
       {
         path: "settings/brand",
         element: (
-          <PermissionRoute module="brand" action="view">
+          <PermissionRoute module="Brand" action="view">
             <Brands />
           </PermissionRoute>
         ),
@@ -236,7 +237,7 @@ export const router = createBrowserRouter([
       {
         path: "settings/brand/create",
         element: (
-          <PermissionRoute module="brand" action="create">
+          <PermissionRoute module="Brand" action="create">
             <EditBrands />
           </PermissionRoute>
         ),
@@ -244,7 +245,7 @@ export const router = createBrowserRouter([
       {
         path: "settings/brand/edit/:id",
         element: (
-          <PermissionRoute module="brand" action="edit">
+          <PermissionRoute module="Brand" action="edit">
             <EditBrands />
           </PermissionRoute>
         ),
@@ -252,7 +253,7 @@ export const router = createBrowserRouter([
       {
         path: "settings/brand/view/:id",
         element: (
-          <PermissionRoute module="brand" action="view">
+          <PermissionRoute module="Brand" action="view">
             <EditBrands />
           </PermissionRoute>
         ),
@@ -474,7 +475,7 @@ export const router = createBrowserRouter([
           </PermissionRoute>
         ),
       },
-       {
+      {
         path: "settings/frame-master/view/:id",
         element: (
           <PermissionRoute module="Frame Master" action="view">
@@ -483,13 +484,21 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path : "customer-group",
-        element : <CustomerGroup />
+        path: "customer-group",
+        element: <CustomerGroup />,
       },
       {
-        path : "customer",
-        element : <Customer />
-      }
+        path: "customer-group/create",
+        element: <EditCustomerGroup />,
+      },
+      {
+        path: "customer-group/edit/:id",
+        element: <EditCustomerGroup />,
+      },
+      {
+        path: "customer",
+        element: <Customer />,
+      },
     ],
   },
 ]);

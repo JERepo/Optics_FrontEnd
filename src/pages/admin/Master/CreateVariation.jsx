@@ -25,6 +25,7 @@ const CreateVariation = ({
     SKUCode: initialVariation?.SKUCode || "",
     Barcode: initialVariation?.Barcode || "",
     OPVariationID: initialVariation?.OPVariationID || "",
+    IsActive: initialVariation?.IsActive ?? 1,
   }));
 
   const [stock, setLocalStock] = useState({
@@ -84,58 +85,81 @@ const CreateVariation = ({
     }
     if (!variation.SKUCode) {
       errors.SKUCode = "SKU Code is required.";
+    } else if (variation.SKUCode.length > 30) {
+      errors.SKUCode = "SKU Code cannot exceed 30 characters.";
     }
+
     if (!variation.Barcode) {
       errors.Barcode = "Barcode is required.";
+    } else if (variation.Barcode.length > 25) {
+      errors.Barcode = "Barcode cannot exceed 25 characters";
     }
-    if (!stock.OPMRP || isNaN(parseFloat(stock.OPMRP)) || parseFloat(stock.OPMRP) <= 0) {
+    if (
+      !stock.OPMRP ||
+      isNaN(stock.OPMRP) ||
+      stock.OPMRP <= 0
+    ) {
       errors.OPMRP = "MRP is required and must be a valid positive number.";
     }
 
     let hasPricingError = false;
     pricing.forEach((p) => {
-      if (!p.buyingPrice || isNaN(parseFloat(p.buyingPrice)) || parseFloat(p.buyingPrice) <= 0) {
+      if (
+        !p.buyingPrice ||
+        isNaN(parseFloat(p.buyingPrice)) ||
+        parseFloat(p.buyingPrice) <= 0
+      ) {
         hasPricingError = true;
       }
-      if (!p.sellingPrice || isNaN(parseFloat(p.sellingPrice)) || parseFloat(p.sellingPrice) <= 0) {
+      if (
+        !p.sellingPrice ||
+        isNaN(parseFloat(p.sellingPrice)) ||
+        parseFloat(p.sellingPrice) <= 0
+      ) {
         hasPricingError = true;
       }
     });
 
     if (hasPricingError) {
-      errors.pricing = "Valid buying and selling prices are required for all locations.";
+      errors.pricing =
+        "Valid buying and selling prices are required for all locations.";
     }
 
     return errors;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const errors = validateForm();
+const handleSubmit = (e) => {
+  e.preventDefault();
+  const errors = validateForm();
 
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      return;
-    }
+  if (Object.keys(errors).length > 0) {
+    setFormErrors(errors);
+    return;
+  }
 
-    const payload = {
-      variation: {
-        ...variation,
-        OPVariationID: variation.OPVariationID || "1", // Fallback to "1" as string
-      },
-      stock: {
-        ...stock,
-        OPMRP: parseFloat(stock.OPMRP) || 0,
-      },
-      pricing: pricing.map((p) => ({
-        ...p,
-        buyingPrice: parseFloat(p.buyingPrice) || 0,
-        sellingPrice: parseFloat(p.sellingPrice) || 0,
-      })),
-    };
-
-    onSave(payload);
+  const payload = {
+    variation: {
+      ...variation,
+      id: initialVariation?.id || null, // Preserve id for existing variations
+      OPMainID: initialVariation?.OPMainID || null, // Preserve OPMainID
+      CreatedDate: initialVariation?.CreatedDate || null, // Preserve CreatedDate
+      OPVariationID: variation.OPVariationID || "1",
+      IsActive: variation.IsActive ?? 1, // Default to 1 for new variations
+    },
+    stock: {
+      ...stock,
+      id: initialStock?.id || null, // Preserve stock id
+      OPMRP: parseFloat(stock.OPMRP) || 0,
+    },
+    pricing: pricing.map((p) => ({
+      ...p,
+      buyingPrice: parseFloat(p.buyingPrice) || 0,
+      sellingPrice: parseFloat(p.sellingPrice) || 0,
+    })),
   };
+
+  onSave(payload);
+};
 
   const requiredFields = ["SKUCode", "Barcode", "OPVariationID"];
   const renderInputField = (field, label = field) => (

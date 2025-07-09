@@ -6,6 +6,8 @@ import {
   IoHomeOutline,
   IoConstructOutline,
   IoPeopleSharp,
+  IoSettingsSharp,
+  IoOptionsSharp,
 } from "react-icons/io5";
 import { MdOutlineAdminPanelSettings } from "react-icons/md";
 
@@ -48,7 +50,7 @@ export const menuItems = [
       {
         name: "Brand",
         path: "/settings/brand",
-        module: "brand",
+        module: "Brand",
         icon: IoConstructOutline, // Suggests building/setup
       },
       {
@@ -89,17 +91,23 @@ export const menuItems = [
       },
     ],
   },
-   {
-    name: "Other Master",
-    icon: IoPeopleOutline,
-    module: "Customer Group",
-    path: "/customer-group",
+  {
+    name: "Other Masters",
+    icon: IoOptionsSharp,
+    module: "Other Masters",
+    subItems: [
+      {
+        name: "Customer Group",
+        icon: IoPeopleOutline,
+        module: "Customer Group",
+        path: "/customer-group",
+      },
+    ],
   },
   {
     name: "Customer",
-    icon: IoPeopleOutline,
+    icon: IoPersonOutline,
     module: "Customer",
     path: "/customer",
   },
- 
 ];

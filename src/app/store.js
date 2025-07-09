@@ -15,11 +15,13 @@ import { shapeMasterApi } from "../api/shapeMasterApi";
 import { seasonMasterApi } from "../api/seasonMaster";
 import { materialMasterApi } from "../api/materialMaster";
 import { frameMasterApi } from "../api/frameMasterApi";
+import { customerGroup } from "../api/customerGroup";
+import { customerApi } from "../api/customerApi";
 
 const persistConfig = {
   key: "auth",
   storage,
-  whitelist: ["token", "user", "isAuthenticated", "roles", "access"],
+  whitelist: ["token", "user", "isAuthenticated", "roles", "access","hasMultipleLocations"],
 };
 
 const persistedAuthReducer = persistReducer(persistConfig, authReducer);
@@ -39,6 +41,8 @@ export const store = configureStore({
     [seasonMasterApi.reducerPath]: seasonMasterApi.reducer,
     [materialMasterApi.reducerPath]: materialMasterApi.reducer,
     [frameMasterApi.reducerPath]: frameMasterApi.reducer,
+    [customerGroup.reducerPath]: customerGroup.reducer,
+    [customerApi.reducerPath]:customerApi.reducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -55,7 +59,9 @@ export const store = configureStore({
       shapeMasterApi.middleware,
       seasonMasterApi.middleware,
       materialMasterApi.middleware,
-      frameMasterApi.middleware
+      frameMasterApi.middleware,
+      customerGroup.middleware,
+      customerApi.middleware
     ),
 });
 

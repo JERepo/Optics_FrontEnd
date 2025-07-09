@@ -32,7 +32,7 @@ const FrameMaster = () => {
       BrandName: acc.Brand.BrandName,
       ModelNo :acc.ModelNo,
       RimType : acc.FrameRimType.FrameRimTypeName,
-      RimShape : acc.FrameShapeMaster.ShapeName,
+      RimShape : acc.FrameShapeMaster?.ShapeName,
 
       createdAt: new Intl.DateTimeFormat(locale, {
         year: "numeric",

@@ -118,13 +118,13 @@ const Brands = () => {
             </TableCell>
             <TableCell>
               <div className="flex items-center gap-3">
-                <HasPermission module="brand" action="view">
+                <HasPermission module="Brand" action="view">
                   <FiEye
                     onClick={() => navigate(`view/${pool.id}`)}
                     className="text-xl cursor-pointer"
                   />
                 </HasPermission>
-                <HasPermission module="brand" action="edit">
+                <HasPermission module="Brand" action="edit">
                   <button
                     onClick={() => handleEdit(pool.id)}
                     className="text-neutral-600 hover:text-primary transition-colors"
@@ -135,7 +135,7 @@ const Brands = () => {
                 </HasPermission>
 
                 {/* Only show toggle if enabled field is available */}
-                <HasPermission module="brand" action="deactivate">
+                <HasPermission module="Brand" action="deactivate">
                   <Toggle
                     enabled={pool.enabled}
                     onToggle={() => requestToggle(pool.id, pool.enabled)}

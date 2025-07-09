@@ -21,24 +21,26 @@ const CreateVariationForm = ({
   isEnabled,
 }) => {
   const { data: allLocations } = useGetAllLocationsQuery();
+
   const { data: allSeasons } = useGetAllseasonsQuery();
   const { data: barCodeData, refetch } = useGetBarCodeQuery({ skip: true });
   const [formErrors, setFormErrors] = useState({});
 
   const [variation, setVariation] = useState(() => ({
-    ColourCode: "",
-    Size: "",
-    DBL: "",
-    TempleLength: "",
-    LaunchSeason: "",
-    IsPhotochromatic: "0",
-    IsPolarised: "0",
-    LensColor: "",
-    FrameFrontColor: "",
-    TempleColor: "",
-    SkuCode: "",
-    Barcode: "",
-    ...initialVariation,
+    ColourCode: initialVariation?.ColourCode || "",
+    Size: initialVariation?.Size || "",
+    DBL: initialVariation?.DBL || "",
+    TempleLength: initialVariation?.TempleLength || "",
+    LaunchSeason: initialVariation?.LaunchSeason || "",
+    IsPhotochromatic: initialVariation?.IsPhotochromatic || "0",
+    IsPolarised: initialVariation?.IsPolarised || "0",
+    LensColor: initialVariation?.LensColor || "",
+    FrameFrontColor: initialVariation?.FrameFrontColor || "",
+    TempleColor: initialVariation?.TempleColor || "",
+    SkuCode: initialVariation?.SkuCode || "",
+    Barcode: initialVariation?.Barcode || "",
+    IsActive: initialVariation?.IsActive ?? 1, // Default to 1 for new variations
+    id: initialVariation?.id || null, // Preserve id
   }));
 
   const [images, setImages] = useState(() => {
@@ -66,9 +68,9 @@ const CreateVariationForm = ({
   );
 
   const [stock, setLocalStock] = useState({
-    FrameSRP: "",
-    FrameBatch: "",
-    ...initialStock,
+    FrameSRP: initialStock?.FrameSRP || "",
+    FrameBatch: initialStock?.FrameBatch || "",
+    id: initialStock?.id || null, // Preserve stock id
   });
 
   const [pricing, setPricing] = useState(initialPricing || []);
@@ -92,7 +94,6 @@ const CreateVariationForm = ({
 
   const handleChange = (field, value) => {
     setVariation((prev) => ({ ...prev, [field]: value }));
-    // Clear error for the field when user starts typing
     if (formErrors[field]) {
       setFormErrors((prev) => ({ ...prev, [field]: "" }));
     }
@@ -150,7 +151,16 @@ const CreateVariationForm = ({
       errors.FrameSRP = "SRP must be a valid number.";
     }
 
-    // Validate pricing data
+    if (variation.LensColor && variation.LensColor.length > 50) {
+      errors.LensColor = "Lens color cannot exceed 50 characters.";
+    }
+    if (variation.FrameFrontColor && variation.FrameFrontColor.length > 50) {
+      errors.FrameFrontColor = "Frame Front Color cannot exceed 50 characters.";
+    }
+    if (variation.TempleColor && variation.TempleColor.length > 50) {
+      errors.TempleColor = "Temple Color cannot exceed 50 characters.";
+    }
+
     let hasPricingError = false;
     pricing.forEach((p) => {
       if (!p.buyingPrice || isNaN(parseFloat(p.buyingPrice))) {
@@ -177,7 +187,6 @@ const CreateVariationForm = ({
       return;
     }
 
-    // Filter valid images (exclude empty slots)
     const validImages = images
       .map((img, idx) => ({
         ...img,
@@ -186,13 +195,11 @@ const CreateVariationForm = ({
       }))
       .filter((img) => img.file || img.FileName);
 
-    // Create FrameImages array with IsMain set correctly
     const frameImages = validImages.map((img) => ({
       FileName: img.FileName,
       IsMain: img.originalIndex === mainImageIndex ? 1 : 0,
     }));
 
-    // If no main image is selected and there are valid images, set the first one as main
     if (frameImages.length && mainImageIndex === null) {
       frameImages[0].IsMain = 1;
     }
@@ -201,12 +208,12 @@ const CreateVariationForm = ({
       variation: {
         ...variation,
         FrameImages: frameImages,
+        IsActive: variation.IsActive ?? 1, // Ensure IsActive is included
       },
       stock: {
         ...stock,
         FrameSRP: parseFloat(stock.FrameSRP) || 0,
       },
-
       pricing: pricing.map((p) => ({
         ...p,
         buyingPrice: parseFloat(p.buyingPrice) || 0,
@@ -215,9 +222,9 @@ const CreateVariationForm = ({
       images: validImages,
     };
 
-    console.log("Payload from CreateVariationForm:", payload);
     onSave(payload);
   };
+
   const requiredFields = ["ColourCode", "Size", "SkuCode", "Barcode"];
   const renderInputField = (field, label = field) => (
     <div key={field}>
@@ -244,7 +251,6 @@ const CreateVariationForm = ({
 
   return (
     <div className="max-w-6xl p-6 bg-white rounded-lg border border-gray-200">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <FiPlusCircle className="text-blue-600 text-2xl" />
@@ -265,7 +271,6 @@ const CreateVariationForm = ({
       </div>
 
       <form onSubmit={handleSubmit}>
-        {/* Variation Basics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           {[
             { field: "ColourCode", label: "Colour Code" },
@@ -275,7 +280,6 @@ const CreateVariationForm = ({
           ].map(({ field, label }) => renderInputField(field, label))}
         </div>
 
-        {/* Launch Season + Checkboxes */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">
@@ -289,9 +293,13 @@ const CreateVariationForm = ({
             >
               <option value="">Select</option>
               {allSeasons?.data.map((season) => (
-                <option key={season.Id} value={season.Id}>
-                  {season.SeasonName}
-                </option>
+                <>
+                  {season.IsActive === 1 && (
+                    <option key={season.Id} value={season.Id}>
+                      {season.SeasonName}
+                    </option>
+                  )}
+                </>
               ))}
             </select>
           </div>
@@ -322,12 +330,7 @@ const CreateVariationForm = ({
           ].map(({ field, label }) => renderInputField(field, label))}
         </div>
 
-        {/* SKU & Barcode */}
-        <div
-          className="grid grid-cols-1 md:grid-cols-2 gap-4
-
- mb-4"
-        >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           {renderInputField("SkuCode", "SKU Code")}
           <div>
             <label className="block text-sm font-medium text-gray-700">
@@ -356,7 +359,6 @@ const CreateVariationForm = ({
                       isGenerating ? "inline" : "hidden"
                     }`}
                   />
-
                   {!isGenerating && "Generate"}
                 </Button>
               )}
@@ -367,7 +369,6 @@ const CreateVariationForm = ({
           </div>
         </div>
 
-        {/* SRP */}
         <div className="mb-6 md:w-1/2">
           <label className="block text-sm font-medium text-gray-700">SRP</label>
           <div className="relative">
@@ -392,7 +393,6 @@ const CreateVariationForm = ({
           </div>
         </div>
 
-        {/* Pricing */}
         <PricingTable
           pricing={pricing}
           onPriceChange={(idx, field, val) => {
@@ -419,7 +419,6 @@ const CreateVariationForm = ({
           isEnabled={isEnabled}
         />
 
-        {/* Submit/Cancel */}
         {!isEnabled && (
           <div className="mt-6 flex justify-end gap-4">
             <Button type="button" onClick={onCancel} variant="secondary">

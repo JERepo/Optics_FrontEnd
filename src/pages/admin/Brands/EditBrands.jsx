@@ -49,7 +49,7 @@ const EditBrands = () => {
       const data = brand.data;
       setBrandName(data.BrandName || "");
       setSelectedBrandGroup(data.BrandGroupID || "");
-      setSelectedBrandCat(data.BrandCategory || "");
+      setSelectedBrandCat(data.BrandCategoryId || "");
 
       setCategoryToggles({
         ContactLensActive: data.ContactLensActive === 1,
@@ -88,14 +88,14 @@ const EditBrands = () => {
 
     const payload = {
       BrandName: brandName,
-      BrandGroupID: null,
-      BrandCategory: null,
+      BrandGroupID: selectedBrandGroup,
+      BrandCategory: selectedBrandCat,
       ContactLensActive: categoryToggles.ContactLensActive ? 1 : 0,
       OpticalLensActive: categoryToggles.OpticalLensActive ? 1 : 0,
       FrameActive: categoryToggles.FrameActive ? 1 : 0,
       OthersProductsActive: categoryToggles.OthersProductsActive ? 1 : 0,
     };
-
+    console.log(payload);
     try {
       if (id) {
         await updateBrands({ id, payload }).unwrap();
@@ -133,7 +133,7 @@ const EditBrands = () => {
           <FiArrowLeft className="text-gray-600" size={20} />
         </button>
         <h1 className="text-2xl font-semibold text-gray-800">
-          {id ? "Edit brand" : "Create New brand"}
+          {id ? (isEnabled ? "View Brand" : "Edit Brand") : "Create New Brand"}
         </h1>
       </div>
 
@@ -199,7 +199,7 @@ const EditBrands = () => {
         {/* Brand Category Dropdown */}
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
-            Brand Category
+            Brand
           </label>
           <select
             value={selectedBrandCat}
@@ -207,7 +207,7 @@ const EditBrands = () => {
             disabled={isEnabled}
             className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition"
           >
-            <option value="">Select Brand Category</option>
+            <option value="">Select Brand</option>
             {allBrandCats?.data?.map((cat) => (
               <option key={cat.Id} value={cat.Id}>
                 {cat.BrandCategoryName}
@@ -218,17 +218,19 @@ const EditBrands = () => {
 
         {/* Submit Button */}
         <div className="pt-4 flex justify-end">
-          <HasPermission module="Brand group" action={["edit", "create"]}>
-            <Button disabled={isBrandCreating || isBrandUpdating}>
-              {id
-                ? isBrandUpdating
-                  ? "Updating..."
-                  : "Update brand"
-                : isBrandCreating
-                ? "Creating..."
-                : "Create brand"}
-            </Button>
-          </HasPermission>
+          {!isEnabled && (
+            <HasPermission module="Brand group" action={["edit", "create"]}>
+              <Button disabled={isBrandCreating || isBrandUpdating}>
+                {id
+                  ? isBrandUpdating
+                    ? "Updating..."
+                    : "Update brand"
+                  : isBrandCreating
+                  ? "Creating..."
+                  : "Create brand"}
+              </Button>
+            </HasPermission>
+          )}
         </div>
       </form>
     </div>

@@ -85,19 +85,23 @@ const EditBrandGroup = () => {
           <FiArrowLeft className="text-gray-600" size={20} />
         </button>
         <h1 className="text-2xl font-semibold text-gray-800">
-          {id ? "Edit group" : "Create New group"}
+          {id
+            ? isEnabled
+              ? "View Brand Group"
+              : "Edit Brand Group"
+            : "Create New Brand Group"}
         </h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
-            Brand Category
+            Brand Group
           </label>
           <input
             type="text"
             className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary placeholder-gray-400 transition"
-            placeholder="e.g. Summer Tournament 2023"
+            placeholder=""
             value={brandName}
             onChange={(e) => setBrandName(e.target.value)}
             autoFocus
@@ -106,17 +110,21 @@ const EditBrandGroup = () => {
         </div>
 
         <div className="pt-4 flex justify-end">
-          <HasPermission module="Brand group" action={["edit", "create"]}>
-            <Button disabled={isBrandCatCreatingLoading || isBrandCatUpdating}>
-              {id
-                ? isBrandCatUpdating
-                  ? "Updating..."
-                  : "Update Pool"
-                : isBrandCatCreatingLoading
-                ? "Creating..."
-                : "Create Pool"}
-            </Button>
-          </HasPermission>
+          {!isEnabled && (
+            <HasPermission module="Brand group" action={["edit", "create"]}>
+              <Button
+                disabled={isBrandCatCreatingLoading || isBrandCatUpdating}
+              >
+                {id
+                  ? isBrandCatUpdating
+                    ? "Updating..."
+                    : "Update group"
+                  : isBrandCatCreatingLoading
+                  ? "Creating..."
+                  : "Create group"}
+              </Button>
+            </HasPermission>
+          )}
         </div>
       </form>
     </div>

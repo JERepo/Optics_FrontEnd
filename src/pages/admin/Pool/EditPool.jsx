@@ -18,6 +18,7 @@ const EditPool = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation();
+
   const access = useSelector((state) => state.auth.access);
   const [poolName, setPoolName] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
@@ -97,7 +98,7 @@ const EditPool = () => {
           <FiArrowLeft className="text-gray-600" size={20} />
         </button>
         <h1 className="text-2xl font-semibold text-gray-800">
-          {id ? "Edit Pool" : "Create New Pool"}
+          {id ? (isEnabled ? "View Pool" : "Edit Pool") : "Create New Pool"}
         </h1>
       </div>
 
@@ -143,17 +144,19 @@ const EditPool = () => {
         </div>
 
         <div className="pt-4 flex justify-end">
-          <HasPermission module="Pool" action={["edit","create"]}>
-            <Button disabled={isCreatingPool || isUpdatingPool}>
-              {id
-                ? isUpdatingPool
-                  ? "Updating..."
-                  : "Update Pool"
-                : isCreatingPool
-                ? "Creating..."
-                : "Create Pool"}
-            </Button>
-          </HasPermission>
+          {!isEnabled && (
+            <HasPermission module="Pool" action={["edit", "create"]}>
+              <Button disabled={isCreatingPool || isUpdatingPool}>
+                {id
+                  ? isUpdatingPool
+                    ? "Updating..."
+                    : "Update Pool"
+                  : isCreatingPool
+                  ? "Creating..."
+                  : "Create Pool"}
+              </Button>
+            </HasPermission>
+          )}
         </div>
       </form>
     </div>

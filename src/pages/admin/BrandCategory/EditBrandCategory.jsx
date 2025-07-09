@@ -30,7 +30,6 @@ const EditBrandCategory = () => {
   const [updateBrandCategory, { isLoading: isBrandCatUpdating }] =
     useUpdateBrandCategoryMutation();
   const { data: allBrands } = useGetAllBrandCatsQuery();
-  console.log("all brads", allBrands);
 
   const isEnabled = location.pathname.includes("/view");
 
@@ -91,7 +90,11 @@ const EditBrandCategory = () => {
           <FiArrowLeft className="text-gray-600" size={20} />
         </button>
         <h1 className="text-2xl font-semibold text-gray-800">
-          {id ? "Edit category" : "Create New category"}
+          {id
+            ? isEnabled
+              ? "View Brand Category"
+              : "Edit Brand Category"
+            : "Create New Brand Category"}
         </h1>
       </div>
 
@@ -112,17 +115,21 @@ const EditBrandCategory = () => {
         </div>
 
         <div className="pt-4 flex justify-end">
-          <HasPermission module="Pool" action={["edit", "create"]}>
-            <Button disabled={isBrandCatCreatingLoading || isBrandCatUpdating}>
-              {id
-                ? isBrandCatUpdating
-                  ? "Updating..."
-                  : "Update category"
-                : isBrandCatCreatingLoading
-                ? "Creating..."
-                : "Create category"}
-            </Button>
-          </HasPermission>
+          {!isEnabled && (
+            <HasPermission module="Pool" action={["edit", "create"]}>
+              <Button
+                disabled={isBrandCatCreatingLoading || isBrandCatUpdating}
+              >
+                {id
+                  ? isBrandCatUpdating
+                    ? "Updating..."
+                    : "Update category"
+                  : isBrandCatCreatingLoading
+                  ? "Creating..."
+                  : "Create category"}
+              </Button>
+            </HasPermission>
+          )}
         </div>
       </form>
     </div>

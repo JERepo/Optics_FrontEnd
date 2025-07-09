@@ -88,7 +88,11 @@ const EditVariations = () => {
           <FiArrowLeft className="text-gray-600" size={20} />
         </button>
         <h1 className="text-2xl font-semibold text-gray-800">
-          {id ? "Edit Variation" : "Create New Variation"}
+          {id
+            ? isEnabled
+              ? "View Variation"
+              : "Edit Variation"
+            : "Create New Variation"}
         </h1>
       </div>
 
@@ -100,7 +104,7 @@ const EditVariations = () => {
           <input
             type="text"
             className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary placeholder-gray-400 transition"
-            placeholder="e.g. Summer Tournament 2023"
+            placeholder=""
             value={brandName}
             onChange={(e) => setBrandName(e.target.value)}
             autoFocus
@@ -109,20 +113,22 @@ const EditVariations = () => {
         </div>
 
         <div className="pt-4 flex justify-end">
-          <HasPermission
-            module="Variation Master"
-            action={["edit", "create"]}
-          >
-            <Button disabled={isVariationCreating || isVariationUpdating}>
-              {id
-                ? isVariationUpdating
-                  ? "Updating..."
-                  : "Update Variation"
-                : isVariationCreating
-                ? "Creating..."
-                : "Create Variation"}
-            </Button>
-          </HasPermission>
+          {!isEnabled && (
+            <HasPermission
+              module="Variation Master"
+              action={["edit", "create"]}
+            >
+              <Button disabled={isVariationCreating || isVariationUpdating}>
+                {id
+                  ? isVariationUpdating
+                    ? "Updating..."
+                    : "Update Variation"
+                  : isVariationCreating
+                  ? "Creating..."
+                  : "Create Variation"}
+              </Button>
+            </HasPermission>
+          )}
         </div>
       </form>
     </div>

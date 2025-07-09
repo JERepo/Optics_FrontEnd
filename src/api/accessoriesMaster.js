@@ -34,6 +34,7 @@ export const accessoriesMaster = createApi({
       query: ({ id }) => ({
         url: `/api/v1/other-products/getbyid/${id}`,
       }),
+      providesTags : ["Accessory"]
     }),
     updateMaster: builder.mutation({
       query: ({ id, payload }) => ({

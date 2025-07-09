@@ -17,7 +17,7 @@ export const userSchema = z.object({
   MobileNumber: z
     .string()
     .min(10, "Phone number must be at least 10 digits")
-    .max(15, "Phone number can't exceed 15 digits")
+    .max(10, "Phone number can't exceed 10 digits")
     .regex(/^[0-9]+$/, "Phone number must contain only digits"),
   Password: z
   .string()

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useFrameMaster } from "../../../features/frameMasterContext";
-import HasPermission from "../../../components/HasPermission";
 
 const FrameMasterForm = ({
   initialValues = {},
@@ -31,10 +30,18 @@ const FrameMasterForm = ({
   const validate = () => {
     const newErrors = {};
     if (!formData.BrandID) newErrors.BrandID = "Brand is required.";
-    if (!formData.ModelNo) newErrors.ModelNo = "Model No is required.";
+    if (!formData.ModelNo) {
+      newErrors.ModelNo = "Model No is required.";
+    } else if (formData.ModelNo.length > 30) {
+      newErrors.ModelNo = "Model No cannot exceed 30 characters";
+    }
     if (!formData.Category) newErrors.Category = "Category is required.";
     if (!formData.Type) newErrors.Type = "Rim Type is required.";
-    if (!formData.HSN) newErrors.HSN = "HSN Code is required.";
+    if (!formData.HSN) {
+      newErrors.HSN = "HSN Code is required.";
+    } else if (formData.HSN.length > 6) {
+      newErrors.HSN = "HSN Code cannot exceed 6 characters";
+    }
     if (!formData.TaxID) newErrors.TaxID = "Tax is required.";
     return newErrors;
   };
@@ -63,11 +70,16 @@ const FrameMasterForm = ({
             className="input"
             disabled={isEnabled}
           >
-            <option value="">Select Brand</option>
+            <option value="">Select Brand {isEnabled}</option>
+
             {brands.map((b) => (
-              <option key={b.Id} value={b.Id}>
-                {b.BrandName}
-              </option>
+              <>
+                {b.IsActive === 1 && b.FrameActive === 1 && (
+                  <option key={b.Id} value={b.Id}>
+                    {b.BrandName}
+                  </option>
+                )}
+              </>
             ))}
           </select>
           {errors.BrandID && (
@@ -136,9 +148,13 @@ const FrameMasterForm = ({
           >
             <option value="">Select Rim Type</option>
             {rimTypes.map((t) => (
-              <option key={t.Id} value={t.Id}>
-                {t.FrameRimTypeName}
-              </option>
+              <>
+                {t.IsActive === 1 && (
+                  <option key={t.Id} value={t.Id}>
+                    {t.FrameRimTypeName}
+                  </option>
+                )}
+              </>
             ))}
           </select>
           {errors.Type && <p className="text-red-500 text-sm">{errors.Type}</p>}
@@ -155,9 +171,13 @@ const FrameMasterForm = ({
           >
             <option value="">Select Rim Shape</option>
             {rimShapes.map((s) => (
-              <option key={s.Id} value={s.Id}>
-                {s.ShapeName}
-              </option>
+              <>
+                {s.IsActive === 1 && (
+                  <option key={s.Id} value={s.Id}>
+                    {s.ShapeName}
+                  </option>
+                )}
+              </>
             ))}
           </select>
         </div>
@@ -175,9 +195,13 @@ const FrameMasterForm = ({
           >
             <option value="">Select Front Material</option>
             {materials.map((m) => (
-              <option key={m.Id} value={m.Id}>
-                {m.MaterialName}
-              </option>
+              <>
+                {m.IsActive === 1 && m.MaterialFor === 0 && (
+                  <option key={m.Id} value={m.Id}>
+                    {m.MaterialName}
+                  </option>
+                )}
+              </>
             ))}
           </select>
         </div>
@@ -193,9 +217,13 @@ const FrameMasterForm = ({
           >
             <option value="">Select Temple Material</option>
             {materials.map((m) => (
-              <option key={m.Id} value={m.Id}>
-                {m.MaterialName}
-              </option>
+              <>
+                {m.IsActive === 1 && m.MaterialFor === 0 && (
+                  <option key={m.Id} value={m.Id}>
+                    {m.MaterialName}
+                  </option>
+                )}
+              </>
             ))}
           </select>
         </div>

@@ -98,7 +98,11 @@ const EditmaterialMaster = () => {
           <FiArrowLeft className="text-gray-600" size={20} />
         </button>
         <h1 className="text-2xl font-semibold text-gray-800">
-          {id ? "Edit Material" : "Create New Material"}
+          {id
+            ? isEnabled
+              ? "View Material Master"
+              : "Edit Material Master"
+            : "Create New Material Master"}
         </h1>
       </div>
 
@@ -106,7 +110,7 @@ const EditmaterialMaster = () => {
         {/* Season Name Field */}
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
-            Frame material name
+            Frame Material Master
           </label>
           <input
             type="text"
@@ -153,17 +157,21 @@ const EditmaterialMaster = () => {
 
         {/* Submit Button */}
         <div className="pt-4 flex justify-end">
-          <HasPermission module="Brand group" action={["edit", "create"]}>
-            <Button disabled={isBrandCatCreatingLoading || isBrandCatUpdating}>
-              {id
-                ? isBrandCatUpdating
-                  ? "Updating..."
-                  : "Update material"
-                : isBrandCatCreatingLoading
-                ? "Creating..."
-                : "Create material"}
-            </Button>
-          </HasPermission>
+          {!isEnabled && (
+            <HasPermission module="Brand group" action={["edit", "create"]}>
+              <Button
+                disabled={isBrandCatCreatingLoading || isBrandCatUpdating}
+              >
+                {id
+                  ? isBrandCatUpdating
+                    ? "Updating..."
+                    : "Update material"
+                  : isBrandCatCreatingLoading
+                  ? "Creating..."
+                  : "Create material"}
+              </Button>
+            </HasPermission>
+          )}
         </div>
       </form>
     </div>
