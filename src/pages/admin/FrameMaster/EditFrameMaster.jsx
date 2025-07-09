@@ -361,9 +361,7 @@ const EditFrameMaster = () => {
                     : "Edit Frame"
                   : "Create New Frame"}
               </h3>
-              <Button onClick={() => navigate(-1)}>
-                              Back
-                            </Button>
+              <Button onClick={() => navigate(-1)}>Back</Button>
             </div>
             <FrameMasterForm
               onSubmit={handleSubmit}
@@ -383,12 +381,10 @@ const EditFrameMaster = () => {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium">Variations</h3>
               {!isEnabled && (
-                <button
-                  onClick={() => handleEditVariation(null)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
+               
+                <Button onClick={() => handleEditVariation(null)}>
                   Add Variation
-                </button>
+                </Button>
               )}
             </div>
 

@@ -30,7 +30,7 @@ const EditFrameMaster = () => {
   const location = useLocation();
   const isEnabled = location.pathname.includes("/view");
   const { access } = useSelector((state) => state.auth);
-  const hasViewAccess = hasPermission(access, "Frame Master", "view");
+  const hasViewAccess = hasPermission(access, "Accessory Master", "view");
 
   const navigate = useNavigate();
 
@@ -344,9 +344,7 @@ const EditFrameMaster = () => {
                     : "Edit Accessory"
                   : "Create New Accessory"}
               </h3>
-              <Button onClick={() => navigate(-1)}>
-                Back
-              </Button>
+              <Button onClick={() => navigate(-1)}>Back</Button>
             </div>
             <FrameAccessMasterForm
               onSubmit={handleSubmit}
@@ -364,12 +362,9 @@ const EditFrameMaster = () => {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium">Variations</h3>
               {!isEnabled && (
-                <button
-                  onClick={() => handleEditVariation(null)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Add Variation
-                </button>
+                <Button onClick={() => handleEditVariation(null)}>
+                  Add variation
+                </Button>
               )}
             </div>
 
@@ -439,23 +434,27 @@ const EditFrameMaster = () => {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       {isEnabled && (
-                        <FiEye
-                          className="text-xl cursor-pointer"
-                          onClick={() => handleEditVariation(index)}
-                        />
+                        <HasPermission module="Accessory Master" action="view">
+                          <FiEye
+                            className="text-xl cursor-pointer"
+                            onClick={() => handleEditVariation(index)}
+                          />
+                        </HasPermission>
                       )}
                       {!isEnabled && (
-                        <button
-                          onClick={() => handleEditVariation(index)}
-                          className="text-neutral-600 hover:text-primary transition-colors"
-                          aria-label="Edit"
-                        >
-                          <FiEdit2 size={18} />
-                        </button>
+                        <HasPermission module="Accessory Master" action="edit">
+                          <button
+                            onClick={() => handleEditVariation(index)}
+                            className="text-neutral-600 hover:text-primary transition-colors"
+                            aria-label="Edit"
+                          >
+                            <FiEdit2 size={18} />
+                          </button>
+                        </HasPermission>
                       )}
                       {!isEnabled && (
                         <HasPermission
-                          module="Frame Master"
+                          module="Accessory Master"
                           action="deactivate"
                         >
                           <div className="flex-shrink-0">

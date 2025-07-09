@@ -6,13 +6,13 @@ import Button from "../../../components/ui/Button";
 import toast from "react-hot-toast";
 import HasPermission from "../../../components/HasPermission";
 import {
-  useCreateseasonMasterMutation,
-  useGetAllseasonsQuery,
-  useGetseasonByIdQuery,
-  useUpdateseasonMutation,
-} from "../../../api/seasonMaster";
+  useCreateBrandGroupMutation,
+  useGetAllBrandGroupsQuery,
+  useGetBrandGroupByIdQuery,
+  useUpdateBrandGroupMutation,
+} from "../../../api/brandGroup";
 
-const EditSeasonMaster = () => {
+const EditBankMaster = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation();
@@ -22,19 +22,19 @@ const EditSeasonMaster = () => {
     data: brandCategory,
     isLoading: isBrandCatLoading,
     isSuccess,
-  } = useGetseasonByIdQuery({ id });
+  } = useGetBrandGroupByIdQuery({ id });
   const [createBrandGroup, { isLoading: isBrandCatCreatingLoading }] =
-    useCreateseasonMasterMutation();
+    useCreateBrandGroupMutation();
   const [updateBrandGroup, { isLoading: isBrandCatUpdating }] =
-    useUpdateseasonMutation();
-  const { data: allBrands } = useGetAllseasonsQuery();
+    useUpdateBrandGroupMutation();
+  const { data: allBrands } = useGetAllBrandGroupsQuery();
 
   const isEnabled = location.pathname.includes("/view");
 
   // Prefill values if editing
   useEffect(() => {
     if (id && isSuccess && brandCategory?.data) {
-      setBrandName(brandCategory.data.SeasonName || "");
+      setBrandName(brandCategory.data.BrandGroupName || "");
     }
   }, [id, brandCategory, isSuccess]);
 
@@ -50,7 +50,7 @@ const EditSeasonMaster = () => {
     const userBrand = allBrands.data.find((p) => p.ApplicationUserId);
     const ApplicationUserId = userBrand?.ApplicationUserId || null;
     const payload = {
-      SeasonName: brandName,
+      BrandGroupName: brandName,
     };
     try {
       if (id) {
@@ -72,7 +72,7 @@ const EditSeasonMaster = () => {
     }
   };
 
-  if (id && isBrandCatLoading) return <h1>Loading seasons...</h1>;
+  if (id && isBrandCatLoading) return <h1>Loading brands category...</h1>;
 
   return (
     <div className="max-w-2xl bg-white rounded-lg shadow-sm p-4">
@@ -87,21 +87,21 @@ const EditSeasonMaster = () => {
         <h1 className="text-2xl font-semibold text-gray-800">
           {id
             ? isEnabled
-              ? "View Season Master"
-              : "Edit Season Master"
-            : "Create New Season Master"}
+              ? "View Bank Master"
+              : "Edit Bank Master"
+            : "Create New Bank Master"}
         </h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
-            Frame Season Master
+            Bank Name
           </label>
           <input
             type="text"
             className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary placeholder-gray-400 transition"
-            // placeholder="e.g. Summer Tournament 2023"
+            placeholder=""
             value={brandName}
             onChange={(e) => setBrandName(e.target.value)}
             autoFocus
@@ -111,17 +111,17 @@ const EditSeasonMaster = () => {
 
         <div className="pt-4 flex justify-end">
           {!isEnabled && (
-            <HasPermission module="Season Master" action={["edit", "create"]}>
+            <HasPermission module="Brand group" action={["edit", "create"]}>
               <Button
                 disabled={isBrandCatCreatingLoading || isBrandCatUpdating}
               >
                 {id
                   ? isBrandCatUpdating
                     ? "Updating..."
-                    : "Update Seasons"
+                    : "Update bank"
                   : isBrandCatCreatingLoading
                   ? "Creating..."
-                  : "Create Seasons"}
+                  : "Create bank"}
               </Button>
             </HasPermission>
           )}
@@ -131,4 +131,4 @@ const EditSeasonMaster = () => {
   );
 };
 
-export default EditSeasonMaster;
+export default EditBankMaster;

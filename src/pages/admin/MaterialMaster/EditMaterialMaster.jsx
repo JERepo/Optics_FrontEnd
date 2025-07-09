@@ -158,7 +158,7 @@ const EditmaterialMaster = () => {
         {/* Submit Button */}
         <div className="pt-4 flex justify-end">
           {!isEnabled && (
-            <HasPermission module="Brand group" action={["edit", "create"]}>
+            <HasPermission module="Material Master" action={["edit", "create"]}>
               <Button
                 disabled={isBrandCatCreatingLoading || isBrandCatUpdating}
               >

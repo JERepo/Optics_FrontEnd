@@ -219,7 +219,7 @@ const EditBrands = () => {
         {/* Submit Button */}
         <div className="pt-4 flex justify-end">
           {!isEnabled && (
-            <HasPermission module="Brand group" action={["edit", "create"]}>
+            <HasPermission module="Brand" action={["edit", "create"]}>
               <Button disabled={isBrandCreating || isBrandUpdating}>
                 {id
                   ? isBrandUpdating

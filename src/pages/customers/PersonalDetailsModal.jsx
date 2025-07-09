@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import Modal from "../../../components/ui/Modal";
-import Button from "../../../components/ui/Button";
+import Modal from "../../components/ui/Modal";
+import Button from "../../components/ui/Button";
 
 const PersonalDetailsModal = ({ isOpen, onClose, onSave ,initialData}) => {
   const [formState, setFormState] = useState({

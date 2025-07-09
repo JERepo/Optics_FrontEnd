@@ -6,6 +6,7 @@ import Button from "../../../components/ui/Button";
 import { LuIndianRupee } from "react-icons/lu";
 import PricingTable from "./PricingTable";
 import { useGetVariationsQuery } from "../../../api/variations";
+import HasPermission from "../../../components/HasPermission";
 
 const CreateVariation = ({
   onSave,
@@ -94,11 +95,7 @@ const CreateVariation = ({
     } else if (variation.Barcode.length > 25) {
       errors.Barcode = "Barcode cannot exceed 25 characters";
     }
-    if (
-      !stock.OPMRP ||
-      isNaN(stock.OPMRP) ||
-      stock.OPMRP <= 0
-    ) {
+    if (!stock.OPMRP || isNaN(stock.OPMRP) || stock.OPMRP <= 0) {
       errors.OPMRP = "MRP is required and must be a valid positive number.";
     }
 
@@ -128,38 +125,38 @@ const CreateVariation = ({
     return errors;
   };
 
-const handleSubmit = (e) => {
-  e.preventDefault();
-  const errors = validateForm();
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const errors = validateForm();
 
-  if (Object.keys(errors).length > 0) {
-    setFormErrors(errors);
-    return;
-  }
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
 
-  const payload = {
-    variation: {
-      ...variation,
-      id: initialVariation?.id || null, // Preserve id for existing variations
-      OPMainID: initialVariation?.OPMainID || null, // Preserve OPMainID
-      CreatedDate: initialVariation?.CreatedDate || null, // Preserve CreatedDate
-      OPVariationID: variation.OPVariationID || "1",
-      IsActive: variation.IsActive ?? 1, // Default to 1 for new variations
-    },
-    stock: {
-      ...stock,
-      id: initialStock?.id || null, // Preserve stock id
-      OPMRP: parseFloat(stock.OPMRP) || 0,
-    },
-    pricing: pricing.map((p) => ({
-      ...p,
-      buyingPrice: parseFloat(p.buyingPrice) || 0,
-      sellingPrice: parseFloat(p.sellingPrice) || 0,
-    })),
+    const payload = {
+      variation: {
+        ...variation,
+        id: initialVariation?.id || null,
+        OPMainID: initialVariation?.OPMainID || null,
+        CreatedDate: initialVariation?.CreatedDate || null,
+        OPVariationID: variation.OPVariationID || "1",
+        IsActive: variation.IsActive ?? 1,
+      },
+      stock: {
+        ...stock,
+        id: initialStock?.id || null,
+        OPMRP: parseFloat(stock.OPMRP) || 0,
+      },
+      pricing: pricing.map((p) => ({
+        ...p,
+        buyingPrice: parseFloat(p.buyingPrice) || 0,
+        sellingPrice: parseFloat(p.sellingPrice) || 0,
+      })),
+    };
+
+    onSave(payload);
   };
-
-  onSave(payload);
-};
 
   const requiredFields = ["SKUCode", "Barcode", "OPVariationID"];
   const renderInputField = (field, label = field) => (
@@ -326,9 +323,11 @@ const handleSubmit = (e) => {
             <Button type="button" onClick={onCancel} variant="secondary">
               Cancel
             </Button>
-            <Button type="submit" variant="primary" size="lg">
-              {initialVariation ? "Update Variation" : "Create Variation"}
-            </Button>
+            <HasPermission module="Accessory Master" action="create">
+              <Button type="submit" variant="primary" size="lg">
+                {initialVariation ? "Update Variation" : "Create Variation"}
+              </Button>
+            </HasPermission>
           </div>
         )}
       </form>

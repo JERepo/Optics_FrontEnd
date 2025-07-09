@@ -111,7 +111,7 @@ const EditShapeMaster = () => {
 
         <div className="pt-4 flex justify-end">
           {!isEnabled && (
-            <HasPermission module="Brand group" action={["edit", "create"]}>
+            <HasPermission module="Shape Master" action={["edit", "create"]}>
               <Button
                 disabled={isBrandCatCreatingLoading || isBrandCatUpdating}
               >

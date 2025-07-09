@@ -2,12 +2,13 @@ import React, { useState } from "react";
 import CustomerForm from "./CustomerForm";
 import PersonalDetailsModal from "./PersonalDetailsModal";
 import BillingAddress from "./BillingAddress";
-import { useCustomerContext } from "../../../features/customerContext";
-import Button from "../../../components/ui/Button";
-import { Table, TableCell, TableRow } from "../../../components/Table";
+
+import { Table, TableCell, TableRow } from "../../components/Table";
 import { FiEye, FiEdit2, FiCopy } from "react-icons/fi";
-import { useGetAllRimTypeQuery } from "../../../api/materialMaster";
-import { useGetAllIndicesQuery } from "../../../api/customerApi";
+import { useGetAllRimTypeQuery } from "../../api/materialMaster";
+import { useGetAllIndicesQuery } from "../../api/customerApi";
+import {useCustomerContext} from '../../features/customerContext'
+import Button from "../../components/ui/Button";
 
 const Customer = () => {
   const { formData, setFormData } = useCustomerContext();

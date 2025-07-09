@@ -82,13 +82,13 @@ const Brands = () => {
             <FiSearch className="text-neutral-500 text-lg" />
             <input
               type="text"
-              placeholder="Search pools..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full outline-none text-sm text-neutral-700 placeholder-neutral-400 bg-transparent"
             />
           </div>
-          <HasPermission module="brand" action="create">
+          <HasPermission module="Brand" action="create">
             <Button
               icon={FiPlus}
               iconPosition="left"

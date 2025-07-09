@@ -90,7 +90,7 @@ const FrameMaster = () => {
               className="w-full outline-none text-sm text-neutral-700 placeholder-neutral-400 bg-transparent"
             />
           </div>
-          <HasPermission module="Accessory Master" action="create">
+          <HasPermission module="Frame Master" action="create">
             <Button
               icon={FiPlus}
               iconPosition="left"

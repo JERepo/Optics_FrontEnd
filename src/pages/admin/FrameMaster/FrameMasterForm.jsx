@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useFrameMaster } from "../../../features/frameMasterContext";
+import Button from "../../../components/ui/Button";
+import HasPermission from "../../../components/HasPermission";
 
 const FrameMasterForm = ({
   initialValues = {},
@@ -316,12 +318,13 @@ const FrameMasterForm = ({
 
       <div className="flex justify-end pt-4">
         {!isEnabled && (
-          <button
-            type="submit"
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded"
-          >
-            {initialValues.BrandID ? "Update Frame" : "Save Frame"}
-          </button>
+          <HasPermission module="Frame Master" action={["edit", "create"]}>
+            <Button type="submit">
+              {initialValues.BrandID
+                ? "Update Frame Master"
+                : "Save Frame Master"}
+            </Button>
+          </HasPermission>
         )}
       </div>
     </form>

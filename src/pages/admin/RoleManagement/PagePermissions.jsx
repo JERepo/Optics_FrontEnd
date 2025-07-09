@@ -10,7 +10,7 @@ import {
   FiLoader,
 } from "react-icons/fi";
 import Button from "../../../components/ui/Button";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   useCreateRoleMutation,
   useGetAllPageNameQuery,
@@ -26,6 +26,8 @@ import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 const PagePermissions = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
+  const isEnabled = location.pathname.includes("/view");
   const isNew = !id;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
@@ -173,11 +175,16 @@ const PagePermissions = () => {
     <div className="max-w-6xl">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-semibold text-neutral-700">
-          {isNew ? "Add New Role" : `Edit Permissions: ${formState.name}`}
+          {isNew
+            ? "Add New Role"
+            : isEnabled
+            ? "View All Permissions:"
+            : `Edit Permissions:`}
         </h2>
-        {!isNew && (
+        {!isNew && !isEnabled && (
           <div className="flex items-center gap-2 border border-neutral-300 rounded-md px-3 w-[250px] h-10 bg-white">
             <FiSearch className="text-neutral-500 text-lg" />
+
             <input
               type="text"
               placeholder="Search..."
@@ -217,6 +224,7 @@ const PagePermissions = () => {
           permissions={formState.permissions}
           onPermissionToggle={handlePermissionChange}
           isNew={isNew}
+          isEnabled={isEnabled}
         />
       </div>
 
@@ -224,33 +232,35 @@ const PagePermissions = () => {
         <Button variant="outline" onClick={() => navigate(-1)}>
           Cancel
         </Button>
-        <HasPermission module="Role Management" action="edit">
-          <Button
-            icon={
-              isNew
-                ? isCreatingRoleLoading
-                  ? "Creating"
+        {!isEnabled && (
+          <HasPermission module="Role Management" action="edit">
+            <Button
+              icon={
+                isNew
+                  ? isCreatingRoleLoading
+                    ? "Creating"
+                    : FiPlus
+                  : isUpdatingRole
+                  ? "Updating"
                   : FiPlus
+              }
+              iconPosition="left"
+              onClick={() => {
+                setConfirmAction(() => handleSubmit);
+                setIsModalOpen(true);
+              }}
+              disabled={isCreatingRoleLoading || isUpdatingRole}
+            >
+              {isNew
+                ? isCreatingRoleLoading
+                  ? "Creating..."
+                  : "Create Role"
                 : isUpdatingRole
-                ? "Updating"
-                : FiPlus
-            }
-            iconPosition="left"
-            onClick={() => {
-              setConfirmAction(() => handleSubmit);
-              setIsModalOpen(true);
-            }}
-            disabled={isCreatingRoleLoading || isUpdatingRole}
-          >
-            {isNew
-              ? isCreatingRoleLoading
-                ? "Creating..."
-                : "Create Role"
-              : isUpdatingRole
-              ? "Updating..."
-              : "Update Role"}
-          </Button>
-        </HasPermission>
+                ? "Updating..."
+                : "Update Role"}
+            </Button>
+          </HasPermission>
+        )}
       </div>
       <ConfirmationModal
         isOpen={isModalOpen}
@@ -276,7 +286,13 @@ const PagePermissions = () => {
 
 export default PagePermissions;
 
-const PermissionTable = ({ data, permissions, onPermissionToggle, isNew }) => {
+const PermissionTable = ({
+  data,
+  permissions,
+  onPermissionToggle,
+  isNew,
+  isEnabled,
+}) => {
   const headers = [
     { key: "create", label: "Create", icon: <FiPlus /> },
     { key: "edit", label: "Edit", icon: <FiEdit2 /> },
@@ -334,7 +350,8 @@ const PermissionTable = ({ data, permissions, onPermissionToggle, isNew }) => {
                       checked={permissions?.[pageId]?.[header.key] || false}
                       onChange={() => onPermissionToggle(pageId, header.key)}
                       disabled={
-                        !hasPermission(access, "Role Management", "edit")
+                        !hasPermission(access, "Role Management", "edit") ||
+                        isEnabled
                       }
                       className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
                     />

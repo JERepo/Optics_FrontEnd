@@ -114,7 +114,6 @@ const EditUserManagement = () => {
       Locations: formData.Locations,
       ...(formData.Password && { Password: formData.Password }),
     };
-    console.log("pp", payload);
     try {
       if (id) {
         await updateUser({ id, payload }).unwrap();
@@ -176,7 +175,7 @@ const EditUserManagement = () => {
             Back
           </Button>
           <h1 className="text-2xl font-bold text-gray-800">
-            {id ? "Edit User" : "Create User"}
+            {id ? (isReadOnly ? "View User" : "Edit User") : "Create User"}
           </h1>
         </div>
       </div>
@@ -287,24 +286,32 @@ const EditUserManagement = () => {
         <div className="px-6 py-4 bg-gray-50 flex justify-between border-t border-gray-200">
           <Button onClick={() => navigate("/user-management")}>Cancel</Button>
           <div className="flex space-x-3">
-            <Button
-              onClick={() => reset()}
-              disabled={!isDirty}
-              variant="outline"
-            >
-              Reset
-            </Button>
-            <HasPermission module="User Management" action={["edit", "create"]}>
+            {!isReadOnly && (
               <Button
-                type="submit"
-                variant="primary"
-                icon={FiSave}
-                isLoading={isCreatingUser || isUpdatingUser}
-                disabled={isReadOnly}
+                onClick={() => reset()}
+                disabled={!isDirty}
+                variant="outline"
               >
-                {id ? "Update changes" : "Save user"}
+                Reset
               </Button>
-            </HasPermission>
+            )}
+
+            {!isReadOnly && (
+              <HasPermission
+                module="User Management"
+                action={["edit", "create"]}
+              >
+                <Button
+                  type="submit"
+                  variant="primary"
+                  icon={FiSave}
+                  isLoading={isCreatingUser || isUpdatingUser}
+                  disabled={isReadOnly}
+                >
+                  {id ? "Update changes" : "Save user"}
+                </Button>
+              </HasPermission>
+            )}
           </div>
         </div>
       </form>

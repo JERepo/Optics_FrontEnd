@@ -152,7 +152,7 @@ const BrandCategory = () => {
             ? "Loading brand categories..."
             : searchQuery
             ? "No brand categories match your search criteria"
-            : "No brand categories found. Click 'Add Pool' to create one."
+            : "No brand categories found. Click 'Add brand category' to create one."
         }
         pagination={true}
         currentPage={currentPage}

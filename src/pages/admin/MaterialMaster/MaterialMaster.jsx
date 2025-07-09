@@ -86,7 +86,7 @@ const MaterialMaster = () => {
               className="w-full outline-none text-sm text-neutral-700 placeholder-neutral-400 bg-transparent"
             />
           </div>
-          <HasPermission module="Brand group" action="create">
+          <HasPermission module="Material Master" action="create">
             <Button
               icon={FiPlus}
               iconPosition="left"
@@ -116,13 +116,13 @@ const MaterialMaster = () => {
             </TableCell>
             <TableCell>
               <div className="flex items-center gap-3">
-                <HasPermission module="Brand group" action="view">
+                <HasPermission module="Material Master" action="view">
                   <FiEye
                     onClick={() => navigate(`view/${pool.id}`)}
                     className="text-xl cursor-pointer"
                   />
                 </HasPermission>
-                <HasPermission module="Brand group" action="edit">
+                <HasPermission module="Material Master" action="edit">
                   <button
                     onClick={() => handleEdit(pool.id)}
                     className="text-neutral-600 hover:text-primary transition-colors"
@@ -133,7 +133,7 @@ const MaterialMaster = () => {
                 </HasPermission>
 
                 {/* Only show toggle if enabled field is available */}
-                <HasPermission module="Brand group" action="deactivate">
+                <HasPermission module="Material Master" action="deactivate">
                   <Toggle
                     enabled={pool.enabled}
                     onToggle={() => requestToggle(pool.id, pool.enabled)}

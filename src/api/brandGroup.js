@@ -17,7 +17,7 @@ export const brandGroup = createApi({
     }),
     getAllBrandGroups: builder.query({
       query: () => ({
-        url: `/api/v1/brandgroup/active`,
+        url: `/api/v1/brandgroup`,
       }),
       providesTags: ["Group"],
     }),

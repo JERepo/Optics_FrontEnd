@@ -33,9 +33,18 @@ import MaterialMaster from "../pages/admin/MaterialMaster/MaterialMaster";
 import EditmaterialMaster from "../pages/admin/MaterialMaster/EditMaterialMaster";
 import FrameMaster from "../pages/admin/FrameMaster/FrameMaster";
 import EditFrameMaster from "../pages/admin/FrameMaster/EditFrameMaster";
+import CustomerMain from "../pages/customers/CustomerMain";
+import Customer from "../pages/customers/Customer";
 import CustomerGroup from "../pages/customer/customerGroup/CustomerGroup";
-import Customer from "../pages/customer/customers/Customer";
 import EditCustomerGroup from "../pages/customer/customerGroup/EditCustomerGroup";
+import SalesPerson from "../pages/customer/SalesPerson/SalesPerson";
+import EditSalesPerson from "../pages/customer/SalesPerson/EditSalesPerson";
+import BankMaster from "../pages/customer/BankMaster/BankMaster";
+import EditBankMaster from "../pages/customer/BankMaster/EditBankMaster";
+import BankAccountDetails from "../pages/customer/BankAccountDetails/BankAccountDetails";
+import EditBankAccountDetails from "../pages/customer/BankAccountDetails/EditBankAccountDetails";
+import PaymentMachine from "../pages/customer/PaymentMachine/PaymentMachine";
+import EditPaymentMachine from "../pages/customer/PaymentMachine/EditPaymentMachine";
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
 export const router = createBrowserRouter([
@@ -496,8 +505,80 @@ export const router = createBrowserRouter([
         element: <EditCustomerGroup />,
       },
       {
+        path: "customer-group/view/:id",
+        element: <EditCustomerGroup />,
+      },
+      {
         path: "customer",
+        element: <CustomerMain />,
+      },
+      {
+        path: "customer/create",
         element: <Customer />,
+      },
+      {
+        path: "customer/edit/:id",
+        element: <Customer />,
+      },
+      {
+        path: "customer/view/:id",
+        element: <Customer />,
+      },
+      {
+        path: "sales",
+        element: <SalesPerson />,
+      },
+      {
+        path: "sales/create",
+        element: <EditSalesPerson />,
+      },
+      {
+        path: "bank-master",
+        element: <BankMaster />,
+      },
+      {
+        path: "bank-master/create",
+        element: <EditBankMaster />,
+      },
+      {
+        path: "bank-master/edit/:id",
+        element: <EditBankMaster />,
+      },
+      {
+        path: "bank-master/view/:id",
+        element: <EditBankMaster />,
+      },
+      {
+        path: "bank-account-details",
+        element: <BankAccountDetails />,
+      },
+      {
+        path: "bank-account-details/create",
+        element: <EditBankAccountDetails />,
+      },
+      {
+        path: "bank-account-details/edit/:id",
+        element: <EditBankAccountDetails />,
+      },
+      {
+        path: "bank-account-details/view/:id",
+        element: <EditBankAccountDetails />,
+      },
+      {
+        path: "payment-machine",
+        element: <PaymentMachine />,
+      },
+      {
+        path: "payment-machine/create",
+        element: <EditPaymentMachine />,
+      },
+      {
+        path: "payment-machine/edit/:id",
+        element: <EditPaymentMachine />,
+      },
+      {
+        path: "payment-machine/view/:id",
+        element: <EditPaymentMachine />,
       },
     ],
   },

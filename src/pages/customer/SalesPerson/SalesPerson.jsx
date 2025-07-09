@@ -1,17 +1,15 @@
 import React, { useState, useMemo } from "react";
-import { FiSearch, FiPlus, FiEdit2, FiEye } from "react-icons/fi";
+import { FiSearch, FiPlus, FiEdit2, FiEye, FiCreditCard } from "react-icons/fi";
 import Button from "../../../components/ui/Button";
 import { useNavigate } from "react-router";
 import { Table, TableRow, TableCell } from "../../../components/Table";
 import Toggle from "../../../components/ui/Toggle";
+
+import { PoolCat } from "../../../utils/constants/PoolCategory";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import HasPermission from "../../../components/HasPermission";
-import {
-  useDeActivateMutation,
-  useGetAllShapesQuery,
-} from "../../../api/shapeMasterApi";
 
-const ShapeMaster = () => {
+const SalesPerson = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -22,15 +20,18 @@ const ShapeMaster = () => {
   const [currentStatus, setCurrentStatus] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { data, isLoading } = useGetAllShapesQuery();
-  const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
+  //   const { data, isLoading } = useGetAllBrandGroupsQuery();
+  //   const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
+  const data = [];
+  const isLoading = false;
+  const isDeActivating = false;
 
   const brands = useMemo(() => {
     if (!data?.data) return [];
 
     return data.data.map((brand) => ({
       id: brand.Id,
-      name: brand.ShapeName,
+      name: brand.BrandGroupName,
 
       createdAt: new Intl.DateTimeFormat(locale, {
         year: "numeric",
@@ -53,10 +54,10 @@ const ShapeMaster = () => {
 
   const handleConfirmToggle = async () => {
     try {
-      await deActivate({
-        id: selectedBrandId,
-        payload: { IsActive: currentStatus ? 0 : 1 },
-      }).unwrap();
+      //   await deActivate({
+      //     id: selectedBrandId,
+      //     payload: { IsActive: currentStatus ? 0 : 1 },
+      //   }).unwrap();
     } catch (error) {
       console.error("Toggle error:", error);
     } finally {
@@ -74,35 +75,38 @@ const ShapeMaster = () => {
   return (
     <div className="max-w-5xl">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div className="text-3xl text-neutral-700 font-semibold">
-          Frame Shape master
-        </div>
+        <div className="text-3xl text-neutral-700 font-semibold">Customer</div>
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
           <div className="flex items-center gap-2 border-2 border-neutral-300 rounded-md px-3 w-full sm:w-[250px] h-10 bg-white">
             <FiSearch className="text-neutral-500 text-lg" />
             <input
               type="text"
-              placeholder="Search shapes..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full outline-none text-sm text-neutral-700 placeholder-neutral-400 bg-transparent"
             />
           </div>
-          <HasPermission module="Shape Master" action="create">
+          <HasPermission module="Brand group" action="create">
             <Button
               icon={FiPlus}
               iconPosition="left"
               className="bg-primary/90 text-neutral-50 hover:bg-primary/70 transition-all whitespace-nowrap"
               onClick={() => navigate("create")}
             >
-              Add shape master
+              Add Sales Person
             </Button>
           </HasPermission>
         </div>
       </div>
 
       <Table
-        columns={["S.No", "Brand Category", "Created At", "Action"]}
+        columns={[
+          "S.No",
+          "Person Name",
+          "Type",
+          "Action",
+        ]}
         data={paginatedPools}
         renderRow={(pool, index) => (
           <TableRow key={pool.id}>
@@ -118,13 +122,14 @@ const ShapeMaster = () => {
             </TableCell>
             <TableCell>
               <div className="flex items-center gap-3">
-                <HasPermission module="Shape Master" action="view">
+        
+                <HasPermission module="Brand group" action="view">
                   <FiEye
                     onClick={() => navigate(`view/${pool.id}`)}
                     className="text-xl cursor-pointer"
                   />
                 </HasPermission>
-                <HasPermission module="Shape Master" action="edit">
+                <HasPermission module="Brand group" action="edit">
                   <button
                     onClick={() => handleEdit(pool.id)}
                     className="text-neutral-600 hover:text-primary transition-colors"
@@ -135,7 +140,7 @@ const ShapeMaster = () => {
                 </HasPermission>
 
                 {/* Only show toggle if enabled field is available */}
-                <HasPermission module="Shape Master" action="deactivate">
+                <HasPermission module="Brand group" action="deactivate">
                   <Toggle
                     enabled={pool.enabled}
                     onToggle={() => requestToggle(pool.id, pool.enabled)}
@@ -147,10 +152,10 @@ const ShapeMaster = () => {
         )}
         emptyMessage={
           isLoading
-            ? "Loading groups..."
+            ? "Loading sales person..."
             : searchQuery
-            ? "No groups match your search criteria"
-            : "No groups found. Click 'Add Pool' to create one."
+            ? "No sales person match your search criteria"
+            : "No sales person found. Click 'Add sales person' to create one."
         }
         pagination={true}
         currentPage={currentPage}
@@ -178,4 +183,4 @@ const ShapeMaster = () => {
   );
 };
 
-export default ShapeMaster;
+export default SalesPerson;

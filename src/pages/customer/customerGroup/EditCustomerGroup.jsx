@@ -98,7 +98,7 @@ const EditCustomerGroup = () => {
           <FiArrowLeft className="text-gray-600" size={20} />
         </button>
         <h1 className="text-2xl font-semibold text-gray-800">
-          {id ? "Edit customer group" : "Create New customer group"}
+          {id ? isEnabled ? "View customer group" :"Edit customer group" : "Create New customer group"}
         </h1>
       </div>
 
@@ -114,6 +114,7 @@ const EditCustomerGroup = () => {
                   className="input"
                   onChange={(e) => setSelectedLocation(e.target.value)}
                   value={selectedLocation}
+                  disabled={isEnabled}
                 >
                   <option value="">Select location</option>
                   {allLocations?.data
@@ -143,17 +144,21 @@ const EditCustomerGroup = () => {
         </div>
 
         <div className="pt-4 flex justify-end">
-          <HasPermission module="Brand group" action={["edit", "create"]}>
-            <Button disabled={isBrandCatCreatingLoading || isBrandCatUpdating}>
-              {id
-                ? isBrandCatUpdating
-                  ? "Updating..."
-                  : "Update group"
-                : isBrandCatCreatingLoading
-                ? "Creating..."
-                : "Create group"}
-            </Button>
-          </HasPermission>
+          {!isEnabled && (
+            <HasPermission module="Customer Group" action={["edit", "create"]}>
+              <Button
+                disabled={isBrandCatCreatingLoading || isBrandCatUpdating}
+              >
+                {id
+                  ? isBrandCatUpdating
+                    ? "Updating..."
+                    : "Update group"
+                  : isBrandCatCreatingLoading
+                  ? "Creating..."
+                  : "Create group"}
+              </Button>
+            </HasPermission>
+          )}
         </div>
       </form>
     </div>

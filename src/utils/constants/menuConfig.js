@@ -8,6 +8,7 @@ import {
   IoPeopleSharp,
   IoSettingsSharp,
   IoOptionsSharp,
+  IoBriefcaseOutline,
 } from "react-icons/io5";
 import { MdOutlineAdminPanelSettings } from "react-icons/md";
 
@@ -101,6 +102,30 @@ export const menuItems = [
         icon: IoPeopleOutline,
         module: "Customer Group",
         path: "/customer-group",
+      },
+      {
+        name : "Sales",
+        icons : IoBriefcaseOutline,
+        module : "Sales Person",
+        path : "/sales"
+      },
+       {
+        name : "Bank Master",
+        icons : IoBriefcaseOutline,
+        module : "Bank Master",
+        path : "/bank-master"
+      },
+       {
+        name : "Bank Account Details",
+        icons : IoBriefcaseOutline,
+        module : "Bank Account Details",
+        path : "/bank-account-details"
+      },
+       {
+        name : "Payment Machine",
+        icons : IoBriefcaseOutline,
+        module : "Payment Machine",
+        path : "/payment-machine"
       },
     ],
   },

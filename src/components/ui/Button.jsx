@@ -1,6 +1,3 @@
-import React from "react";
-import { FiLoader } from "react-icons/fi"; // optional spinner icon
-
 const Button = ({
   children,
   icon: Icon,
@@ -12,12 +9,20 @@ const Button = ({
   loadingText = "Loading...",
   ...props
 }) => {
-  const baseStyles =
-    "inline-flex items-center justify-center gap-2 font-medium transition rounded-md";
+  const baseStyles = "inline-flex items-center justify-center gap-1 font-medium transition rounded-md";
+  
   const sizeStyles = {
-    sm: "px-3 py-1 text-sm",
+    xs: "px-2 py-0.5 text-xs",          // Extra small
+    sm: "px-2.5 py-1 text-sm",          // Slightly adjusted small
     md: "px-4 py-2 text-base",
     lg: "px-5 py-3 text-lg",
+  };
+
+  const iconSizes = {
+    xs: "text-sm",    // 0.875rem (14px)
+    sm: "text-base",   // 1rem (16px)
+    md: "text-lg",     // 1.125rem (18px)
+    lg: "text-xl",     // 1.25rem (20px)
   };
 
   const variantStyles = {
@@ -35,18 +40,18 @@ const Button = ({
     >
       {isLoading ? (
         <>
-          <FiLoader className="animate-spin text-lg" />
+          <FiLoader className={`animate-spin ${iconSizes[size]}`} />
           <span>{loadingText}</span>
         </>
       ) : (
         <>
-          {Icon && iconPosition === "left" && <Icon className="text-lg" />}
+          {Icon && iconPosition === "left" && <Icon className={iconSizes[size]} />}
           {children}
-          {Icon && iconPosition === "right" && <Icon className="text-lg" />}
+          {Icon && iconPosition === "right" && <Icon className={iconSizes[size]} />}
         </>
       )}
     </button>
   );
 };
 
-export default Button;
+export default Button

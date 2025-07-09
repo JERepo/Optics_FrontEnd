@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useFrameMaster } from "../../../features/frameMasterContext";
 import HasPermission from "../../../components/HasPermission";
+import Button from "../../../components/ui/Button";
 
 const FrameAccessMasterForm = ({
   initialValues = {},
@@ -9,7 +10,7 @@ const FrameAccessMasterForm = ({
   taxOptions = [],
   isEditMode,
   isEnabled,
-  id
+  id,
 }) => {
   const { formData, setFormData } = useFrameMaster();
 
@@ -146,7 +147,7 @@ const FrameAccessMasterForm = ({
             ?.filter((tax) => tax.IsActive === 1)
             .map((tax) => (
               <option key={tax.Id} value={String(tax.Id)}>
-                {tax.Name} ({tax.percentage}%)
+                {tax.Name}
               </option>
             ))}
         </select>
@@ -155,12 +156,11 @@ const FrameAccessMasterForm = ({
 
       <div className="flex justify-end pt-4">
         {!isEnabled && (
-          <button
-            type="submit"
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded"
-          >
-            {id ? "Update Accessory" : "Save Accessory"}
-          </button>
+          <HasPermission module="Accessory Master" action={["edit","create"]}>
+            <Button type="submit">
+              {id ? "Update Accessory" : "Save Accessory"}
+            </Button>
+          </HasPermission>
         )}
       </div>
     </form>
