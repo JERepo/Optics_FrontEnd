@@ -69,7 +69,7 @@ export const router = createBrowserRouter([
       {
         path: "dashboard",
         element: (
-          <PermissionRoute module="Page Management" action="view">
+          <PermissionRoute module="Dashboard" action="view">
             <AdminDashboard />
           </PermissionRoute>
         ),

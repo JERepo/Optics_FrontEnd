@@ -3,11 +3,14 @@ import { FiSearch, FiPlus, FiEdit2, FiEye, FiCreditCard } from "react-icons/fi";
 
 import { useNavigate } from "react-router";
 import Toggle from "../../components/ui/Toggle";
-import {Table,TableCell,TableRow} from '../../components/Table'
-import { PoolCat } from "../../utils/constants/PoolCategory";
+import { Table, TableCell, TableRow } from "../../components/Table";
 import ConfirmationModal from "../../components/ui/ConfirmationModal";
 import HasPermission from "../../components/HasPermission";
 import Button from "../../components/ui/Button";
+import {
+  useDeActivateMutation,
+  useGetAllCustomersQuery,
+} from "../../api/customerApi";
 
 const CustomerMain = () => {
   const navigate = useNavigate();
@@ -16,53 +19,61 @@ const CustomerMain = () => {
   const [pageSize, setPageSize] = useState(10);
   const locale = navigator.language || navigator.languages[0] || "en-IN";
 
-  const [selectedBrandId, setSelectedBrandId] = useState(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [currentStatus, setCurrentStatus] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  //   const { data, isLoading } = useGetAllBrandGroupsQuery();
-  //   const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
-  const data = [];
-  const isLoading = false;
-  const isDeActivating = false;
+  const { data, isLoading } = useGetAllCustomersQuery();
+  const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
 
-  const brands = useMemo(() => {
+  const customers = useMemo(() => {
     if (!data?.data) return [];
 
-    return data.data.map((brand) => ({
-      id: brand.Id,
-      name: brand.BrandGroupName,
-
-      createdAt: new Intl.DateTimeFormat(locale, {
-        year: "numeric",
-        month: "short",
-        day: "2-digit",
-      }).format(new Date(brand.CreatedDate)),
-      enabled: brand.IsActive,
-    }));
-  }, [data, searchQuery]);
+    return data?.data?.data
+      .map((customer) => ({
+        id: customer.Id,
+        name: customer.CustomerName,
+        location: "",
+        phone: customer.MobNumber,
+        group: customer.CustomerGroup.GroupName,
+        createdAt: new Intl.DateTimeFormat(locale, {
+          year: "numeric",
+          month: "short",
+          day: "2-digit",
+        }).format(new Date(customer.CreateDate)),
+        enabled: customer.IsActive === 1,
+      }))
+      .filter((customer) => {
+        const query = searchQuery.toLowerCase();
+        return (
+          customer.name.toLowerCase().includes(query) ||
+          customer.group.toLowerCase().includes(query) ||
+          customer.location.toLowerCase().includes(query)
+        );
+      });
+  }, [data, searchQuery, isLoading]);
 
   const startIndex = (currentPage - 1) * pageSize;
-  const paginatedPools = brands.slice(startIndex, startIndex + pageSize);
-  const totalPages = Math.ceil(brands.length / pageSize);
+  const paginatedPools = customers.slice(startIndex, startIndex + pageSize);
+  const totalPages = Math.ceil(customers.length / pageSize);
 
   const requestToggle = (poolId, status) => {
-    setSelectedBrandId(poolId);
+    setSelectedCustomerId(poolId);
     setCurrentStatus(status);
     setIsModalOpen(true);
   };
 
   const handleConfirmToggle = async () => {
     try {
-      //   await deActivate({
-      //     id: selectedBrandId,
-      //     payload: { IsActive: currentStatus ? 0 : 1 },
-      //   }).unwrap();
+      await deActivate({
+        id: selectedCustomerId,
+        payload: { isActive: currentStatus ? 0 : 1 },
+      }).unwrap();
     } catch (error) {
       console.error("Toggle error:", error);
     } finally {
       setIsModalOpen(false);
-      setSelectedBrandId(null);
+      setSelectedCustomerId(null);
       setCurrentStatus(null);
     }
   };
@@ -118,9 +129,14 @@ const CustomerMain = () => {
             <TableCell className="text-sm text-neutral-500">
               {pool.name}
             </TableCell>
-
             <TableCell className="text-sm text-neutral-500">
-              {pool.createdAt}
+              {pool.location}
+            </TableCell>
+            <TableCell className="text-sm text-neutral-500">
+              {pool.phone}
+            </TableCell>
+            <TableCell className="text-sm text-neutral-500">
+              {pool.group}
             </TableCell>
             <TableCell>
               <div className="flex items-center gap-3">
@@ -136,13 +152,13 @@ const CustomerMain = () => {
                     Credit Limit
                   </Button>
                 </div>
-                <HasPermission module="Brand group" action="view">
+                <HasPermission module="Customer" action="view">
                   <FiEye
                     onClick={() => navigate(`view/${pool.id}`)}
                     className="text-xl cursor-pointer"
                   />
                 </HasPermission>
-                <HasPermission module="Brand group" action="edit">
+                <HasPermission module="Customer" action="edit">
                   <button
                     onClick={() => handleEdit(pool.id)}
                     className="text-neutral-600 hover:text-primary transition-colors"
@@ -153,7 +169,7 @@ const CustomerMain = () => {
                 </HasPermission>
 
                 {/* Only show toggle if enabled field is available */}
-                <HasPermission module="Brand group" action="deactivate">
+                <HasPermission module="Customer" action="deactivate">
                   <Toggle
                     enabled={pool.enabled}
                     onToggle={() => requestToggle(pool.id, pool.enabled)}
@@ -176,7 +192,7 @@ const CustomerMain = () => {
         onPageChange={setCurrentPage}
         pageSize={pageSize}
         onPageSizeChange={setPageSize}
-        totalItems={brands.length}
+        totalItems={customers.length}
       />
       <ConfirmationModal
         isOpen={isModalOpen}
