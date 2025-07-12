@@ -36,8 +36,6 @@ const EditBankAccountDetails = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Submit logic here
-    console.log(formData)
   };
 
   return (

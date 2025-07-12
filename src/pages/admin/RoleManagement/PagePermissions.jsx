@@ -113,7 +113,7 @@ const PagePermissions = () => {
         },
       },
     }));
-    console.log("change", formState);
+  
   };
 
   const handleSubmit = async () => {
@@ -161,7 +161,6 @@ const PagePermissions = () => {
         await updatePrevilage({ id, formData: payload }).unwrap();
         toast.success("Role updated successfully!");
       }
-      console.log("updating data", payload);
       navigate("/role-management");
     } catch (err) {
       console.error("Operation failed:", err);

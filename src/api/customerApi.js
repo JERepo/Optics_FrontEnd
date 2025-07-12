@@ -43,11 +43,26 @@ export const customerApi = createApi({
       }),
       invalidatesTags: ["Customer"],
     }),
-    getPinCode : builder.query({
-      query : ({pincode}) => ({
-        url : `/api/v1/createall/?pincode=${pincode}`
-      })
-    })
+    getPinCode: builder.query({
+      query: ({ pincode }) => ({
+        url: `/api/v1/createall/?pincode=${pincode}`,
+      }),
+    }),
+    getStates: builder.query({
+      query: () => ({
+        url: `/api/v1/createall/get/allstate`,
+      }),
+    }),
+    getCountries: builder.query({
+      query: () => ({
+        url: `/api/v1/createall/get/allcountry`,
+      }),
+    }),
+    getIsd: builder.query({
+      query: ({ id }) => ({
+        url: `/api/v1/createall/getisd/?BillCountryID=${id}`,
+      }),
+    }),
   }),
 });
 
@@ -59,5 +74,7 @@ export const {
   useGetCustomerByIdQuery,
   useDeActivateMutation,
   useLazyGetPinCodeQuery,
-
+  useGetStatesQuery,
+  useGetCountriesQuery,
+  useGetIsdQuery,
 } = customerApi;

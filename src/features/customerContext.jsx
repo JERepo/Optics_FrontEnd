@@ -8,14 +8,22 @@ export const CustomerProvider = ({ children }) => {
   const [formData, setFormData] = useState({
     location: "",
     name: "",
+    legalName: "",
     customerType: "B2C",
+    GSTINType: "0",
+    GSTNumber: "",
+    PANNumber: "",
     customerGroup: "",
-    countryCode: "+91",
+    countryCode: "",
     telPhone: "",
     phone: "",
     email: "",
     sendAlert: false,
     sendPhoneAlert: false,
+    customerUniqueId: "",
+    BrandName: "",
+    whatsAppGroupId: "",
+    whatsappAlert: false,
   });
 
   const constructPayload = (
@@ -36,43 +44,55 @@ export const CustomerProvider = ({ children }) => {
     companyId,
     locationById
   ) => {
-    const finalPatientDetails = [
-      {
-        name: formData.name || null,
-        mobile: formData.phone || null,
-        tel: formData.telPhone || null,
-        email: formData.email || null,
-        dob: null,
-        engraving: "",
-        anniversary: null,
-        MobAlert: formData.sendPhoneAlert ? 1 : 0,
-      },
-      ...patientDetails.map((patient) => ({
-        name: patient.name || null,
-        mobile: patient.mobile || null,
-        tel: patient.tel || null,
-        email: patient.email || null,
-        dob: patient.dob || null,
-        engraving: patient.engraving || null,
-        anniversary: patient.anniversary || null,
-        MobAlert: patient.MobAlert || 0,
-      })),
-    ];
+    const finalPatientDetails =
+      formData.customerType === "B2B"
+        ? patientDetails.map((patient) => ({
+            name: patient.name || null,
+            mobile: patient.mobile || null,
+            tel: patient.tel || null,
+            email: patient.email || null,
+            dob: patient.dob || null,
+            engraving: patient.engraving || null,
+            anniversary: patient.anniversary || null,
+            MobAlert: patient.MobAlert || 0,
+          }))
+        : [
+            {
+              name: formData.name || null,
+              mobile: formData.phone || null,
+              tel: formData.telPhone || null,
+              email: formData.email || null,
+              dob: null,
+              engraving: "",
+              anniversary: null,
+              MobAlert: formData.sendPhoneAlert ? 1 : 0,
+            },
+            ...patientDetails.map((patient) => ({
+              name: patient.name || null,
+              mobile: patient.mobile || null,
+              tel: patient.tel || null,
+              email: patient.email || null,
+              dob: patient.dob || null,
+              engraving: patient.engraving || null,
+              anniversary: patient.anniversary || null,
+              MobAlert: patient.MobAlert || 0,
+            })),
+          ];
 
     return {
       CustomerCode: null,
-      CustomerName: formData.name,
-      CustomerUID: null,
-      CustomerBrand: null,
+      CustomerName: formData.name ? formData.name : formData.legalName,
+      CustomerUID: formData.customerUniqueId,
+      CustomerBrand: formData.BrandName,
       CustomerGroupID: formData.customerGroup,
       Email: formData.email,
       EmailAlert: formData.sendAlert ? 1 : 0,
-      MobileISDCode: "+91",
+      MobileISDCode: formData.countryCode,
       MobNumber: formData.phone,
       MobAlert: formData.sendPhoneAlert ? 1 : 0,
       TelNumber: formData.telPhone,
-      WAGroupID: 0,
-      WAGroupAlert: 0,
+      WAGroupID: formData.whatsAppGroupId,
+      WAGroupAlert: formData.whatsappAlert ? 1 : 0,
       BillAddress1: billingAddress.line1,
       BillAddress2: billingAddress.line2,
       BillLandmark: billingAddress.landmark,
@@ -88,9 +108,10 @@ export const CustomerProvider = ({ children }) => {
       ShipCity: shippingAddress.city || null,
       ShipStateID: shippingAddress.state,
       ShipCountryID: shippingAddress.country,
-      PANNumber: null,
-      TAXRegisteration: formData.customerType === "B2C" ? 0 : 1,
-      TAXNo: null,
+      PANNumber: formData.PANNumber,
+      TAXRegisteration:
+        formData.customerType === "B2C" ? 0 : formData.GSTINType == 0 ? 1 : 0,
+      TAXNo: formData.GSTNumber,
       BillingMethod: billingMethod,
       FittingPrice: fittingType,
       LoyaltyEnrollment: enableLoyalty,

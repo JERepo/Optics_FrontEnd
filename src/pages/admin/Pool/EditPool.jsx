@@ -19,7 +19,7 @@ const EditPool = () => {
   const { id } = useParams();
   const location = useLocation();
 
-  const access = useSelector((state) => state.auth.access);
+  const {access,user} = useSelector((state) => state.auth);
   const [poolName, setPoolName] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const { data: allPool } = useGetAllPoolQuery();
@@ -48,15 +48,13 @@ const EditPool = () => {
   }, [id, data, isSuccess]);
 
   const handleSubmit = async (e) => {
-    console.log(poolName, selectedCategoryId);
+
     e.preventDefault();
     if (!poolName || selectedCategoryId === null) {
       toast.error("Please fill all fields!");
       return;
     }
-    const userPool = allPool.data.find((p) => p.ApplicationUserID);
-    const ApplicationUserId = userPool?.ApplicationUserID || null;
-    const poolId = ApplicationUserId;
+    
     const payload = {
       PoolName: poolName,
       PoolCategory: selectedCategoryId,
@@ -70,7 +68,7 @@ const EditPool = () => {
         toast.success("Pool updated successfully");
       } else {
         await createPool({
-          id: ApplicationUserId,
+          id: user.Id,
           payload,
         }).unwrap();
         toast.success("Pool created successfully");

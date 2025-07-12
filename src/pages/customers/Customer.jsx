@@ -1,26 +1,29 @@
 import React, { useEffect, useState } from "react";
-import CustomerForm from "./CustomerForm";
-import PatientDetails from "./PatientDetails";
-import BillingAddress from "./BillingAddress";
-
-import { Table, TableCell, TableRow } from "../../components/Table";
 import { FiEye, FiEdit2, FiCopy } from "react-icons/fi";
-import { useGetAllRimTypeQuery } from "../../api/materialMaster";
+import { useSelector } from "react-redux";
+import { toast } from "react-hot-toast";
+import { useCustomerContext } from "../../features/customerContext";
 import {
   useCreateCustomerMutation,
   useGetAllIndicesQuery,
   useGetCompanyIdQuery,
+  useGetCountriesQuery,
+  useGetIsdQuery,
+  useGetStatesQuery,
 } from "../../api/customerApi";
-import { useCustomerContext } from "../../features/customerContext";
-import Button from "../../components/ui/Button";
 import { useGetAllCustomerGroupsQuery } from "../../api/customerGroup";
 import {
   useGetAllLocationsQuery,
   useGetLocationByIdQuery,
 } from "../../api/roleManagementApi";
-import { useSelector } from "react-redux";
-import { toast } from "react-hot-toast";
+import { useGetAllRimTypeQuery } from "../../api/materialMaster";
+import CustomerForm from "./CustomerForm";
+import PatientDetails from "./PatientDetails";
+import BillingAddress from "./BillingAddress";
+import { Table, TableCell, TableRow } from "../../components/Table";
+import Button from "../../components/ui/Button";
 
+// Validation functions
 const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 const validatePhone = (phone, countryCode) =>
   countryCode === "+91" ? /^\d{10}$/.test(phone) : phone.length >= 10;
@@ -32,51 +35,23 @@ const validateDate = (date) => {
 const validatePincode = (pincode) => /^\d{6}$/.test(pincode);
 
 const Customer = () => {
+  // State and context
   const { formData, setFormData, constructPayload } = useCustomerContext();
+  const { hasMultipleLocations, user } = useSelector((state) => state.auth);
+
+  // Local state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
-  const [patientDetails, setpatientDetailsData] = useState([]);
-  const { hasMultipleLocations } = useSelector((state) => state.auth);
-  const { data: customerGroups } = useGetAllCustomerGroupsQuery();
-  const { data: allLocations } = useGetAllLocationsQuery();
-  const [createCustomer, { isLoading: isCreating }] =
-    useCreateCustomerMutation();
-  useEffect(() => {
-    const locations = Array.isArray(hasMultipleLocations)
-      ? hasMultipleLocations
-      : hasMultipleLocations !== undefined && hasMultipleLocations !== null
-      ? [hasMultipleLocations]
-      : [];
-
-    if (locations.length === 1 && !formData.location) {
-      setFormData((prev) => ({
-        ...prev,
-        location: locations[0],
-      }));
-    }
-  }, [hasMultipleLocations, formData.location, setFormData]);
-
-  // Fetch location data only if locationId is available
-  const { data: locationById } = useGetLocationByIdQuery(
-    { id: formData?.location },
-    { skip: !formData.location }
-  );
-
-  const companyId = locationById?.data?.data.Id;
-  const companyType = locationById?.data.data.CompanyType;
-
-  const { data: companySettings } = useGetCompanyIdQuery(
-    { id: companyId },
-    {
-      skip: !companyId,
-    }
-  );
-
-  console.log("location details", locationById);
-  console.log("companySettings", companySettings);
-
+  const [patientDetails, setPatientDetailsData] = useState([]);
   const [errors, setErrors] = useState({});
+  const [fittingType, setFittingType] = useState(0);
+  const [enableLoyalty, setEnableLoyalty] = useState(0);
+  const [billingMethod, setBillingMethod] = useState(0);
+  const [enableCreditBilling, setEnableCreditBilling] = useState(0);
+  const [creditBalanceType, setCreditBalanceType] = useState("Dr");
+  const [useDifferentShipping, setUseDifferentShipping] = useState(false);
 
+  // Address states
   const [billingAddress, setBillingAddress] = useState({
     line1: "",
     line2: "",
@@ -97,19 +72,83 @@ const Customer = () => {
     state: "",
   });
 
-  const [useDifferentShipping, setUseDifferentShipping] = useState(false);
+  const [creditDetails, setCreditDetails] = useState({
+    openingBalance: 0,
+    creditLimit: 0,
+    creditDays: 0,
+    paymentTerms: "",
+  });
 
+  // API Queries
+  const { data: customerGroups } = useGetAllCustomerGroupsQuery();
+  const { data: allLocations } = useGetAllLocationsQuery();
+  const { data: allCountries } = useGetCountriesQuery();
+  const { data: allStates } = useGetStatesQuery();
   const { data: rimData } = useGetAllRimTypeQuery();
   const { data: indexData } = useGetAllIndicesQuery();
+  const [createCustomer, { isLoading: isCreating }] =
+    useCreateCustomerMutation();
 
+  // Location data
+  const { data: locationById } = useGetLocationByIdQuery(
+    { id: formData?.location },
+    { skip: !formData.location }
+  );
+  const companyType = locationById?.data?.data.CompanyType;
+
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      customerType: companyType === 0 ? "B2B" : "B2C",
+    }));
+  }, [locationById, companyType]);
+  const companyId = locationById?.data?.data.Id;
+  const countrId = locationById?.data?.data.BillingCountryCode;
+  const { data: countryIsd } = useGetIsdQuery(
+    { id: countrId },
+    { skip: !countrId }
+  );
+
+  const { data: companySettings } = useGetCompanyIdQuery(
+    { id: companyId },
+    { skip: !companyId }
+  );
+  const CustomerPoolID = companySettings?.data?.data.CustomerPoolID;
+  // Derived data
   const rimTypes = rimData?.data?.filter((r) => r.IsActive === 1) || [];
   const indices = indexData?.data?.data || [];
 
-  const [fittingType, setFittingType] = useState(0);
+  // Initialize fitting prices
+  const [fittingPrices, setFittingPrices] = useState(() => {
+    const initialPrices = { singleVision: {}, others: {} };
+    rimTypes.forEach((rim) => {
+      initialPrices.singleVision[rim.Id] = {};
+      initialPrices.others[rim.Id] = {};
+      indices.forEach((index) => {
+        initialPrices.singleVision[rim.Id][index.Id] = 0;
+        initialPrices.others[rim.Id][index.Id] = 0;
+      });
+    });
+    return initialPrices;
+  });
 
-  const [enableLoyalty, setEnableLoyalty] = useState(0); // 0 = disabled, 1 = enabled
-  const [billingMethod, setBillingMethod] = useState(0); // 0 = disabled, 1 = enabled
+  // Set default location if only one exists
+  useEffect(() => {
+    const locations = Array.isArray(hasMultipleLocations)
+      ? hasMultipleLocations
+      : hasMultipleLocations !== undefined && hasMultipleLocations !== null
+      ? [hasMultipleLocations]
+      : [];
 
+    if (locations.length === 1 && !formData.location) {
+      setFormData((prev) => ({
+        ...prev,
+        location: locations[0],
+      }));
+    }
+  }, [hasMultipleLocations, formData.location, setFormData]);
+
+  // Handlers
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => {
@@ -137,15 +176,6 @@ const Customer = () => {
     });
   };
 
-  const [enableCreditBilling, setEnableCreditBilling] = useState(0); // 0 = No, 1 = Yes
-  const [creditBalanceType, setCreditBalanceType] = useState("Dr"); // Dr or Cr
-  const [creditDetails, setCreditDetails] = useState({
-    openingBalance: 0,
-    creditLimit: 0,
-    creditDays: 0,
-    paymentTerms: "",
-  });
-
   const handleCreditDetailChange = (e) => {
     const { name, value } = e.target;
     setCreditDetails((prev) => {
@@ -165,7 +195,7 @@ const Customer = () => {
   };
 
   const handleAddDetail = (detail) => {
-    setpatientDetailsData((prev) =>
+    setPatientDetailsData((prev) =>
       editingIndex !== null
         ? prev.map((item, i) => (i === editingIndex ? detail : item))
         : [...prev, detail]
@@ -179,21 +209,8 @@ const Customer = () => {
     setIsModalOpen(false);
   };
 
-  const [fittingPrices, setFittingPrices] = useState(() => {
-    const initialPrices = { singleVision: {}, others: {} };
-    rimTypes.forEach((rim) => {
-      initialPrices.singleVision[rim.Id] = {};
-      initialPrices.others[rim.Id] = {};
-      indices.forEach((index) => {
-        initialPrices.singleVision[rim.Id][index.Id] = 0;
-        initialPrices.others[rim.Id][index.Id] = 0;
-      });
-    });
-    return initialPrices;
-  });
-
   const handlePriceChange = (focality, rimId, indexId, value) => {
-    if (value < 0) return; // Prevent negative prices
+    if (value < 0) return;
     setFittingPrices((prev) => ({
       ...prev,
       [focality]: {
@@ -205,14 +222,47 @@ const Customer = () => {
       },
     }));
   };
+
+  const handleCopyPrices = () => {
+    setFittingPrices((prev) => ({
+      ...prev,
+      others: JSON.parse(JSON.stringify(prev.singleVision)),
+    }));
+  };
+
   const validateAll = () => {
     const newErrors = {};
-
-    if (!formData.name || formData.name.length < 2) {
-      newErrors.name = "Name is required and must be at least 2 characters";
-    } else if (formData.name.length > 100) {
-      newErrors.name = "Name cannot exceed 100 characters";
+    if (formData.customerType === "B2C") {
+      if (!formData.name || formData.name.trim().length < 2) {
+        newErrors.name = "Name is required and must be at least 2 characters";
+      } else if (formData.name.length > 100) {
+        newErrors.name = "Name cannot exceed 100 characters";
+      }
     }
+
+    if (formData.customerType === "B2B") {
+      if (!formData.legalName || formData.legalName.trim().length === 0) {
+        newErrors.legalName = "Legal name is required";
+      } else if (formData.legalName.length > 100) {
+        newErrors.legalName = "Legal name cannot exceed 100 characters";
+      }
+    }
+
+    if (formData.customerType === "B2B" && formData.GSTINType == 0) {
+      if (!formData.GSTNumber) {
+        newErrors.GSTNumber = "GSTIN number is required for B2B customers";
+      } else if (formData.GSTNumber.length !== 15) {
+        newErrors.GSTNumber = "GSTIN number should be 15 characters long";
+      }
+    }
+    if (formData.customerType === "B2B") {
+      if (!formData.PANNumber) {
+        newErrors.PANNumber = "PANNumber is required for B2B customers";
+      } else if (formData.PANNumber.length !== 10) {
+        newErrors.PANNumber = "PANNumber should be 10 characters long";
+      }
+    }
+
     if (formData.email.length > 150) {
       newErrors.email = "Email cannot exceed 150 characters";
     }
@@ -227,23 +277,27 @@ const Customer = () => {
     ) {
       newErrors.phone = "Valid phone number is required (10 digits for +91)";
     }
+
     if (!formData.customerType) {
       newErrors.customerType = "Customer type is required";
     }
+
     if (customerGroups?.data?.data.length && !formData.customerGroup) {
       newErrors.customerGroup = "Customer group is required";
     }
-    // BillingAddress validations
+
+    // Billing address validations
     if (billingAddress.line1.length > 150) {
       newErrors.billingaddressLine1 =
         "Billing address line 1 cannot exceed 150 characters";
     }
+
     if (billingAddress.city.length > 100) {
       newErrors.billingaddressCity =
         "Billing city cannot exceed 100 characters";
     }
 
-    // ShippingAddress validations (if different shipping)
+    // Shipping address validations
     if (useDifferentShipping) {
       if (!shippingAddress.line1) {
         newErrors.shippingaddressLine1 = "Shipping address line 1 is required";
@@ -251,96 +305,127 @@ const Customer = () => {
         newErrors.shippingaddressLine1 =
           "Shipping address line 1 cannot exceed 150 characters";
       }
+
       if (shippingAddress.line2.length > 150) {
         newErrors.shippingaddressLine2 =
           "Shipping address line 2 cannot exceed 150 characters";
       }
+
       if (shippingAddress.landmark.length > 150) {
         newErrors.shippingaddressCity =
           "Shipping landmark cannot exceed 150 characters";
       }
+
       if (!shippingAddress.city) {
         newErrors.shippingaddressCity = "Shipping city is required";
       }
+
       if (
         !shippingAddress.pincode ||
         !validatePincode(shippingAddress.pincode)
       ) {
         newErrors.shippingaddressPincode = "Valid 6-digit pincode is required";
       }
+
       if (!shippingAddress.country) {
         newErrors.shippingaddressCountry = "Shipping country is required";
       }
+
       if (!shippingAddress.state) {
         newErrors.shippingaddressState = "Shipping state is required";
       }
     }
-    // CreditDetails validations (if enabled)
+
+    // Credit details validations
     if (enableCreditBilling === 1) {
-      if (creditDetails.openingBalance < 0) {
-        newErrors.openingBalance = "Opening balance cannot be negative";
+      if (
+        creditDetails.openingBalance === undefined ||
+        creditDetails.openingBalance === null ||
+        creditDetails.openingBalance < 0
+      ) {
+        newErrors.openingBalance =
+          "Opening balance is required and cannot be negative";
       }
-      if (creditDetails.creditLimit < 0) {
-        newErrors.creditLimit = "Credit limit cannot be negative";
+
+      if (
+        creditDetails.creditLimit === undefined ||
+        creditDetails.creditLimit === null ||
+        creditDetails.creditLimit < 0
+      ) {
+        newErrors.creditLimit =
+          "Credit limit is required and cannot be negative";
       }
-      if (creditDetails.creditDays < 0) {
-        newErrors.creditDays = "Credit days cannot be negative";
+
+      if (
+        creditDetails.creditDays === undefined ||
+        creditDetails.creditDays === null ||
+        creditDetails.creditDays < 0
+      ) {
+        newErrors.creditDays =
+          "Credit days are required and cannot be negative";
       }
+
       if (
         !creditDetails.paymentTerms ||
-        creditDetails.paymentTerms.length < 5
+        creditDetails.paymentTerms.trim().length < 5
       ) {
         newErrors.paymentTerms =
           "Payment terms are required and must be at least 5 characters";
       }
+
+      if (!creditBalanceType) {
+        newErrors.creditBalanceType = "Balance type (Dr/Cr) is required";
+      }
+    }
+
+    if (
+      formData.customerType === "B2B" &&
+      companyType === 1 &&
+      patientDetails.length === 0
+    ) {
+      newErrors.patientDetails =
+        "At least one patient detail is required for B2B customers";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleCopyPrices = () => {
-    setFittingPrices((prev) => ({
-      ...prev,
-      others: JSON.parse(JSON.stringify(prev.singleVision)),
-    }));
-  };
-
   const handleSave = async () => {
-    if (validateAll()) {
-      const payload = constructPayload(
-        formData,
-        patientDetails,
-        billingAddress,
-        shippingAddress,
-        useDifferentShipping,
-        fittingType,
-        fittingPrices,
-        enableLoyalty,
-        billingMethod,
-        enableCreditBilling,
-        creditDetails,
-        creditBalanceType,
-        rimTypes,
-        indices,
-        companyId,
-        locationById
-      );
-      console.log("Saving form data:", payload);
-
-      // try {
-      //   await createCustomer({
-      //     id: locationById?.data?.data.ApplicationUserID,
-      //     payload: payload,
-      //   });
-      //   toast.success("Form data saved successfully!");
-      // } catch (error) {
-      //   console.log(error);
-      //   toast.error("Customer creation failed");
-      // }
-    } else {
+    if (!validateAll()) {
       toast.error("Please fix the validation errors before saving.");
+      return;
+    }
+
+    const payload = constructPayload(
+      formData,
+      patientDetails,
+      billingAddress,
+      shippingAddress,
+      useDifferentShipping,
+      fittingType,
+      fittingPrices,
+      enableLoyalty,
+      billingMethod,
+      enableCreditBilling,
+      creditDetails,
+      creditBalanceType,
+      rimTypes,
+      indices,
+      companyId,
+      locationById
+    );
+    try {
+      await createCustomer({
+        id: user.Id,
+        payload: payload,
+      });
+      toast.success("Form data saved successfully!");
+    } catch (error) {
+      console.error(error);
+      toast.error("Customer creation failed");
     }
   };
+
   const renderFittingTable = (
     focalityLabel,
     focalityKey,
@@ -393,7 +478,7 @@ const Customer = () => {
                       type="number"
                       className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       value={
-                        fittingPrices[focalityKey]?.[rim.Id]?.[index.Id] || ""
+                        fittingPrices[focalityKey]?.[rim.Id]?.[index.Id] ?? 0
                       }
                       onChange={(e) =>
                         handlePriceChange(
@@ -415,15 +500,17 @@ const Customer = () => {
       </div>
     </div>
   );
+
   return (
     <div className="max-w-6xl p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">
         Customer Information
       </h2>
+
       {Array.isArray(hasMultipleLocations) &&
         hasMultipleLocations.length > 1 && (
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 ">
+            <label className="block text-sm font-medium text-gray-700">
               Select Location
             </label>
             <select
@@ -443,363 +530,377 @@ const Customer = () => {
             </select>
           </div>
         )}
+      {locationById?.data && (
+        <div>
+          <CustomerForm
+            formData={formData}
+            handleChange={handleChange}
+            locations={allLocations}
+            customerGroups={customerGroups}
+            hasMultipleLocations={hasMultipleLocations}
+            countryCodes={allCountries?.country}
+            errors={errors}
+            countryIsd={countryIsd}
+            setFormData={setFormData}
+            setErrors={setErrors}
+            companyType={locationById?.data}
+          />
 
+          {/* Patient Details Section */}
+          <div className="mt-8">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-lg font-semibold">
+                {companyType === 0
+                  ? "Other Contact details"
+                  : "Patient Details"}
+              </h2>
+              <Button onClick={() => setIsModalOpen(true)}>Add Details</Button>
+            </div>
 
-     {companyType === 0 && <div>
-        <CustomerForm
-          formData={formData}
-          handleChange={handleChange}
-          locations={allLocations}
-          customerGroups={customerGroups}
-          hasMultipleLocations={hasMultipleLocations}
-          countryCodes={[
-            "+1 (US)",
-            "+44 (UK)",
-            "+91 (IN)",
-            "+86 (CN)",
-            "+81 (JP)",
-          ]}
-          errors={errors}
-        />
-
-        {/* Personal Details Section */}
-        <div className="mt-8">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="text-lg font-semibold">Patient Details</h2>
-            <Button onClick={() => setIsModalOpen(true)}>Add Details</Button>
+            <Table
+              columns={[
+                "S.No",
+                "Name",
+                "Mobile No",
+                "Tel No",
+                "Email Id",
+                "DOB",
+                "Engraving",
+                "Annivarsary",
+                "Action",
+              ]}
+              data={patientDetails}
+              renderRow={(detail, index) => (
+                <TableRow key={index}>
+                  <TableCell>{index + 1}</TableCell>
+                  <TableCell>{detail.name}</TableCell>
+                  <TableCell>{detail.mobile}</TableCell>
+                  <TableCell>{detail.tel}</TableCell>
+                  <TableCell>{detail.email}</TableCell>
+                  <TableCell>{detail.dob}</TableCell>
+                  <TableCell>{detail.engraving}</TableCell>
+                  <TableCell>{detail.anniversary}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <FiEye className="text-xl cursor-pointer" />
+                      <button
+                        className="text-neutral-600 hover:text-primary"
+                        aria-label="Edit"
+                        onClick={() => {
+                          setEditingIndex(index);
+                          setIsModalOpen(true);
+                        }}
+                      >
+                        <FiEdit2 size={18} />
+                      </button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            />
           </div>
 
-          <Table
-            columns={[
-              "S.No",
-              "Name",
-              "Mobile No",
-              "Tel No",
-              "Email Id",
-              "DOB",
-              "Engraving",
-              "Annivarsary",
-              "Action",
-            ]}
-            data={patientDetails}
-            renderRow={(detail, index) => (
-              <TableRow key={index}>
-                <TableCell>{index + 1}</TableCell>
-                <TableCell>{detail.name}</TableCell>
-                <TableCell>{detail.mobile}</TableCell>
-                <TableCell>{detail.tel}</TableCell>
-                <TableCell>{detail.email}</TableCell>
-                <TableCell>{detail.dob}</TableCell>
-                <TableCell>{detail.engraving}</TableCell>
-                <TableCell>{detail.anniversary}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <FiEye className="text-xl cursor-pointer" />
-                    <button
-                      className="text-neutral-600 hover:text-primary"
-                      aria-label="Edit"
-                      onClick={() => {
-                        setEditingIndex(index);
-                        setIsModalOpen(true);
-                      }}
-                    >
-                      <FiEdit2 size={18} />
-                    </button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
+          <PatientDetails
+            isOpen={isModalOpen}
+            onClose={() => {
+              setIsModalOpen(false);
+              setEditingIndex(null);
+            }}
+            onSave={handleAddDetail}
+            initialData={
+              editingIndex !== null ? patientDetails[editingIndex] : null
+            }
+            validateEmail={validateEmail}
+            validateDate={validateDate}
+            validatePhone={validatePhone}
+            validatePincode={validatePincode}
+            countries={allCountries?.country}
+            countryIsd={countryIsd}
           />
-        </div>
+          {errors.patientDetails && (
+            <span className="error text-red-500">{errors.patientDetails}</span>
+          )}
+          {/* Billing Address */}
+          <BillingAddress
+            billing={billingAddress}
+            setBilling={setBillingAddress}
+            shipping={shippingAddress}
+            setShipping={setShippingAddress}
+            useDifferentShipping={useDifferentShipping}
+            setUseDifferentShipping={setUseDifferentShipping}
+            errors={errors}
+            setErrors={setErrors}
+            validatePincode={validatePincode}
+            countries={allCountries?.country}
+            states={allStates?.country}
+            countryIsd={countryIsd}
+            formData={formData}
+          />
 
-        <PatientDetails
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setEditingIndex(null);
-          }}
-          onSave={handleAddDetail}
-          initialData={
-            editingIndex !== null ? patientDetails[editingIndex] : null
-          }
-          validateEmail={validateEmail}
-          validateDate={validateDate}
-          validatePhone={validatePhone}
-          validatePincode={validatePincode}
-        />
+          {/* Fitting Price Section */}
+          <div className="mt-10">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-6">
+                Fitting Price Configuration
+              </h2>
 
-        {/* Billing Address */}
-        <BillingAddress
-          billing={billingAddress}
-          setBilling={setBillingAddress}
-          shipping={shippingAddress}
-          setShipping={setShippingAddress}
-          useDifferentShipping={useDifferentShipping}
-          setUseDifferentShipping={setUseDifferentShipping}
-          errors={errors}
-          setErrors={setErrors}
-          validatePincode={validatePincode}
-        />
+              <div className="flex gap-6 mb-8">
+                <label className="inline-flex items-center">
+                  <input
+                    type="radio"
+                    name="fittingType"
+                    value="0"
+                    checked={fittingType === 0}
+                    onChange={() => setFittingType(0)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  />
+                  <span className="ml-2 text-gray-700">Standard Price</span>
+                </label>
+                <label className="inline-flex items-center">
+                  <input
+                    type="radio"
+                    name="fittingType"
+                    value="1"
+                    checked={fittingType === 1}
+                    onChange={() => setFittingType(1)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    disabled={
+                      companySettings?.data.data.FittingChargesSales === 0
+                    }
+                  />
+                  <span className="ml-2 text-gray-700">Fixed Price</span>
+                </label>
+              </div>
 
-        {/* Fitting Price Section */}
-        <div className="mt-10">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6">
-              Fitting Price Configuration
+              {fittingType === 1 && (
+                <div className="space-y-6">
+                  {renderFittingTable("Single Vision", "singleVision")}
+                  {renderFittingTable("Other Focal Types", "others", true)}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Loyalty point */}
+          <div className="flex gap-2 items-center mt-5">
+            Enable Loyalty :
+            <div className="flex items-center gap-3">
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="loyalty"
+                  value="1"
+                  checked={enableLoyalty === 1}
+                  onChange={() => setEnableLoyalty(1)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                />
+                <span className="ml-2 text-gray-700">Enable</span>
+              </label>
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="loyalty"
+                  value="0"
+                  checked={enableLoyalty === 0}
+                  onChange={() => setEnableLoyalty(0)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                />
+                <span className="ml-2 text-gray-700">Disable</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Billing method */}
+          <div className="flex gap-2 items-center mt-5">
+            Billing Method:
+            <div className="flex items-center gap-3">
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="billingMethod"
+                  value="0"
+                  checked={billingMethod === 0}
+                  onChange={() => setBillingMethod(0)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                />
+                <span className="ml-2 text-gray-700">Invoice</span>
+              </label>
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="billingMethod"
+                  value="1"
+                  checked={billingMethod === 1}
+                  onChange={() => setBillingMethod(1)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  disabled={companySettings?.data.data.DCBilling === 0}
+                />
+                <span className="ml-2 text-gray-700">Direct challan(DC)</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Credit Billing */}
+          <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              Credit Billing
             </h2>
 
-            <div className="flex gap-6 mb-8">
-              <label className="inline-flex items-center">
-                <input
-                  type="radio"
-                  name="fittingType"
-                  value="0"
-                  checked={fittingType === 0}
-                  onChange={() => setFittingType(0)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                />
-                <span className="ml-2 text-gray-700">Standard Price</span>
-              </label>
-              <label className="inline-flex items-center">
-                <input
-                  type="radio"
-                  name="fittingType"
-                  value="1"
-                  checked={fittingType === 1}
-                  onChange={() => setFittingType(1)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  disabled={
-                    companySettings?.data.data.FittingChargesSales === 0
-                  }
-                />
-                <span className="ml-2 text-gray-700">Fixed Price</span>
-              </label>
+            <div className="flex gap-2 items-center mb-4">
+              <span className="text-gray-700">Enable Credit Billing:</span>
+              <div className="flex items-center gap-3 ml-4">
+                <label className="inline-flex items-center">
+                  <input
+                    type="radio"
+                    name="creditBilling"
+                    value="1"
+                    checked={enableCreditBilling === 1}
+                    onChange={() => setEnableCreditBilling(1)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    disabled={companySettings?.data.data.CreditBilling === 0}
+                  />
+                  <span className="ml-2 text-gray-700">Yes</span>
+                </label>
+                <label className="inline-flex items-center">
+                  <input
+                    type="radio"
+                    name="creditBilling"
+                    value="0"
+                    checked={enableCreditBilling === 0}
+                    onChange={() => setEnableCreditBilling(0)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  />
+                  <span className="ml-2 text-gray-700">No</span>
+                </label>
+              </div>
             </div>
 
-            {fittingType === 1 && (
-              <div className="space-y-6">
-                {renderFittingTable("Single Vision", "singleVision")}
-                {renderFittingTable("Other Focal Types", "others", true)}
+            {enableCreditBilling === 1 && (
+              <div className="space-y-4 mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Opening Balance*
+                    </label>
+                    <input
+                      type="number"
+                      name="openingBalance"
+                      value={creditDetails.openingBalance}
+                      onChange={handleCreditDetailChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      min="0"
+                    />
+                    {errors.openingBalance && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.openingBalance}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Balance Type
+                    </label>
+                    <div className="flex gap-4">
+                      <label className="inline-flex items-center">
+                        <input
+                          type="radio"
+                          name="creditBalanceType"
+                          value="Dr"
+                          checked={creditBalanceType === "Dr"}
+                          onChange={() => setCreditBalanceType("Dr")}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                        />
+                        <span className="ml-2 text-gray-700">Debit (Dr)</span>
+                      </label>
+                      <label className="inline-flex items-center">
+                        <input
+                          type="radio"
+                          name="creditBalanceType"
+                          value="Cr"
+                          checked={creditBalanceType === "Cr"}
+                          onChange={() => setCreditBalanceType("Cr")}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                        />
+                        <span className="ml-2 text-gray-700">Credit (Cr)</span>
+                      </label>
+                    </div>
+                    {errors.creditBalanceType && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.creditBalanceType}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Credit Limit*
+                    </label>
+                    <input
+                      type="number"
+                      name="creditLimit"
+                      value={creditDetails.creditLimit}
+                      onChange={handleCreditDetailChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      min="0"
+                    />
+                    {errors.creditLimit && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.creditLimit}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Credit Days*
+                    </label>
+                    <input
+                      type="number"
+                      name="creditDays"
+                      value={creditDetails.creditDays}
+                      onChange={handleCreditDetailChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      min="0"
+                    />
+                    {errors.creditDays && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.creditDays}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Payment Terms*
+                  </label>
+                  <textarea
+                    name="paymentTerms"
+                    value={creditDetails.paymentTerms}
+                    onChange={handleCreditDetailChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={3}
+                    placeholder="Enter payment terms and conditions"
+                  />
+                  {errors.paymentTerms && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.paymentTerms}
+                    </p>
+                  )}
+                </div>
               </div>
             )}
           </div>
-        </div>
 
-        {/* Loyalty point */}
-        <div className="flex gap-2 items-center mt-5">
-          Enable Loyalty :
-          <div className="flex items-center gap-3">
-            <label className="inline-flex items-center">
-              <input
-                type="radio"
-                name="loyalty"
-                value="1"
-                checked={enableLoyalty === 1}
-                onChange={() => setEnableLoyalty(1)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-              />
-              <span className="ml-2 text-gray-700">Enable</span>
-            </label>
-            <label className="inline-flex items-center">
-              <input
-                type="radio"
-                name="loyalty"
-                value="0"
-                checked={enableLoyalty === 0}
-                onChange={() => setEnableLoyalty(0)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-              />
-              <span className="ml-2 text-gray-700">Disable</span>
-            </label>
+          <div className="mt-8 flex justify-end">
+            <Button
+              onClick={handleSave}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm"
+            >
+              Save Customer Information
+            </Button>
           </div>
         </div>
-
-        {/* Billing method */}
-        <div className="flex gap-2 items-center mt-5">
-          Billing Method:
-          <div className="flex items-center gap-3">
-            <label className="inline-flex items-center">
-              <input
-                type="radio"
-                name="billingMethod"
-                value="0"
-                checked={billingMethod === 0}
-                onChange={() => setBillingMethod(0)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-              />
-              <span className="ml-2 text-gray-700">Invoice</span>
-            </label>
-            <label className="inline-flex items-center">
-              <input
-                type="radio"
-                name="billingMethod"
-                value="1"
-                checked={billingMethod === 1}
-                onChange={() => setBillingMethod(1)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                disabled={companySettings?.data.data.DCBilling === 0}
-              />
-              <span className="ml-2 text-gray-700">Direct challan(DC)</span>
-            </label>
-          </div>
-        </div>
-
-        {/* Credit Billing */}
-
-        <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            Credit Billing
-          </h2>
-
-          <div className="flex gap-2 items-center mb-4">
-            <span className="text-gray-700">Enable Credit Billing:</span>
-            <div className="flex items-center gap-3 ml-4">
-              <label className="inline-flex items-center">
-                <input
-                  type="radio"
-                  name="creditBilling"
-                  value="1"
-                  checked={enableCreditBilling === 1}
-                  onChange={() => setEnableCreditBilling(1)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  disabled={companySettings?.data.data.CreditBilling === 0}
-                />
-                <span className="ml-2 text-gray-700">Yes</span>
-              </label>
-              <label className="inline-flex items-center">
-                <input
-                  type="radio"
-                  name="creditBilling"
-                  value="0"
-                  checked={enableCreditBilling === 0}
-                  onChange={() => setEnableCreditBilling(0)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                />
-                <span className="ml-2 text-gray-700">No</span>
-              </label>
-            </div>
-          </div>
-
-          {enableCreditBilling === 1 && (
-            <div className="space-y-4 mt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Opening Balance
-                  </label>
-                  <input
-                    type="number"
-                    name="openingBalance"
-                    value={creditDetails.openingBalance}
-                    onChange={handleCreditDetailChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    min="0"
-                  />
-                  {errors.openingBalance && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.openingBalance}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Balance Type
-                  </label>
-                  <div className="flex gap-4">
-                    <label className="inline-flex items-center">
-                      <input
-                        type="radio"
-                        name="creditBalanceType"
-                        value="Dr"
-                        checked={creditBalanceType === "Dr"}
-                        onChange={() => setCreditBalanceType("Dr")}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                      />
-                      <span className="ml-2 text-gray-700">Debit (Dr)</span>
-                    </label>
-                    <label className="inline-flex items-center">
-                      <input
-                        type="radio"
-                        name="creditBalanceType"
-                        value="Cr"
-                        checked={creditBalanceType === "Cr"}
-                        onChange={() => setCreditBalanceType("Cr")}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                      />
-                      <span className="ml-2 text-gray-700">Credit (Cr)</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Credit Limit
-                  </label>
-                  <input
-                    type="number"
-                    name="creditLimit"
-                    value={creditDetails.creditLimit}
-                    onChange={handleCreditDetailChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    min="0"
-                  />
-                  {errors.creditLimit && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.creditLimit}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Credit Days
-                  </label>
-                  <input
-                    type="number"
-                    name="creditDays"
-                    value={creditDetails.creditDays}
-                    onChange={handleCreditDetailChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    min="0"
-                  />
-                  {errors.creditDays && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.creditDays}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Payment Terms
-                </label>
-                <textarea
-                  name="paymentTerms"
-                  value={creditDetails.paymentTerms}
-                  onChange={handleCreditDetailChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={3}
-                  placeholder="Enter payment terms and conditions"
-                />
-                {errors.paymentTerms && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.paymentTerms}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="mt-8 flex justify-end">
-          <Button
-            onClick={handleSave}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm"
-          >
-            Save Customer Information
-          </Button>
-        </div>
-      </div>}
+      )}
     </div>
   );
 };

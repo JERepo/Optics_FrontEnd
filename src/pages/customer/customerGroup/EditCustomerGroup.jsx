@@ -22,7 +22,8 @@ const EditCustomerGroup = () => {
   const [brandName, setBrandName] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");
 
-  const { hasMultipleLocations } = useSelector((state) => state.auth);
+
+  const { hasMultipleLocations,user } = useSelector((state) => state.auth);
 
   const {
     data: brandCategory,
@@ -55,8 +56,7 @@ const EditCustomerGroup = () => {
     if (brandName.length > 50) {
       toast.error("Cannot exceed more than 50 characters");
     }
-    const userBrand = allBrands.data.data.find((p) => p.ApplicationUserId);
-    const ApplicationUserId = userBrand?.ApplicationUserId || null;
+    
     const payload = {
       GroupName: brandName,
     };
@@ -70,7 +70,7 @@ const EditCustomerGroup = () => {
         toast.success("Group updated successfully");
       } else {
         await createBrandGroup({
-          id: ApplicationUserId,
+          id: user.Id,
           companyId: selectedLocation,
           payload,
         }).unwrap();

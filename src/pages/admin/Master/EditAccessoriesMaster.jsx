@@ -29,7 +29,7 @@ const EditFrameMaster = () => {
   const { id } = useParams();
   const location = useLocation();
   const isEnabled = location.pathname.includes("/view");
-  const { access } = useSelector((state) => state.auth);
+  const { access,user } = useSelector((state) => state.auth);
   const hasViewAccess = hasPermission(access, "Accessory Master", "view");
 
   const navigate = useNavigate();
@@ -188,7 +188,7 @@ const EditFrameMaster = () => {
     const { index } = confirmToggle;
     const variation = variationData[index];
     const variationId = variation?.id;
-    console.log(variation);
+
 
     if (!variationId) return;
 
@@ -220,15 +220,13 @@ const EditFrameMaster = () => {
   };
 
   const handleSubmit = async (formData) => {
-    console.log("save frame clicked:", formData);
+   
     if (variationData.length <= 0) {
       toast.error("Add atleast one variation");
       return;
     }
     const finalPayload = constructPayload(formData);
-    const appId = allAccess?.data.find(
-      (p) => p.ApplicationUserId
-    ).ApplicationUserId;
+   
 
     try {
       if (id) {
@@ -241,7 +239,7 @@ const EditFrameMaster = () => {
       } else {
         // Create new frame
         await createAccessoriesMaster({
-          id: appId,
+          id: user.Id,
           payload: finalPayload,
         }).unwrap();
         toast.success("Accessory created");

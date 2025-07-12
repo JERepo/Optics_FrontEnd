@@ -17,7 +17,7 @@ const EditBrandCategory = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation();
-  const access = useSelector((state) => state.auth.access);
+  const {access,user} = useSelector((state) => state.auth);
   const [brandName, setBrandName] = useState("");
 
   const {
@@ -50,10 +50,7 @@ const EditBrandCategory = () => {
       toast.error("Cannot exceed more than 50 characters");
       return;
     }
-    const userBrand = allBrands.data?.find((p) => p.ApplicationUserId);
-    const ApplicationUserId = userBrand?.ApplicationUserId || null;
-    console.log("application user id", userBrand);
-    const brandId = ApplicationUserId;
+    
     const payload = {
       BrandCategoryName: brandName,
     };
@@ -63,7 +60,7 @@ const EditBrandCategory = () => {
         toast.success("Brand updated successfully");
       } else {
         await createBrandCategory({
-          id: brandId,
+          id: user.Id,
           payload,
         }).unwrap();
         toast.success("Brand created successfully");

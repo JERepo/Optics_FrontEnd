@@ -11,12 +11,14 @@ import {
   useGetBrandGroupByIdQuery,
   useUpdateBrandGroupMutation,
 } from "../../../api/brandGroup";
+import { useSelector } from "react-redux";
 
 const EditBrandGroup = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation();
   const [brandName, setBrandName] = useState("");
+   const { user } = useSelector((state) => state.auth);
 
   const {
     data: brandCategory,
@@ -47,8 +49,7 @@ const EditBrandGroup = () => {
     if (brandName.length > 50) {
       toast.error("Cannot exceed more than 50 characters");
     }
-    const userBrand = allBrands.data.find((p) => p.ApplicationUserId);
-    const ApplicationUserId = userBrand?.ApplicationUserId || null;
+    
     const payload = {
       BrandGroupName: brandName,
     };
@@ -58,7 +59,7 @@ const EditBrandGroup = () => {
         toast.success("Group updated successfully");
       } else {
         await createBrandGroup({
-          id: ApplicationUserId,
+          id: user.Id,
           payload,
         }).unwrap();
         toast.success("Group created successfully");

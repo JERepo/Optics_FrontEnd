@@ -67,7 +67,6 @@ const CustomerGroup = () => {
   };
 
   const handleEdit = (poolId) => {
-    console.log("polid", poolId);
     navigate(`edit/${poolId}`);
   };
 

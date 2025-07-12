@@ -14,11 +14,13 @@ import {
 import { BRAND_CATEGORIES } from "../../../utils/constants/brands";
 import { useGetAllBrandGroupsQuery } from "../../../api/brandGroup";
 import { useGetAllBrandCatsQuery } from "../../../api/brandCategory";
+import { useSelector } from "react-redux";
 
 const EditBrands = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation();
+   const { user } = useSelector((state) => state.auth);
   const isEnabled = location.pathname.includes("/view");
 
   const [brandName, setBrandName] = useState("");
@@ -43,6 +45,7 @@ const EditBrands = () => {
   const { data: allBrands } = useGetAllBrandsQuery();
   const { data: allBrandGroups } = useGetAllBrandGroupsQuery();
   const { data: allBrandCats } = useGetAllBrandCatsQuery();
+
 
   useEffect(() => {
     if (id && isSuccess && brand?.data) {
@@ -83,9 +86,7 @@ const EditBrands = () => {
       return;
     }
 
-    const userBrand = allBrands?.data?.find((p) => p.ApplicationUserId);
-    const ApplicationUserId = userBrand?.ApplicationUserId || null;
-
+  
     const payload = {
       BrandName: brandName,
       BrandGroupID: selectedBrandGroup,
@@ -95,13 +96,13 @@ const EditBrands = () => {
       FrameActive: categoryToggles.FrameActive ? 1 : 0,
       OthersProductsActive: categoryToggles.OthersProductsActive ? 1 : 0,
     };
-    console.log(payload);
+ 
     try {
       if (id) {
         await updateBrands({ id, payload }).unwrap();
         toast.success("Group updated successfully");
       } else {
-        await createBrands({ id: ApplicationUserId, payload }).unwrap();
+        await createBrands({ id: user.Id, payload }).unwrap();
         toast.success("Group created successfully");
         setBrandName("");
         setSelectedBrandGroup("");

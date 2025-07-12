@@ -1,21 +1,25 @@
 import React, { useEffect, useState } from "react";
 import { useLazyGetPinCodeQuery } from "../../api/customerApi";
 
-// Assuming Loader is a custom component; replace with your actual Loader
-const Loader = () => <div>Loading...</div>; // Placeholder; replace with actual Loader component
+const Loader = () => <div>Loading...</div>; // Replace with actual loader if needed
 
-const countries = ["United States", "India", "United Kingdom", "Canada"];
-const statesByCountry = {
-  "United States": ["California", "Texas", "New York"],
-  India: ["Maharashtra", "Delhi", "Karnataka"],
-  "United Kingdom": ["England", "Scotland", "Wales"],
-  Canada: ["Ontario", "Quebec", "British Columbia"],
-};
-
-const AddressForm = ({ title, data, onChange, errors, onFetchLocation, isFetching }) => (
+const AddressForm = ({
+  title,
+  data,
+  onChange,
+  errors,
+  onFetchLocation,
+  isFetching,
+  countries,
+  states,
+  countryIsd,
+  formData,
+  disabledFields = {},
+}) => (
   <div className="p-6 border border-gray-200 rounded-lg mb-6 bg-white shadow-sm">
     <h3 className="text-lg font-semibold mb-4 text-gray-800">{title}</h3>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Address Line 1 */}
       <div className="space-y-1">
         <label className="block text-sm font-medium text-gray-700">
           Address Line 1*
@@ -33,6 +37,8 @@ const AddressForm = ({ title, data, onChange, errors, onFetchLocation, isFetchin
           </p>
         )}
       </div>
+
+      {/* Address Line 2 */}
       <div className="space-y-1">
         <label className="block text-sm font-medium text-gray-700">
           Address Line 2
@@ -45,6 +51,8 @@ const AddressForm = ({ title, data, onChange, errors, onFetchLocation, isFetchin
           className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
+
+      {/* Landmark */}
       <div className="space-y-1">
         <label className="block text-sm font-medium text-gray-700">
           Landmark
@@ -57,6 +65,8 @@ const AddressForm = ({ title, data, onChange, errors, onFetchLocation, isFetchin
           className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
+
+      {/* Pincode and Fetch */}
       <div className="space-y-1">
         <div className="flex items-end gap-2">
           <div className="flex-1">
@@ -86,6 +96,8 @@ const AddressForm = ({ title, data, onChange, errors, onFetchLocation, isFetchin
           </p>
         )}
       </div>
+
+      {/* City */}
       <div className="space-y-1">
         <label className="block text-sm font-medium text-gray-700">City*</label>
         <input
@@ -101,6 +113,8 @@ const AddressForm = ({ title, data, onChange, errors, onFetchLocation, isFetchin
           </p>
         )}
       </div>
+
+      {/* Country */}
       <div className="space-y-1">
         <label className="block text-sm font-medium text-gray-700">
           Country*
@@ -109,12 +123,13 @@ const AddressForm = ({ title, data, onChange, errors, onFetchLocation, isFetchin
           name="country"
           value={data.country || ""}
           onChange={onChange}
+          disabled={disabledFields.country}
           className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
           <option value="">Select Country</option>
-          {countries.map((country) => (
-            <option key={country} value={country}>
-              {country}
+          {countries?.map((country) => (
+            <option key={country.Id} value={country.Id}>
+              {country.CountryName}
             </option>
           ))}
         </select>
@@ -124,6 +139,8 @@ const AddressForm = ({ title, data, onChange, errors, onFetchLocation, isFetchin
           </p>
         )}
       </div>
+
+      {/* State */}
       <div className="space-y-1">
         <label className="block text-sm font-medium text-gray-700">
           State*
@@ -132,13 +149,15 @@ const AddressForm = ({ title, data, onChange, errors, onFetchLocation, isFetchin
           name="state"
           value={data.state || ""}
           onChange={onChange}
+          disabled={disabledFields.state || !data.country}
           className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          disabled={!data.country}
         >
           <option value="">Select State</option>
-          {(statesByCountry[data.country] || []).map((state) => (
-            <option key={state} value={state}>
-              {state}
+          {(
+            states?.filter((s) => s.CountryID === Number(data.country)) || []
+          ).map((state) => (
+            <option key={state.Id} value={state.Id}>
+              {state.StateName}
             </option>
           ))}
         </select>
@@ -161,97 +180,144 @@ const BillingAddress = ({
   setUseDifferentShipping,
   errors,
   setErrors,
-  validatePincode,
+  countries,
+  states,
+  countryIsd,
+  formData,
 }) => {
-  const [getPinCode, { isFetching }] = useLazyGetPinCodeQuery();
-  const [fetchingType, setFetchingType] = useState(null); // Tracks whether billing or shipping is fetching
+  const [getPinCode, { isFetching, isError }] = useLazyGetPinCodeQuery();
+  const [fetchingType, setFetchingType] = useState(null);
+  const validatePincode = (pincode) => /^\d{6}$/.test(pincode);
+
+  const clearErrors = (prefix, setErrors) => {
+    setErrors((prevErrors) => {
+      const newErrors = { ...prevErrors };
+      delete newErrors[`${prefix}City`];
+      delete newErrors[`${prefix}State`];
+      delete newErrors[`${prefix}Country`];
+      delete newErrors[`${prefix}Pincode`];
+      return newErrors;
+    });
+  };
 
   const handleChange = (e, isShipping = false) => {
     const { name, value } = e.target;
     const prefix = isShipping ? "shippingaddress" : "billingaddress";
-    if (isShipping) {
-      setShipping((prev) => {
-        const updatedShipping = { ...prev, [name]: value };
-        setErrors((prevErrors) => {
-          const newErrors = { ...prevErrors };
-          if (name === "line1" && value) delete newErrors[`${prefix}Line1`];
-          if (name === "city" && value) delete newErrors[`${prefix}City`];
-          if (name === "pincode" && validatePincode(value))
+
+    const updateFunc = isShipping ? setShipping : setBilling;
+
+    updateFunc((prev) => {
+      const updated = { ...prev, [name]: value };
+      setErrors((prevErrors) => {
+        const newErrors = { ...prevErrors };
+        if (name === "line1" && value) delete newErrors[`${prefix}Line1`];
+        if (name === "city" && value) delete newErrors[`${prefix}City`];
+        if (name === "pincode") {
+          if (validatePincode(value)) {
             delete newErrors[`${prefix}Pincode`];
-          if (name === "country" && value) delete newErrors[`${prefix}Country`];
-          if (name === "state" && value) delete newErrors[`${prefix}State`];
-          return newErrors;
-        });
-        return updatedShipping;
+          } else {
+            newErrors[`${prefix}Pincode`] = "Invalid pincode format.";
+          }
+        }
+
+        if (name === "country" && value) delete newErrors[`${prefix}Country`];
+        if (name === "state" && value) delete newErrors[`${prefix}State`];
+        return newErrors;
       });
-    } else {
-      setBilling((prev) => {
-        const updatedBilling = { ...prev, [name]: value };
-        setErrors((prevErrors) => {
-          const newErrors = { ...prevErrors };
-          if (name === "line1" && value) delete newErrors[`${prefix}Line1`];
-          if (name === "city" && value) delete newErrors[`${prefix}City`];
-          if (name === "pincode" && validatePincode(value))
-            delete newErrors[`${prefix}Pincode`];
-          if (name === "country" && value) delete newErrors[`${prefix}Country`];
-          if (name === "state" && value) delete newErrors[`${prefix}State`];
-          return newErrors;
-        });
-        return updatedBilling;
-      });
-    }
+      return updated;
+    });
   };
 
   const fetchLocationDetails = async (pincode, isShipping = false) => {
     if (!pincode) return;
-
     setFetchingType(isShipping ? "shipping" : "billing");
+
     try {
       const response = await getPinCode({ pincode }).unwrap();
-      console.log("Fetch Location Response:", response);
 
       if (response?.success && response.data.length > 0) {
         const location = response.data[0];
+
+        const matchedCountry = countries.find(
+          (c) =>
+            c.CountryName.toLowerCase() ===
+            location.CountryName?.trim().toLowerCase()
+        );
+
+        const matchedState = states.find(
+          (s) =>
+            s.StateName.toLowerCase() ===
+              location.StateName?.trim().toLowerCase() &&
+            s.CountryID === matchedCountry?.Id
+        );
+
         const updatedFields = {
           city: location.CityName || "",
-          state: location.StateName || "",
-          country: location.CountryName || "",
+          state: matchedState?.Id || "",
+          country: matchedCountry?.Id || "",
           pincode: location.PinCode || pincode,
         };
 
         if (isShipping) {
           setShipping((prev) => ({ ...prev, ...updatedFields }));
-          setErrors((prevErrors) => {
-            const prefix = "shippingaddress";
-            const newErrors = { ...prevErrors };
-            delete newErrors[`${prefix}City`];
-            delete newErrors[`${prefix}State`];
-            delete newErrors[`${prefix}Country`];
-            delete newErrors[`${prefix}Pincode`];
-            return newErrors;
-          });
+          clearErrors("shippingaddress", setErrors);
         } else {
           setBilling((prev) => ({ ...prev, ...updatedFields }));
-          setErrors((prevErrors) => {
-            const prefix = "billingaddress";
-            const newErrors = { ...prevErrors };
-            delete newErrors[`${prefix}City`];
-            delete newErrors[`${prefix}State`];
-            delete newErrors[`${prefix}Country`];
-            delete newErrors[`${prefix}Pincode`];
-            return newErrors;
-          });
+          clearErrors("billingaddress", setErrors);
         }
       } else {
-        alert("Location not found for this pincode.");
+        setErrors((prev) => ({
+          ...prev,
+          [`${isShipping ? "shippingaddress" : "billingaddress"}Pincode`]:
+            "Location not found for this pincode.",
+        }));
       }
     } catch (error) {
       console.error("Failed to fetch location:", error);
-      alert("Failed to fetch location.");
+      setErrors((prev) => ({
+        ...prev,
+        [`${isShipping ? "shippingaddress" : "billingaddress"}Pincode`]:
+          error?.data?.message || "Failed to fetch location.",
+      }));
     } finally {
       setFetchingType(null);
     }
   };
+
+  // Auto-fill and disable state/country for B2B
+  useEffect(() => {
+    if (formData.customerType === "B2B" && formData.GSTNumber?.length >= 2) {
+      const gstStateCode = parseInt(formData.GSTNumber.substring(0, 2), 10);
+      const matchedState = states.find((s) => s.StateCode == gstStateCode);
+
+      if (matchedState) {
+        const matchedCountry = countries.find(
+          (c) => c.Id === matchedState.CountryID
+        );
+
+        setBilling((prev) => ({
+          ...prev,
+          state: matchedState.Id,
+          country: matchedCountry?.Id || "",
+        }));
+
+        setShipping((prev) => ({
+          ...prev,
+          state: matchedState.Id,
+          country: matchedCountry?.Id || "",
+        }));
+
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors["billingaddressState"];
+          delete newErrors["billingaddressCountry"];
+          delete newErrors["shippingaddressState"];
+          delete newErrors["shippingaddressCountry"];
+          return newErrors;
+        });
+      }
+    }
+  }, [formData.customerType, formData.GSTNumber, states, countries]);
 
   return (
     <div className="p-6 bg-gray-50 rounded-xl mt-4">
@@ -266,7 +332,18 @@ const BillingAddress = ({
           errors={errors}
           onFetchLocation={() => fetchLocationDetails(billing.pincode, false)}
           isFetching={isFetching && fetchingType === "billing"}
+          countries={countries}
+          states={states}
+          countryIsd={countryIsd}
+          formData={formData}
+          disabledFields={
+            formData.customerType === "B2B" ||
+            (billing.state && billing.country)
+              ? { state: true, country: true }
+              : {}
+          }
         />
+
         <div className="flex items-center p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
           <input
             type="checkbox"
@@ -282,6 +359,7 @@ const BillingAddress = ({
             Use different shipping address
           </label>
         </div>
+
         {useDifferentShipping && (
           <AddressForm
             title="Shipping Address"
@@ -290,11 +368,21 @@ const BillingAddress = ({
             errors={errors}
             onFetchLocation={() => fetchLocationDetails(shipping.pincode, true)}
             isFetching={isFetching && fetchingType === "shipping"}
+            countries={countries}
+            states={states}
+            countryIsd={countryIsd}
+            formData={formData}
+            disabledFields={
+              formData.customerType === "B2B" ||
+              (billing.state && billing.country)
+                ? { state: true, country: true }
+                : {}
+            }
           />
         )}
       </div>
     </div>
   );
-}
+};
 
-export default BillingAddress
+export default BillingAddress;

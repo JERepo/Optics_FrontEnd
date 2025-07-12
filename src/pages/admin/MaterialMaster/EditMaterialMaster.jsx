@@ -10,6 +10,7 @@ import {
   useGetmaterialByIdQuery,
   useUpdatematerialMutation,
 } from "../../../api/materialMaster";
+import { useSelector } from "react-redux";
 
 const EditmaterialMaster = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const EditmaterialMaster = () => {
   const location = useLocation();
   const [brandName, setBrandName] = useState("");
   const [materialFor, setMaterialFor] = useState(null); // 0 for Frame, 1 for Contact Lens
+   const { user } = useSelector((state) => state.auth);
 
   const {
     data: brandCategory,
@@ -56,9 +58,7 @@ const EditmaterialMaster = () => {
       return;
     }
 
-    const userBrand = allBrands?.data?.find((p) => p.ApplicationUserId);
-    const ApplicationUserId = userBrand?.ApplicationUserId || null;
-
+   
     const payload = {
       MaterialName: brandName,
       MaterialFor: parseInt(materialFor), // Convert back to number
@@ -70,7 +70,7 @@ const EditmaterialMaster = () => {
         toast.success("Season updated successfully");
       } else {
         await createBrandGroup({
-          id: ApplicationUserId,
+          id: user.Id,
           payload,
         }).unwrap();
         toast.success("Season created successfully");

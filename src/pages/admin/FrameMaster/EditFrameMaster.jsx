@@ -33,7 +33,7 @@ const EditFrameMaster = () => {
   const { id } = useParams();
   const location = useLocation();
   const isEnabled = location.pathname.includes("/view");
-  const { access } = useSelector((state) => state.auth);
+  const { access,user } = useSelector((state) => state.auth);
   const { data: allBrands } = useGetAllBrandsQuery();
   const { data: allTax } = useGetTaxQuery();
   const { data: allMaterials } = useGetAllmaterialsQuery();
@@ -222,9 +222,7 @@ const EditFrameMaster = () => {
       return;
     }
     const finalPayload = constructPayload(formData);
-    const appId = allFrames?.data.find(
-      (p) => p.ApplicationUserId
-    )?.ApplicationUserId;
+   
 
     try {
       if (id) {
@@ -234,7 +232,7 @@ const EditFrameMaster = () => {
         }).unwrap();
         toast.success("Frame updated successfully");
       } else {
-        await createFrameMaster({ id: appId, payload: finalPayload }).unwrap();
+        await createFrameMaster({ id: user.Id, payload: finalPayload }).unwrap();
         toast.success("Frame created successfully");
       }
       navigate(-1);

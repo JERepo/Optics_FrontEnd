@@ -10,11 +10,13 @@ const PatientDetails = ({
   validateEmail,
   validateDate,
   validatePhone,
+  countries = [],
+  countryIsd,
 }) => {
   const [formState, setFormState] = useState({
     name: "",
-    MobileISDCode: "+91",
-    MobAlert: 1,
+    MobileISDCode: countryIsd?.country.ISDCode || "",
+    MobAlert: 0,
     mobile: "",
     tel: "",
     email: "",
@@ -22,6 +24,7 @@ const PatientDetails = ({
     engraving: "",
     anniversary: "",
   });
+
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -30,7 +33,7 @@ const PatientDetails = ({
     } else {
       setFormState({
         name: "",
-        MobileISDCode: "+91",
+        MobileISDCode: countryIsd?.country.ISDCode || "",
         MobAlert: 0,
         mobile: "",
         tel: "",
@@ -41,27 +44,24 @@ const PatientDetails = ({
       });
     }
     setErrors({});
-  }, [initialData, isOpen]);
+  }, [initialData, isOpen, countryIsd, countries]);
 
   const validateForm = (updatedFormState) => {
     const newErrors = {};
-    if (!updatedFormState.name || updatedFormState.name.length < 2) {
+
+    if (!updatedFormState.name || updatedFormState.name.trim().length < 2) {
       newErrors.name = "Name is required and must be at least 2 characters";
     } else if (updatedFormState.name.length > 150) {
       newErrors.name = "Name cannot exceed 150 characters";
     }
-    // if (updatedFormState.email && !validateEmail(updatedFormState.email)) {
-    //   newErrors.email = "Valid email is required if provided";
-    // }else if(updatedFormState.email.length > 150){
-    //   newErrors.email = "Email cannot exceed 150 characters"
-    // }
+
     if (
-      updatedFormState.mobile.length > 1 ||
+      updatedFormState.mobile &&
       !validatePhone(updatedFormState.mobile, updatedFormState.MobileISDCode)
     ) {
       newErrors.mobile = "Enter valid mobile number";
     }
-   
+
     return newErrors;
   };
 
@@ -74,34 +74,84 @@ const PatientDetails = ({
     });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const validationErrors = validateForm(formState);
-    if (Object.keys(validationErrors).length === 0) {
-      onSave(formState);
-      setFormState({
-        name: "",
-        MobileISDCode: "+91",
-        MobAlert: 0,
-        mobile: "",
-        tel: "",
-        email: "",
-        dob: "",
-        engraving: "",
-        anniversary: "",
-      });
-      setErrors({});
-    } else {
-      setErrors(validationErrors);
-    }
-  };
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Add Personal Details">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const validationErrors = validateForm(formState);
+          if (Object.keys(validationErrors).length === 0) {
+            onSave(formState);
+            setFormState({
+              name: "",
+              MobileISDCode: "",
+              MobAlert: 0,
+              mobile: "",
+              tel: "",
+              email: "",
+              dob: "",
+              engraving: "",
+              anniversary: "",
+            });
+            setErrors({});
+          } else {
+            setErrors(validationErrors);
+          }
+        }}
+        className="space-y-4"
+      >
+        {/* Name */}
+        <div className="flex flex-col">
+          <label htmlFor="name" className="text-sm font-medium text-gray-700">
+            Name <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="name"
+            value={formState.name}
+            onChange={handleChange}
+            className="mt-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-500"
+          />
+          {errors.name && (
+            <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+          )}
+        </div>
+
+        {/* Mobile with ISD Code */}
+        <div className="flex flex-col">
+          <label htmlFor="mobile" className="text-sm font-medium text-gray-700">
+            Mobile No
+          </label>
+          <div className="flex gap-2">
+            <select
+              name="MobileISDCode"
+              value={formState.MobileISDCode}
+              onChange={handleChange}
+              className="w-28 border border-gray-300 rounded px-3 py-2 bg-white focus:outline-none focus:ring focus:border-blue-500"
+            >
+              <option value="">Select Country Code</option>
+              {countries?.map((c) => (
+                <option key={c.Id} value={c.ISDCode}>
+                  {c.ISDCode}
+                </option>
+              ))}
+            </select>
+            <input
+              type="text"
+              name="mobile"
+              value={formState.mobile}
+              onChange={handleChange}
+              className="flex-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-500"
+              placeholder="Enter mobile number"
+            />
+          </div>
+          {errors.mobile && (
+            <p className="text-red-500 text-sm mt-1">{errors.mobile}</p>
+          )}
+        </div>
+
+        {/* Optional Fields */}
         {[
-          ["name", "Name"],
-          ["mobile", "Mobile No"],
           ["tel", "Tel No"],
           ["email", "Email Id"],
           ["dob", "DOB"],
@@ -109,10 +159,7 @@ const PatientDetails = ({
           ["anniversary", "Anniversary"],
         ].map(([field, label]) => (
           <div key={field} className="flex flex-col">
-            <label
-              htmlFor={field}
-              className="text-sm font-medium text-gray-700"
-            >
+            <label htmlFor={field} className="text-sm font-medium text-gray-700">
               {label}
             </label>
             <input
@@ -129,6 +176,7 @@ const PatientDetails = ({
             )}
           </div>
         ))}
+
         <div className="flex justify-end space-x-3 pt-4">
           <Button type="button" onClick={onClose} variant="secondary">
             Cancel

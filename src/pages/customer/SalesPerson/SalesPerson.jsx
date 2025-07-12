@@ -68,7 +68,6 @@ const SalesPerson = () => {
   };
 
   const handleEdit = (poolId) => {
-    console.log("polid", poolId);
     navigate(`edit/${poolId}`);
   };
 

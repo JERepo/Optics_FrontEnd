@@ -56,8 +56,6 @@ const UserManagement = () => {
     });
   }, [usersData, allRoles]);
 
-  console.log("users data", users);
-
   const roleOptions = useMemo(() => {
     return ["All Roles", ...(allRoles?.data?.map((r) => r.UserType) || [])];
   }, [allRoles]);

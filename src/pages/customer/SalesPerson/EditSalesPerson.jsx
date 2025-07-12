@@ -12,6 +12,7 @@ import {
 } from "../../../api/brandGroup";
 import { useGetAllLocationsQuery } from "../../../api/roleManagementApi";
 import Loader from "../../../components/ui/Loader";
+import { useSelector } from "react-redux";
 
 const SalesType = [
   { value: 0, label: "Sales Person" },
@@ -26,6 +27,7 @@ const EditSalesPerson = () => {
   const [brandName, setBrandName] = useState("");
   const [salesPersonType, setSelectPersonType] = useState("");
   const [selectedLocation, setSelectedLocations] = useState([]);
+   const { user } = useSelector((state) => state.auth);
 
   const {
     data: brandCategory,
@@ -83,22 +85,21 @@ const EditSalesPerson = () => {
       return;
     }
 
-    const userBrand = allBrands?.data?.find((p) => p.ApplicationUserId);
-    const ApplicationUserId = userBrand?.ApplicationUserId || null;
+   
     const payload = {
       SalesName: brandName,
       SalesType: salesPersonType,
       Locations: selectedLocation,
     };
 
-    console.log(payload);
+
     // try {
     //   if (id) {
     //     await updateBrandGroup({ id, payload }).unwrap();
     //     toast.success("Sales person updated successfully");
     //   } else {
     //     await createBrandGroup({
-    //       id: ApplicationUserId,
+    //       id: user.Id,
     //       payload,
     //     }).unwrap();
     //     toast.success("Sales person created successfully");

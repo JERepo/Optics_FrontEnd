@@ -11,12 +11,14 @@ import {
   useGetVariationsQuery,
   useUpdateVariationMutation,
 } from "../../../api/variations";
+import { useSelector } from "react-redux";
 
 const EditVariations = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation();
   const [brandName, setBrandName] = useState("");
+  const { user } = useSelector((state) => state.auth);
 
   const {
     data: variation,
@@ -49,9 +51,7 @@ const EditVariations = () => {
       toast.error("Cannot exceed more than 50 characters");
       return;
     }
-    const userBrand = allVariations.data?.find((p) => p.ApplicationUserId);
-    const ApplicationUserId = userBrand?.ApplicationUserId || null;
-    const brandId = ApplicationUserId;
+   
     const payload = {
       VariationName: brandName,
     };
@@ -61,7 +61,7 @@ const EditVariations = () => {
         toast.success("Variation updated successfully");
       } else {
         await createVariation({
-          id: brandId,
+          id: user.Id,
           payload,
         }).unwrap();
         toast.success("Variation created successfully");
