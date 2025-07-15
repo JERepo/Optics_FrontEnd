@@ -200,7 +200,7 @@ const EditBrands = () => {
         {/* Brand Category Dropdown */}
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
-            Brand
+            Brand Category
           </label>
           <select
             value={selectedBrandCat}

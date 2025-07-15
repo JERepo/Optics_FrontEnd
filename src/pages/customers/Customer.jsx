@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { FiEye, FiEdit2, FiCopy } from "react-icons/fi";
+import { FiEye, FiEdit2, FiCopy, FiTrash2, FiX } from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { toast } from "react-hot-toast";
 import { useCustomerContext } from "../../features/customerContext";
@@ -10,6 +10,7 @@ import {
   useGetCountriesQuery,
   useGetIsdQuery,
   useGetStatesQuery,
+  useGetAllCompanyLocationsQuery,
 } from "../../api/customerApi";
 import { useGetAllCustomerGroupsQuery } from "../../api/customerGroup";
 import {
@@ -22,6 +23,9 @@ import PatientDetails from "./PatientDetails";
 import BillingAddress from "./BillingAddress";
 import { Table, TableCell, TableRow } from "../../components/Table";
 import Button from "../../components/ui/Button";
+import { useNavigate } from "react-router";
+import { useVerifyGSTQuery } from "../../api/externalApi";
+import Modal from "../../components/ui/Modal";
 
 // Validation functions
 const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -35,8 +39,10 @@ const validateDate = (date) => {
 const validatePincode = (pincode) => /^\d{6}$/.test(pincode);
 
 const Customer = () => {
+  const navigate = useNavigate();
   // State and context
-  const { formData, setFormData, constructPayload } = useCustomerContext();
+  const { formData, setFormData, constructPayload, resetFormForCustomerType } =
+    useCustomerContext();
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
 
   // Local state
@@ -50,6 +56,10 @@ const Customer = () => {
   const [enableCreditBilling, setEnableCreditBilling] = useState(0);
   const [creditBalanceType, setCreditBalanceType] = useState("Dr");
   const [useDifferentShipping, setUseDifferentShipping] = useState(false);
+  const [isGstModalOpen, setIsGstModalOpen] = useState(false);
+  const [verifyGst, setVerifyGst] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(null);
+  const [filteredCustomerGroups, setFilteredCustomerGroups] = useState([]);
 
   // Address states
   const [billingAddress, setBillingAddress] = useState({
@@ -114,6 +124,48 @@ const Customer = () => {
     { skip: !companyId }
   );
   const CustomerPoolID = companySettings?.data?.data.CustomerPoolID;
+  const { data: allCustomerGroupIds } = useGetAllCompanyLocationsQuery();
+
+  useEffect(() => {
+    const exactDefaultId = allCustomerGroupIds?.data?.data.find(
+      (c) => c.CustomerPoolID === CustomerPoolID
+    );
+    const allMatching = allCustomerGroupIds?.data?.data.filter(
+      (c) => c.CustomerPoolID === CustomerPoolID
+    );
+
+    // Get an array of matching CompanyIDs
+    const matchingCompanyIds = allMatching?.map((item) => item.CompanyId);
+
+    // Filter customer groups by matching CompanyID
+    const filteredGroups = customerGroups?.data?.data.filter((group) =>
+      matchingCompanyIds?.includes(group.CompanyID)
+    );
+
+    if (filteredGroups) {
+      setFilteredCustomerGroups(filteredGroups);
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      customerGroup: exactDefaultId?.CustomerGroupDefault,
+    }));
+  }, [allCustomerGroupIds, CustomerPoolID]);
+
+  const {
+    data: GSTData,
+    isLoading: isVerifyGSTLoading,
+    error,
+    isError,
+  } = useVerifyGSTQuery(
+    {
+      clientId: companySettings?.data?.data.GSTSearchInstanceID,
+      gstNo: formData.GSTNumber,
+    },
+    {
+      skip: !(verifyGst && formData.GSTNumber.length === 15),
+    }
+  );
   // Derived data
   const rimTypes = rimData?.data?.filter((r) => r.IsActive === 1) || [];
   const indices = indexData?.data?.data || [];
@@ -149,6 +201,31 @@ const Customer = () => {
   }, [hasMultipleLocations, formData.location, setFormData]);
 
   // Handlers
+
+  const handleVerifyGST = () => {
+    if (companySettings?.data?.data?.GSTSerachEnable === 0) {
+      // setErrors((prev) => ({
+      //   ...prev,
+      //   GSTNumber:
+      //     "GST searching or verification is not enabled. Please contact the admin.",
+      // }));
+      toast.error("GST verification is disabled. Please contact the admin.");
+      return;
+    }
+    setVerifyGst(true);
+  };
+  useEffect(() => {
+    if (GSTData?.data) {
+      setVerifyGst(false); // reset after fetch
+      setIsGstModalOpen(true);
+      setSelectedIndex(null);
+    } else if (error || isError) {
+      setVerifyGst(false);
+      setIsGstModalOpen(true);
+      toast.error("The Entered GST Number is not valid");
+    }
+  }, [GSTData, error, isError]);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => {
@@ -195,16 +272,30 @@ const Customer = () => {
   };
 
   const handleAddDetail = (detail) => {
-    setPatientDetailsData((prev) =>
-      editingIndex !== null
-        ? prev.map((item, i) => (i === editingIndex ? detail : item))
-        : [...prev, detail]
-    );
+    // Handle deletion case
+    if (detail === null) {
+      setPatientDetailsData((prev) =>
+        prev.filter((_, i) => i !== editingIndex)
+      );
+    }
+    // Handle update or add new
+    else {
+      setPatientDetailsData((prev) =>
+        editingIndex !== null
+          ? prev.map((item, i) => (i === editingIndex ? detail : item))
+          : [...prev, detail]
+      );
+    }
+
+    // Clear patient details error if we have any entries now
     setErrors((prevErrors) => {
       const newErrors = { ...prevErrors };
-      if (patientDetails.length > 0) delete newErrors.patientDetails;
+      if (patientDetails.length > 0 || detail === null) {
+        delete newErrors.patientDetails;
+      }
       return newErrors;
     });
+
     setEditingIndex(null);
     setIsModalOpen(false);
   };
@@ -229,7 +320,13 @@ const Customer = () => {
       others: JSON.parse(JSON.stringify(prev.singleVision)),
     }));
   };
-
+  const handleDeleteDetail = (index) => {
+    if (
+      window.confirm("Are you sure you want to delete this patient detail?")
+    ) {
+      setPatientDetailsData((prev) => prev.filter((_, i) => i !== index));
+    }
+  };
   const validateAll = () => {
     const newErrors = {};
     if (formData.customerType === "B2C") {
@@ -270,7 +367,16 @@ const Customer = () => {
     if (formData.telPhone.length > 15) {
       newErrors.telPhone = "Telephone number cannot exceed 15 characters";
     }
+    if (formData.BrandName.length > 100) {
+      newErrors.BrandName = "Brand name cannot exceed 100 characters";
+    }
 
+    if (formData.customerUniqueId.length > 50) {
+      newErrors.customerUniqueId = "Unique Id cannot exceed 50 characters";
+    }
+    if (formData.whatsAppGroupId.length > 50) {
+      newErrors.whatsAppGroupId = "whatsAppGroupId cannot exceed 50 characters";
+    }
     if (
       !formData.phone ||
       !validatePhone(formData.phone, formData.countryCode)
@@ -287,14 +393,41 @@ const Customer = () => {
     }
 
     // Billing address validations
-    if (billingAddress.line1.length > 150) {
+
+    if (!billingAddress.line1) {
+      newErrors.billingaddressLine1 = "Billing Address 1 is required";
+    } else if (billingAddress.line1.length > 150) {
       newErrors.billingaddressLine1 =
-        "Billing address line 1 cannot exceed 150 characters";
+        "Billing Address 1 cannot exceed 150 characters";
     }
 
-    if (billingAddress.city.length > 100) {
+    if (billingAddress.line2?.length > 150) {
+      newErrors.billingaddressLine2 =
+        "Billing Address 2 cannot exceed 150 characters";
+    }
+
+    if (billingAddress.landmark?.length > 150) {
+      newErrors.billingaddressLandmark =
+        "Landmark cannot exceed 150 characters";
+    }
+
+    if (!billingAddress.city) {
+      newErrors.billingaddressCity = "Billing city is required";
+    } else if (billingAddress.city.length > 100) {
       newErrors.billingaddressCity =
         "Billing city cannot exceed 100 characters";
+    }
+
+    if (!billingAddress.pincode || !validatePincode(billingAddress.pincode)) {
+      newErrors.billingaddressPincode = "Valid 6-digit pincode is required";
+    }
+
+    if (!billingAddress.country) {
+      newErrors.billingaddressCountry = "Billing country is required";
+    }
+
+    if (!billingAddress.state) {
+      newErrors.billingaddressState = "Billing state is required";
     }
 
     // Shipping address validations
@@ -414,12 +547,14 @@ const Customer = () => {
       companyId,
       locationById
     );
+
     try {
       await createCustomer({
         id: user.Id,
         payload: payload,
-      });
+      }).unwrap();
       toast.success("Form data saved successfully!");
+      navigate(-1);
     } catch (error) {
       console.error(error);
       toast.error("Customer creation failed");
@@ -503,10 +638,14 @@ const Customer = () => {
 
   return (
     <div className="max-w-6xl p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">
-        Customer Information
-      </h2>
-
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">
+          Customer Information
+        </h2>
+        <Button className="" variant="outline" onClick={() => navigate(-1)}>
+          Back
+        </Button>
+      </div>
       {Array.isArray(hasMultipleLocations) &&
         hasMultipleLocations.length > 1 && (
           <div className="mb-4">
@@ -536,7 +675,8 @@ const Customer = () => {
             formData={formData}
             handleChange={handleChange}
             locations={allLocations}
-            customerGroups={customerGroups}
+            customerGroups={filteredCustomerGroups}
+            pooId={CustomerPoolID}
             hasMultipleLocations={hasMultipleLocations}
             countryCodes={allCountries?.country}
             errors={errors}
@@ -544,6 +684,8 @@ const Customer = () => {
             setFormData={setFormData}
             setErrors={setErrors}
             companyType={locationById?.data}
+            handleVerifyGST={handleVerifyGST}
+            isVerifyGSTLoading={isVerifyGSTLoading}
           />
 
           {/* Patient Details Section */}
@@ -562,11 +704,10 @@ const Customer = () => {
                 "S.No",
                 "Name",
                 "Mobile No",
-                "Tel No",
                 "Email Id",
-                "DOB",
-                "Engraving",
-                "Annivarsary",
+                ...(companyType === 1
+                  ? ["DOB", "Engraving", "Anniversary"]
+                  : []),
                 "Action",
               ]}
               data={patientDetails}
@@ -575,16 +716,24 @@ const Customer = () => {
                   <TableCell>{index + 1}</TableCell>
                   <TableCell>{detail.name}</TableCell>
                   <TableCell>{detail.mobile}</TableCell>
-                  <TableCell>{detail.tel}</TableCell>
                   <TableCell>{detail.email}</TableCell>
-                  <TableCell>{detail.dob}</TableCell>
-                  <TableCell>{detail.engraving}</TableCell>
-                  <TableCell>{detail.anniversary}</TableCell>
+
+                  {companyType === 1 && (
+                    <>
+                      <TableCell>{detail.dob}</TableCell>
+                      <TableCell>{detail.engraving}</TableCell>
+                      <TableCell>{detail.anniversary}</TableCell>
+                    </>
+                  )}
+
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <FiEye className="text-xl cursor-pointer" />
+                      <FiEye
+                        className="text-xl cursor-pointer text-blue-500 hover:text-blue-700"
+                        // onClick={() => handleViewDetail(detail)}
+                      />
                       <button
-                        className="text-neutral-600 hover:text-primary"
+                        className="text-neutral-600 hover:text-green-600"
                         aria-label="Edit"
                         onClick={() => {
                           setEditingIndex(index);
@@ -592,6 +741,13 @@ const Customer = () => {
                         }}
                       >
                         <FiEdit2 size={18} />
+                      </button>
+                      <button
+                        className="text-neutral-600 hover:text-red-600"
+                        aria-label="Delete"
+                        onClick={() => handleDeleteDetail(index)}
+                      >
+                        <FiTrash2 size={18} />
                       </button>
                     </div>
                   </TableCell>
@@ -616,6 +772,7 @@ const Customer = () => {
             validatePincode={validatePincode}
             countries={allCountries?.country}
             countryIsd={countryIsd}
+            companyType={locationById?.data}
           />
           {errors.patientDetails && (
             <span className="error text-red-500">{errors.patientDetails}</span>
@@ -901,8 +1058,138 @@ const Customer = () => {
           </div>
         </div>
       )}
+      {isGstModalOpen && GSTData?.data?.data && (
+        <GstAddressSelector
+          gstData={GSTData.data.data}
+          onCopy={(data) => {
+            console.log("copy data", data);
+            setFormData((prev) => ({
+              ...prev,
+              legalName: data.name,
+              GSTNumber: data.gstNo,
+            }));
+            setBillingAddress((prev) => ({
+              ...prev,
+              line1: data.bnm + data.bno,
+              line2: data.st,
+              pincode: data.pncd,
+              city: data.loc || "",
+            }));
+            setIsGstModalOpen(false);
+          }}
+          onCancel={() => setIsGstModalOpen(false)}
+        />
+      )}
     </div>
   );
 };
 
 export default Customer;
+
+const GstAddressSelector = ({ gstData, onCopy, onCancel }) => {
+  const [selectedIndex, setSelectedIndex] = useState(null);
+
+  // Combine primary and additional addresses
+  const addresses = [
+    {
+      ...gstData.pradr.addr,
+      name: gstData.lgnm,
+      gstNo: gstData.gstin,
+      type: "Primary",
+    },
+    ...(gstData.adadr || []).map((addr) => ({
+      ...addr.addr,
+      name: gstData.lgnm,
+      gstNo: gstData.gstin,
+      type: "Additional",
+    })),
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-opacity-80 bg-white/80">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-800">
+            GST Verification Details
+          </h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Select an address to copy to the form
+          </p>
+        </div>
+
+        {/* Address List */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {addresses.map((addr, index) => (
+            <div
+              key={index}
+              onClick={() => setSelectedIndex(index)}
+              className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${
+                selectedIndex === index
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              <div className="flex items-start gap-4">
+                <input
+                  type="radio"
+                  name="address"
+                  checked={selectedIndex === index}
+                  onChange={() => setSelectedIndex(index)}
+                  className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded ${
+                        addr.type === "Primary"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-purple-100 text-purple-800"
+                      }`}
+                    >
+                      {addr.type}
+                    </span>
+                    <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-600">
+                      {addr.gstNo}
+                    </span>
+                  </div>
+                  <h3 className="mt-2 font-medium text-gray-900">
+                    Legal Name: {addr.name}
+                  </h3>
+                  <div className="mt-2 text-sm text-gray-700 space-y-1">
+                    <p>
+                      Address 1:{" "}
+                      {[addr.bnm, addr.bno].filter(Boolean).join(" ")}
+                    </p>
+                    <p>Address 2: {addr.st}</p>
+                    <p>Pincode: {addr.pncd}</p>
+                    <p>State: {addr.stcd}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer with Actions */}
+        <div className="px-6 py-4 border-t border-gray-200 flex justify-between items-center">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2"
+          >
+            <FiX size={16} />
+            Cancel
+          </button>
+          <button
+            disabled={selectedIndex === null}
+            onClick={() => onCopy(addresses[selectedIndex])}
+            className="cursor-pointer px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+          >
+            <FiCopy size={16} />
+            Copy the value
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};

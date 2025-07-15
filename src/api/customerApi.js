@@ -63,6 +63,11 @@ export const customerApi = createApi({
         url: `/api/v1/createall/getisd/?BillCountryID=${id}`,
       }),
     }),
+    getAllCompanyLocations: builder.query({
+      query: () => ({
+        url: `/api/v1/location-settings`,
+      }),
+    }),
   }),
 });
 
@@ -77,4 +82,5 @@ export const {
   useGetStatesQuery,
   useGetCountriesQuery,
   useGetIsdQuery,
+  useGetAllCompanyLocationsQuery
 } = customerApi;

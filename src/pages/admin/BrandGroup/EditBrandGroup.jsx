@@ -18,7 +18,7 @@ const EditBrandGroup = () => {
   const { id } = useParams();
   const location = useLocation();
   const [brandName, setBrandName] = useState("");
-   const { user } = useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.auth);
 
   const {
     data: brandCategory,
@@ -49,7 +49,7 @@ const EditBrandGroup = () => {
     if (brandName.length > 50) {
       toast.error("Cannot exceed more than 50 characters");
     }
-    
+
     const payload = {
       BrandGroupName: brandName,
     };
@@ -90,7 +90,7 @@ const EditBrandGroup = () => {
             ? isEnabled
               ? "View Brand Group"
               : "Edit Brand Group"
-            : "Create New Brand Group"}
+            : "Create Brand Group"}
         </h1>
       </div>
 
@@ -119,10 +119,10 @@ const EditBrandGroup = () => {
                 {id
                   ? isBrandCatUpdating
                     ? "Updating..."
-                    : "Update group"
+                    : "Update Brand Group"
                   : isBrandCatCreatingLoading
                   ? "Creating..."
-                  : "Create group"}
+                  : "Create Brand Group"}
               </Button>
             </HasPermission>
           )}

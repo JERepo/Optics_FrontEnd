@@ -100,17 +100,11 @@ const UserManagement = () => {
   const handleToggleStatus = async () => {
     if (!selectedUser) return;
     try {
-      if (selectedUser.active) {
-        await deactiveUser({ id: selectedUser.id }).unwrap();
-        toast.success("User deactivated successfully");
-      } else {
-        await updateUserStatus({
-          id: selectedUser.id,
-          data: { IsActive: 1 },
-        }).unwrap();
-        toast.success("User activated successfully");
-      }
-      refetch();
+      await deactiveUser({
+        id: selectedUser.id,
+        payload: { isActive: selectedUser.active ? 0 :1 },
+      }).unwrap();
+      toast.success("User deactivated successfully");
     } catch (err) {
       console.error("Failed to toggle user status:", err);
       toast.error("Failed to update status");

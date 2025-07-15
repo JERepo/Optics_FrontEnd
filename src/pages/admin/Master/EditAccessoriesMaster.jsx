@@ -29,7 +29,7 @@ const EditFrameMaster = () => {
   const { id } = useParams();
   const location = useLocation();
   const isEnabled = location.pathname.includes("/view");
-  const { access,user } = useSelector((state) => state.auth);
+  const { access, user } = useSelector((state) => state.auth);
   const hasViewAccess = hasPermission(access, "Accessory Master", "view");
 
   const navigate = useNavigate();
@@ -100,7 +100,7 @@ const EditFrameMaster = () => {
         transformedStock.push({
           id: detail.Stock?.Id || null,
           FrameBatch: detail.Stock?.FrameBatch || "1",
-          FrameSRP: detail.Stock?.FrameSRP || "0.00",
+          FrameSRP: detail.Stock?.OPMRP || "0",
         });
 
         // Pricing data
@@ -189,13 +189,12 @@ const EditFrameMaster = () => {
     const variation = variationData[index];
     const variationId = variation?.id;
 
-
     if (!variationId) return;
 
     try {
       await deActivate({
         id: variationId,
-        payload: { IsActive: variation.isActive == 1 ? 0 : 1 },
+        payload: { IsActive: variation.IsActive == 1 ? 0 : 1 },
       }).unwrap();
       toast.success(
         `Variation ${
@@ -220,19 +219,18 @@ const EditFrameMaster = () => {
   };
 
   const handleSubmit = async (formData) => {
-   
     if (variationData.length <= 0) {
       toast.error("Add atleast one variation");
       return;
     }
     const finalPayload = constructPayload(formData);
-   
 
     try {
       if (id) {
         // Update existing frame
         await updateMaster({
           id: parseInt(id),
+          appId: user.Id,
           payload: finalPayload,
         }).unwrap();
         toast.success("Accessory updated");
@@ -257,6 +255,7 @@ const EditFrameMaster = () => {
   };
 
   const handleSaveVariation = (newVariation) => {
+    console.log(newVariation);
     const updatedVariation = {
       ...newVariation.variation,
       OPVariationID: newVariation.variation.OPVariationID || 1,
@@ -274,7 +273,7 @@ const EditFrameMaster = () => {
       updatedStock[editingIndex] = {
         ...newVariation.stock,
         FrameBatch: newVariation.stock.OPBatchCode || "1",
-        FrameSRP: newVariation.stock.OPMRP || "0.00",
+        FrameSRP: newVariation.stock.OPMRP || "0",
         id: newVariation.stock.id || null, // Preserve stock id
       };
 
@@ -291,7 +290,7 @@ const EditFrameMaster = () => {
         {
           ...newVariation.stock,
           FrameBatch: newVariation.stock.OPBatchCode || "1",
-          FrameSRP: newVariation.stock.OPMRP || "0.00",
+          FrameSRP: newVariation.stock.OPMRP || "0",
           id: null, // New stock has no id
         },
       ]);
@@ -299,6 +298,7 @@ const EditFrameMaster = () => {
     }
     setIsEditingVariation(false);
     setEditingIndex(null);
+    console.log("variation data", variationData);
   };
 
   const handleCancelEdit = () => {
@@ -327,7 +327,7 @@ const EditFrameMaster = () => {
             editingIndex !== null ? pricingData[editingIndex] : []
           }
           initialStock={
-            editingIndex !== null ? stock[editingIndex] : { FrameSRP: "0.00" }
+            editingIndex !== null ? stock[editingIndex] : { FrameSRP: "0" }
           }
           isEnabled={isEnabled}
         />
@@ -382,7 +382,7 @@ const EditFrameMaster = () => {
                   <TableCell>{index + 1}</TableCell>
                   <TableCell>{variation.Barcode || "-"}</TableCell>
                   <TableCell>{variation.SKUCode || "-"}</TableCell>
-                  <TableCell>{variation.Stock?.OPMRP || "-"}</TableCell>
+                  <TableCell>{stock[index]?.FrameSRP || "-"}</TableCell>
 
                   {/* <TableCell>{stock[index]?.FrameSRP || "-"}</TableCell> */}
                   <TableCell className="text-sm min-w-[200px]">

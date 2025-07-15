@@ -19,7 +19,7 @@ const EditPool = () => {
   const { id } = useParams();
   const location = useLocation();
 
-  const {access,user} = useSelector((state) => state.auth);
+  const { access, user } = useSelector((state) => state.auth);
   const [poolName, setPoolName] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const { data: allPool } = useGetAllPoolQuery();
@@ -42,19 +42,18 @@ const EditPool = () => {
   // Prefill values if editing
   useEffect(() => {
     if (id && isSuccess && data?.data) {
-      setPoolName(data.data.PoolName || "");
-      setSelectedCategoryId(data.data.PoolCategory || null);
+      setPoolName(data.data.PoolName);
+      setSelectedCategoryId(data?.data.PoolCategory);
     }
   }, [id, data, isSuccess]);
 
   const handleSubmit = async (e) => {
-
     e.preventDefault();
     if (!poolName || selectedCategoryId === null) {
       toast.error("Please fill all fields!");
       return;
     }
-    
+
     const payload = {
       PoolName: poolName,
       PoolCategory: selectedCategoryId,
@@ -128,7 +127,7 @@ const EditPool = () => {
                   id={`pool-${pool.Id}`}
                   name="poolCategory"
                   value={pool.Id}
-                  checked={selectedCategoryId === pool.Id}
+                  checked={selectedCategoryId == pool.Id}
                   onChange={() => setSelectedCategoryId(pool.Id)}
                   className="scale-125 accent-blue-600"
                   disabled={isEnabled}

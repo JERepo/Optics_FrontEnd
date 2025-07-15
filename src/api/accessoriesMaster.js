@@ -37,8 +37,8 @@ export const accessoriesMaster = createApi({
       providesTags : ["Accessory"]
     }),
     updateMaster: builder.mutation({
-      query: ({ id, payload }) => ({
-        url: `/api/v1/other-products/update/${id}`,
+      query: ({ id,appId, payload }) => ({
+        url: `/api/v1/other-products/update/${id}?ApplicationUserId=${appId}`,
         method: "PUT",
         body: payload,
       }),

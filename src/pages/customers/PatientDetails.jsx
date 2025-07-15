@@ -12,6 +12,7 @@ const PatientDetails = ({
   validatePhone,
   countries = [],
   countryIsd,
+  companyType,
 }) => {
   const [formState, setFormState] = useState({
     name: "",
@@ -62,6 +63,21 @@ const PatientDetails = ({
       newErrors.mobile = "Enter valid mobile number";
     }
 
+    if (updatedFormState.email && !validateEmail(updatedFormState.email)) {
+      newErrors.email = "Enter valid email address";
+    }
+
+    if (updatedFormState.dob && !validateDate(updatedFormState.dob)) {
+      newErrors.dob = "Enter valid date of birth";
+    }
+
+    if (
+      updatedFormState.anniversary &&
+      !validateDate(updatedFormState.anniversary)
+    ) {
+      newErrors.anniversary = "Enter valid anniversary date";
+    }
+
     return newErrors;
   };
 
@@ -74,25 +90,41 @@ const PatientDetails = ({
     });
   };
 
+  const handleDelete = () => {
+    if (
+      initialData &&
+      window.confirm("Are you sure you want to delete this patient detail?")
+    ) {
+      onSave(null); // Passing null to indicate deletion
+      onClose();
+    }
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Add Personal Details">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={initialData ? "Edit Patient Details" : "Add Patient Details"}
+    >
       <form
         onSubmit={(e) => {
           e.preventDefault();
           const validationErrors = validateForm(formState);
           if (Object.keys(validationErrors).length === 0) {
             onSave(formState);
-            setFormState({
-              name: "",
-              MobileISDCode: "",
-              MobAlert: 0,
-              mobile: "",
-              tel: "",
-              email: "",
-              dob: "",
-              engraving: "",
-              anniversary: "",
-            });
+            if (!initialData) {
+              setFormState({
+                name: "",
+                MobileISDCode: countryIsd?.country.ISDCode || "",
+                MobAlert: 0,
+                mobile: "",
+                tel: "",
+                email: "",
+                dob: "",
+                engraving: "",
+                anniversary: "",
+              });
+            }
             setErrors({});
           } else {
             setErrors(validationErrors);
@@ -152,36 +184,57 @@ const PatientDetails = ({
 
         {/* Optional Fields */}
         {[
-          ["tel", "Tel No"],
           ["email", "Email Id"],
           ["dob", "DOB"],
           ["engraving", "Engraving"],
           ["anniversary", "Anniversary"],
-        ].map(([field, label]) => (
-          <div key={field} className="flex flex-col">
-            <label htmlFor={field} className="text-sm font-medium text-gray-700">
-              {label}
-            </label>
-            <input
-              type={
-                field === "dob" || field === "anniversary" ? "date" : "text"
-              }
-              name={field}
-              value={formState[field]}
-              onChange={handleChange}
-              className="mt-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-500"
-            />
-            {errors[field] && (
-              <p className="text-red-500 text-sm mt-1">{errors[field]}</p>
-            )}
-          </div>
-        ))}
+        ]
+          .filter(([field]) => {
+            if (companyType?.data.CompanyType === 0) {
+              return !["dob", "engraving", "anniversary"].includes(field);
+            }
+            return true;
+          })
+          .map(([field, label]) => (
+            <div key={field} className="flex flex-col">
+              <label
+                htmlFor={field}
+                className="text-sm font-medium text-gray-700"
+              >
+                {label}
+              </label>
+              <input
+                type={
+                  field === "dob" || field === "anniversary" ? "date" : "text"
+                }
+                name={field}
+                value={formState[field]}
+                onChange={handleChange}
+                className="mt-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-500"
+              />
+              {errors[field] && (
+                <p className="text-red-500 text-sm mt-1">{errors[field]}</p>
+              )}
+            </div>
+          ))}
 
-        <div className="flex justify-end space-x-3 pt-4">
-          <Button type="button" onClick={onClose} variant="secondary">
-            Cancel
-          </Button>
-          <Button type="submit">Save</Button>
+        <div className="flex justify-between pt-4">
+          {initialData && (
+            <Button
+              type="button"
+              onClick={handleDelete}
+              variant="danger"
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              Delete
+            </Button>
+          )}
+          <div className="flex justify-end space-x-3 ml-auto">
+            <Button type="button" onClick={onClose} variant="secondary">
+              Cancel
+            </Button>
+            <Button type="submit">{initialData ? "Update" : "Save"}</Button>
+          </div>
         </div>
       </form>
     </Modal>

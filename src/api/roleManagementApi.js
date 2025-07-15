@@ -37,6 +37,7 @@ export const roleManageApi = createApi({
         method: "POST",
         body: payload,
       }),
+      invalidatesTags: ["User Management"],
     }),
     getAllRoles: builder.query({
       query: () => "/api/v1/role-privileges/getallrole",
@@ -45,10 +46,10 @@ export const roleManageApi = createApi({
     getAllLocations: builder.query({
       query: () => "/api/v1/user-management/all/location",
     }),
-    getLocationById : builder.query({
-      query : ({id}) => ({
-        url : `/api/v1/user-management/location/${id}`
-      })
+    getLocationById: builder.query({
+      query: ({ id }) => ({
+        url: `/api/v1/user-management/location/${id}`,
+      }),
     }),
     getUserById: builder.query({
       query: ({ id }) => `/api/v1/user-management/${id}`,
@@ -71,12 +72,15 @@ export const roleManageApi = createApi({
         method: "PUT",
         body: data,
       }),
+      invalidatesTags: ["User Management"],
     }),
     deactiveUser: builder.mutation({
-      query: ({ id }) => ({
+      query: ({ id, payload }) => ({
         url: `/api/v1/user-management/deactivate/${id}`,
         method: "PUT",
+        body: payload,
       }),
+      invalidatesTags: ["User Management"],
     }),
     deactiveRole: builder.mutation({
       query: ({ id }) => ({
@@ -112,5 +116,5 @@ export const {
   useDeactiveUserMutation,
   useDeactiveRoleMutation,
   useUpdateRoleMutation,
-  useGetLocationByIdQuery
+  useGetLocationByIdQuery,
 } = roleManageApi;

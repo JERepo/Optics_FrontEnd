@@ -4,6 +4,7 @@ const CustomerForm = ({
   formData,
   handleChange,
   customerGroups,
+  poolId,
   countryCodes,
   onSubmit,
   errors,
@@ -11,26 +12,28 @@ const CustomerForm = ({
   setFormData,
   setErrors,
   companyType,
+  handleVerifyGST,
+  isVerifyGSTLoading,
 }) => {
   // Auto-fill country code when countryIsd is available
   useEffect(() => {
     if (countryIsd?.country?.ISDCode) {
       setFormData((prev) => ({
         ...prev,
-        countryCode: countryIsd.country.ISDCode,
+        countryCode: countryIsd?.country.ISDCode,
       }));
     }
   }, [countryIsd, setFormData]);
 
   // Auto-fill and disable PAN number when GST number is valid
   useEffect(() => {
-    if (formData.GSTNumber && formData.GSTNumber.length === 15) {
+    if (formData?.GSTNumber && formData.GSTNumber?.length === 15) {
       const pan = formData.GSTNumber.substring(2, 12);
       setFormData((prev) => ({
         ...prev,
         PANNumber: pan,
       }));
-    } else if (formData.GSTNumber.length < 15 && formData.PANNumber) {
+    } else if (formData.GSTNumber?.length < 15 && formData?.PANNumber) {
       setFormData((prev) => ({
         ...prev,
         PANNumber: "",
@@ -48,7 +51,29 @@ const CustomerForm = ({
     const { name, value, type, checked } = e.target;
     const newValue = type === "checkbox" ? checked : value;
 
-    // Update form data
+    // Handle customer type change - reset relevant fields
+   
+
+    // Handle GST registration type change if you have it
+    if (name === "GSTINType") {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: newValue,
+        GSTNumber: newValue === 0 ? prev.GSTNumber : "", // Reset GST if not registered
+      }));
+
+      // Reset GST error if unregistering
+      if (newValue !== 0) {
+        setErrors((prevErrors) => {
+          const newErrors = { ...prevErrors };
+          delete newErrors.GSTNumber;
+          return newErrors;
+        });
+      }
+      return;
+    }
+
+    // Normal field change handling
     setFormData((prev) => {
       const updatedFormData = {
         ...prev,
@@ -65,8 +90,12 @@ const CustomerForm = ({
         newErrors.customerType = "Customer type is required";
       }
 
-      // GST Number validation
-      if (name === "GSTNumber") {
+      // GST Number validation (only for B2B registered)
+      if (
+        name === "GSTNumber" &&
+        formData.customerType === "B2B" &&
+        formData.GSTINType === 0
+      ) {
         if (value && value.length === 15) {
           delete newErrors.GSTNumber;
         } else {
@@ -74,8 +103,8 @@ const CustomerForm = ({
         }
       }
 
-      // PAN Number validation
-      if (name === "PANNumber") {
+      // PAN Number validation (only for B2B)
+      if (name === "PANNumber" && formData.customerType === "B2B") {
         if (value && value.length === 10) {
           delete newErrors.PANNumber;
         } else {
@@ -83,8 +112,8 @@ const CustomerForm = ({
         }
       }
 
-      // Legal Name validation
-      if (name === "legalName") {
+      // Legal Name validation (only for B2B)
+      if (name === "legalName" && formData.customerType === "B2B") {
         if (value) {
           delete newErrors.legalName;
         } else {
@@ -146,11 +175,10 @@ const CustomerForm = ({
               : "Valid email is required";
         }
       }
+
       setErrors(newErrors);
       return updatedFormData;
     });
-
-    handleChange(e);
   };
 
   return (
@@ -189,23 +217,23 @@ const CustomerForm = ({
               <p className="text-red-500 text-sm mt-1">{errors.customerType}</p>
             )}
           </div>
-           {formData.customerType === "B2C" && (
-                <div className="col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  {errors.name && (
-                    <p className="text-red-500 text-sm mt-1">{errors.name}</p>
-                  )}
-                </div>
+          {formData.customerType === "B2C" && (
+            <div className="col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Name *
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {errors.name && (
+                <p className="text-red-500 text-sm mt-1">{errors.name}</p>
               )}
+            </div>
+          )}
           {(formData?.customerType === "B2B" ||
             (companyType?.data.CompanyType === 0 &&
               formData?.customerType === "B2C")) && (
@@ -253,15 +281,20 @@ const CustomerForm = ({
                           <input
                             type="text"
                             name="GSTNumber"
-                            value={formData.GSTNumber}
+                            value={formData.GSTNumber.toUpperCase()}
                             onChange={handleInputChange}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                           <button
                             type="button"
                             className="whitespace-nowrap px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm font-medium disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                            onClick={handleVerifyGST}
+                            disabled={formData.GSTNumber?.length !== 15}
+
                           >
-                            Verify GST
+                            {isVerifyGSTLoading
+                              ? "Getting data.."
+                              : "Verify GST"}
                           </button>
                         </div>
                         {errors.GSTNumber && (
@@ -282,7 +315,7 @@ const CustomerForm = ({
                       value={formData.PANNumber}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={formData.GSTNumber.length === 15}
+                      disabled={formData.GSTNumber?.length === 15}
                     />
                     {errors.PANNumber && (
                       <p className="text-red-500 text-sm mt-1">
@@ -312,7 +345,6 @@ const CustomerForm = ({
                   )}
                 </div>
               )}
-             
 
               {companyType?.data.CompanyType === 0 && (
                 <>
@@ -388,7 +420,6 @@ const CustomerForm = ({
               )}
             </>
           )}
-          
 
           {/* customer group */}
           <div className="col-span-1">
@@ -402,7 +433,7 @@ const CustomerForm = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Select customer group</option>
-              {customerGroups?.data?.data.map((group) => (
+              {customerGroups?.map((group) => (
                 <option key={group.Id} value={group.Id}>
                   {group.GroupName}
                 </option>

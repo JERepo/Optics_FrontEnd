@@ -81,9 +81,11 @@ const CreateVariation = ({
 
   const validateForm = () => {
     const errors = {};
+
     if (!variation.OPVariationID || variation.OPVariationID === "") {
       errors.OPVariationID = "Variation selection is required.";
     }
+
     if (!variation.SKUCode) {
       errors.SKUCode = "SKU Code is required.";
     } else if (variation.SKUCode.length > 30) {
@@ -95,31 +97,34 @@ const CreateVariation = ({
     } else if (variation.Barcode.length > 25) {
       errors.Barcode = "Barcode cannot exceed 25 characters";
     }
-    if (!stock.OPMRP || isNaN(stock.OPMRP) || stock.OPMRP <= 0) {
+
+    const mrp = parseFloat(stock.OPMRP);
+    if (!mrp || isNaN(mrp) || mrp <= 0) {
       errors.OPMRP = "MRP is required and must be a valid positive number.";
     }
 
-    let hasPricingError = false;
-    pricing.forEach((p) => {
-      if (
-        !p.buyingPrice ||
-        isNaN(parseFloat(p.buyingPrice)) ||
-        parseFloat(p.buyingPrice) <= 0
-      ) {
-        hasPricingError = true;
-      }
-      if (
-        !p.sellingPrice ||
-        isNaN(parseFloat(p.sellingPrice)) ||
-        parseFloat(p.sellingPrice) <= 0
-      ) {
-        hasPricingError = true;
+    let pricingErrors = false;
+    const invalidLocations = [];
+
+    pricing.forEach((p, idx) => {
+      const buying = parseFloat(p.buyingPrice);
+      const selling = parseFloat(p.sellingPrice);
+
+      if (!buying || isNaN(buying) || buying < 0) pricingErrors = true;
+      if (!selling || isNaN(selling) || selling < 0) pricingErrors = true;
+
+      if ((buying > mrp || selling > mrp) && !errors.OPMRP) {
+        pricingErrors = true;
+        invalidLocations.push(p.location);
       }
     });
 
-    if (hasPricingError) {
-      errors.pricing =
-        "Valid buying and selling prices are required for all locations.";
+    if (pricingErrors) {
+      errors.pricing = invalidLocations.length
+        ? `MRP should be greater than or equal to buying and selling prices in: ${invalidLocations.join(
+            ", "
+          )}.`
+        : "Valid buying and selling prices are required for all locations.";
     }
 
     return errors;
@@ -282,10 +287,9 @@ const CreateVariation = ({
             </div>
             <input
               type="number"
-              step="0.01"
               value={stock.OPMRP || ""}
               onChange={(e) => handleStockChange("OPMRP", e.target.value)}
-              placeholder="0.00"
+              placeholder="0"
               className={`pl-7 pr-4 py-2 block w-full border ${
                 formErrors.OPMRP ? "border-red-500" : "border-gray-300"
               } rounded-md focus:ring-blue-500 focus:border-blue-500`}

@@ -31,20 +31,36 @@ const FrameMasterForm = ({
 
   const validate = () => {
     const newErrors = {};
+
     if (!formData.BrandID) newErrors.BrandID = "Brand is required.";
+
     if (!formData.ModelNo) {
       newErrors.ModelNo = "Model No is required.";
     } else if (formData.ModelNo.length > 30) {
       newErrors.ModelNo = "Model No cannot exceed 30 characters";
     }
+
+    if (
+      formData.NoOfClips !== "" &&
+      (isNaN(formData.NoOfClips) ||
+        parseInt(formData.NoOfClips) > 1 ||
+        parseInt(formData.NoOfClips) < 0)
+    ) {
+      newErrors.NoOfClips =
+        "No. of Clips must be a single non-negative number.";
+    }
+
     if (!formData.Category) newErrors.Category = "Category is required.";
     if (!formData.Type) newErrors.Type = "Rim Type is required.";
+
     if (!formData.HSN) {
       newErrors.HSN = "HSN Code is required.";
     } else if (formData.HSN.length > 6) {
       newErrors.HSN = "HSN Code cannot exceed 6 characters";
     }
+
     if (!formData.TaxID) newErrors.TaxID = "Tax is required.";
+
     return newErrors;
   };
 
@@ -260,8 +276,11 @@ const FrameMasterForm = ({
             value={formData.NoOfClips}
             onChange={handleChange}
             className="input"
-            disabled={isEnabled}
+            disabled={isEnabled || formData.IsClipOn}
           />
+          {errors.NoOfClips && (
+            <p className="text-red-500 text-sm">{errors.NoOfClips}</p>
+          )}
         </div>
       </div>
 

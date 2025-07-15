@@ -17,11 +17,20 @@ import { materialMasterApi } from "../api/materialMaster";
 import { frameMasterApi } from "../api/frameMasterApi";
 import { customerGroup } from "../api/customerGroup";
 import { customerApi } from "../api/customerApi";
+import { externalApi } from "../api/externalApi";
+import { vendorApi } from "../api/vendorApi";
 
 const persistConfig = {
   key: "auth",
   storage,
-  whitelist: ["token", "user", "isAuthenticated", "roles", "access","hasMultipleLocations"],
+  whitelist: [
+    "token",
+    "user",
+    "isAuthenticated",
+    "roles",
+    "access",
+    "hasMultipleLocations",
+  ],
 };
 
 const persistedAuthReducer = persistReducer(persistConfig, authReducer);
@@ -42,7 +51,9 @@ export const store = configureStore({
     [materialMasterApi.reducerPath]: materialMasterApi.reducer,
     [frameMasterApi.reducerPath]: frameMasterApi.reducer,
     [customerGroup.reducerPath]: customerGroup.reducer,
-    [customerApi.reducerPath]:customerApi.reducer
+    [customerApi.reducerPath]: customerApi.reducer,
+    [externalApi.reducerPath]: externalApi.reducer,
+    [vendorApi.reducerPath]: vendorApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -61,7 +72,9 @@ export const store = configureStore({
       materialMasterApi.middleware,
       frameMasterApi.middleware,
       customerGroup.middleware,
-      customerApi.middleware
+      customerApi.middleware,
+      externalApi.middleware,
+      vendorApi.middleware
     ),
 });
 

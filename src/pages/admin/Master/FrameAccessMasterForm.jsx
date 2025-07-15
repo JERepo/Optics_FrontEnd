@@ -16,16 +16,53 @@ const FrameAccessMasterForm = ({
 
   const [errors, setErrors] = useState({});
 
+  // const handleChange = (e) => {
+  //   const { name, value, type, checked } = e.target;
+  //   const val = type === "checkbox" ? checked : value;
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     [name]: type === "checkbox" ? checked : value,
+  //   }));
+  //   if (val !== "") {
+  //     setErrors((prev) => ({ ...prev, [name]: "" }));
+  //   }
+  // };
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     const val = type === "checkbox" ? checked : value;
+
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: val,
     }));
-    if (val !== "") {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
+
+    // Dynamic validation
+    let error = "";
+    if (val === "") {
+      error = "";
+    } else {
+      switch (name) {
+        case "ProductName":
+          if (val.length > 100)
+            error = "Product Name cannot exceed 100 characters.";
+          break;
+        case "ProductCode":
+          if (val.length > 30)
+            error = "Product Code cannot exceed 30 characters.";
+          break;
+        case "HSN":
+          if (val.length > 6) error = "HSN Code cannot exceed 6 characters.";
+          break;
+        default:
+          break;
+      }
     }
+
+    setErrors((prev) => ({
+      ...prev,
+      [name]: error,
+    }));
   };
 
   const validate = () => {
@@ -43,7 +80,12 @@ const FrameAccessMasterForm = ({
     } else if (formData.ProductCode.length > 30) {
       newErrors.ProductCode = "Product Code cannot exceed 30 characters";
     }
-    if (!formData.HSN) newErrors.HSN = "HSN Code is required.";
+    if (!formData.HSN) {
+      newErrors.HSN = "HSN Code is required.";
+    } else if (formData.HSN.length > 6) {
+      newErrors.HSN = "HSN Code cannot exceed 6 characters.";
+    }
+
     if (!formData.TaxID) newErrors.TaxID = "Tax is required.";
     return newErrors;
   };
@@ -156,7 +198,7 @@ const FrameAccessMasterForm = ({
 
       <div className="flex justify-end pt-4">
         {!isEnabled && (
-          <HasPermission module="Accessory Master" action={["edit","create"]}>
+          <HasPermission module="Accessory Master" action={["edit", "create"]}>
             <Button type="submit">
               {id ? "Update Accessory" : "Save Accessory"}
             </Button>

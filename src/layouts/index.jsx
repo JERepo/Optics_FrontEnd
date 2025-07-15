@@ -45,6 +45,8 @@ import BankAccountDetails from "../pages/customer/BankAccountDetails/BankAccount
 import EditBankAccountDetails from "../pages/customer/BankAccountDetails/EditBankAccountDetails";
 import PaymentMachine from "../pages/customer/PaymentMachine/PaymentMachine";
 import EditPaymentMachine from "../pages/customer/PaymentMachine/EditPaymentMachine";
+import Vendor from "../pages/Vendor/Vendor";
+import EditVendor from "../pages/Vendor/EditVendor";
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
 export const router = createBrowserRouter([
@@ -579,6 +581,14 @@ export const router = createBrowserRouter([
       {
         path: "payment-machine/view/:id",
         element: <EditPaymentMachine />,
+      },
+      {
+        path: "vendor",
+        element: <Vendor />,
+      },
+      {
+        path: "vendor/create",
+        element: <EditVendor />,
       },
     ],
   },

@@ -16,7 +16,7 @@ export const brandApi = createApi({
     }),
     getAllBrandCats: builder.query({
       query: () => ({
-        url: `/api/v1/brand-category/getall`,
+        url: `/api/v1/brand-category`,
       }),
       providesTags: ["Brand"],
     }),

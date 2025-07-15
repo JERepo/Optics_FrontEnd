@@ -33,7 +33,7 @@ const EditFrameMaster = () => {
   const { id } = useParams();
   const location = useLocation();
   const isEnabled = location.pathname.includes("/view");
-  const { access,user } = useSelector((state) => state.auth);
+  const { access, user } = useSelector((state) => state.auth);
   const { data: allBrands } = useGetAllBrandsQuery();
   const { data: allTax } = useGetTaxQuery();
   const { data: allMaterials } = useGetAllmaterialsQuery();
@@ -113,7 +113,7 @@ const EditFrameMaster = () => {
         transformedStock.push({
           id: detail.Stock?.Id || null,
           FrameBatch: detail.Stock?.FrameBatch || "1",
-          FrameSRP: detail.Stock?.FrameSRP || "0.00",
+          FrameSRP: detail.Stock?.FrameSRP.toString() || "0",
         });
 
         const pricingForVariation = [];
@@ -155,9 +155,9 @@ const EditFrameMaster = () => {
       FrontMaterialID: formData.FrontMaterialID,
       TempleMaterialID: formData.TempleMaterialID,
       Gender: formData.Gender,
-      IsClipOn: formData.IsClipOn,
+      IsClipOn: formData.IsClipOn ? 1 : 0,
       NoOfClips: formData.NoOfClips,
-      IsRxable: formData.IsRxable,
+      IsRxable: formData.IsRxable ? 1 : 0,
       CaptureSlNo: formData.CaptureSlNo || 0,
       HSN: formData.HSN,
       TaxID: formData.TaxID,
@@ -217,13 +217,13 @@ const EditFrameMaster = () => {
   };
 
   const handleSubmit = async (formData) => {
+
     if (variationData.length <= 0) {
       toast.error("Add at least one variation");
       return;
     }
     const finalPayload = constructPayload(formData);
-   
-
+    console.log(finalPayload)
     try {
       if (id) {
         await updateFramemaster({
@@ -232,7 +232,10 @@ const EditFrameMaster = () => {
         }).unwrap();
         toast.success("Frame updated successfully");
       } else {
-        await createFrameMaster({ id: user.Id, payload: finalPayload }).unwrap();
+        await createFrameMaster({
+          id: user.Id,
+          payload: finalPayload,
+        }).unwrap();
         toast.success("Frame created successfully");
       }
       navigate(-1);
@@ -344,7 +347,7 @@ const EditFrameMaster = () => {
             editingIndex !== null ? pricingData[editingIndex] : []
           }
           initialStock={
-            editingIndex !== null ? stock[editingIndex] : { FrameSRP: "0.00" }
+            editingIndex !== null ? stock[editingIndex] : { FrameSRP: "0" }
           }
           isEnabled={isEnabled}
         />
@@ -379,7 +382,6 @@ const EditFrameMaster = () => {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium">Variations</h3>
               {!isEnabled && (
-               
                 <Button onClick={() => handleEditVariation(null)}>
                   Add Variation
                 </Button>

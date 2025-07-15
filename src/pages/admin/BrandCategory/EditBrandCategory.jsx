@@ -91,7 +91,7 @@ const EditBrandCategory = () => {
             ? isEnabled
               ? "View Brand Category"
               : "Edit Brand Category"
-            : "Create New Brand Category"}
+            : "Create Brand Category"}
         </h1>
       </div>
 
@@ -120,10 +120,10 @@ const EditBrandCategory = () => {
                 {id
                   ? isBrandCatUpdating
                     ? "Updating..."
-                    : "Update category"
+                    : "Update Brand Category"
                   : isBrandCatCreatingLoading
                   ? "Creating..."
-                  : "Create category"}
+                  : "Create Brand Category"}
               </Button>
             </HasPermission>
           )}

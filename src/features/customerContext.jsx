@@ -116,9 +116,9 @@ export const CustomerProvider = ({ children }) => {
       FittingPrice: fittingType,
       LoyaltyEnrollment: enableLoyalty,
       CreditBilling: enableCreditBilling,
-      OpeningBalance: creditDetails.openingBalance,
-      CreditLimit: creditDetails.creditLimit,
-      CreditDays: creditDetails.creditDays,
+      OpeningBalance: Number(creditDetails.openingBalance),
+      CreditLimit: Number(creditDetails.creditLimit),
+      CreditDays: Number(creditDetails.creditDays),
       PaymentTerms: creditDetails.paymentTerms,
       OBType: creditBalanceType === "Dr" ? 0 : 1,
       IsActive: 1,
@@ -164,12 +164,69 @@ export const CustomerProvider = ({ children }) => {
     };
   };
 
+  const resetFormForCustomerType = () => {
+    setFormData({
+      location: "",
+      name: "",
+      legalName: "",
+      customerType: "B2C",
+      GSTINType: "0",
+      GSTNumber: "",
+      PANNumber: "",
+      customerGroup: "",
+      countryCode: "",
+      telPhone: "",
+      phone: "",
+      email: "",
+      sendAlert: false,
+      sendPhoneAlert: false,
+      customerUniqueId: "",
+      BrandName: "",
+      whatsAppGroupId: "",
+      whatsappAlert: false,
+    });
+  };
+
+  /* Vendor functionalities  */
+
+  const [vendorFormData, setVendorFormData] = useState({
+    CompanyID: "",
+    gstStatus: 0,
+    vendor_type: 0,
+    gst_no: "",
+    pan_no: "",
+    legal_name: "",
+    isServiceProvider: 0,
+    isReverseChargeApplicable: 0,
+    billingMethod: 0,
+    vendor_address1: "",
+    vendor_address2: "",
+    vendor_landmark: "",
+    vendor_pincode: "",
+    vendor_city: "",
+    vendor_state: "",
+    vendor_country: "",
+    email: "",
+    mobileISDCode: "",
+    mobile_no: "",
+    telephone: "",
+    other_contacts: [],
+    FittingPrice: 0,
+    fittingCharges: [],
+    credit_form: 0,
+    credit_days: "",
+    opening_balance: "",
+  });
+
   return (
     <CustomerContext.Provider
       value={{
         formData,
         setFormData,
         constructPayload,
+        resetFormForCustomerType,
+        vendorFormData,
+        setVendorFormData,
       }}
     >
       {children}

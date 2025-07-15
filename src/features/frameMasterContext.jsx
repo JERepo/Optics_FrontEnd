@@ -15,7 +15,7 @@ export const FormMasterProvider = ({ children }) => {
     TempleMaterialID: "",
     Gender: "",
     IsClipOn: false,
-    NoOfClips: null,
+    NoOfClips: "",
     IsRxable: true,
     CaptureSlNo: "",
     HSN: "",

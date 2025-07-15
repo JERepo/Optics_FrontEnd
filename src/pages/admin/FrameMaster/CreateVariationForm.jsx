@@ -70,7 +70,7 @@ const CreateVariationForm = ({
   const [stock, setLocalStock] = useState({
     FrameSRP: initialStock?.FrameSRP || "",
     FrameBatch: initialStock?.FrameBatch || "",
-    id: initialStock?.id || null, // Preserve stock id
+    id: initialStock?.id || null, 
   });
 
   const [pricing, setPricing] = useState(initialPricing || []);
@@ -102,7 +102,7 @@ const CreateVariationForm = ({
   const toggleCheckbox = (field) => {
     setVariation((prev) => ({
       ...prev,
-      [field]: prev[field] === "1" ? "0" : "1",
+      [field]: prev[field] === 1 ? 0 : 1,
     }));
   };
 
@@ -133,6 +133,14 @@ const CreateVariationForm = ({
       errors.Size = "Size must not exceed 3 characters.";
     }
 
+    if (variation.DBL && variation.DBL.length > 3) {
+      errors.DBL = "DBL must not exceed 3 characters.";
+    }
+
+    if (variation.TempleLength && variation.TempleLength.length > 3) {
+      errors.TempleLength = "Temple Length must not exceed 3 characters.";
+    }
+
     if (!variation.SkuCode) {
       errors.SkuCode = "SKU Code is required.";
     } else if (variation.SkuCode.length > 100) {
@@ -149,6 +157,32 @@ const CreateVariationForm = ({
       errors.FrameSRP = "SRP is required.";
     } else if (isNaN(parseFloat(stock.FrameSRP))) {
       errors.FrameSRP = "SRP must be a valid number.";
+    } else {
+      const srp = parseFloat(stock.FrameSRP);
+      let srpErrors = false;
+      const invalidSRPLocations = [];
+
+      pricing.forEach((p) => {
+        const buying = parseFloat(p.buyingPrice);
+        const selling = parseFloat(p.sellingPrice);
+
+        if (!isNaN(buying) && srp <= buying) {
+          srpErrors = true;
+          invalidSRPLocations.push(p.location);
+        }
+        if (!isNaN(selling) && srp <= selling) {
+          srpErrors = true;
+          if (!invalidSRPLocations.includes(p.location)) {
+            invalidSRPLocations.push(p.location);
+          }
+        }
+      });
+
+      if (srpErrors) {
+        errors.FrameSRP = `SRP should be greater than both buying and selling prices in: ${invalidSRPLocations.join(
+          ", "
+        )}.`;
+      }
     }
 
     if (variation.LensColor && variation.LensColor.length > 50) {
@@ -162,11 +196,17 @@ const CreateVariationForm = ({
     }
 
     let hasPricingError = false;
-    pricing.forEach((p) => {
+    pricing.forEach((p, index) => {
       if (!p.buyingPrice || isNaN(parseFloat(p.buyingPrice))) {
+        errors[
+          `buyingPrice_${index}`
+        ] = `Buying price at ${p.location} is required and must be a valid number.`;
         hasPricingError = true;
       }
       if (!p.sellingPrice || isNaN(parseFloat(p.sellingPrice))) {
+        errors[
+          `sellingPrice_${index}`
+        ] = `Selling price at ${p.location} is required and must be a valid number.`;
         hasPricingError = true;
       }
     });
@@ -208,7 +248,7 @@ const CreateVariationForm = ({
       variation: {
         ...variation,
         FrameImages: frameImages,
-        IsActive: variation.IsActive ?? 1, // Ensure IsActive is included
+        IsActive: variation.IsActive ?? 1,
       },
       stock: {
         ...stock,
@@ -381,7 +421,7 @@ const CreateVariationForm = ({
               onChange={(e) =>
                 setLocalStock((prev) => ({ ...prev, FrameSRP: e.target.value }))
               }
-              placeholder="0.00"
+              placeholder="0"
               className={`pl-7 pr-4 py-2 block w-full border ${
                 formErrors.FrameSRP ? "border-red-500" : "border-gray-300"
               } rounded-md`}
