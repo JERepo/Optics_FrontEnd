@@ -28,13 +28,20 @@ export const vendorApi = createApi({
       }),
       invalidatesTags: ["Vendor"],
     }),
-    updateVendor: builder.mutation({
-      query: ({ id, payload }) => ({
-        query: `/api/v1/vendor/update/${id}`,
-        method: "PUT",
-        body: payload,
+
+    getVendorById: builder.query({
+      query: ({ id }) => ({
+        url: `/api/v1/vendor/${id}`,
       }),
-      invalidatesTags: ["Vendor"],
+    }),
+    updateVendor: builder.mutation({
+      query: ({ id, userId, payload }) => {
+        return {
+          url: `/api/v1/vendor/update/${id}?ApplicationUserId=${userId}`,
+          method: "PUT",
+          body: payload,
+        };
+      },
     }),
   }),
 });
@@ -43,5 +50,6 @@ export const {
   useGetAllVendorQuery,
   useDeActivateMutation,
   useCreateVendorMutation,
+  useGetVendorByIdQuery,
   useUpdateVendorMutation,
 } = vendorApi;

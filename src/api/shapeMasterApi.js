@@ -19,6 +19,12 @@ export const shapeMasterApi = createApi({
         url: `/api/v1/shape-master`,
       }),
       providesTags: ["Shape"],
+      transformResponse: (response) => {
+        const sorted = response?.data?.sort(
+          (a, b) => new Date(b.CreatedDate) - new Date(a.CreatedDate)
+        );
+        return sorted || [];
+      },
     }),
     getShapeById: builder.query({
       query: ({ id }) => ({

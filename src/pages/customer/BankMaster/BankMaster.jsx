@@ -8,6 +8,10 @@ import Toggle from "../../../components/ui/Toggle";
 import { PoolCat } from "../../../utils/constants/PoolCategory";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import HasPermission from "../../../components/HasPermission";
+import {
+  useDeActivateMutation,
+  useGetAllBankMastersQuery,
+} from "../../../api/bankMasterApi";
 
 const BankMaster = () => {
   const navigate = useNavigate();
@@ -19,19 +23,15 @@ const BankMaster = () => {
   const [selectedBrandId, setSelectedBrandId] = useState(null);
   const [currentStatus, setCurrentStatus] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-//   const { data, isLoading } = useGetAllBrandGroupsQuery();
-//   const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
-const data = []
-const isDeActivating = false
-const isLoading = false;
+  const { data, isLoading } = useGetAllBankMastersQuery();
+  const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
 
   const brands = useMemo(() => {
     if (!data?.data) return [];
 
-    return data.data.map((brand) => ({
+    return data.data.data.map((brand) => ({
       id: brand.Id,
-      name: brand.BrandGroupName,
+      name: brand.BankName,
 
       createdAt: new Intl.DateTimeFormat(locale, {
         year: "numeric",
@@ -53,18 +53,18 @@ const isLoading = false;
   };
 
   const handleConfirmToggle = async () => {
-    // try {
-    //   await deActivate({
-    //     id: selectedBrandId,
-    //     payload: { IsActive: currentStatus ? 0 : 1 },
-    //   }).unwrap();
-    // } catch (error) {
-    //   console.error("Toggle error:", error);
-    // } finally {
-    //   setIsModalOpen(false);
-    //   setSelectedBrandId(null);
-    //   setCurrentStatus(null);
-    // }
+    try {
+      await deActivate({
+        id: selectedBrandId,
+        payload: { IsActive: currentStatus ? 0 : 1 },
+      }).unwrap();
+    } catch (error) {
+      console.error("Toggle error:", error);
+    } finally {
+      setIsModalOpen(false);
+      setSelectedBrandId(null);
+      setCurrentStatus(null);
+    }
   };
 
   const handleEdit = (poolId) => {
@@ -102,7 +102,7 @@ const isLoading = false;
       </div>
 
       <Table
-        columns={["S.No", "Bank name", "Created At", "Action"]}
+        columns={["S.No", "Bank name", "created on", "Action"]}
         data={paginatedPools}
         renderRow={(pool, index) => (
           <TableRow key={pool.id}>

@@ -27,18 +27,18 @@ const CreateVariationForm = ({
   const [formErrors, setFormErrors] = useState({});
 
   const [variation, setVariation] = useState(() => ({
-    ColourCode: initialVariation?.ColourCode || "",
-    Size: initialVariation?.Size || "",
-    DBL: initialVariation?.DBL || "",
-    TempleLength: initialVariation?.TempleLength || "",
-    LaunchSeason: initialVariation?.LaunchSeason || "",
-    IsPhotochromatic: initialVariation?.IsPhotochromatic || "0",
-    IsPolarised: initialVariation?.IsPolarised || "0",
-    LensColor: initialVariation?.LensColor || "",
-    FrameFrontColor: initialVariation?.FrameFrontColor || "",
-    TempleColor: initialVariation?.TempleColor || "",
-    SkuCode: initialVariation?.SkuCode || "",
-    Barcode: initialVariation?.Barcode || "",
+    ColourCode: initialVariation?.ColourCode || null,
+    Size: initialVariation?.Size || null,
+    DBL: initialVariation?.DBL || null,
+    TempleLength: initialVariation?.TempleLength || null,
+    LaunchSeason: initialVariation?.LaunchSeason || null,
+    IsPhotochromatic: initialVariation?.IsPhotochromatic || 0,
+    IsPolarised: initialVariation?.IsPolarised || 0,
+    LensColor: initialVariation?.LensColor || null,
+    FrameFrontColor: initialVariation?.FrameFrontColor || null,
+    TempleColor: initialVariation?.TempleColor || null,
+    SkuCode: initialVariation?.SkuCode || null,
+    Barcode: initialVariation?.Barcode || null,
     IsActive: initialVariation?.IsActive ?? 1, // Default to 1 for new variations
     id: initialVariation?.id || null, // Preserve id
   }));
@@ -68,9 +68,9 @@ const CreateVariationForm = ({
   );
 
   const [stock, setLocalStock] = useState({
-    FrameSRP: initialStock?.FrameSRP || "",
-    FrameBatch: initialStock?.FrameBatch || "",
-    id: initialStock?.id || null, 
+    FrameSRP: initialStock?.FrameSRP || null,
+    FrameBatch: initialStock?.FrameBatch || 1,
+    id: initialStock?.id || null,
   });
 
   const [pricing, setPricing] = useState(initialPricing || []);
@@ -110,9 +110,9 @@ const CreateVariationForm = ({
     setIsGenerating(true);
     try {
       const result = await refetch();
-      const newCode = result?.data?.data?.barcode || "";
+      const newCode = result?.data?.data?.barcode || null;
       setVariation((prev) => ({ ...prev, Barcode: newCode }));
-      setFormErrors((prev) => ({ ...prev, Barcode: "" }));
+      setFormErrors((prev) => ({ ...prev, Barcode: null }));
     } finally {
       setIsGenerating(false);
     }
@@ -197,22 +197,34 @@ const CreateVariationForm = ({
 
     let hasPricingError = false;
     pricing.forEach((p, index) => {
-      if (!p.buyingPrice || isNaN(parseFloat(p.buyingPrice))) {
+      const buying = parseFloat(p.buyingPrice);
+      const selling = parseFloat(p.sellingPrice);
+
+      if (!p.buyingPrice || isNaN(buying)) {
         errors[
           `buyingPrice_${index}`
         ] = `Buying price at ${p.location} is required and must be a valid number.`;
         hasPricingError = true;
       }
-      if (!p.sellingPrice || isNaN(parseFloat(p.sellingPrice))) {
+
+      if (!p.sellingPrice || isNaN(selling)) {
         errors[
           `sellingPrice_${index}`
         ] = `Selling price at ${p.location} is required and must be a valid number.`;
         hasPricingError = true;
       }
+
+      if (!isNaN(buying) && !isNaN(selling) && selling <= buying) {
+        errors[
+          `sellingPrice_${index}`
+        ] = `Selling price at ${p.location} must be greater than the buying price.`;
+        hasPricingError = true;
+      }
     });
 
     if (hasPricingError) {
-      errors.pricing = "Pricing details are mandatory.";
+      errors.pricing =
+        "Pricing details are invalid and selling price should be greater than buying price!";
     }
 
     return errors;
@@ -276,7 +288,7 @@ const CreateVariationForm = ({
       </label>
       <input
         type="text"
-        value={variation[field] || ""}
+        value={variation[field]}
         onChange={(e) => handleChange(field, e.target.value)}
         className={`mt-1 block w-full border ${
           formErrors[field] ? "border-red-500" : "border-gray-300"
@@ -326,7 +338,7 @@ const CreateVariationForm = ({
               Launch Season
             </label>
             <select
-              value={variation.LaunchSeason || ""}
+              value={variation.LaunchSeason}
               onChange={(e) => handleChange("LaunchSeason", e.target.value)}
               className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
               disabled={isEnabled}
@@ -379,7 +391,7 @@ const CreateVariationForm = ({
             <div className="flex gap-2">
               <input
                 type="text"
-                value={variation.Barcode || ""}
+                value={variation.Barcode}
                 onChange={(e) => handleChange("Barcode", e.target.value)}
                 className={`mt-1 block w-full border ${
                   formErrors.Barcode ? "border-red-500" : "border-gray-300"
@@ -417,7 +429,7 @@ const CreateVariationForm = ({
             </div>
             <input
               type="number"
-              value={stock.FrameSRP || ""}
+              value={stock.FrameSRP}
               onChange={(e) =>
                 setLocalStock((prev) => ({ ...prev, FrameSRP: e.target.value }))
               }

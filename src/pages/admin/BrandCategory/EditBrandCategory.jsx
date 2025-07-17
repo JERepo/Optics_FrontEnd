@@ -57,13 +57,13 @@ const EditBrandCategory = () => {
     try {
       if (id) {
         await updateBrandCategory({ id, payload }).unwrap();
-        toast.success("Brand updated successfully");
+        toast.success("Brand category updated successfully");
       } else {
         await createBrandCategory({
           id: user.Id,
           payload,
         }).unwrap();
-        toast.success("Brand created successfully");
+        toast.success("Brand category created successfully");
         setBrandName("");
       }
 
@@ -82,7 +82,7 @@ const EditBrandCategory = () => {
         <button
           onClick={() => navigate(-1)}
           className="mr-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
-          aria-label="Go back"
+          aria-label="Go Back"
         >
           <FiArrowLeft className="text-gray-600" size={20} />
         </button>

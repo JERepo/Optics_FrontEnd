@@ -67,14 +67,14 @@ const EditCustomerGroup = () => {
           id,
           payload,
         }).unwrap();
-        toast.success("Group updated successfully");
+        toast.success("Customer Group updated successfully");
       } else {
         await createBrandGroup({
           id: user.Id,
           companyId: selectedLocation,
           payload,
         }).unwrap();
-        toast.success("Group created successfully");
+        toast.success("Customer Group created successfully");
         setBrandName("");
       }
 
@@ -85,7 +85,7 @@ const EditCustomerGroup = () => {
     }
   };
 
-  if (id && isBrandCatLoading) return <h1>Loading brands category...</h1>;
+  if (id && isBrandCatLoading) return <h1>Loading...</h1>;
 
   return (
     <div className="max-w-2xl bg-white rounded-lg shadow-sm p-4">
@@ -93,12 +93,12 @@ const EditCustomerGroup = () => {
         <button
           onClick={() => navigate(-1)}
           className="mr-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
-          aria-label="Go back"
+          aria-label="Go Back"
         >
           <FiArrowLeft className="text-gray-600" size={20} />
         </button>
         <h1 className="text-2xl font-semibold text-gray-800">
-          {id ? isEnabled ? "View customer group" :"Edit customer group" : "Create New customer group"}
+          {id ? isEnabled ? "View Customer Group" :"Edit Customer Group" : "Create New Customer Group"}
         </h1>
       </div>
 
@@ -130,7 +130,7 @@ const EditCustomerGroup = () => {
         </div>
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
-            Customer group name
+            Customer Group Name
           </label>
           <input
             type="text"
@@ -152,10 +152,10 @@ const EditCustomerGroup = () => {
                 {id
                   ? isBrandCatUpdating
                     ? "Updating..."
-                    : "Update group"
+                    : "Update Customer Group"
                   : isBrandCatCreatingLoading
                   ? "Creating..."
-                  : "Create group"}
+                  : "Create Customer Group"}
               </Button>
             </HasPermission>
           )}

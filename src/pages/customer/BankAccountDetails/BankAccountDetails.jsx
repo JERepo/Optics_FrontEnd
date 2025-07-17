@@ -6,6 +6,17 @@ import { Table, TableRow, TableCell } from "../../../components/Table";
 import Toggle from "../../../components/ui/Toggle";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import HasPermission from "../../../components/HasPermission";
+import {
+  useDeActivateMutation,
+  useGetAllBankAccountsQuery,
+} from "../../../api/BankAccountDetailsApi";
+import { useGetAllBankMastersQuery } from "../../../api/bankMasterApi";
+
+const accountType = [
+  { value: 0, label: "Savings" },
+  { value: 1, label: "Current" },
+  { value: 2, label: "OD" },
+];
 
 const BankAccountDetails = () => {
   const navigate = useNavigate();
@@ -18,19 +29,18 @@ const BankAccountDetails = () => {
   const [currentStatus, setCurrentStatus] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // const { data, isLoading } = useGetAllBrandGroupsQuery();
-  // const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
-  const isLoading = false;
-  const isDeActivating = false;
-  const data = [];
+  const { data, isLoading } = useGetAllBankAccountsQuery();
+  const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
+   const { data: allBanks } = useGetAllBankMastersQuery();
 
   const brands = useMemo(() => {
     if (!data?.data) return [];
 
-    return data.data.map((brand) => ({
+    return data.data.data.map((brand) => ({
       id: brand.Id,
-      name: brand.BrandGroupName,
-
+      name: allBanks?.data.data.find((b) => b.Id === brand.BankMasterID).BankName,
+      number: brand.AccountNo,
+      type : accountType.find(a => a.value === brand.Type).label,
       createdAt: new Intl.DateTimeFormat(locale, {
         year: "numeric",
         month: "short",
@@ -51,18 +61,18 @@ const BankAccountDetails = () => {
   };
 
   const handleConfirmToggle = async () => {
-    // try {
-    //   await deActivate({
-    //     id: selectedBrandId,
-    //     payload: { IsActive: currentStatus ? 0 : 1 },
-    //   }).unwrap();
-    // } catch (error) {
-    //   console.error("Toggle error:", error);
-    // } finally {
-    //   setIsModalOpen(false);
-    //   setSelectedBrandId(null);
-    //   setCurrentStatus(null);
-    // }
+    try {
+      await deActivate({
+        id: selectedBrandId,
+        payload: { IsActive: currentStatus ? 0 : 1 },
+      }).unwrap();
+    } catch (error) {
+      console.error("Toggle error:", error);
+    } finally {
+      setIsModalOpen(false);
+      setSelectedBrandId(null);
+      setCurrentStatus(null);
+    }
   };
 
   const handleEdit = (poolId) => {
@@ -73,7 +83,7 @@ const BankAccountDetails = () => {
     <div className="max-w-5xl">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div className="text-3xl text-neutral-700 font-semibold">
-          Bank Account details
+          Bank Account Details
         </div>
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
           <div className="flex items-center gap-2 border-2 border-neutral-300 rounded-md px-3 w-full sm:w-[250px] h-10 bg-white">
@@ -93,7 +103,7 @@ const BankAccountDetails = () => {
               className="bg-primary/90 text-neutral-50 hover:bg-primary/70 transition-all whitespace-nowrap"
               onClick={() => navigate("create")}
             >
-              Add bank account details
+              Add Bank Account Details
             </Button>
           </HasPermission>
         </div>
@@ -116,10 +126,14 @@ const BankAccountDetails = () => {
             <TableCell className="text-sm text-neutral-500">
               {pool.name}
             </TableCell>
-
-            <TableCell className="text-sm text-neutral-500">
-              {pool.createdAt}
+             <TableCell className="text-sm text-neutral-500">
+              {pool.number}
             </TableCell>
+             <TableCell className="text-sm text-neutral-500">
+              {pool.type}
+            </TableCell>
+
+        
             <TableCell>
               <div className="flex items-center gap-3">
                 <HasPermission module="Bank Account Details" action="view">

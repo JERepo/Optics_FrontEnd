@@ -32,8 +32,8 @@ const Select = ({
         {...props}
       >
         <option value="">{defaultOption}</option>
-        {options?.map((option) => (
-          <option key={option[optionValue]} value={option[optionValue]}>
+        {options?.map((option,i) => (
+          <option key={i} value={option[optionValue]}>
             {option[optionLabel]}
           </option>
         ))}

@@ -63,23 +63,23 @@ const Customer = () => {
 
   // Address states
   const [billingAddress, setBillingAddress] = useState({
-    line1: "",
-    line2: "",
-    landmark: "",
-    pincode: "",
-    city: "",
-    country: "",
-    state: "",
+    line1: null,
+    line2: null,
+    landmark: null,
+    pincode: null,
+    city: null,
+    country: null,
+    state: null,
   });
 
   const [shippingAddress, setShippingAddress] = useState({
-    line1: "",
-    line2: "",
-    landmark: "",
-    pincode: "",
-    city: "",
-    country: "",
-    state: "",
+    line1: null,
+    line2: null,
+    landmark: null,
+    pincode: null,
+    city: null,
+    country: null,
+    state: null,
   });
 
   const [creditDetails, setCreditDetails] = useState({
@@ -360,21 +360,21 @@ const Customer = () => {
       }
     }
 
-    if (formData.email.length > 150) {
+    if (formData.email?.length > 150) {
       newErrors.email = "Email cannot exceed 150 characters";
     }
 
-    if (formData.telPhone.length > 15) {
+    if (formData.telPhone?.length > 15) {
       newErrors.telPhone = "Telephone number cannot exceed 15 characters";
     }
-    if (formData.BrandName.length > 100) {
+    if (formData.BrandName?.length > 100) {
       newErrors.BrandName = "Brand name cannot exceed 100 characters";
     }
 
-    if (formData.customerUniqueId.length > 50) {
+    if (formData.customerUniqueId?.length > 50) {
       newErrors.customerUniqueId = "Unique Id cannot exceed 50 characters";
     }
-    if (formData.whatsAppGroupId.length > 50) {
+    if (formData.whatsAppGroupId?.length > 50) {
       newErrors.whatsAppGroupId = "whatsAppGroupId cannot exceed 50 characters";
     }
     if (
@@ -547,13 +547,13 @@ const Customer = () => {
       companyId,
       locationById
     );
-
+    console.log(payload);
     try {
       await createCustomer({
         id: user.Id,
         payload: payload,
       }).unwrap();
-      toast.success("Form data saved successfully!");
+      toast.success("Customer data saved successfully!");
       navigate(-1);
     } catch (error) {
       console.error(error);
@@ -792,6 +792,7 @@ const Customer = () => {
             states={allStates?.country}
             countryIsd={countryIsd}
             formData={formData}
+            locationData={locationById?.data}
           />
 
           {/* Fitting Price Section */}
@@ -1051,6 +1052,8 @@ const Customer = () => {
           <div className="mt-8 flex justify-end">
             <Button
               onClick={handleSave}
+              loadingText="Saving Customer.."
+              isLoading={isCreating}
               className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm"
             >
               Save Customer Information

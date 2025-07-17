@@ -6,33 +6,47 @@ export const useFrameMaster = () => useContext(FormMasterContext);
 
 export const FormMasterProvider = ({ children }) => {
   const [formData, setFormData] = useState({
-    BrandID: "",
-    ModelNo: "",
-    Category: "",
-    Type: "",
-    ShapeID: "",
-    FrontMaterialID: "",
-    TempleMaterialID: "",
-    Gender: "",
+    BrandID: null,
+    ModelNo: null,
+    Category: null,
+    Type: null,
+    ShapeID: null,
+    FrontMaterialID: null,
+    TempleMaterialID: null,
+    Gender: null,
     IsClipOn: false,
-    NoOfClips: "",
+    NoOfClips: null,
     IsRxable: true,
-    CaptureSlNo: "",
-    HSN: "",
-    TaxID: "",
+    CaptureSlNo: null,
+    HSN: null,
+    TaxID: null,
   });
 
   const [variationData, setVariationData] = useState([]);
   const [stock, setStock] = useState([]);
 
-  // ✅ Add pricingData and its setter
   const [pricingData, setPricingData] = useState([]);
 
   const resetFrameMasterState = () => {
     setVariationData([]);
     setPricingData([]);
     setStock([]);
-    setFormData({});
+    setFormData({
+      BrandID: null,
+      ModelNo: null,
+      Category: null,
+      Type: null,
+      ShapeID: null,
+      FrontMaterialID: null,
+      TempleMaterialID: null,
+      Gender: null,
+      IsClipOn: false,
+      NoOfClips: null,
+      IsRxable: true,
+      CaptureSlNo: null,
+      HSN: null,
+      TaxID: null,
+    });
   };
 
   return (

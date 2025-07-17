@@ -5,7 +5,7 @@ import Checkbox from "../../components/Form/Checkbox";
 import Button from "../../components/ui/Button";
 import Select from "../../components/Form/Select";
 import { useLazyGetPinCodeQuery } from "../../api/customerApi";
-import toast from "react-hot-toast";
+
 
 // Section Wrapper for clean layout
 const Section = ({ title, children }) => (
@@ -34,7 +34,7 @@ const VendorForm = ({
     if (countryIsd?.country?.ISDCode) {
       setFormData((prev) => ({
         ...prev,
-        mobileISDCode: countryIsd.country.ISDCode,
+        mobileISDCode: countryIsd?.country?.ISDCode,
       }));
     }
   }, [countryIsd, setFormData]);
@@ -44,6 +44,13 @@ const VendorForm = ({
       fetchLocationByPincode(formData.vendor_pincode);
     }
   }, [formData.vendor_pincode]);
+
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      pan_no: formData.gst_no?.substring(2, 12),
+    }));
+  }, [formData.gst_no]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -63,42 +70,68 @@ const VendorForm = ({
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const fetchLocationByPincode = async () => {
-    const pincode = formData.vendor_pincode;
-    if (!pincode || pincode.length !== 6) {
-      toast.error("Please enter a valid 6-digit PIN code.");
-      return;
-    }
+const fetchLocationByPincode = async () => {
+  const pincode = formData.vendor_pincode;
 
-    try {
-      const response = await getPinCode({ pincode }).unwrap();
-      if (response?.success && response.data.length > 0) {
-        const location = response.data[0];
-        const matchedCountry = countries.find(
-          (c) =>
-            c.CountryName.toLowerCase() ===
-            location.CountryName?.trim().toLowerCase()
-        );
-        const matchedState = states.find(
-          (s) =>
-            s.StateCode == location?.StateId ||
-            s.StateName.toLowerCase() ===
-              location?.StateName?.trim().toLowerCase()
-        );
+  if (!/^\d{6}$/.test(pincode)) {
+    setErrors((prev) => ({
+      ...prev,
+      vendor_pincode: "Please enter a valid 6-digit PIN code.",
+    }));
+    return;
+  }
 
-        setFormData((prev) => ({
-          ...prev,
-          vendor_city: location.CityName || prev.vendor_city,
-          vendor_state: matchedState?.Id || prev.vendor_state,
-          vendor_country: matchedCountry?.Id || prev.vendor_country,
-        }));
-      } else {
-        toast.error("No location found for this PIN code.");
-      }
-    } catch (error) {
-      toast.error("Failed to fetch location. Please try again.");
+  // Clear pincode error before calling API
+  setErrors((prev) => ({
+    ...prev,
+    vendor_pincode: "",
+  }));
+
+  try {
+    const response = await getPinCode({ pincode }).unwrap();
+    if (response?.success && response.data.length > 0) {
+      const location = response.data[0];
+      const matchedCountry = countries.find(
+        (c) =>
+          c.CountryName.toLowerCase() ===
+          location.CountryName?.trim().toLowerCase()
+      );
+      const matchedState = states.find(
+        (s) =>
+          s.StateCode == location?.StateId ||
+          s.StateName.toLowerCase() ===
+            location?.StateName?.trim().toLowerCase()
+      );
+
+      setFormData((prev) => ({
+        ...prev,
+        vendor_city: location.CityName || prev.vendor_city,
+        vendor_state: matchedState?.Id || prev.vendor_state,
+        vendor_country: matchedCountry?.Id || prev.vendor_country,
+      }));
+
+      // ✅ Clear related location errors
+      setErrors((prev) => ({
+        ...prev,
+        vendor_city: "",
+        vendor_state: "",
+        vendor_country: "",
+        vendor_pincode: "",
+      }));
+    } else {
+      setErrors((prev) => ({
+        ...prev,
+        vendor_pincode: "No location found for this PIN code.",
+      }));
     }
-  };
+  } catch (error) {
+    setErrors((prev) => ({
+      ...prev,
+      vendor_pincode: "Failed to fetch location. Please try again.",
+    }));
+  }
+};
+
 
   return (
     <div className="space-y-6">
@@ -131,18 +164,23 @@ const VendorForm = ({
               <Radio
                 label="Registered"
                 name="gstStatus"
-                value="0"
-                checked={formData.gstStatus === 0}
+                value="1"
+                checked={formData.gstStatus === 1}
                 onChange={handleChange}
-                disabled={formData.vendor_type === 1}
               />
               <Radio
                 label="Unregistered"
                 name="gstStatus"
-                value="1"
-                checked={formData.gstStatus === 1}
+                value="0"
+                checked={formData.gstStatus === 0}
                 onChange={handleChange}
-                disabled={formData.vendor_type === 1}
+              />
+              <Radio
+                label="Composite"
+                name="gstStatus"
+                value="2"
+                checked={formData.gstStatus === 2}
+                onChange={handleChange}
               />
             </div>
           </div>
@@ -152,30 +190,31 @@ const VendorForm = ({
       {/* GST and PAN */}
       <Section title="GST Details">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="flex flex-col gap-2">
-            <div className="flex gap-3 items-end">
-              <Input
-                label="GST Number *"
-                name="gst_no"
-                value={formData.gst_no}
-                onChange={handleChange}
-                placeholder="Enter GSTIN"
-                error={errors.gst_no}
-                className="w-full"
-              />
-              <Button
-                onClick={handleVerifyGST}
-                disabled={isVerifyGSTLoading || isFetchingPincode}
-              >
-                {isVerifyGSTLoading ? "Verifying..." : "Verify"}
-              </Button>
+          {(formData.gstStatus === 0 || formData.gstStatus === 2) && (
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-3 items-end">
+                <Input
+                  label="GST Number *"
+                  name="gst_no"
+                  value={formData.gst_no}
+                  onChange={handleChange}
+                  placeholder="Enter GSTIN"
+                  error={errors.gst_no}
+                  className="w-full"
+                />
+                <Button
+                  onClick={handleVerifyGST}
+                  disabled={isVerifyGSTLoading || isFetchingPincode}
+                >
+                  {isVerifyGSTLoading ? "Verifying..." : "Verify"}
+                </Button>
+              </div>
             </div>
-          </div>
-
+          )}
           <Input
             label={`PAN Number ${formData.vendor_type === 0 ? "*" : ""}`}
             name="pan_no"
-            value={formData.gst_no?.substring(2, 12) || formData.pan_no}
+            value={formData.pan_no}
             onChange={handleChange}
             placeholder="Enter PAN Number"
             error={errors.pan_no}
@@ -192,12 +231,7 @@ const VendorForm = ({
           error={errors.legal_name}
         />
 
-        <Checkbox
-          label="Is Service Provider?"
-          name="isServiceProvider"
-          checked={formData.isServiceProvider === 1}
-          onChange={handleChange}
-        />
+       
       </Section>
 
       {/* Billing */}
@@ -246,6 +280,12 @@ const VendorForm = ({
               />
             </div>
           </div>
+           <Checkbox
+          label="Is Service Provider?"
+          name="isServiceProvider"
+          checked={formData.isServiceProvider === 1}
+          onChange={handleChange}
+        />
         </div>
       </Section>
 
@@ -328,17 +368,16 @@ const VendorForm = ({
       <Section title="Contact Information">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Input
-            label="Email *"
+            label="Email"
             name="email"
             value={formData.email}
             onChange={handleChange}
             placeholder="Enter Email"
             error={errors.email}
           />
-          
 
           <div className="flex flex-col gap-2">
-            <label className="font-medium text-gray-700">Mobile Number *</label>
+            <label className="font-medium text-gray-700">Mobile Number</label>
             <div className="flex gap-4">
               <Select
                 name="mobileISDCode"
@@ -369,6 +408,7 @@ const VendorForm = ({
             value={formData.telephone}
             onChange={handleChange}
             placeholder="Enter Telephone"
+            error={errors.telephone}
           />
         </div>
       </Section>

@@ -77,14 +77,14 @@ const BrandCategory = () => {
     <div className="max-w-5xl">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div className="text-3xl text-neutral-700 font-semibold">
-          Brand category
+          Brand Category
         </div>
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
           <div className="flex items-center gap-2 border-2 border-neutral-300 rounded-md px-3 w-full sm:w-[250px] h-10 bg-white">
             <FiSearch className="text-neutral-500 text-lg" />
             <input
               type="text"
-              placeholder="Search pools..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full outline-none text-sm text-neutral-700 placeholder-neutral-400 bg-transparent"
@@ -97,14 +97,14 @@ const BrandCategory = () => {
               className="bg-primary/90 text-neutral-50 hover:bg-primary/70 transition-all whitespace-nowrap"
               onClick={() => navigate("create")}
             >
-              Add category
+              Add Category
             </Button>
           </HasPermission>
         </div>
       </div>
 
       <Table
-        columns={["S.No", "Brand Category", "Created At", "Action"]}
+        columns={["S.No", "Brand Category", "created on", "Action"]}
         data={paginatedPools}
         renderRow={(pool, index) => (
           <TableRow key={pool.id}>

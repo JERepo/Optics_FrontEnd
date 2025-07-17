@@ -19,6 +19,12 @@ export const materialMasterApi = createApi({
         url: `/api/v1/material-master`,
       }),
       providesTags: ["material"],
+      transformResponse: (response) => {
+        const sorted = response?.data?.sort(
+          (a, b) => new Date(b.CreatedDate) - new Date(a.CreatedDate)
+        );
+        return sorted || [];
+      },
     }),
     getmaterialById: builder.query({
       query: ({ id }) => ({

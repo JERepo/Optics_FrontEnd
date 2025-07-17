@@ -89,8 +89,8 @@ const EditBrands = () => {
   
     const payload = {
       BrandName: brandName,
-      BrandGroupID: selectedBrandGroup,
-      BrandCategory: selectedBrandCat,
+      BrandGroupID: parseInt(selectedBrandGroup),
+      BrandCategoryId: parseInt(selectedBrandCat),
       ContactLensActive: categoryToggles.ContactLensActive ? 1 : 0,
       OpticalLensActive: categoryToggles.OpticalLensActive ? 1 : 0,
       FrameActive: categoryToggles.FrameActive ? 1 : 0,
@@ -100,10 +100,10 @@ const EditBrands = () => {
     try {
       if (id) {
         await updateBrands({ id, payload }).unwrap();
-        toast.success("Group updated successfully");
+        toast.success("Brand updated successfully");
       } else {
         await createBrands({ id: user.Id, payload }).unwrap();
-        toast.success("Group created successfully");
+        toast.success("Brand created successfully");
         setBrandName("");
         setSelectedBrandGroup("");
         setSelectedBrandCat("");
@@ -129,7 +129,7 @@ const EditBrands = () => {
         <button
           onClick={() => navigate(-1)}
           className="mr-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
-          aria-label="Go back"
+          aria-label="Go Back"
         >
           <FiArrowLeft className="text-gray-600" size={20} />
         </button>
@@ -142,12 +142,12 @@ const EditBrands = () => {
         {/* Brand Name */}
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
-            Brand name
+            Brand Name
           </label>
           <input
             type="text"
             className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary placeholder-gray-400 transition"
-            placeholder="e.g. Summer Tournament 2023"
+            placeholder=""
             value={brandName}
             onChange={(e) => setBrandName(e.target.value)}
             autoFocus
@@ -225,10 +225,10 @@ const EditBrands = () => {
                 {id
                   ? isBrandUpdating
                     ? "Updating..."
-                    : "Update brand"
+                    : "Update Brand"
                   : isBrandCreating
                   ? "Creating..."
-                  : "Create brand"}
+                  : "Create Brand"}
               </Button>
             </HasPermission>
           )}

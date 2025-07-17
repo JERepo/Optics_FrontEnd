@@ -19,12 +19,19 @@ export const brandsApi = createApi({
         url: `/api/v1/brands`,
       }),
       providesTags: ["Brands"],
+      transformResponse: (response) => {
+        const sorted = response?.data?.sort(
+          (a, b) => new Date(b.CreatedDate) - new Date(a.CreatedDate)
+        );
+        return sorted || [];
+      },
     }),
+
     getBrandById: builder.query({
       query: ({ id }) => ({
         url: `/api/v1/brands/${id}`,
       }),
-       providesTags: ["Brands"],
+      providesTags: ["Brands"],
     }),
     updateBrands: builder.mutation({
       query: ({ id, payload }) => ({

@@ -535,6 +535,14 @@ export const router = createBrowserRouter([
         element: <EditSalesPerson />,
       },
       {
+        path: "sales/edit/:id",
+        element: <EditSalesPerson />,
+      },
+      {
+        path: "sales/view/:id",
+        element: <EditSalesPerson />,
+      },
+      {
         path: "bank-master",
         element: <BankMaster />,
       },
@@ -588,6 +596,10 @@ export const router = createBrowserRouter([
       },
       {
         path: "vendor/create",
+        element: <EditVendor />,
+      },
+      {
+        path: "vendor/edit/:id",
         element: <EditVendor />,
       },
     ],

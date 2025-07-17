@@ -104,7 +104,7 @@ export const menuItems = [
         path: "/customer-group",
       },
       {
-        name : "Sales",
+        name : "Sales Person",
         icons : IoBriefcaseOutline,
         module : "Sales Person",
         path : "/sales"

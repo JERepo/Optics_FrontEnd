@@ -16,6 +16,7 @@ export const frameMasterApi = createApi({
       query: ({ id }) => ({
         url: `/api/v1/frame-main/getbyid/${id}`,
       }),
+      providesTags: ["Frame"],
     }),
     deActivate: builder.mutation({
       query: ({ id, payload }) => ({
@@ -31,6 +32,7 @@ export const frameMasterApi = createApi({
         method: "POST",
         body: payload,
       }),
+      invalidatesTags: ["Frame"],
     }),
     updateFramemaster: builder.mutation({
       query: ({ id, payload }) => ({
@@ -38,6 +40,7 @@ export const frameMasterApi = createApi({
         method: "PUT",
         body: payload,
       }),
+      invalidatesTags: ["Frame"],
     }),
   }),
 });
@@ -47,5 +50,5 @@ export const {
   useDeActivateMutation,
   useCreateFrameMasterMutation,
   useGetFrameMasterByIdQuery,
-  useUpdateFramemasterMutation
+  useUpdateFramemasterMutation,
 } = frameMasterApi;

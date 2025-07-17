@@ -110,12 +110,28 @@ const CreateVariation = ({
       const buying = parseFloat(p.buyingPrice);
       const selling = parseFloat(p.sellingPrice);
 
-      if (!buying || isNaN(buying) || buying < 0) pricingErrors = true;
-      if (!selling || isNaN(selling) || selling < 0) pricingErrors = true;
+      if (isNaN(buying) || buying <= 0) {
+        pricingErrors = true;
+        invalidLocations.push(p.location);
+      }
+
+      if (isNaN(selling) || selling <= 0) {
+        pricingErrors = true;
+        invalidLocations.push(p.location);
+      }
+
+      if (selling <= buying) {
+        pricingErrors = true;
+        errors[
+          `sellingPrice_${idx}`
+        ] = `Selling price must be greater than buying price at ${p.location}.`;
+      }
 
       if ((buying > mrp || selling > mrp) && !errors.OPMRP) {
         pricingErrors = true;
-        invalidLocations.push(p.location);
+        errors[
+          `mrpMismatch_${idx}`
+        ] = `MRP must be greater than buying/selling prices at ${p.location}.`;
       }
     });
 

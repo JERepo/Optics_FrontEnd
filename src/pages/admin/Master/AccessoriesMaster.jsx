@@ -23,9 +23,10 @@ const AccessoriesMaster = () => {
   const [currentStatus, setCurrentStatus] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { data: allAccessories, isLoading,error } = useGetAllMasterQuery();
+  const { data: allAccessories, isLoading, error } = useGetAllMasterQuery();
 
-  const [deActivate, { isLoading: isDeActivating }] = useDeActivateMainMutation();
+  const [deActivate, { isLoading: isDeActivating }] =
+    useDeActivateMainMutation();
 
   const accessories = useMemo(() => {
     if (!allAccessories?.data) return [];
@@ -74,7 +75,7 @@ const AccessoriesMaster = () => {
     navigate(`edit/${poolId}`);
   };
   if (isLoading) return <h1>Loading...</h1>;
-  if(error) return <h1>Error</h1>
+  if (error) return <h1>Error</h1>;
 
   return (
     <div className="max-w-6xl">
@@ -87,7 +88,7 @@ const AccessoriesMaster = () => {
             <FiSearch className="text-neutral-500 text-lg" />
             <input
               type="text"
-              placeholder="Search pools..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full outline-none text-sm text-neutral-700 placeholder-neutral-400 bg-transparent"
@@ -98,9 +99,12 @@ const AccessoriesMaster = () => {
               icon={FiPlus}
               iconPosition="left"
               className="bg-primary/90 text-neutral-50 hover:bg-primary/70 transition-all whitespace-nowrap"
-              onClick={() => navigate("create")}
+              onClick={() => {
+                navigate("create");
+                window.location.reload();
+              }}
             >
-              Add master
+              Add Accessory Master
             </Button>
           </HasPermission>
         </div>
@@ -109,10 +113,10 @@ const AccessoriesMaster = () => {
       <Table
         columns={[
           "S.No",
-          "Brand Name",
+          "Accessory master name",
           "Product Name",
           "HSN Code",
-          "Created At",
+          "created on",
           "Action",
         ]}
         data={paginatedPools}

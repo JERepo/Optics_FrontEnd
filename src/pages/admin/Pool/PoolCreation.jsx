@@ -111,7 +111,7 @@ const PoolCreation = () => {
       </div>
 
       <Table
-        columns={["S.No", "Pool Category", "Pool Name", "Created At", "Action"]}
+        columns={["S.No", "Pool Category", "Pool Name", "created on", "Action"]}
         data={paginatedPools}
         renderRow={(pool, index) => (
           <TableRow key={pool.id}>

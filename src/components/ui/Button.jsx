@@ -1,3 +1,5 @@
+import { FiLoader } from "react-icons/fi";
+
 const Button = ({
   children,
   icon: Icon,

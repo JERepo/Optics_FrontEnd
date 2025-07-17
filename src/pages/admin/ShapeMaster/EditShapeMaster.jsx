@@ -56,13 +56,13 @@ const EditShapeMaster = () => {
     try {
       if (id) {
         await updateBrandGroup({ id, payload }).unwrap();
-        toast.success("Group updated successfully");
+        toast.success("Frame shape updated successfully");
       } else {
         await createBrandGroup({
           id: user.Id,
           payload,
         }).unwrap();
-        toast.success("Group created successfully");
+        toast.success("Frame shape created successfully");
         setBrandName("");
       }
 
@@ -73,7 +73,7 @@ const EditShapeMaster = () => {
     }
   };
 
-  if (id && isBrandCatLoading) return <h1>Loading brands category...</h1>;
+  if (id && isBrandCatLoading) return <h1>Loading ...</h1>;
 
   return (
     <div className="max-w-2xl bg-white rounded-lg shadow-sm p-4">
@@ -81,7 +81,7 @@ const EditShapeMaster = () => {
         <button
           onClick={() => navigate(-1)}
           className="mr-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
-          aria-label="Go back"
+          aria-label="Go Back"
         >
           <FiArrowLeft className="text-gray-600" size={20} />
         </button>
@@ -119,10 +119,10 @@ const EditShapeMaster = () => {
                 {id
                   ? isBrandCatUpdating
                     ? "Updating..."
-                    : "Update shape"
+                    : "Update Shape"
                   : isBrandCatCreatingLoading
                   ? "Creating..."
-                  : "Create shape"}
+                  : "Create Shape"}
               </Button>
             </HasPermission>
           )}

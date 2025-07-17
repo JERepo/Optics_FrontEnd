@@ -83,7 +83,7 @@ const EditVariations = () => {
         <button
           onClick={() => navigate(-1)}
           className="mr-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
-          aria-label="Go back"
+          aria-label="Go Back"
         >
           <FiArrowLeft className="text-gray-600" size={20} />
         </button>

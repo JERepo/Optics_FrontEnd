@@ -5,38 +5,36 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Button from "../../../components/ui/Button";
 import toast from "react-hot-toast";
 import HasPermission from "../../../components/HasPermission";
-import {
-  useCreateBrandGroupMutation,
-  useGetAllBrandGroupsQuery,
-  useGetBrandGroupByIdQuery,
-  useUpdateBrandGroupMutation,
-} from "../../../api/brandGroup";
 import { useSelector } from "react-redux";
+import {
+  useCreateBankMasterMutation,
+  useGetBankMasterByIdQuery,
+  useUpdateBankMasterMutation,
+} from "../../../api/bankMasterApi";
 
 const EditBankMaster = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation();
   const [brandName, setBrandName] = useState("");
-   const { user } = useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.auth);
 
   const {
     data: brandCategory,
     isLoading: isBrandCatLoading,
     isSuccess,
-  } = useGetBrandGroupByIdQuery({ id });
+  } = useGetBankMasterByIdQuery({ id });
   const [createBrandGroup, { isLoading: isBrandCatCreatingLoading }] =
-    useCreateBrandGroupMutation();
+    useCreateBankMasterMutation();
   const [updateBrandGroup, { isLoading: isBrandCatUpdating }] =
-    useUpdateBrandGroupMutation();
-  const { data: allBrands } = useGetAllBrandGroupsQuery();
+    useUpdateBankMasterMutation();
 
   const isEnabled = location.pathname.includes("/view");
 
   // Prefill values if editing
   useEffect(() => {
     if (id && isSuccess && brandCategory?.data) {
-      setBrandName(brandCategory.data.BrandGroupName || "");
+      setBrandName(brandCategory?.data?.data?.BankName);
     }
   }, [id, brandCategory, isSuccess]);
 
@@ -46,23 +44,24 @@ const EditBankMaster = () => {
       toast.error("Please fill all fields!");
       return;
     }
-    if (brandName.length > 50) {
+    if (brandName?.length > 50) {
       toast.error("Cannot exceed more than 50 characters");
     }
-   
+
     const payload = {
-      BrandGroupName: brandName,
+      bank_name: brandName,
+      bank_country : brandCategory?.data?.data.BankCountry
     };
     try {
       if (id) {
         await updateBrandGroup({ id, payload }).unwrap();
-        toast.success("Group updated successfully");
+        toast.success("Bank Master updated successfully");
       } else {
         await createBrandGroup({
           id: user.Id,
           payload,
         }).unwrap();
-        toast.success("Group created successfully");
+        toast.success("Bank Master created successfully");
         setBrandName("");
       }
 
@@ -73,7 +72,7 @@ const EditBankMaster = () => {
     }
   };
 
-  if (id && isBrandCatLoading) return <h1>Loading brands category...</h1>;
+  if (id && isBrandCatLoading) return <h1>Loading...</h1>;
 
   return (
     <div className="max-w-2xl bg-white rounded-lg shadow-sm p-4">
@@ -81,7 +80,7 @@ const EditBankMaster = () => {
         <button
           onClick={() => navigate(-1)}
           className="mr-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
-          aria-label="Go back"
+          aria-label="Go Back"
         >
           <FiArrowLeft className="text-gray-600" size={20} />
         </button>
@@ -97,7 +96,7 @@ const EditBankMaster = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
-            Bank Name
+            Bank Master Name *
           </label>
           <input
             type="text"
@@ -119,10 +118,10 @@ const EditBankMaster = () => {
                 {id
                   ? isBrandCatUpdating
                     ? "Updating..."
-                    : "Update bank"
+                    : "Update Bank Master"
                   : isBrandCatCreatingLoading
                   ? "Creating..."
-                  : "Create bank"}
+                  : "Create Bank Master"}
               </Button>
             </HasPermission>
           )}

@@ -8,6 +8,16 @@ import Toggle from "../../../components/ui/Toggle";
 import { PoolCat } from "../../../utils/constants/PoolCategory";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import HasPermission from "../../../components/HasPermission";
+import {
+  useDeActivateMutation,
+  useGetAllSalesPersonsQuery,
+} from "../../../api/salesPersonApi";
+
+const SalesType = [
+  { value: 0, label: "Sales Person" },
+  { value: 1, label: "Optometrist" },
+  { value: 2, label: "Others" },
+];
 
 const SalesPerson = () => {
   const navigate = useNavigate();
@@ -22,17 +32,16 @@ const SalesPerson = () => {
 
   //   const { data, isLoading } = useGetAllBrandGroupsQuery();
   //   const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
-  const data = [];
-  const isLoading = false;
-  const isDeActivating = false;
+  const { data, isLoading } = useGetAllSalesPersonsQuery();
+  const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
 
   const brands = useMemo(() => {
     if (!data?.data) return [];
 
-    return data.data.map((brand) => ({
+    return data.data.data.map((brand) => ({
       id: brand.Id,
-      name: brand.BrandGroupName,
-
+      name: brand.PersonName,
+      type: SalesType.find((s) => s.value === brand.Type).label,
       createdAt: new Intl.DateTimeFormat(locale, {
         year: "numeric",
         month: "short",
@@ -54,10 +63,10 @@ const SalesPerson = () => {
 
   const handleConfirmToggle = async () => {
     try {
-      //   await deActivate({
-      //     id: selectedBrandId,
-      //     payload: { IsActive: currentStatus ? 0 : 1 },
-      //   }).unwrap();
+      await deActivate({
+        id: selectedBrandId,
+        payload: { IsActive: currentStatus ? 0 : 1 },
+      }).unwrap();
     } catch (error) {
       console.error("Toggle error:", error);
     } finally {
@@ -74,7 +83,9 @@ const SalesPerson = () => {
   return (
     <div className="max-w-5xl">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div className="text-3xl text-neutral-700 font-semibold">Customer</div>
+        <div className="text-3xl text-neutral-700 font-semibold">
+          Sales Person
+        </div>
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
           <div className="flex items-center gap-2 border-2 border-neutral-300 rounded-md px-3 w-full sm:w-[250px] h-10 bg-white">
             <FiSearch className="text-neutral-500 text-lg" />
@@ -100,12 +111,7 @@ const SalesPerson = () => {
       </div>
 
       <Table
-        columns={[
-          "S.No",
-          "Person Name",
-          "Type",
-          "Action",
-        ]}
+        columns={["S.No", "Person Name", "Type", "Action"]}
         data={paginatedPools}
         renderRow={(pool, index) => (
           <TableRow key={pool.id}>
@@ -115,13 +121,15 @@ const SalesPerson = () => {
             <TableCell className="text-sm text-neutral-500">
               {pool.name}
             </TableCell>
-
             <TableCell className="text-sm text-neutral-500">
-              {pool.createdAt}
+              {pool.type}
             </TableCell>
+
+            {/* <TableCell className="text-sm text-neutral-500">
+              {pool.createdAt}
+            </TableCell> */}
             <TableCell>
               <div className="flex items-center gap-3">
-        
                 <HasPermission module="Brand group" action="view">
                   <FiEye
                     onClick={() => navigate(`view/${pool.id}`)}

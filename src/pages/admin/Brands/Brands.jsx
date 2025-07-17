@@ -27,9 +27,9 @@ const Brands = () => {
   const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
 
   const brands = useMemo(() => {
-    if (!data?.data) return [];
+    if (!data) return [];
 
-    return data.data.map((brand) => ({
+    return data.map((brand) => ({
       id: brand.Id,
       name: brand.BrandName,
 
@@ -95,14 +95,14 @@ const Brands = () => {
               className="bg-primary/90 text-neutral-50 hover:bg-primary/70 transition-all whitespace-nowrap"
               onClick={() => navigate("create")}
             >
-              Add brands
+              Add Brands
             </Button>
           </HasPermission>
         </div>
       </div>
 
       <Table
-        columns={["S.No", "Brand Name", "Created At", "Action"]}
+        columns={["S.No", "Brand Name", "created on", "Action"]}
         data={paginatedPools}
         renderRow={(pool, index) => (
           <TableRow key={pool.id}>

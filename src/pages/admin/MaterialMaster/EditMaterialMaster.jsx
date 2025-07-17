@@ -18,7 +18,7 @@ const EditmaterialMaster = () => {
   const location = useLocation();
   const [brandName, setBrandName] = useState("");
   const [materialFor, setMaterialFor] = useState(null); // 0 for Frame, 1 for Contact Lens
-   const { user } = useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.auth);
 
   const {
     data: brandCategory,
@@ -58,7 +58,6 @@ const EditmaterialMaster = () => {
       return;
     }
 
-   
     const payload = {
       MaterialName: brandName,
       MaterialFor: parseInt(materialFor), // Convert back to number
@@ -67,13 +66,13 @@ const EditmaterialMaster = () => {
     try {
       if (id) {
         await updateBrandGroup({ id, payload }).unwrap();
-        toast.success("Season updated successfully");
+        toast.success("Material master updated successfully");
       } else {
         await createBrandGroup({
           id: user.Id,
           payload,
         }).unwrap();
-        toast.success("Season created successfully");
+        toast.success("Material master created successfully");
         setBrandName("");
         setMaterialFor(null);
       }
@@ -85,7 +84,7 @@ const EditmaterialMaster = () => {
     }
   };
 
-  if (id && isBrandCatLoading) return <h1>Loading seasons...</h1>;
+  if (id && isBrandCatLoading) return <h1>Loading...</h1>;
 
   return (
     <div className="max-w-2xl bg-white rounded-lg shadow-sm p-4">
@@ -93,7 +92,7 @@ const EditmaterialMaster = () => {
         <button
           onClick={() => navigate(-1)}
           className="mr-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
-          aria-label="Go back"
+          aria-label="Go Back"
         >
           <FiArrowLeft className="text-gray-600" size={20} />
         </button>
@@ -165,10 +164,10 @@ const EditmaterialMaster = () => {
                 {id
                   ? isBrandCatUpdating
                     ? "Updating..."
-                    : "Update material"
+                    : "Update Material Master"
                   : isBrandCatCreatingLoading
                   ? "Creating..."
-                  : "Create material"}
+                  : "Create Material Master"}
               </Button>
             </HasPermission>
           )}

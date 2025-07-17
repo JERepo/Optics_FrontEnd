@@ -4,19 +4,20 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Button from "../../../components/ui/Button";
 import toast from "react-hot-toast";
 import HasPermission from "../../../components/HasPermission";
-import {
-  useCreateBrandGroupMutation,
-  useGetAllBrandGroupsQuery,
-  useGetBrandGroupByIdQuery,
-  useUpdateBrandGroupMutation,
-} from "../../../api/brandGroup";
+
 import { useGetAllLocationsQuery } from "../../../api/roleManagementApi";
 import Loader from "../../../components/ui/Loader";
 import { useSelector } from "react-redux";
+import {
+  useCreateSalesPersonMutation,
+  useGetAllSalesPersonsQuery,
+  useGetSalesPersonByIdQuery,
+  useUpdateSalesPersonMutation,
+} from "../../../api/salesPersonApi";
 
 const SalesType = [
   { value: 0, label: "Sales Person" },
-  { value: 1, label: "Executive" },
+  { value: 1, label: "Optometrist" },
   { value: 2, label: "Others" },
 ];
 
@@ -24,35 +25,36 @@ const EditSalesPerson = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation();
-  const [brandName, setBrandName] = useState("");
-  const [salesPersonType, setSelectPersonType] = useState("");
+  const [brandName, setBrandName] = useState(null);
+  const [salesPersonType, setSelectPersonType] = useState(null);
   const [selectedLocation, setSelectedLocations] = useState([]);
-   const { user } = useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.auth);
 
   const {
     data: brandCategory,
     isLoading: isBrandCatLoading,
     isSuccess,
-  } = useGetBrandGroupByIdQuery({ id });
+  } = useGetSalesPersonByIdQuery({ id });
   const [createBrandGroup, { isLoading: isBrandCatCreatingLoading }] =
-    useCreateBrandGroupMutation();
+    useCreateSalesPersonMutation();
   const [updateBrandGroup, { isLoading: isBrandCatUpdating }] =
-    useUpdateBrandGroupMutation();
-  const { data: allBrands } = useGetAllBrandGroupsQuery();
-  const { data: allLocations, isLoading: isLocationsLoading } = useGetAllLocationsQuery();
+    useUpdateSalesPersonMutation();
+  const { data: allBrands } = useGetAllSalesPersonsQuery();
+  const { data: allLocations, isLoading: isLocationsLoading } =
+    useGetAllLocationsQuery();
 
   const isEnabled = location.pathname.includes("/view");
 
   // Prefill values if editing
   useEffect(() => {
     if (id && isSuccess && brandCategory?.data) {
-      setBrandName(brandCategory.data.BrandGroupName || "");
-      // You should also set the salesPersonType and selectedLocation from the fetched data
-      // setSelectPersonType(brandCategory.data.SalesType);
-      // setSelectedLocations(brandCategory.data.Locations || []);
+      setBrandName(brandCategory?.data?.data.PersonName || null);
+      setSelectPersonType(brandCategory?.data?.data.Type);
+      setSelectedLocations(
+        brandCategory?.data.data.SalesPersonLinks.map((l) => l.CompanyID)
+      );
     }
   }, [id, brandCategory, isSuccess]);
-
   const handleLocationChange = (event) => {
     const { value, checked } = event.target;
     const numericValue = parseInt(value);
@@ -76,7 +78,7 @@ const EditSalesPerson = () => {
       toast.error("Cannot exceed more than 50 characters");
       return;
     }
-    if (!salesPersonType) {
+    if (salesPersonType === null) {
       toast.error("Please select sales person type");
       return;
     }
@@ -85,31 +87,29 @@ const EditSalesPerson = () => {
       return;
     }
 
-   
     const payload = {
-      SalesName: brandName,
-      SalesType: salesPersonType,
-      Locations: selectedLocation,
+      PersonName: brandName,
+      Type: Number(salesPersonType),
+      CompanyIDs: selectedLocation,
     };
 
-
-    // try {
-    //   if (id) {
-    //     await updateBrandGroup({ id, payload }).unwrap();
-    //     toast.success("Sales person updated successfully");
-    //   } else {
-    //     await createBrandGroup({
-    //       id: user.Id,
-    //       payload,
-    //     }).unwrap();
-    //     toast.success("Sales person created successfully");
-    //     setBrandName("");
-    //   }
-    //   navigate(-1);
-    // } catch (error) {
-    //   toast.error("Something went wrong!");
-    //   console.error(error);
-    // }
+    try {
+      if (id) {
+        await updateBrandGroup({ id, userId: user.Id, payload }).unwrap();
+        toast.success("Sales person updated successfully");
+      } else {
+        await createBrandGroup({
+          userId: user.Id,
+          payload,
+        }).unwrap();
+        toast.success("Sales person created successfully");
+        setBrandName(null);
+      }
+      navigate(-1);
+    } catch (error) {
+      toast.error("Something went wrong!");
+      console.error(error);
+    }
   };
 
   if (id && isBrandCatLoading) return <Loader fullScreen />;
@@ -120,7 +120,7 @@ const EditSalesPerson = () => {
         <button
           onClick={() => navigate(-1)}
           className="mr-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
-          aria-label="Go back"
+          aria-label="Go Back"
         >
           <FiArrowLeft className="text-gray-600" size={20} />
         </button>
@@ -151,7 +151,7 @@ const EditSalesPerson = () => {
             maxLength={50}
           />
           <div className="text-xs text-gray-500 text-right">
-            {brandName.length}/50 characters
+            {brandName?.length}/50 characters
           </div>
         </div>
 
@@ -222,9 +222,7 @@ const EditSalesPerson = () => {
                 variant="primary"
                 size="md"
                 isLoading={isBrandCatCreatingLoading || isBrandCatUpdating}
-                loadingText={
-                  id ? "Updating..." : "Creating..."
-                }
+                loadingText={id ? "Updating..." : "Creating..."}
               >
                 {id ? "Update Sales Person" : "Create Sales Person"}
               </Button>

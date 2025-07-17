@@ -37,7 +37,7 @@ const Vendor = () => {
         name: customer.VendorName,
         phone: customer.MobNumber,
         emailId: customer.Email,
-        billingMethod: customer.BillingMethod,
+        billingMethod: customer.BillingMethod == 0 ? "Invoice" : "DC",
         enabled: customer.IsActive === 1,
       }))
       .filter((customer) => {
@@ -99,9 +99,12 @@ const Vendor = () => {
               icon={FiPlus}
               iconPosition="left"
               className="bg-primary/90 text-neutral-50 hover:bg-primary/70 transition-all whitespace-nowrap"
-              onClick={() => navigate("create")}
+              onClick={() => {
+                navigate("create");
+                window.location.reload();
+              }}
             >
-              Add vendor
+              Add Vendor
             </Button>
           </HasPermission>
         </div>

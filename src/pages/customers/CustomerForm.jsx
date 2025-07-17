@@ -14,6 +14,7 @@ const CustomerForm = ({
   companyType,
   handleVerifyGST,
   isVerifyGSTLoading,
+  
 }) => {
   // Auto-fill country code when countryIsd is available
   useEffect(() => {
@@ -24,6 +25,7 @@ const CustomerForm = ({
       }));
     }
   }, [countryIsd, setFormData]);
+
 
   // Auto-fill and disable PAN number when GST number is valid
   useEffect(() => {
@@ -250,7 +252,7 @@ const CustomerForm = ({
                           type="radio"
                           name="GSTINType"
                           value="0"
-                          checked={formData.GSTINType === "0"}
+                          checked={formData.GSTINType == 0}
                           onChange={handleInputChange}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                         />
@@ -261,7 +263,7 @@ const CustomerForm = ({
                           type="radio"
                           name="GSTINType"
                           value="1"
-                          checked={formData.GSTINType === "1"}
+                          checked={formData.GSTINType == 1}
                           onChange={handleInputChange}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                         />
@@ -281,7 +283,7 @@ const CustomerForm = ({
                           <input
                             type="text"
                             name="GSTNumber"
-                            value={formData.GSTNumber.toUpperCase()}
+                            value={formData.GSTNumber?.toUpperCase()}
                             onChange={handleInputChange}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />

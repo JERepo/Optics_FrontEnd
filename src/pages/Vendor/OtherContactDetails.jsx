@@ -29,7 +29,11 @@ const OtherContactDetails = ({
         other_contact_mobNumber: "",
       });
     } else {
-      setFormData(initialData);
+      setFormData({
+        ...initialData,
+        other_contact_ISDcode:
+          initialData.other_contact_ISDcode?.toString() ?? "+91",
+      });
     }
   }, [initialData, isOpen]);
   const [errors, setErrors] = useState({});
@@ -45,10 +49,16 @@ const OtherContactDetails = ({
     if (!formData.other_contact_name.trim()) {
       newErrors.other_contact_name = "Name is required";
     }
-    if (formData.other_contact_email && !/^\S+@\S+\.\S+$/.test(formData.other_contact_email)) {
+    if (
+      formData.other_contact_email &&
+      !/^\S+@\S+\.\S+$/.test(formData.other_contact_email)
+    ) {
       newErrors.other_contact_email = "Invalid email format";
     }
-    if (formData.other_contact_mobNumber && !/^\d{10}$/.test(formData.other_contact_mobNumber)) {
+    if (
+      formData.other_contact_mobNumber &&
+      !/^\d{10}$/.test(formData.other_contact_mobNumber)
+    ) {
       newErrors.other_contact_mobNumber = "Mobile number must be 10 digits";
     }
     setErrors(newErrors);
@@ -60,6 +70,11 @@ const OtherContactDetails = ({
     if (validateForm()) {
       onSave(formData);
     }
+  };
+
+  const handleCancel = (e) => {
+    e.preventDefault(); // Prevent form submission
+    onClose(); // Just close the modal
   };
 
   return (
@@ -98,10 +113,10 @@ const OtherContactDetails = ({
           <Select
             label="Country Code"
             name="other_contact_ISDcode"
-            value={formData.other_contact_ISDcode}
+            value={formData.other_contact_ISDcode?.toString()}
             onChange={handleChange}
             options={countries.map((c) => ({
-              Id: c.ISDCode,
+              Id: c.ISDCode?.toString(),
               CountryName: `${c.CountryName} (${c.ISDCode})`,
             }))}
             optionValue="Id"
@@ -119,7 +134,7 @@ const OtherContactDetails = ({
           />
         </div>
         <div className="flex justify-end gap-4">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
           <Button type="submit">Save</Button>

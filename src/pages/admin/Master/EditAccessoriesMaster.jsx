@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useGetAllBrandsQuery } from "../../../api/brandsApi";
 import {
   useCreateAccessoriesMasterMutation,
@@ -8,12 +8,10 @@ import {
   useGetTaxQuery,
   useUpdateMasterMutation,
 } from "../../../api/accessoriesMaster";
-
 import { useLocation, useNavigate, useParams } from "react-router";
 import { Table, TableCell, TableRow } from "../../../components/Table";
 import { FiEdit2, FiEye } from "react-icons/fi";
 import { useFrameMaster } from "../../../features/frameMasterContext";
-
 import toast from "react-hot-toast";
 import { hasPermission } from "../../../utils/permissionUtils";
 import { useSelector } from "react-redux";
@@ -30,7 +28,6 @@ const EditFrameMaster = () => {
   const location = useLocation();
   const isEnabled = location.pathname.includes("/view");
   const { access, user } = useSelector((state) => state.auth);
-  const hasViewAccess = hasPermission(access, "Accessory Master", "view");
 
   const navigate = useNavigate();
 
@@ -50,6 +47,7 @@ const EditFrameMaster = () => {
     isOpen: false,
     index: null,
   });
+  const [errors, setErrors] = useState({}); // State to hold form validation errors
 
   const {
     variationData,
@@ -69,7 +67,7 @@ const EditFrameMaster = () => {
   // Transform API response to our state structure
   useEffect(() => {
     if (masterData?.data && allLocations?.data) {
-      const { data } = masterData; // ✅ FIXED
+      const { data } = masterData;
 
       setFormData({
         BrandID: String(data.Brand.Id),
@@ -79,13 +77,11 @@ const EditFrameMaster = () => {
         TaxID: data.TaxID || "",
       });
 
-      // Transform variations and pricing data
       const transformedVariations = [];
       const transformedStock = [];
       const transformedPricing = [];
 
       data.OtherProductsDetails.forEach((detail) => {
-        // Variation data
         transformedVariations.push({
           id: detail.Id,
           SKUCode: detail.SKUCode || "",
@@ -96,14 +92,12 @@ const EditFrameMaster = () => {
           OPVariationID: detail.OPVariationID || 1,
         });
 
-        // Stock data
         transformedStock.push({
           id: detail.Stock?.Id || null,
           FrameBatch: detail.Stock?.FrameBatch || "1",
           FrameSRP: detail.Stock?.OPMRP || "0",
         });
 
-        // Pricing data
         const pricingForVariation = [];
         allLocations.data.forEach((location) => {
           const locId = location.Id;
@@ -140,6 +134,7 @@ const EditFrameMaster = () => {
       HSN: formData.HSN || "",
       BrandID: parseInt(formData.BrandID) || null,
       TaxID: parseInt(formData.TaxID) || null,
+      OtherProductType: 0,
       Details: variationData.map((variation, index) => {
         const stockData = stock[index] || {};
         const pricingDataForVariation = pricingData[index] || [];
@@ -152,25 +147,27 @@ const EditFrameMaster = () => {
             parseFloat(price.buyingPrice) || 0;
           locationPricing[`SellingPrice${locId}`] =
             parseFloat(price.sellingPrice) || 0;
-          locationPricing[`AvgPrice${locId}`] =
-            parseFloat(price.buyingPrice) || 0;
-          locationPricing[`Quantity${locId}`] = 0;
-          locationPricing[`DefectiveQty${locId}`] = 0;
+          if (!id) {
+            locationPricing[`AvgPrice${locId}`] =
+              parseFloat(price.buyingPrice) || 0;
+            locationPricing[`Quantity${locId}`] = 0;
+            locationPricing[`DefectiveQty${locId}`] = 0;
+          }
         });
 
         const originalDetail = masterData?.data?.OtherProductsDetails?.[index];
         const isBarcodeChanged = variation.Barcode !== originalDetail?.Barcode;
 
         const baseDetail = {
-          Id: variation.id || null, // Ensure id is included
+          Id: variation.id || null,
           SKUCode: variation.SKUCode || "",
           Barcode: isBarcodeChanged ? variation.Barcode : undefined,
-          OPVariationID: variation.OPVariationID || 1,
-          OPMainID: variation.OPMainID || null, // Preserve OPMainID
-          IsActive: variation.IsActive ?? 1, // Ensure IsActive is included
+          OPVariationID: Number(variation.OPVariationID) || 1,
+          OPMainID: Number(variation.OPMainID) || null,
+          IsActive: variation.IsActive ?? 1,
           Stock: {
             Id: stockData.id || null,
-            OPBatchCode: stockData.FrameBatch || "1",
+            OPBatchCode: stockData.FrameBatch || 1,
             OPMRP: parseFloat(stockData.FrameSRP) || 0,
             location: locationIds,
             ...locationPricing,
@@ -218,16 +215,49 @@ const EditFrameMaster = () => {
     setConfirmToggle({ isOpen: false, index: null });
   };
 
-  const handleSubmit = async (formData) => {
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.BrandID) {
+      newErrors.BrandID = "Brand is required.";
+    }
+    if (!formData.ProductName) {
+      newErrors.ProductName = "Product Name is required.";
+    } else if (formData.ProductName.length > 100) {
+      newErrors.ProductName = "Product Name cannot exceed 100 characters";
+    }
+    if (!formData.ProductCode) {
+      newErrors.ProductCode = "Product Code is required.";
+    } else if (formData.ProductCode.length > 30) {
+      newErrors.ProductCode = "Product Code cannot exceed 30 characters";
+    }
+    if (!formData.HSN) {
+      newErrors.HSN = "HSN Code is required.";
+    } else if (formData.HSN.length > 6) {
+      newErrors.HSN = "HSN Code cannot exceed 6 characters.";
+    }
+    if (!formData.TaxID) {
+      newErrors.TaxID = "Tax is required.";
+    }
+    return newErrors;
+  };
+
+  const handleSubmit = async () => {
     if (variationData.length <= 0) {
-      toast.error("Add atleast one variation");
+      toast.error("Add at least one variation");
       return;
     }
+
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors); // Update errors state to display in form
+      return;
+    }
+
+    setErrors({}); // Clear errors if validation passes
     const finalPayload = constructPayload(formData);
 
     try {
       if (id) {
-        // Update existing frame
         await updateMaster({
           id: parseInt(id),
           appId: user.Id,
@@ -235,17 +265,16 @@ const EditFrameMaster = () => {
         }).unwrap();
         toast.success("Accessory updated");
       } else {
-        // Create new frame
         await createAccessoriesMaster({
           id: user.Id,
           payload: finalPayload,
         }).unwrap();
         toast.success("Accessory created");
       }
-      navigate(-1); // Redirect after success
+      navigate(-1);
     } catch (error) {
       console.error("Error saving frame:", error);
-      // Handle error (show toast, etc.)
+      toast.error("Failed to save accessory");
     }
   };
 
@@ -255,14 +284,13 @@ const EditFrameMaster = () => {
   };
 
   const handleSaveVariation = (newVariation) => {
-    console.log(newVariation);
     const updatedVariation = {
       ...newVariation.variation,
       OPVariationID: newVariation.variation.OPVariationID || 1,
-      IsActive: newVariation.variation.IsActive ?? 1, // Ensure IsActive is set
-      id: newVariation.variation.id || null, // Preserve id
-      OPMainID: newVariation.variation.OPMainID || null, // Preserve OPMainID
-      CreatedDate: newVariation.variation.CreatedDate || null, // Preserve CreatedDate
+      IsActive: newVariation.variation.IsActive ?? 1,
+      id: newVariation.variation.id || null,
+      OPMainID: newVariation.variation.OPMainID || null,
+      CreatedDate: newVariation.variation.CreatedDate || null,
     };
 
     if (editingIndex !== null) {
@@ -274,7 +302,7 @@ const EditFrameMaster = () => {
         ...newVariation.stock,
         FrameBatch: newVariation.stock.OPBatchCode || "1",
         FrameSRP: newVariation.stock.OPMRP || "0",
-        id: newVariation.stock.id || null, // Preserve stock id
+        id: newVariation.stock.id || null,
       };
 
       const updatedPricing = [...pricingData];
@@ -291,20 +319,20 @@ const EditFrameMaster = () => {
           ...newVariation.stock,
           FrameBatch: newVariation.stock.OPBatchCode || "1",
           FrameSRP: newVariation.stock.OPMRP || "0",
-          id: null, // New stock has no id
+          id: null,
         },
       ]);
       setPricingData([...pricingData, newVariation.pricing]);
     }
     setIsEditingVariation(false);
     setEditingIndex(null);
-    console.log("variation data", variationData);
   };
 
   const handleCancelEdit = () => {
     setIsEditingVariation(false);
     setEditingIndex(null);
   };
+
   const handleToggleConfirm = (index) => {
     setConfirmToggle({ isOpen: true, index });
     setIsConfirmOpen(true);
@@ -345,14 +373,14 @@ const EditFrameMaster = () => {
               <Button onClick={() => navigate(-1)}>Back</Button>
             </div>
             <FrameAccessMasterForm
-              onSubmit={handleSubmit}
               initialValues={formData}
               brands={brands}
               taxOptions={allTaxes}
-              navigate={navigate}
               isEditMode={!!id}
               isEnabled={isEnabled}
               id={id}
+              errors={errors}
+              setErrors={setErrors}
             />
           </div>
 
@@ -383,8 +411,6 @@ const EditFrameMaster = () => {
                   <TableCell>{variation.Barcode || "-"}</TableCell>
                   <TableCell>{variation.SKUCode || "-"}</TableCell>
                   <TableCell>{stock[index]?.FrameSRP || "-"}</TableCell>
-
-                  {/* <TableCell>{stock[index]?.FrameSRP || "-"}</TableCell> */}
                   <TableCell className="text-sm min-w-[200px]">
                     {pricingData[index]?.length > 0 ? (
                       <div className="space-y-1">
@@ -396,11 +422,14 @@ const EditFrameMaster = () => {
                             <span className="font-medium text-gray-600">
                               {item.location}
                             </span>
-                            {!hasViewAccess && (
+                            <HasPermission
+                              module="Accessory Master"
+                              action={["edit", "create"]}
+                            >
                               <span>
                                 {parseFloat(item.buyingPrice).toFixed(2)}
                               </span>
-                            )}
+                            </HasPermission>
                           </div>
                         ))}
                       </div>
@@ -470,6 +499,30 @@ const EditFrameMaster = () => {
               )}
             />
           </div>
+
+          {/* Submit Button */}
+          {!isEnabled && (
+            <div className="flex justify-end pt-4">
+              <HasPermission
+                module="Accessory Master"
+                action={["edit", "create"]}
+              >
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isDataCreating || isDataUpdating}
+                  loading={isDataCreating || isDataUpdating}
+                >
+                  {isDataCreating || isDataUpdating
+                    ? isDataUpdating
+                      ? "Updating"
+                      : "Creating"
+                    : id
+                    ? "Update Accessory"
+                    : "Save Accessory"}
+                </Button>
+              </HasPermission>
+            </div>
+          )}
         </div>
       )}
       <ConfirmationModal

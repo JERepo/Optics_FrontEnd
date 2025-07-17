@@ -56,13 +56,13 @@ const EditSeasonMaster = () => {
     try {
       if (id) {
         await updateBrandGroup({ id, payload }).unwrap();
-        toast.success("Group updated successfully");
+        toast.success("Frame season updated successfully");
       } else {
         await createBrandGroup({
           id: user.Id,
           payload,
         }).unwrap();
-        toast.success("Group created successfully");
+        toast.success("Frame season created successfully");
         setBrandName("");
       }
 
@@ -81,7 +81,7 @@ const EditSeasonMaster = () => {
         <button
           onClick={() => navigate(-1)}
           className="mr-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
-          aria-label="Go back"
+          aria-label="Go Back"
         >
           <FiArrowLeft className="text-gray-600" size={20} />
         </button>
@@ -119,10 +119,10 @@ const EditSeasonMaster = () => {
                 {id
                   ? isBrandCatUpdating
                     ? "Updating..."
-                    : "Update Seasons"
+                    : "Update Season Master"
                   : isBrandCatCreatingLoading
                   ? "Creating..."
-                  : "Create Seasons"}
+                  : "Create Season Master"}
               </Button>
             </HasPermission>
           )}

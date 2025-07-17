@@ -6,6 +6,16 @@ import { Table, TableRow, TableCell } from "../../../components/Table";
 import Toggle from "../../../components/ui/Toggle";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import HasPermission from "../../../components/HasPermission";
+import {
+  useDeActivateMutation,
+  useGetAllPaymentMachinesQuery,
+} from "../../../api/paymentMachineApi";
+import { useGetAllBankMastersQuery } from "../../../api/bankMasterApi";
+
+const machineType = [
+  { value: 0, label: "Card" },
+  { value: 1, label: "UPI" },
+];
 
 const PaymentMachine = () => {
   const navigate = useNavigate();
@@ -18,25 +28,24 @@ const PaymentMachine = () => {
   const [currentStatus, setCurrentStatus] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // const { data, isLoading } = useGetAllBrandGroupsQuery();
-  // const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
-  const isLoading = false;
-  const isDeActivating = false;
-  const data = [];
+  const { data, isLoading } = useGetAllPaymentMachinesQuery();
+  const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
+  const { data: allBanks } = useGetAllBankMastersQuery();
 
   const brands = useMemo(() => {
     if (!data?.data) return [];
 
-    return data.data.map((brand) => ({
+    return data?.data.data.map((brand) => ({
       id: brand.Id,
-      name: brand.BrandGroupName,
-
+      name: allBanks?.data.data.find((b) => b.Id === brand.BankMasterID).BankName,
+      machineName: brand.MachineName,
+      type: machineType.find((m) => m.value === brand.MachineType).label,
       createdAt: new Intl.DateTimeFormat(locale, {
         year: "numeric",
         month: "short",
         day: "2-digit",
       }).format(new Date(brand.CreatedDate)),
-      enabled: brand.IsActive,
+      enabled: brand.IsActive === 1,
     }));
   }, [data, searchQuery]);
 
@@ -51,18 +60,18 @@ const PaymentMachine = () => {
   };
 
   const handleConfirmToggle = async () => {
-    // try {
-    //   await deActivate({
-    //     id: selectedBrandId,
-    //     payload: { IsActive: currentStatus ? 0 : 1 },
-    //   }).unwrap();
-    // } catch (error) {
-    //   console.error("Toggle error:", error);
-    // } finally {
-    //   setIsModalOpen(false);
-    //   setSelectedBrandId(null);
-    //   setCurrentStatus(null);
-    // }
+    try {
+      await deActivate({
+        id: selectedBrandId,
+        payload: { IsActive: currentStatus ? 0 : 1 },
+      }).unwrap();
+    } catch (error) {
+      console.error("Toggle error:", error);
+    } finally {
+      setIsModalOpen(false);
+      setSelectedBrandId(null);
+      setCurrentStatus(null);
+    }
   };
 
   const handleEdit = (poolId) => {
@@ -105,6 +114,7 @@ const PaymentMachine = () => {
           "Bank name",
           "machine name",
           "machine type",
+          "Create on",
           "Action",
         ]}
         data={paginatedPools}
@@ -115,6 +125,12 @@ const PaymentMachine = () => {
             </TableCell>
             <TableCell className="text-sm text-neutral-500">
               {pool.name}
+            </TableCell>
+            <TableCell className="text-sm text-neutral-500">
+              {pool.machineName}
+            </TableCell>
+            <TableCell className="text-sm text-neutral-500">
+              {pool.type}
             </TableCell>
 
             <TableCell className="text-sm text-neutral-500">

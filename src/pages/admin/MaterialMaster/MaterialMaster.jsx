@@ -24,9 +24,9 @@ const MaterialMaster = () => {
   const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
 
   const brands = useMemo(() => {
-    if (!data?.data) return [];
+    if (!data) return [];
 
-    return data.data.map((brand) => ({
+    return data.map((brand) => ({
       id: brand.Id,
       name: brand.MaterialName,
 
@@ -73,7 +73,7 @@ const MaterialMaster = () => {
     <div className="max-w-5xl">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div className="text-3xl text-neutral-700 font-semibold">
-          Frame Material master
+          Frame Material Master
         </div>
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
           <div className="flex items-center gap-2 border-2 border-neutral-300 rounded-md px-3 w-full sm:w-[250px] h-10 bg-white">
@@ -93,14 +93,14 @@ const MaterialMaster = () => {
               className="bg-primary/90 text-neutral-50 hover:bg-primary/70 transition-all whitespace-nowrap"
               onClick={() => navigate("create")}
             >
-              Add material master
+              Add Material Master
             </Button>
           </HasPermission>
         </div>
       </div>
 
       <Table
-        columns={["S.No", "Brand Category", "Created At", "Action"]}
+        columns={["S.No", "material master", "created on", "Action"]}
         data={paginatedPools}
         renderRow={(pool, index) => (
           <TableRow key={pool.id}>
@@ -145,10 +145,10 @@ const MaterialMaster = () => {
         )}
         emptyMessage={
           isLoading
-            ? "Loading Seasons..."
+            ? "Loading..."
             : searchQuery
-            ? "No Seasons match your search criteria"
-            : "No Seasons found. Click 'Add Seasons' to create one."
+            ? "No material master match your search criteria"
+            : "No material master found. Click 'Add Material Master' to create one."
         }
         pagination={true}
         currentPage={currentPage}

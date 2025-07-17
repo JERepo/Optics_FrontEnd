@@ -11,6 +11,7 @@ import {
   useDeActivateMutation,
   useGetAllCustomersQuery,
 } from "../../api/customerApi";
+import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
 
 const CustomerMain = () => {
   const navigate = useNavigate();
@@ -25,6 +26,7 @@ const CustomerMain = () => {
 
   const { data, isLoading } = useGetAllCustomersQuery();
   const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
+  const { data: allLocations } = useGetAllLocationsQuery();
 
   const customers = useMemo(() => {
     if (!data?.data) return [];
@@ -33,7 +35,7 @@ const CustomerMain = () => {
       .map((customer) => ({
         id: customer.Id,
         name: customer.CustomerName,
-        location: "",
+        location: allLocations?.data.find((l) => l.Id === customer.CompanyID).LocationName,
         phone: customer.MobNumber,
         group: customer.CustomerGroup.GroupName,
         createdAt: new Intl.DateTimeFormat(locale, {
@@ -102,9 +104,12 @@ const CustomerMain = () => {
               icon={FiPlus}
               iconPosition="left"
               className="bg-primary/90 text-neutral-50 hover:bg-primary/70 transition-all whitespace-nowrap"
-              onClick={() => navigate("create")}
+              onClick={() => {
+                navigate("create");
+                window.location.reload();
+              }}
             >
-              Add Cusomer
+              Add Customer
             </Button>
           </HasPermission>
         </div>

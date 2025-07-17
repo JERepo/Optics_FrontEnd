@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   useGetAllLocationsQuery,
   useGetLocationByIdQuery,
@@ -25,10 +25,15 @@ import { FiCopy, FiEdit2, FiEye, FiTrash2 } from "react-icons/fi";
 import Checkbox from "../../components/Form/Checkbox";
 import Radio from "../../components/Form/Radio";
 import Input from "../../components/Form/Input";
-import { useCreateVendorMutation } from "../../api/vendorApi";
+import {
+  useCreateVendorMutation,
+  useGetVendorByIdQuery,
+  useUpdateVendorMutation,
+} from "../../api/vendorApi";
 
 const EditVendor = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
   const { vendorFormData, setVendorFormData } = useCustomerContext();
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
   const [location, setLocation] = useState(null);
@@ -39,11 +44,15 @@ const EditVendor = () => {
   const [editingIndex, setEditingIndex] = useState(null);
 
   // API Queries
+  const { data: vendoryIdData, isLoading: isVedorLoading } =
+    useGetVendorByIdQuery({ id: id }, { skip: !id });
   const { data: allLocations } = useGetAllLocationsQuery();
   const { data: allCountries } = useGetCountriesQuery();
   const { data: allStates } = useGetStatesQuery();
-  const { data: rimData } = useGetAllRimTypeQuery();
-  const { data: indexData } = useGetAllIndicesQuery();
+  const { data: rimData, isLoading: isRimDataFetching } =
+    useGetAllRimTypeQuery();
+  const { data: indexData, isLoading: isIndexDataFetching } =
+    useGetAllIndicesQuery();
   const { data: locationById } = useGetLocationByIdQuery(
     { id: location },
     { skip: !location }
@@ -75,13 +84,17 @@ const EditVendor = () => {
 
   const [createVendor, { isLoading: isVendorCreating }] =
     useCreateVendorMutation();
+  const [updateVendor, { isLoading: isVendorUpdating }] =
+    useUpdateVendorMutation();
 
   // Derived Data
-  const rimTypes = rimData?.data?.filter((r) => r.IsActive === 1) || [];
-  const indices = indexData?.data?.data || [];
-  const companyType = locationById?.data?.data.CompanyType;
+  const rimTypes = useMemo(
+    () => rimData?.data?.filter((r) => r.IsActive === 1) || [],
+    [rimData?.data]
+  );
 
-  // Initialize fitting prices
+  const indices = useMemo(() => indexData?.data?.data || [], [indexData?.data]);
+  const companyType = locationById?.data?.data.CompanyType;
   const [fittingPrices, setFittingPrices] = useState(() => {
     const initialPrices = { singleVision: {}, others: {} };
     rimTypes.forEach((rim) => {
@@ -94,6 +107,95 @@ const EditVendor = () => {
     });
     return initialPrices;
   });
+  useEffect(() => {
+    if (!vendoryIdData?.data?.data || !rimTypes.length || !indices.length)
+      return;
+
+    const vendorData = vendoryIdData.data.data;
+
+    // Prepare new form data
+    const newFormData = {
+      company_id: vendorData.CompanyID,
+      vendor_type: vendorData.VendorType,
+      legal_name: vendorData.VendorName,
+      gst_no: vendorData.TAXNo,
+      gstStatus: vendorData.TAXRegisteration,
+      pan_no: vendorData.PANNumber,
+      billingMethod: vendorData.BillingMethod,
+      vendor_address1: vendorData.Address1,
+      vendor_address2: vendorData.Address2,
+      vendor_landmark: vendorData.Landmark,
+      vendor_pincode: vendorData.Pin,
+      vendor_city: vendorData.City,
+      vendor_state: vendorData.StateID,
+      vendor_country: vendorData.CountryID,
+      email: vendorData.Email,
+      mobile_no: vendorData.MobNumber,
+      mobileISDcode: vendorData.MobileISDCode,
+      tel_no: vendorData.TelNumber || "",
+      isServiceProvider: vendorData.IsServiceProvider,
+      isReverseChargeApplicable: vendorData.IsReverseChargeApplicable,
+      FittingPrice: vendorData.FittingCharges,
+      OBType: vendorData.OBType,
+      credit_form: vendorData.CreditFrom || 0,
+      credit_days: vendorData.CreditDays || 0,
+      opening_balance: vendorData.OpeningBalance || 0,
+      other_contacts:
+        vendorData.VendorContacts?.map((contact) => ({
+          other_contact_name: contact.Name,
+          other_contact_designation: contact.Designation,
+          other_contact_email: contact.Email,
+          other_contact_mobNumber: contact.MobNumber,
+          other_contact_ISDcode: contact.MobileISDCode,
+        })) || [],
+    };
+
+    // Only update form data if there are actual changes
+    if (JSON.stringify(vendorFormData) !== JSON.stringify(newFormData)) {
+      setVendorFormData(newFormData);
+    }
+
+    // Prepare new fitting prices
+    const newFittingPrices = { singleVision: {}, others: {} };
+
+    // Initialize with zeros
+    rimTypes.forEach((rim) => {
+      newFittingPrices.singleVision[rim.Id] = {};
+      newFittingPrices.others[rim.Id] = {};
+      indices.forEach((index) => {
+        newFittingPrices.singleVision[rim.Id][index.Id] = 0;
+        newFittingPrices.others[rim.Id][index.Id] = 0;
+      });
+    });
+
+    // Fill with actual values from API
+    vendorData?.OpticalFittingChargesPurchases?.forEach((charge) => {
+      const focalityKey = charge.Focality === 0 ? "singleVision" : "others";
+      if (
+        newFittingPrices[focalityKey]?.[charge.RimType]?.[charge.IndexID] !==
+        undefined
+      ) {
+        newFittingPrices[focalityKey][charge.RimType][charge.IndexID] =
+          parseFloat(charge.Amount) || 0;
+      }
+    });
+
+    // Only update fitting prices if there are actual changes
+    if (JSON.stringify(fittingPrices) !== JSON.stringify(newFittingPrices)) {
+      setFittingPrices(newFittingPrices);
+    }
+
+    // Set location if different
+    if (location !== vendorData?.CompanyID) {
+      setLocation(vendorData?.CompanyID);
+    }
+  }, [
+    vendoryIdData,
+    id,
+    isVedorLoading,
+    isIndexDataFetching,
+    isRimDataFetching,
+  ]);
 
   // Validation rules
   const validateVendorForm = () => {
@@ -103,14 +205,15 @@ const EditVendor = () => {
       newErrors.legal_name = "Legal name is required";
     }
 
-    // if (!vendorFormData.pan_no?.trim()) {
-    //   newErrors.pan_no = "PAN number is required for Indian vendors";
-    // } else if (vendorFormData.pan_no.length !== 10) {
-    //   newErrors.pan_no = "Invalid PAN number format";
-    // }
-
-    if (!vendorFormData.gst_no?.trim()) {
-      newErrors.gst_no = "GST number is required for registered vendors";
+    if (!vendorFormData.pan_no?.trim()) {
+      newErrors.pan_no = "PAN number is required for Indian vendors";
+    } else if (vendorFormData.pan_no.length !== 10) {
+      newErrors.pan_no = "Invalid PAN number format";
+    }
+    if (vendorFormData.gstStatus !== 1) {
+      if (!vendorFormData.gst_no?.trim()) {
+        newErrors.gst_no = "GST number is required for registered vendors";
+      }
     }
 
     if (!vendorFormData.vendor_address1?.trim()) {
@@ -131,36 +234,62 @@ const EditVendor = () => {
       newErrors.vendor_country = "Country is required";
     }
 
-    if (!vendorFormData.email?.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/^\S+@\S+\.\S+$/.test(vendorFormData.email)) {
-      newErrors.email = "Invalid email format";
-    }
+    const hasAnyContact =
+      vendorFormData.email?.trim() ||
+      vendorFormData.telephone?.trim() ||
+      vendorFormData.mobile_no?.trim();
+    if (!hasAnyContact) {
+      newErrors.email = "At least one contact method is required";
+      newErrors.telephone = "At least one contact method is required";
+      newErrors.mobile_no = "At least one contact method is required";
+    } else {
+      if (
+        vendorFormData.email?.trim() &&
+        !/^\S+@\S+\.\S+$/.test(vendorFormData.email)
+      ) {
+        newErrors.email = "Invalid email format";
+      }
 
-    if (!vendorFormData.mobile_no?.trim()) {
-      newErrors.mobile_no = "Mobile number is required";
-    } else if (!/^\d{10}$/.test(vendorFormData.mobile_no)) {
-      newErrors.mobile_no = "Mobile number must be 10 digits";
+      if (
+        vendorFormData.mobile_no?.trim() &&
+        !/^\d{10}$/.test(vendorFormData.mobile_no)
+      ) {
+        newErrors.mobile_no = "Mobile number must be 10 digits";
+      }
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handling form submission
   const handleSave = async () => {
-    if (!validateVendorForm()) {
+    console.log("handleSave triggered, id:", id);
+    const isValid = validateVendorForm();
+
+    if (!isValid) {
       toast.error("Please fix the validation errors before submitting.");
       return;
     }
-
-    // Construct the payload directly from vendorFormData
     const payload = {
+      company_id:
+        Number(companySettings?.data?.data.CompanyId) ||
+        Number(vendorFormData.company_id),
       ...vendorFormData,
-      CompanyID : companySettings?.data?.data.CompanyId,
+      tax_registration: vendorFormData.gstStatus,
+
       vendor_state: Number(vendorFormData.vendor_state),
       vendor_country: Number(vendorFormData.vendor_country),
-      fittingCharges: Object.entries(fittingPrices).flatMap(
+      other_contacts: vendorFormData.other_contacts || [],
+      isServiceProvider: Number(vendorFormData.isServiceProvider),
+      isReverseChargeApplicable: Number(
+        vendorFormData.isReverseChargeApplicable
+      ),
+      credit_days: Number(vendorFormData.credit_days) || 0,
+      opening_balance: Number(vendorFormData.opening_balance) || 0,
+      ob_type: Number(vendorFormData.OBType),
+    };
+    if (vendorFormData.FittingPrice === 1) {
+      const fittingCharges = Object.entries(fittingPrices).flatMap(
         ([focality, rimTypes]) => {
           const focalityValue = focality === "singleVision" ? 0 : 1;
           return Object.entries(rimTypes).flatMap(([rimId, indices]) =>
@@ -172,23 +301,28 @@ const EditVendor = () => {
             }))
           );
         }
-      ),
-      other_contacts: vendorFormData.other_contacts || [],
-      isServiceProvider: Number(vendorFormData.isServiceProvider),
-      isReverseChargeApplicable: Number(
-        vendorFormData.isReverseChargeApplicable
-      ),
-      credit_days: Number(vendorFormData.credit_days) || 0,
-      opening_balance: Number(vendorFormData.opening_balance) || 0,
-    };
+      );
+      if (fittingCharges.length > 0) {
+        payload.fittingCharges = fittingCharges;
+      }
+    }
 
-    console.log("Final payload:", payload);
     try {
-      await createVendor({ id: user.Id, payload });
-      toast.success("form got saved successfully");
+      if (id) {
+        console.log(payload);
+        await updateVendor({ id, userId: user.Id, payload }).unwrap();
+        toast.success("Vendor updated successfully");
+        navigate(-1);
+      } else {
+        await createVendor({ id: user.Id, payload }).unwrap();
+        toast.success("Vendor created successfully");
+        navigate(-1);
+      }
     } catch (error) {
-      console.log(error);
-      toast.error("Form not creating");
+      console.error("Error in handleSave:", error);
+      toast.error(
+        error?.data?.message || "Something went wrong with saving Vendor!"
+      );
     }
   };
 
@@ -346,6 +480,8 @@ const EditVendor = () => {
     </div>
   );
 
+  if (isVedorLoading || isRimDataFetching || isIndexDataFetching)
+    return <h1>Vendor loading</h1>;
   return (
     <div className="max-w-6xl p-6 bg-white rounded-lg shadow-md">
       {/* Header */}
@@ -492,7 +628,7 @@ const EditVendor = () => {
 
           {/* credit charge details */}
           <div>
-            <div className="flex gap-10 mt-5">
+            <div className="flex gap-5 mt-5">
               <div className="flex gap-3 items-center">
                 <label className="font-medium text-gray-700">
                   Credit From:
@@ -532,15 +668,38 @@ const EditVendor = () => {
                   error={errors.opening_balance}
                 />
               </div>
+              <div className="flex gap-3 items-center">
+                <label className="font-medium text-gray-700">OBType:</label>
+                <div className="flex gap-3">
+                  <Radio
+                    label="DR"
+                    name="OBType"
+                    value="0"
+                    checked={vendorFormData.OBType === 0}
+                    onChange={handleChange}
+                  />
+                  <Radio
+                    label="CR"
+                    name="OBType"
+                    value="1"
+                    checked={vendorFormData.OBType === 1}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="mt-8 flex justify-end">
             <Button
               onClick={handleSave}
+              loadingText={
+                isVendorCreating ? "Creating Vendor..." : "Vendor Updating..."
+              }
+              isLoading={isVendorCreating || isVendorUpdating}
               className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm"
             >
-              Save Vendor Information
+              {id ? "Update Vendor Information" : "Save Vendor Information"}
             </Button>
           </div>
 
@@ -586,7 +745,7 @@ const GstAddressSelector = ({ gstData, onCopy, onCancel }) => {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 bg-opacity-50 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-800">

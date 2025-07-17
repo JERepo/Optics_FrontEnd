@@ -6,8 +6,10 @@ import { Table, TableRow, TableCell } from "../../../components/Table";
 import Toggle from "../../../components/ui/Toggle";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import HasPermission from "../../../components/HasPermission";
-import { useDeActivateMutation, useGetAllFrameMasterQuery } from "../../../api/frameMasterApi";
-
+import {
+  useDeActivateMutation,
+  useGetAllFrameMasterQuery,
+} from "../../../api/frameMasterApi";
 
 const FrameMaster = () => {
   const navigate = useNavigate();
@@ -30,9 +32,9 @@ const FrameMaster = () => {
     return allAccessories.data.map((acc) => ({
       id: acc.Id,
       BrandName: acc.Brand.BrandName,
-      ModelNo :acc.ModelNo,
-      RimType : acc.FrameRimType.FrameRimTypeName,
-      RimShape : acc.FrameShapeMaster?.ShapeName,
+      ModelNo: acc.ModelNo,
+      RimType: acc.FrameRimType.FrameRimTypeName,
+      RimShape: acc.FrameShapeMaster?.ShapeName,
 
       createdAt: new Intl.DateTimeFormat(locale, {
         year: "numeric",
@@ -84,7 +86,7 @@ const FrameMaster = () => {
             <FiSearch className="text-neutral-500 text-lg" />
             <input
               type="text"
-              placeholder="Search masters..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full outline-none text-sm text-neutral-700 placeholder-neutral-400 bg-transparent"
@@ -95,9 +97,13 @@ const FrameMaster = () => {
               icon={FiPlus}
               iconPosition="left"
               className="bg-primary/90 text-neutral-50 hover:bg-primary/70 transition-all whitespace-nowrap"
-              onClick={() => navigate("create")}
+              onClick={() => {
+                navigate("create");
+                window.location.reload();
+                
+              }}
             >
-              Add frame
+              Add Frame Master
             </Button>
           </HasPermission>
         </div>
@@ -106,11 +112,11 @@ const FrameMaster = () => {
       <Table
         columns={[
           "S.No",
-          "Brand Name",
+          "frame master",
           "Model No",
           "Rim Type",
           "Rim Shape",
-          "Created At",
+          "created on",
           "Action",
         ]}
         data={paginatedPools}
@@ -128,7 +134,7 @@ const FrameMaster = () => {
             <TableCell className="text-sm text-neutral-500">
               {pool.RimType}
             </TableCell>
-             <TableCell className="text-sm text-neutral-500">
+            <TableCell className="text-sm text-neutral-500">
               {pool.RimShape}
             </TableCell>
 

@@ -94,14 +94,14 @@ const Accssories = () => {
               className="bg-primary/90 text-neutral-50 hover:bg-primary/70 transition-all whitespace-nowrap"
               onClick={() => navigate("create")}
             >
-              Add variation
+              Add Variation
             </Button>
           </HasPermission>
         </div>
       </div>
 
       <Table
-        columns={["S.No", "Brand Name", "Created At", "Action"]}
+        columns={["S.No", "variation Name", "created on", "Action"]}
         data={paginatedPools}
         renderRow={(pool, index) => (
           <TableRow key={pool.id}>
