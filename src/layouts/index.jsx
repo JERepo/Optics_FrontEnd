@@ -47,6 +47,8 @@ import PaymentMachine from "../pages/customer/PaymentMachine/PaymentMachine";
 import EditPaymentMachine from "../pages/customer/PaymentMachine/EditPaymentMachine";
 import Vendor from "../pages/Vendor/Vendor";
 import EditVendor from "../pages/Vendor/EditVendor";
+import NotFound from "../components/NotFound";
+import TotalOrder from "../pages/Order";
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
 export const router = createBrowserRouter([
@@ -602,6 +604,15 @@ export const router = createBrowserRouter([
         path: "vendor/edit/:id",
         element: <EditVendor />,
       },
+
+      {
+        path: "order",
+        element: <TotalOrder />,
+      },
     ],
+  },
+  {
+    path: "*",
+    element: <NotFound />,
   },
 ]);

@@ -34,12 +34,17 @@ const EditFrameMaster = () => {
   const location = useLocation();
   const isEnabled = location.pathname.includes("/view");
   const { access, user } = useSelector((state) => state.auth);
-  const { data: allBrands } = useGetAllBrandsQuery();
-  const { data: allTax } = useGetTaxQuery();
-  const { data: allMaterials } = useGetAllmaterialsQuery();
-  const { data: allRimTypes } = useGetAllRimTypeQuery();
-  const { data: allShapes } = useGetAllShapesQuery();
-  const { data: allLocations } = useGetAllLocationsQuery();
+  const { data: allBrands, isLoading: allBrandsLoading } =
+    useGetAllBrandsQuery();
+  const { data: allTax, isLoading: allTaxLoading } = useGetTaxQuery();
+  const { data: allMaterials, isLoading: allMaterialsLoading } =
+    useGetAllmaterialsQuery();
+  const { data: allRimTypes, isLoading: allRimsLoading } =
+    useGetAllRimTypeQuery();
+  const { data: allShapes, isLoading: allShapesLoading } =
+    useGetAllShapesQuery();
+  const { data: allLocations, isLoading: allLocationsLoading } =
+    useGetAllLocationsQuery();
   const [createFrameMaster, { isLoading: isFrameCreating }] =
     useCreateFrameMasterMutation();
   const [updateFramemaster, { isLoading: isFrameUpdating }] =
@@ -334,12 +339,16 @@ const EditFrameMaster = () => {
     setEditingIndex(null);
   };
 
+  console.log("brands data",allBrands?.data)
+
   if (
-    !allBrands?.data ||
-    !allRimTypes?.data ||
-    !allShapes?.data ||
-    !allMaterials?.data ||
-    !allTax?.data
+    isFrameLoading ||
+    allBrandsLoading ||
+    allRimsLoading ||
+    allShapesLoading ||
+    allLocationsLoading ||
+    allMaterialsLoading ||
+    allTaxLoading
   ) {
     return <div>Loading form data...</div>;
   }
@@ -377,10 +386,10 @@ const EditFrameMaster = () => {
             <FrameMasterForm
               ref={formRef}
               initialValues={formData}
-              brands={allBrands?.data}
+              brands={allBrands}
               rimTypes={allRimTypes?.data}
-              rimShapes={allShapes?.data}
-              materials={allMaterials?.data}
+              rimShapes={allShapes}
+              materials={allMaterials}
               taxOptions={allTax?.data}
               isEnabled={isEnabled}
               isEditMode={!!id}

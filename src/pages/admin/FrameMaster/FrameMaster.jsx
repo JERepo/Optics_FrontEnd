@@ -99,7 +99,7 @@ const FrameMaster = () => {
               className="bg-primary/90 text-neutral-50 hover:bg-primary/70 transition-all whitespace-nowrap"
               onClick={() => {
                 navigate("create");
-                window.location.reload();
+                 window.location.reload();
                 
               }}
             >

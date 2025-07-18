@@ -2,11 +2,11 @@
 import React from "react";
 import Pagination from "./Pagination";
 
-
 export const Table = ({
   columns,
   data,
   renderRow,
+  renderHeader,
   emptyMessage = "No data available",
   className = "",
   pagination = false,
@@ -19,7 +19,9 @@ export const Table = ({
 }) => {
   return (
     <div className="space-y-4">
-      <div className={`overflow-x-auto bg-white rounded-lg shadow ${className}`}>
+      <div
+        className={`overflow-x-auto bg-white rounded-lg shadow ${className}`}
+      >
         <table className="min-w-full divide-y divide-neutral-200">
           <thead className="bg-neutral-50">
             <tr>
@@ -27,15 +29,18 @@ export const Table = ({
                 <th
                   key={index}
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider"
+                  className="px-6 py-3 min-h-[3.5rem] text-left text-xs font-medium text-neutral-500 uppercase tracking-wider align-top"
                 >
-                  {column}
+                  {typeof renderHeader === "function"
+                    ? renderHeader(column)
+                    : column}
                 </th>
               ))}
             </tr>
           </thead>
+
           <tbody className="bg-white divide-y divide-neutral-200">
-            {data.length > 0 ? (
+            {data?.length > 0 ? (
               data.map((item, rowIndex) => renderRow(item, rowIndex))
             ) : (
               <tr>

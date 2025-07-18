@@ -190,7 +190,7 @@ const fetchLocationByPincode = async () => {
       {/* GST and PAN */}
       <Section title="GST Details">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {(formData.gstStatus === 0 || formData.gstStatus === 2) && (
+          {(formData.gstStatus === 1 || formData.gstStatus === 2) && (
             <div className="flex flex-col gap-2">
               <div className="flex gap-3 items-end">
                 <Input

@@ -196,7 +196,18 @@ const EditVendor = () => {
     isIndexDataFetching,
     isRimDataFetching,
   ]);
+  // Set default location if only one exists
+  useEffect(() => {
+    const locations = Array.isArray(hasMultipleLocations)
+      ? hasMultipleLocations
+      : hasMultipleLocations !== undefined && hasMultipleLocations !== null
+      ? [hasMultipleLocations]
+      : [];
 
+    if (locations.length === 1 && !location) {
+      setLocation(locations[0]);
+    }
+  }, [hasMultipleLocations, location, setLocation]);
   // Validation rules
   const validateVendorForm = () => {
     const newErrors = {};

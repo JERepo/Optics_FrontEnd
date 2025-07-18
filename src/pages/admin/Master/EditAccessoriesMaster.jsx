@@ -338,7 +338,7 @@ const EditFrameMaster = () => {
     setIsConfirmOpen(true);
   };
 
-  if (!brands?.data || !allAccess?.data || !allTaxes?.data) {
+  if (isMasterLoading || loadingBrands || loadingTaxes) {
     return <div>Loading form data...</div>;
   }
 

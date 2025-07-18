@@ -1,4 +1,4 @@
-import { FiUsers, FiSettings, FiUserCheck, FiShoppingBag } from "react-icons/fi";
+import { FiUsers, FiSettings, FiUserCheck, FiShoppingBag, FiFileText, FiClipboard, FiBox } from "react-icons/fi";
 import {
   IoPeopleOutline,
   IoSettingsOutline,
@@ -140,5 +140,11 @@ export const menuItems = [
     icon: FiShoppingBag,
     module: "Vendor",
     path: "/vendor",
+  },
+  {
+    name: "Order",
+    icon: FiBox,
+    module: "Order",
+    path: "/order",
   },
 ];

@@ -73,7 +73,7 @@ const FrameAccessMasterForm = ({
             disabled={isEnabled}
           >
             <option value="">Select a brand*</option>
-            {brands?.data
+            {brands
               ?.filter(
                 (brand) => brand.OthersProductsActive && brand.IsActive === 1
               )
