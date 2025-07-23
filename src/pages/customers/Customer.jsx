@@ -23,7 +23,7 @@ import PatientDetails from "./PatientDetails";
 import BillingAddress from "./BillingAddress";
 import { Table, TableCell, TableRow } from "../../components/Table";
 import Button from "../../components/ui/Button";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { useVerifyGSTQuery } from "../../api/externalApi";
 import Modal from "../../components/ui/Modal";
 
@@ -38,9 +38,11 @@ const validateDate = (date) => {
 };
 const validatePincode = (pincode) => /^\d{6}$/.test(pincode);
 
-const Customer = () => {
+const Customer = ({ isPop, onSubmit }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   // State and context
+  const isCreate = location.pathname.includes("/create");
   const { formData, setFormData, constructPayload, resetFormForCustomerType } =
     useCustomerContext();
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
@@ -86,7 +88,7 @@ const Customer = () => {
     openingBalance: 0,
     creditLimit: 0,
     creditDays: 0,
-    paymentTerms: "",
+    paymentTerms: null,
   });
 
   // API Queries
@@ -130,6 +132,9 @@ const Customer = () => {
     const exactDefaultId = allCustomerGroupIds?.data?.data.find(
       (c) => c.CustomerPoolID === CustomerPoolID
     );
+
+    console.log("exact customer group", exactDefaultId);
+
     const allMatching = allCustomerGroupIds?.data?.data.filter(
       (c) => c.CustomerPoolID === CustomerPoolID
     );
@@ -146,9 +151,10 @@ const Customer = () => {
       setFilteredCustomerGroups(filteredGroups);
     }
 
+    console.log("filtered groups", filteredGroups);
     setFormData((prev) => ({
       ...prev,
-      customerGroup: exactDefaultId?.CustomerGroupDefault,
+      customerGroup: companySettings?.data?.data?.CustomerGroupDefault,
     }));
   }, [allCustomerGroupIds, CustomerPoolID]);
 
@@ -225,6 +231,51 @@ const Customer = () => {
       toast.error("The Entered GST Number is not valid");
     }
   }, [GSTData, error, isError]);
+
+  // Reset fields when customerType or GSTINType changes
+  useEffect(() => {
+    if (isCreate) {
+      setFormData((prev) => {
+        const updatedFormData = { ...prev };
+
+        // Reset fields when customerType changes
+        if (prev.customerType === "B2C") {
+          // Clear B2B-specific fields
+          updatedFormData.legalName = null;
+          updatedFormData.GSTNumber = null;
+          updatedFormData.PANNumber = null;
+          updatedFormData.GSTINType = 0;
+        } else if (prev.customerType === "B2B") {
+          // Clear B2C-specific fields if needed
+          updatedFormData.name = null;
+        }
+
+        // Reset GSTNumber when GSTINType changes to unregistered (1)
+        if (prev.GSTINType === 1) {
+          updatedFormData.GSTNumber = null;
+        }
+
+        return updatedFormData;
+      });
+
+      // Clear related errors
+      setErrors((prevErrors) => {
+        const newErrors = { ...prevErrors };
+        if (formData.customerType === "B2C") {
+          delete newErrors.legalName;
+          delete newErrors.GSTNumber;
+          delete newErrors.PANNumber;
+        } else if (formData.customerType === "B2B") {
+          delete newErrors.name;
+        }
+        if (formData.GSTINType === 1) {
+          delete newErrors.GSTNumber;
+        }
+        return newErrors;
+      });
+    }
+  }, [formData.customerType, formData.GSTINType, setFormData, setErrors]);
+  console.log("form data", JSON.stringify(formData));
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -439,12 +490,12 @@ const Customer = () => {
           "Shipping address line 1 cannot exceed 150 characters";
       }
 
-      if (shippingAddress.line2.length > 150) {
+      if (shippingAddress.line2?.length > 150) {
         newErrors.shippingaddressLine2 =
           "Shipping address line 2 cannot exceed 150 characters";
       }
 
-      if (shippingAddress.landmark.length > 150) {
+      if (shippingAddress.landmark?.length > 150) {
         newErrors.shippingaddressCity =
           "Shipping landmark cannot exceed 150 characters";
       }
@@ -466,6 +517,10 @@ const Customer = () => {
 
       if (!shippingAddress.state) {
         newErrors.shippingaddressState = "Shipping state is required";
+      }
+      if (billingAddress.state != shippingAddress.state) {
+        newErrors.shippingaddressState =
+          "Both Billing Address state and shipping address state should be same";
       }
     }
 
@@ -547,12 +602,18 @@ const Customer = () => {
       companyId,
       locationById
     );
-    console.log(payload);
+
     try {
-      await createCustomer({
+      const response = await createCustomer({
         id: user.Id,
         payload: payload,
       }).unwrap();
+
+      console.log("response from original customer", response?.data);
+      if (isPop) {
+        onSubmit(null, response);
+      }
+
       toast.success("Customer data saved successfully!");
       navigate(-1);
     } catch (error) {
@@ -642,9 +703,11 @@ const Customer = () => {
         <h2 className="text-2xl font-bold text-gray-800 mb-6">
           Customer Information
         </h2>
-        <Button className="" variant="outline" onClick={() => navigate(-1)}>
-          Back
-        </Button>
+        {!isPop && (
+          <Button className="" variant="outline" onClick={() => navigate(-1)}>
+            Back
+          </Button>
+        )}
       </div>
       {Array.isArray(hasMultipleLocations) &&
         hasMultipleLocations.length > 1 && (

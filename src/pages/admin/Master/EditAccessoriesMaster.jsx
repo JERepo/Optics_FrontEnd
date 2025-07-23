@@ -93,7 +93,7 @@ const EditFrameMaster = () => {
         });
 
         transformedStock.push({
-          id: detail.Stock?.Id || null,
+          OPDetailId: detail.Stock?.OPDetailId || null,
           FrameBatch: detail.Stock?.FrameBatch || "1",
           FrameSRP: detail.Stock?.OPMRP || "0",
         });
@@ -166,7 +166,7 @@ const EditFrameMaster = () => {
           OPMainID: Number(variation.OPMainID) || null,
           IsActive: variation.IsActive ?? 1,
           Stock: {
-            Id: stockData.id || null,
+            OPDetailId: stockData.OPDetailId || null,
             OPBatchCode: stockData.FrameBatch || 1,
             OPMRP: parseFloat(stockData.FrameSRP) || 0,
             location: locationIds,
@@ -422,14 +422,16 @@ const EditFrameMaster = () => {
                             <span className="font-medium text-gray-600">
                               {item.location}
                             </span>
-                            <HasPermission
-                              module="Accessory Master"
-                              action={["edit", "create"]}
-                            >
-                              <span>
-                                {parseFloat(item.buyingPrice).toFixed(2)}
-                              </span>
-                            </HasPermission>
+                            {!isEnabled && (
+                              <HasPermission
+                                module="Accessory Master"
+                                action={["edit", "create"]}
+                              >
+                                <span>
+                                  {parseFloat(item.buyingPrice).toFixed(2)}
+                                </span>
+                              </HasPermission>
+                            )}
                           </div>
                         ))}
                       </div>

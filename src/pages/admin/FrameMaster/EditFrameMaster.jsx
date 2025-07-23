@@ -92,7 +92,7 @@ const EditFrameMaster = () => {
         IsRxable: masterData.IsRxable,
         CaptureSlNo: masterData.CaptureSlNo,
         HSN: masterData.HSN,
-        TaxID: String(masterData.TaxID),
+        TaxID: masterData.TaxID,
       });
 
       const transformedVariations = [];
@@ -119,7 +119,7 @@ const EditFrameMaster = () => {
         });
 
         transformedStock.push({
-          id: detail.Stock?.Id || null,
+          FrameDetailId: detail.Stock?.FrameDetailId || null,
           FrameBatch: detail.Stock?.FrameBatch || 1,
           FrameSRP: detail.Stock?.FrameSRP.toString() || 0,
         });
@@ -169,6 +169,7 @@ const EditFrameMaster = () => {
       CaptureSlNo: formData.CaptureSlNo || 0,
       HSN: formData.HSN,
       TaxID: Number(formData.TaxID),
+      ApplicationUserId: user.Id,
       Details: variationData.map((variation, index) => {
         const stockData = stock[index] || {};
         const pricingDataForVariation = pricingData[index] || [];
@@ -198,7 +199,7 @@ const EditFrameMaster = () => {
           Id: variation.id || null,
           ColourCode: variation.ColourCode,
           Size: variation.Size,
-          DBL: variation.DBL,
+          DBL: !variation.DBL ? null : variation.DBL,
           TempleLength: variation.TempleLength,
           SkuCode: variation.SkuCode,
           Barcode: isBarcodeChanged ? variation.Barcode : undefined,
@@ -211,7 +212,7 @@ const EditFrameMaster = () => {
           IsActive: Number(variation.IsActive ?? 1),
           FrameImages: variation.FrameImages || [],
           Stock: {
-            Id: Number(stockData.id) || null,
+            FrameDetailId: Number(stockData.FrameDetailId) || null,
             FrameBatch: stockData.FrameBatch || 1,
             FrameSRP: parseFloat(stockData.FrameSRP) || 0,
             location: locationIds,
@@ -244,6 +245,7 @@ const EditFrameMaster = () => {
         await updateFramemaster({
           id: parseInt(id),
           payload: finalPayload,
+          appId: user.Id,
         }).unwrap();
         toast.success("Frame updated successfully");
       } else {
@@ -339,7 +341,7 @@ const EditFrameMaster = () => {
     setEditingIndex(null);
   };
 
-  console.log("brands data",allBrands?.data)
+  console.log("brands data", allBrands?.data);
 
   if (
     isFrameLoading ||

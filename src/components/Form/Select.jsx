@@ -32,9 +32,11 @@ const Select = ({
         {...props}
       >
         <option value="">{defaultOption}</option>
-        {options?.map((option,i) => (
+        {options?.map((option, i) => (
           <option key={i} value={option[optionValue]}>
-            {option[optionLabel]}
+            {typeof optionLabel === "function"
+              ? optionLabel(option)
+              : option[optionLabel]}
           </option>
         ))}
       </select>

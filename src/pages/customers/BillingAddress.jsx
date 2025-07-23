@@ -17,6 +17,7 @@ const AddressForm = ({
   useDifferentShipping,
 }) => {
   const prefix = title.toLowerCase().replace(" ", "");
+  console.log("address",useDifferentShipping,prefix)
 
   return (
     <div className="p-6 border border-gray-200 rounded-lg mb-6 bg-white shadow-sm">
@@ -45,6 +46,7 @@ const AddressForm = ({
               {errors[`${prefix}Line1`]}
             </p>
           )}
+          
         </div>
 
         {/* Address Line 2 */}
@@ -245,7 +247,8 @@ const BillingAddress = ({
       const updated = { ...prev, [name]: value };
       setErrors((prevErrors) => {
         const newErrors = { ...prevErrors };
-        if (name === "line1" && value) delete newErrors[`${prefix}Line1`];
+       if (name === "line1" && value) delete newErrors[`${prefix}Line1`];
+
         if (name === "line2" && value) delete newErrors[`${prefix}Line2`];
         if (name === "landmark" && value) delete newErrors[`${prefix}Landmark`];
         if (name === "city" && value) delete newErrors[`${prefix}City`];

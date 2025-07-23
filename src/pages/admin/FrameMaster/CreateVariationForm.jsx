@@ -70,7 +70,7 @@ const CreateVariationForm = ({
   const [stock, setLocalStock] = useState({
     FrameSRP: initialStock?.FrameSRP || null,
     FrameBatch: initialStock?.FrameBatch || 1,
-    id: initialStock?.id || null,
+    FrameDetailId: initialStock?.FrameDetailId || null,
   });
 
   const [pricing, setPricing] = useState(initialPricing || []);
@@ -323,7 +323,7 @@ const CreateVariationForm = ({
       </div>
 
       <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <div className="flex gap-5 mb-4 ">
           {[
             { field: "ColourCode", label: "Colour Code" },
             { field: "Size", label: "Size" },
@@ -332,15 +332,15 @@ const CreateVariationForm = ({
           ].map(({ field, label }) => renderInputField(field, label))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div>
+        <div className="flex gap-4 mb-4">
+          <div className="">
             <label className="block text-sm font-medium text-gray-700">
               Launch Season
             </label>
             <select
               value={variation.LaunchSeason}
               onChange={(e) => handleChange("LaunchSeason", e.target.value)}
-              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 w-[400px] block border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
               disabled={isEnabled}
             >
               <option value="">Select</option>
@@ -361,13 +361,17 @@ const CreateVariationForm = ({
           ].map(({ label, field }) => (
             <div key={field} className="flex items-center mt-6 space-x-2">
               <input
+                id={label}
                 type="checkbox"
-                checked={variation[field] === "1"}
+                checked={variation[field] === 1}
                 onChange={() => toggleCheckbox(field)}
                 className="form-checkbox h-5 w-5 text-blue-600"
                 disabled={isEnabled}
               />
-              <label className="text-sm font-medium text-gray-700">
+              <label
+                className="text-sm font-medium text-gray-700"
+                htmlFor={label}
+              >
                 {label}
               </label>
             </div>
@@ -382,7 +386,7 @@ const CreateVariationForm = ({
           ].map(({ field, label }) => renderInputField(field, label))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           {renderInputField("SkuCode", "SKU Code")}
           <div>
             <label className="block text-sm font-medium text-gray-700">
@@ -419,29 +423,35 @@ const CreateVariationForm = ({
               <p className="text-red-500 text-sm mt-1">{formErrors.Barcode}</p>
             )}
           </div>
-        </div>
-
-        <div className="mb-6 md:w-1/2">
-          <label className="block text-sm font-medium text-gray-700">SRP</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <LuIndianRupee className="text-gray-400" />
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700">
+              SRP
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <LuIndianRupee className="text-gray-400" />
+              </div>
+              <input
+                type="number"
+                value={stock.FrameSRP}
+                onChange={(e) =>
+                  setLocalStock((prev) => ({
+                    ...prev,
+                    FrameSRP: e.target.value,
+                  }))
+                }
+                placeholder="0"
+                className={`pl-7 pr-4 py-2 block w-full border ${
+                  formErrors.FrameSRP ? "border-red-500" : "border-gray-300"
+                } rounded-md`}
+                disabled={isEnabled}
+              />
+              {formErrors.FrameSRP && (
+                <p className="text-red-500 text-sm mt-1">
+                  {formErrors.FrameSRP}
+                </p>
+              )}
             </div>
-            <input
-              type="number"
-              value={stock.FrameSRP}
-              onChange={(e) =>
-                setLocalStock((prev) => ({ ...prev, FrameSRP: e.target.value }))
-              }
-              placeholder="0"
-              className={`pl-7 pr-4 py-2 block w-full border ${
-                formErrors.FrameSRP ? "border-red-500" : "border-gray-300"
-              } rounded-md`}
-              disabled={isEnabled}
-            />
-            {formErrors.FrameSRP && (
-              <p className="text-red-500 text-sm mt-1">{formErrors.FrameSRP}</p>
-            )}
           </div>
         </div>
 

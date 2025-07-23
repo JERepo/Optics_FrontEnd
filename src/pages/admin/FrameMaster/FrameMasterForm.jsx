@@ -41,16 +41,15 @@ const FrameMasterForm = forwardRef(
       } else if (formData.ModelNo.length > 30) {
         newErrors.ModelNo = "Model No cannot exceed 30 characters";
       }
-
-      if (formData.IsClipOn) {
-        if (
-          formData.NoOfClips !== "" &&
-          (isNaN(formData.NoOfClips) ||
-            parseInt(formData.NoOfClips) > 1 ||
-            parseInt(formData.NoOfClips) < 0)
-        ) {
-          newErrors.NoOfClips =
-            "No. of Clips must be a single non-negative number.";
+      if(formData.IsClipOn){
+        if(!formData.NoOfClips){
+          newErrors.NoOfClips = "No Of Clips is Required!"
+        }else if(isNaN(formData.NoOfClips)){
+          newErrors.NoOfClips = "No Of Clips is not a number!"
+        }else if(formData.NoOfClips.length > 1){
+          newErrors.NoOfClips = "No Of Clips must be in between 0 - 9"
+        }else if(Number(formData.NoOfClips) < 0){
+          newErrors.NoOfClips = "No Of Clips should be a positive Number"
         }
       }
 
@@ -116,7 +115,9 @@ const FrameMasterForm = forwardRef(
               <p className="text-red-500 text-sm">{errors.ModelNo}</p>
             )}
           </div>
-          <div className="mb-4">
+          
+        </div>
+<div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Category *
             </label>
@@ -148,8 +149,6 @@ const FrameMasterForm = forwardRef(
               <p className="text-red-500 text-sm">{errors.Category}</p>
             )}
           </div>
-        </div>
-
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-4">
           <div>
             <label>Rim Type *</label>

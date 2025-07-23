@@ -36,6 +36,8 @@ const PagePermissions = () => {
   const { data: pageNames, isLoading: pageNamesLoading } =
     useGetAllPageNameQuery();
 
+    console.log("all pages",pageNames)
+
   const [updatePrevilage, { isLoading: isUpdatingRole }] =
     useUpdatePrevilageMutation();
   const [createRole, { isLoading: isCreatingRoleLoading }] =

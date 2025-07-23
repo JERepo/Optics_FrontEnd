@@ -10,7 +10,6 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Button from "../../../components/ui/Button";
 import { PoolCat } from "../../../utils/constants/PoolCategory";
 import toast from "react-hot-toast";
-import { hasPermission } from "../../../utils/permissionUtils";
 import { useSelector } from "react-redux";
 import HasPermission from "../../../components/HasPermission";
 
@@ -54,6 +53,16 @@ const EditPool = () => {
       return;
     }
 
+    const poolExists = allPool?.data.find(
+      (p) =>
+        p.PoolName.toLowerCase().split(" ").join("") ===
+        poolName.toLowerCase().split(" ").join("")
+    );
+    if (poolExists) {
+      toast.error("Pool name must be unique");
+      return;
+    }
+    console.log(poolExists, "pool exists");
     const payload = {
       PoolName: poolName,
       PoolCategory: selectedCategoryId,

@@ -64,8 +64,18 @@ export const roleManageApi = createApi({
     }),
     getAllUserData: builder.query({
       query: () => "/api/v1/user-management",
+      transformResponse: (response) => {
+        return {
+          ...response,
+          data: response.data.sort(
+            (a, b) =>
+              new Date(b.RegistrationDate) - new Date(a.RegistrationDate)
+          ),
+        };
+      },
       providesTags: ["User Management"],
     }),
+
     updateUserStatus: builder.mutation({
       query: ({ id, data }) => ({
         url: `/api/v1/user-management/${id}`,

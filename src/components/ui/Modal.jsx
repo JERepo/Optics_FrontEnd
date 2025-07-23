@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from "react";
 
-const Modal = ({ isOpen, onClose, title, children }) => {
+const Modal = ({
+  isOpen,
+  onClose,
+  title,
+  children,
+  width = "max-w-xl",
+  height = "max-h-[90vh]",
+}) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -34,7 +41,7 @@ const Modal = ({ isOpen, onClose, title, children }) => {
 
       {/* Modal content */}
       <div
-        className={`relative bg-white rounded-xl shadow-lg w-full max-w-xl max-h-[90vh] overflow-y-auto transform transition-all duration-200 ${
+        className={`relative bg-white rounded-xl shadow-lg w-full ${width} ${height} overflow-y-auto transform transition-all duration-200 ${
           isVisible
             ? "opacity-100 translate-y-0 scale-100"
             : "opacity-0 translate-y-4 scale-95"

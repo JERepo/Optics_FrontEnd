@@ -57,7 +57,7 @@ const ConfirmationModal = ({
             } transition-colors`}
             autoFocus
           >
-            {isLoading ? <Loader /> : `${confirmText}`}
+            {isLoading ? <Loader className="text-neutral-50" /> : `${confirmText}`}
           </button>
           <button
             onClick={onClose}
