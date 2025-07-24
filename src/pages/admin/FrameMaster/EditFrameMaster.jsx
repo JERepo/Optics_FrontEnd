@@ -202,7 +202,6 @@ const EditFrameMaster = () => {
           DBL: !variation.DBL ? null : variation.DBL,
           TempleLength: variation.TempleLength,
           SkuCode: variation.SkuCode,
-          Barcode: isBarcodeChanged ? variation.Barcode : undefined,
           FrameFrontColor: variation.FrameFrontColor,
           TempleColor: variation.TempleColor,
           LensColor: variation.LensColor,
@@ -219,7 +218,9 @@ const EditFrameMaster = () => {
             ...locationPricing,
           },
         };
-
+        if (isBarcodeChanged) {
+          baseDetail.Barcode = variation.Barcode;
+        }
         return baseDetail;
       }),
     };

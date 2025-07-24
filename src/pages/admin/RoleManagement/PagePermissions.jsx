@@ -36,8 +36,6 @@ const PagePermissions = () => {
   const { data: pageNames, isLoading: pageNamesLoading } =
     useGetAllPageNameQuery();
 
-    console.log("all pages",pageNames)
-
   const [updatePrevilage, { isLoading: isUpdatingRole }] =
     useUpdatePrevilageMutation();
   const [createRole, { isLoading: isCreatingRoleLoading }] =
@@ -55,8 +53,8 @@ const PagePermissions = () => {
 
       const permissionsMap = {};
 
-      allPages.forEach((pageName, index) => {
-        const pageId = index + 1;
+      allPages.forEach((page) => {
+        const pageId = page.Id;
         const matchingPage = roleData.find((p) => p.PageId === pageId);
 
         const perms = {
@@ -86,8 +84,8 @@ const PagePermissions = () => {
   useEffect(() => {
     if (isNew && pageNames?.data) {
       const permissionsMap = {};
-      pageNames.data.forEach((_, index) => {
-        const pageId = index + 1;
+      pageNames.data.forEach((page) => {
+        const pageId = page.Id;
         permissionsMap[String(pageId)] = {
           view: false,
           create: false,
@@ -115,7 +113,6 @@ const PagePermissions = () => {
         },
       },
     }));
-  
   };
 
   const handleSubmit = async () => {
@@ -126,8 +123,8 @@ const PagePermissions = () => {
 
     if (!pageNames?.data) return;
 
-    const permission = pageNames.data.map((pageName, index) => {
-      const pageId = String(index + 1);
+    const permission = pageNames.data.map((page) => {
+      const pageId = String(page.Id);
       const currentPerms = formState.permissions[pageId] || {};
       const selectedPrivileges = [];
 
@@ -185,7 +182,6 @@ const PagePermissions = () => {
         {!isNew && !isEnabled && (
           <div className="flex items-center gap-2 border border-neutral-300 rounded-md px-3 w-[250px] h-10 bg-white">
             <FiSearch className="text-neutral-500 text-lg" />
-
             <input
               type="text"
               placeholder="Search..."
@@ -216,11 +212,11 @@ const PagePermissions = () => {
           Page Permissions
         </h3>
         <PermissionTable
-          data={pageNames?.data.map((name, i) => ({
-            Id: i + 1,
-            Name: name,
-            PageId: i + 1,
-            PageName: name,
+          data={pageNames?.data.map((page) => ({
+            Id: page.Id,
+            Name: page.PageName,
+            PageId: page.Id,
+            PageName: page.PageName,
           }))}
           permissions={formState.permissions}
           onPermissionToggle={handlePermissionChange}
@@ -263,6 +259,7 @@ const PagePermissions = () => {
           </HasPermission>
         )}
       </div>
+
       <ConfirmationModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -298,7 +295,6 @@ const PermissionTable = ({
     { key: "create", label: "Create", icon: <FiPlus /> },
     { key: "edit", label: "Edit", icon: <FiEdit2 /> },
     { key: "view", label: "View", icon: <FiEye /> },
-
     { key: "deactivate", label: "Deactivate", icon: <FiShield /> },
   ];
   const access = useSelector((state) => state.auth?.access);
@@ -330,8 +326,8 @@ const PermissionTable = ({
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {data.map((page) => {
-            const pageId = String(isNew ? page.Id : page.PageId);
-            const pageName = isNew ? page.Name : page.PageName;
+            const pageId = String(page.PageId);
+            const pageName = page.PageName;
 
             return (
               <tr

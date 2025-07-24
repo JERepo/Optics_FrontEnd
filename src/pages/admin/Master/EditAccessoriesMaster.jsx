@@ -160,8 +160,7 @@ const EditFrameMaster = () => {
 
         const baseDetail = {
           Id: variation.id || null,
-          SKUCode: variation.SKUCode || "",
-          Barcode: isBarcodeChanged ? variation.Barcode : undefined,
+          SKUCode: variation.SKUCode || null,
           OPVariationID: Number(variation.OPVariationID) || 1,
           OPMainID: Number(variation.OPMainID) || null,
           IsActive: variation.IsActive ?? 1,
@@ -173,7 +172,9 @@ const EditFrameMaster = () => {
             ...locationPricing,
           },
         };
-
+        if (isBarcodeChanged) {
+          baseDetail.Barcode = variation.Barcode;
+        }
         return baseDetail;
       }),
     };

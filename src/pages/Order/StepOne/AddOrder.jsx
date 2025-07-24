@@ -188,9 +188,14 @@ const AddOrder = ({
     setLoadingCustomerId(customerWithContact.Id);
     setCustomerOpen(false);
     setTempCustomer(selectedData);
-    handleGetPatient(customerWithContact.CustomerContactDetails?.[0].Id,customerWithContact.Id);
+    handleGetPatient(
+      customerWithContact.CustomerContactDetails?.[0].Id,
+      customerWithContact.Id,
+      customerWithContact
+    );
     setCustomerId((prev) => ({
       ...prev,
+      patientName: customerWithContact.CustomerContactDetails?.[0].CustomerName,
       patientId: customerWithContact.CustomerContactDetails?.[0].Id,
       locationId: parseInt(location),
       customerId: customerWithContact.Id,
@@ -261,10 +266,12 @@ const AddOrder = ({
   const hasSearchInput =
     input || filters.name || filters.mobileNo || filters.customerName;
 
+  
   const handleSubmit = async (newCustomer, data) => {
     if (newCustomer) {
       setCreatingCustomerLoading(true);
       const locationData = locationById?.data?.data || {};
+      console.log("location data",locationData)
       const payload = {
         AssignToExistingCustomer: parseInt(newCustomer.ExistingCustomer),
         CustomerName: newCustomer.name,
@@ -558,7 +565,7 @@ const AddNewCustomer = ({
   const allCus = allCustomers?.data.data || [];
   const matchingCompanyIds = allCompanyLocationData?.data.data
     ?.filter((loc) => loc.CustomerPoolID === CustomerPoolID)
-    .map((loc) => loc.CompanyId);
+    .map((loc) => loc.CompanyId);countryIsd
 
   const matchingCustomers = allCus.filter((customer) =>
     matchingCompanyIds?.includes(customer.CompanyID)

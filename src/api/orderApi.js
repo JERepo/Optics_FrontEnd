@@ -4,6 +4,7 @@ import { customBaseQuery } from "./customBaseQuery";
 export const orderApi = createApi({
   reducerPath: "orderApi",
   baseQuery: customBaseQuery,
+  tagTypes: ["Order"],
   endpoints: (builder) => ({
     searchCustomer: builder.query({
       query: ({ input }) => ({
@@ -17,6 +18,7 @@ export const orderApi = createApi({
         method: "POST",
         body: payload,
       }),
+      invalidatesTags: ["Order"],
     }),
     createSalesOrder: builder.mutation({
       query: ({ userId, payload }) => ({
@@ -24,16 +26,19 @@ export const orderApi = createApi({
         method: "POST",
         body: payload,
       }),
+      invalidatesTags: ["Order"],
     }),
     getOrder: builder.query({
       query: ({ id }) => ({
         url: `/api/v1/order?patientId=${id}`,
       }),
+      providesTags: ["Order"],
     }),
     getCustomerContactDetails: builder.query({
       query: () => ({
         url: `/api/v1/customer/getdetailsall`,
       }),
+      providesTags: ["Order"],
     }),
     getByBarCode: builder.query({
       query: ({ barcode, locationId }) => ({
@@ -51,9 +56,10 @@ export const orderApi = createApi({
         method: "POST",
         body: payload,
       }),
+      invalidatesTags: ["Order"],
     }),
     getOrderDetails: builder.query({
-      query: ({ patientId,customerId }) => ({
+      query: ({ patientId, customerId }) => ({
         url: `/api/v1/order?patientId=${patientId}&CustomerId=${customerId}`,
       }),
     }),
@@ -73,6 +79,7 @@ export const orderApi = createApi({
         method: "POST",
         body: payload,
       }),
+      invalidatesTags: ["Order"],
     }),
 
     getModalities: builder.query({
@@ -104,6 +111,79 @@ export const orderApi = createApi({
         method: "POST",
         body: payload,
       }),
+      invalidatesTags: ["Order"],
+    }),
+    getPatientDetailsById: builder.query({
+      query: ({ id }) => ({
+        url: `/api/v1/customer/getbymasterid/${id}`,
+      }),
+    }),
+    getSavedOrderDetails: builder.query({
+      query: ({ orderId }) => ({
+        url: `/api/v1/order/getorderdetails/${orderId}`,
+      }),
+      providesTags: ["Order"],
+    }),
+    applyFrameDiscount: builder.mutation({
+      query: ({ locationId, orderId, detailId, payload }) => ({
+        url: `/api/v1/order/applydiscount?locationId=${locationId}&orderId=${orderId}&detailId=${detailId}`,
+        method: "PUT",
+        body: payload,
+      }),
+      invalidatesTags: ["Order"],
+    }),
+    removeFrameDiscount: builder.mutation({
+      query: ({ orderId, detailId }) => ({
+        url: `/api/v1/order/remove-discount?orderId=${orderId}&detailId=${detailId}`,
+        method: "PUT",
+      }),
+      invalidatesTags: ["Order"],
+    }),
+    applyAccessoryDiscount: builder.mutation({
+      query: ({ locationId, orderId, detailId, payload }) => ({
+        url: `/api/v1/order/otherproduct/applydiscount?locationId=${locationId}&orderId=${orderId}&detailId=${detailId}`,
+        method: "PUT",
+        body: payload,
+      }),
+      invalidatesTags: ["Order"],
+    }),
+    removeAccessoryDiscount: builder.mutation({
+      query: ({ orderId, detailId }) => ({
+        url: `/api/v1/order/otherproduct/remove-discount?orderId=${orderId}&detailId=${detailId}`,
+        method: "PUT",
+      }),
+      invalidatesTags: ["Order"],
+    }),
+    applyContactLensDiscount: builder.mutation({
+      query: ({ locationId, orderId, detailId, payload }) => ({
+        url: `/api/v1/order/contactlens/applydiscount?locationId=${locationId}&orderId=${orderId}&detailId=${detailId}`,
+        method: "PUT",
+        body: payload,
+      }),
+      invalidatesTags: ["Order"],
+    }),
+    removeContactLensDiscount: builder.mutation({
+      query: ({ orderId, detailId }) => ({
+        url: `/api/v1/order/contactlens/remove-discount?orderId=${orderId}&detailId=${detailId}`,
+        method: "PUT",
+      }),
+      invalidatesTags: ["Order"],
+    }),
+
+    removeOrder: builder.mutation({
+      query: ({ orderId, comment, payload }) => ({
+        url: `/api/v1/order/addcomment?orderId=${orderId}`,
+        method: "PUT",
+        body: payload,
+      }),
+      invalidatesTags: ["Order"],
+    }),
+    completeOrderFinal: builder.mutation({
+      query: ({ orderId, payload }) => ({
+        url: `/api/v1/order/final/${orderId}`,
+        method: "PUT",
+        body: payload,
+      }),
     }),
   }),
 });
@@ -126,4 +206,14 @@ export const {
   useGetColourQuery,
   useGetPowerDetailsMutation,
   useSaveContactLensMutation,
+  useGetPatientDetailsByIdQuery,
+  useGetSavedOrderDetailsQuery,
+  useApplyFrameDiscountMutation,
+  useRemoveFrameDiscountMutation,
+  useRemoveOrderMutation,
+  useApplyAccessoryDiscountMutation,
+  useRemoveAccessoryDiscountMutation,
+  useApplyContactLensDiscountMutation,
+  useRemoveContactLensDiscountMutation,
+  useCompleteOrderFinalMutation
 } = orderApi;

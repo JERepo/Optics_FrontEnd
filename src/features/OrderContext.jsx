@@ -10,6 +10,9 @@ export const useOrder = () => {
 
 export const OrderProvider = ({ children, initialStep = 1 }) => {
   const [customerId, setCustomerId] = useState({
+    countryId: null,
+    companyId: null,
+    patientName: null,
     patientId: null,
     locationId: null,
     customerId: null,
@@ -23,6 +26,7 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
     value: 1,
     label: "Frame/Sunglass",
   });
+  const [customerDetails, setCustomerDetails] = useState(null);
 
   const goToStep = (step) => {
     if (step >= 1 && step <= TOTAL_STEPS) {
@@ -72,6 +76,8 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
         setSelectedProduct,
         draftData,
         setDraftData,
+        customerDetails,
+        setCustomerDetails,
       }}
     >
       {children}

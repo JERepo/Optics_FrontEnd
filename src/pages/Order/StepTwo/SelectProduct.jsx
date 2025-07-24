@@ -8,7 +8,7 @@ import toast from "react-hot-toast";
 const Products = [
   { value: 0, label: "Frame/Sunglass + lens" },
   { value: 1, label: "Frame/Sunglass" },
-  { value: 2, label: "Lens" },
+  { value: 2, label: "Optical Lens" },
   { value: 3, label: "Contact Lens" },
   { value: 4, label: "Accessories" },
   { value: 5, label: "Bulk Process" },
@@ -16,17 +16,12 @@ const Products = [
 
 const SelectProduct = () => {
   const {
-    currentSubStep,
     goToSubStep,
-    prevSubStep,
     goToStep,
     setSelectedProduct,
     selectedProduct,
-    customerId,
   } = useOrder();
   const handleAddProduct = () => {
-
-
     if (selectedProduct?.value === 1) {
       setSelectedProduct(selectedProduct);
       goToStep(3);
@@ -39,6 +34,10 @@ const SelectProduct = () => {
       setSelectedProduct(selectedProduct);
       goToStep(3);
       goToSubStep(3); // Contact Lens
+    } else if (selectedProduct?.value === 2) {
+      setSelectedProduct(selectedProduct);
+      goToStep(3);
+      goToSubStep(4); // Optical Lens
     } else {
       toast.error("Invalid selection type no product available");
       console.warn("Invalid product selection. No matching substep.");
@@ -60,7 +59,13 @@ const SelectProduct = () => {
           >
             Back
           </Button>
-
+          <Button
+            onClick={() => goToStep(4)}
+            className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700"
+            disabled={!selectedProduct.value}
+          >
+            Order Details
+          </Button>
           <Button
             onClick={handleAddProduct}
             icon={FiPlus}
