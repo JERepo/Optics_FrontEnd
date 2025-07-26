@@ -206,8 +206,9 @@ const FrameSunglass = () => {
       products: items.map((item) => ({
         frameDetailId: item.Id,
         qty: item.Quantity,
+        PatientID: customerId.patientId,
         locationId: customerId.locationId,
-        bypassWarnings: warnedIds.includes(item.Id),
+        bypassWarnings: true,
       })),
     };
     try {
@@ -377,6 +378,7 @@ const FrameSunglass = () => {
             </div>
           </div>
         )}
+
         {!searchMode && searchResults.length > 0 && (
           <div className="p-6">
             <div className="mb-3 flex items-center justify-between">
@@ -588,7 +590,6 @@ const ModifyPatient = ({
   isOpen,
   patientDetails,
 }) => {
-  console.log("pp", patientDetails);
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div>
@@ -743,7 +744,7 @@ const AddPatient = ({
         setCustomerId((prev) => ({
           ...prev,
           patientId: response?.data.data.contact.Id,
-          patientName: response?.data.data.CustomerName,
+          patientName: response?.data.data.contact.CustomerName,
         }));
       }
 

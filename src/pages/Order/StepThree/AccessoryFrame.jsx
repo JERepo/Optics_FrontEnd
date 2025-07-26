@@ -45,7 +45,7 @@ const AccessoryFrame = () => {
   const dropdownRef = useRef(null);
   const [openChange, setOpenChange] = useState(false);
   const [openAdd, setOpenAdd] = useState(false);
-
+  console.log("pp", selectedProduct);
   const { data: allBrands } = useGetAllBrandsQuery();
   const [
     fetchByBarcode,
@@ -212,8 +212,9 @@ const AccessoryFrame = () => {
       products: items.map((item) => ({
         otherProductDetailId: item.Id,
         qty: item.Quantity,
+        PatientID: customerId.patientId,
         locationId: customerId.locationId,
-        bypassWarnings: warnedIds.includes(item.Id),
+        bypassWarnings: true,
       })),
     };
     try {
@@ -591,7 +592,6 @@ const ModifyPatient = ({
   isOpen,
   patientDetails,
 }) => {
-  console.log("pp", patientDetails);
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div>
@@ -746,7 +746,7 @@ const AddPatient = ({
         setCustomerId((prev) => ({
           ...prev,
           patientId: response?.data.data.contact.Id,
-          patientName: response?.data.data.CustomerName,
+          patientName: response?.data.data.contact.CustomerName,
         }));
       }
 
@@ -845,35 +845,4 @@ const AddPatient = ({
     </Modal>
   );
 };
-
-  // <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-  //         <div>
-  //           <h1 className="text-2xl font-bold text-gray-800">
-  //             Order Details{" "}
-  //             <span className="text-blue-600">(Step {currentStep})</span>
-  //           </h1>
-  //           <p className="text-sm text-gray-500 mt-1">
-  //             Review and add products to the order
-  //           </p>
-  //         </div>
-  //         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
-  //           <Button
-  //             icon={FiArrowLeft}
-  //             variant="outline"
-  //             onClick={handleBack}
-  //             className="w-full sm:w-auto"
-  //           >
-  //             Back
-  //           </Button>
-  //           <Button
-  //             icon={FiPlus}
-  //             className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
-  //             onClick={handleAddProduct}
-  //           >
-  //             Add Product
-  //           </Button>
-  //         </div>
-  //       </div>
-
-
 

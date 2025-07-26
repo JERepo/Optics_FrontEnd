@@ -1,13 +1,22 @@
 import React, { useState, useMemo } from "react";
-import { FiSearch, FiPlus, FiEdit2, FiEye } from "react-icons/fi";
+import {
+  FiSearch,
+  FiPlus,
+  FiEdit2,
+  FiEye,
+  FiArrowDown,
+  FiArrowUp,
+} from "react-icons/fi";
 import Button from "../../../components/ui/Button";
 import { useNavigate } from "react-router";
 import { Table, TableRow, TableCell } from "../../../components/Table";
 import Toggle from "../../../components/ui/Toggle";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import HasPermission from "../../../components/HasPermission";
-import { useDeActivateMutation, useGetAllmaterialsQuery } from "../../../api/materialMaster";
-
+import {
+  useDeActivateMutation,
+  useGetAllmaterialsQuery,
+} from "../../../api/materialMaster";
 
 const MaterialMaster = () => {
   const navigate = useNavigate();
@@ -15,6 +24,7 @@ const MaterialMaster = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const locale = navigator.language || navigator.languages[0] || "en-IN";
+  const [sortOrder, setSortOrder] = useState("asc");
 
   const [selectedBrandId, setSelectedBrandId] = useState(null);
   const [currentStatus, setCurrentStatus] = useState(null);
@@ -26,10 +36,10 @@ const MaterialMaster = () => {
   const brands = useMemo(() => {
     if (!data) return [];
 
-    return data.map((brand) => ({
+    let processed = data.map((brand) => ({
       id: brand.Id,
       name: brand.MaterialName,
-
+      applicableFor: brand.MaterialFor == 0 ? "Frame" : "Contact Lens",
       createdAt: new Intl.DateTimeFormat(locale, {
         year: "numeric",
         month: "short",
@@ -37,7 +47,17 @@ const MaterialMaster = () => {
       }).format(new Date(brand.CreatedDate)),
       enabled: brand.IsActive,
     }));
-  }, [data, searchQuery]);
+    // Sort by createdAtRaw based on sortOrder
+    processed.sort((a, b) => {
+      if (sortOrder === "asc") {
+        return a.name.localeCompare(b.name); // A-Z
+      } else {
+        return b.name.localeCompare(a.name); // Z-A
+      }
+    });
+
+    return processed;
+  }, [data, searchQuery, sortOrder]);
 
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedPools = brands.slice(startIndex, startIndex + pageSize);
@@ -48,7 +68,10 @@ const MaterialMaster = () => {
     setCurrentStatus(status);
     setIsModalOpen(true);
   };
-
+  // Toggle sort order
+  const handleSortToggle = () => {
+    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+  };
   const handleConfirmToggle = async () => {
     try {
       await deActivate({
@@ -65,7 +88,6 @@ const MaterialMaster = () => {
   };
 
   const handleEdit = (poolId) => {
-
     navigate(`edit/${poolId}`);
   };
 
@@ -73,7 +95,7 @@ const MaterialMaster = () => {
     <div className="max-w-5xl">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div className="text-3xl text-neutral-700 font-semibold">
-          Frame Material Master
+          Material Master
         </div>
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
           <div className="flex items-center gap-2 border-2 border-neutral-300 rounded-md px-3 w-full sm:w-[250px] h-10 bg-white">
@@ -100,7 +122,27 @@ const MaterialMaster = () => {
       </div>
 
       <Table
-        columns={["S.No", "material master", "created on", "Action"]}
+        columns={["S.No", "material name", "Applicable for", "created on", ""]}
+        renderHeader={(column) => {
+          if (column === "material name") {
+            return (
+              <div className="flex items-center gap-2">
+                {column}
+                <button
+                  onClick={handleSortToggle}
+                  className="focus:outline-none"
+                >
+                  {sortOrder === "asc" ? (
+                    <FiArrowDown className="text-neutral-500" />
+                  ) : (
+                    <FiArrowUp className="text-neutral-500" />
+                  )}
+                </button>
+              </div>
+            );
+          }
+          return column;
+        }}
         data={paginatedPools}
         renderRow={(pool, index) => (
           <TableRow key={pool.id}>
@@ -109,6 +151,9 @@ const MaterialMaster = () => {
             </TableCell>
             <TableCell className="text-sm text-neutral-500">
               {pool.name}
+            </TableCell>
+            <TableCell className="text-sm text-neutral-500">
+              {pool.applicableFor}
             </TableCell>
 
             <TableCell className="text-sm text-neutral-500">
@@ -164,7 +209,7 @@ const MaterialMaster = () => {
         onConfirm={handleConfirmToggle}
         title={`Are you sure you want to ${
           currentStatus ? "deactivate" : "activate"
-        } this pool?`}
+        } this Master?`}
         message={`This will ${
           currentStatus ? "deactivate" : "activate"
         } the pool. You can change it again later.`}

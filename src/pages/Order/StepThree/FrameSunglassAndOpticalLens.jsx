@@ -1,145 +1,4 @@
 import React, { useEffect, useState } from "react";
-
-import AddOrder from "./StepOne/AddOrder";
-import { useGetOrderDetailsQuery, useGetOrderQuery } from "../../api/orderApi";
-import { useSelector } from "react-redux";
-import { useGetLocationByIdQuery } from "../../api/roleManagementApi";
-import { useGetCompanyIdQuery, useGetIsdQuery } from "../../api/customerApi";
-import { useOrder } from "../../features/OrderContext";
-import StepTwoMain from "./StepTwo/StepTwoMain";
-import StepThreeMain from "./StepThree";
-import OrderDetails from "./StepFour/OrderDetails";
-import CompleteOrder from "./StepFive/CompleteOrder";
-import OrderList from "./MainOrder/OrderList";
-
-const TotalOrder = () => {
-  const [patientId, setPatientId] = useState(null);
-  const [customerId, setMainCustomerId] = useState(null);
-  const [location, setLocation] = useState(null);
-  const { currentStep, setDraftData, setCustomerId, setCustomerDetails } =
-    useOrder();
-
-  const { hasMultipleLocations, user } = useSelector((state) => state.auth);
-
-  const { data: getOrderData, isLoading: isGetOrderDataLoading } =
-    useGetOrderQuery(
-      { id: patientId, customerId },
-      { skip: !patientId && !customerId }
-    );
-
-  const { data: locationById } = useGetLocationByIdQuery(
-    { id: location },
-    { skip: !location }
-  );
-  const { data: draftDetails } = useGetOrderDetailsQuery(
-    { patientId: patientId, customerId: customerId },
-    { skip: !patientId && !customerId }
-  );
-
-  console.log("draft details", draftDetails?.data.data);
-
-  useEffect(() => {
-    if (
-      draftDetails?.data.data &&
-      draftDetails?.data.data[0]?.ApplicationUserId &&
-      draftDetails?.data.data[0]?.ApplicationUserId === user?.Id &&
-      draftDetails?.data.data[0]?.Status === 0 &&
-      draftDetails?.data.data[0]?.CompanyId === locationById?.data?.data?.Id 
-      // draftDetails?.data.data[0].PatientID === patientId
-    ) {
-      setDraftData(draftDetails?.data?.data[0]);
-      console.log("coming to cross all conditions")
-    } else {
-      console.log("setting null")
-      setDraftData(null);
-    }
-  }, [patientId, draftDetails]);
-
-  const companyType = locationById?.data?.data.CompanyType;
-  const companyId = locationById?.data?.data.Id;
-  const countrId = locationById?.data?.data.BillingCountryCode;
-
-  const { data: countryIsd } = useGetIsdQuery(
-    { id: countrId },
-    { skip: !countrId }
-  );
-
-  useEffect(() => {
-    setCustomerId((prev) => ({
-      ...prev,
-      countryId: countrId,
-      companyId: companyId,
-    }));
-  }, [countrId, locationById, companyId]);
-  const { data: companySettings } = useGetCompanyIdQuery(
-    { id: companyId },
-    { skip: !companyId }
-  );
-
-  const CustomerPoolID = companySettings?.data?.data.CustomerPoolID;
-
-  console.log("location data", locationById);
-  console.log("company data", companySettings);
-
-  const handleGetPatient = (id, customerId, data) => {
-    console.log("patienr id is oming", id, customerId);
-    setPatientId(id);
-    setMainCustomerId(customerId);
-    setCustomerDetails(data);
-  };
-
-  // Location handling
-  useEffect(() => {
-    const locations = Array.isArray(hasMultipleLocations)
-      ? hasMultipleLocations
-      : hasMultipleLocations !== undefined && hasMultipleLocations !== null
-      ? [hasMultipleLocations]
-      : [];
-
-    if (locations.length === 1) {
-      setLocation(locations[0]);
-    }
-  }, [hasMultipleLocations]);
-
-  const commonProps = {
-    handleGetPatient,
-    getOrderData,
-    isGetOrderDataLoading,
-    location,
-    setLocation,
-    locationById,
-    companyType,
-    countryIsd,
-    companySettings,
-    CustomerPoolID,
-  };
-
-  // Step rendering logic
-  const renderStep = () => {
-    console.log("current step in index",currentStep)
-    switch (currentStep) {
-      case 1:
-        return <AddOrder {...commonProps} />;
-      case 2:
-        return <StepTwoMain />;
-      case 3:
-        return <StepThreeMain />;
-      case 4:
-        return <OrderDetails />;
-      case 5:
-        return <CompleteOrder />;
-      default:
-        return <OrderList />;
-    }
-  };
-
-  return <div>{renderStep()}</div>;
-};
-
-export default TotalOrder;
-
-/*
-import React, { useEffect, useState } from "react";
 import { useOrder } from "../../../features/OrderContext";
 import {
   useCreateNewCustomerMutation,
@@ -169,6 +28,9 @@ const FrameSunglassAndOpticalLens = () => {
     currentStep,
     goToStep,
     setCustomerId,
+    setCurrentSubStep,
+    goToSubStep,
+    setFrameId,
   } = useOrder();
 
   const [openChange, setOpenChange] = useState(false);
@@ -259,14 +121,6 @@ const FrameSunglassAndOpticalLens = () => {
     setSearchMode(false);
   };
 
-  const handleQtyChange = (barcode, qty) => {
-    setItems((prev) =>
-      prev.map((i) =>
-        i.Barcode === barcode ? { ...i, Quantity: Number(qty) } : i
-      )
-    );
-  };
-
   const handleConfirmBypassWarnings = async () => {
     if (!warningPayload) return;
     const warnedIds = warningPayload.map((w) => w.frameDetailId);
@@ -279,13 +133,16 @@ const FrameSunglassAndOpticalLens = () => {
       })),
     };
     try {
-      await saveFrame({
+      const response = await saveFrame({
         orderId: customerId.orderId,
         payload: newPayload,
       }).unwrap();
+      const frameId = response?.inserted[0]?.frameDetailId;
+      setFrameId(frameId);
       toast.success("Frame saved with warnings bypassed.");
       setShowConfirmModal(false);
-      goToStep(4);
+
+      goToSubStep(4);
     } catch (err) {
       setShowConfirmModal(false);
       toast.error("Failed to save after confirming warnings.");
@@ -331,6 +188,7 @@ const FrameSunglassAndOpticalLens = () => {
       b.IsActive === 1 &&
       b.BrandName.toLowerCase().includes(brandInput.toLowerCase())
   );
+  console.log("sele", selectedProduct);
 
   return (
     <div>
@@ -363,7 +221,7 @@ const FrameSunglassAndOpticalLens = () => {
                   />
                 </div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  Step {currentStep}: {selectedProduct.label}
+                  Step {currentStep}(a): Frame/Sunglass
                 </h1>
               </div>
               <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -624,7 +482,6 @@ const ModifyPatient = ({
   isOpen,
   patientDetails,
 }) => {
-  console.log("pp", patientDetails);
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div>
@@ -824,7 +681,7 @@ const AddPatient = ({
           </div>
         </div>
 
-       
+        {/* Mobile Alert Checkbox */}
         <div>
           <label className="inline-flex items-center">
             <input
@@ -860,7 +717,7 @@ const AddPatient = ({
           value={newCustomer.Engraving || ""}
         />
 
-     
+        {/* Save Button */}
         <div className="flex justify-end pt-4">
           <Button
             onClick={() => {
@@ -878,5 +735,3 @@ const AddPatient = ({
     </Modal>
   );
 };
-
-*/

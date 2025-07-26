@@ -266,12 +266,11 @@ const AddOrder = ({
   const hasSearchInput =
     input || filters.name || filters.mobileNo || filters.customerName;
 
-  
   const handleSubmit = async (newCustomer, data) => {
     if (newCustomer) {
       setCreatingCustomerLoading(true);
       const locationData = locationById?.data?.data || {};
-      console.log("location data",locationData)
+      console.log("location data", locationData);
       const payload = {
         AssignToExistingCustomer: parseInt(newCustomer.ExistingCustomer),
         CustomerName: newCustomer.name,
@@ -413,7 +412,7 @@ const AddOrder = ({
 
             <div className="flex gap-2 sm:gap-3">
               <button
-                onClick={() => navigate("/order")}
+                onClick={() => navigate("/order-list")}
                 className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm"
               >
                 <FiArrowLeft />
@@ -510,6 +509,7 @@ const AddOrder = ({
           user={user}
           setCustomerId={setCustomerId}
           draftData={draftData}
+          location={locationById}
         />
       )}
       <AddNewCustomer
@@ -565,7 +565,8 @@ const AddNewCustomer = ({
   const allCus = allCustomers?.data.data || [];
   const matchingCompanyIds = allCompanyLocationData?.data.data
     ?.filter((loc) => loc.CustomerPoolID === CustomerPoolID)
-    .map((loc) => loc.CompanyId);countryIsd
+    .map((loc) => loc.CompanyId);
+  countryIsd;
 
   const matchingCustomers = allCus.filter((customer) =>
     matchingCompanyIds?.includes(customer.CompanyID)
@@ -774,13 +775,13 @@ const StepB = ({
   selectedCustomer,
   onBack,
   user,
-
   setCustomerId,
   draftData,
+  location
 }) => {
-  console.log("draft data in step b", draftData);
+  console.log("draft in step b", draftData);
   const [orderReference, setOrderReference] = useState("");
-  const [selectedSalesPerson, setSelectedSalesPerson] = useState("");
+  const [selectedSalesPerson, setSelectedSalesPerson] = useState(null);
   const { goToStep } = useOrder();
   const { data: salesPersons, isLoading: isSalesPersonsLoading } =
     useGetAllSalesPersonsQuery();
@@ -788,25 +789,24 @@ const StepB = ({
     useCreateSalesOrderMutation();
 
   const handleSaveSales = async () => {
-    console.log("handleSaveSales called");
     if (!selectedSalesPerson) {
       toast.error("Please select a sales person type");
       return;
     }
 
-    if (draftData?.length > 0 && draftData[0].Status === 0) {
+    if (draftData && draftData.Status === 0) {
       setCustomerId((prev) => ({
         ...prev,
-        orderId: draftData[0]?.Id,
+        orderId: draftData?.Id,
       }));
       goToStep(4);
       return;
     }
 
     const payload = {
-      CompanyId: selectedCustomer.CompanyID,
+      CompanyId: location?.data.data.Id,
       CustomerId: selectedCustomer.Id,
-      PatientId: selectedCustomer.CustomerContactDetails[0].Id,
+      PatientID: selectedCustomer.CustomerContactDetails[0].Id,
       OrderReference: orderReference,
       SalesPersonID: parseInt(selectedSalesPerson),
     };
@@ -821,7 +821,6 @@ const StepB = ({
         orderId: response?.data.data.Id,
       }));
       toast.success("Sales person type is created");
-      console.log("Going to step 2");
       goToStep(2);
     } catch (error) {
       console.log("Create sales order error:", error);
@@ -829,10 +828,12 @@ const StepB = ({
   };
 
   useEffect(() => {
-    if (draftData && draftData?.length > 0 && !isSalesPersonsLoading) {
-      const draft = draftData[0];
-      setOrderReference(draft.OrderReference || "");
-      setSelectedSalesPerson(draft.SalesPersonId);
+    if (draftData  && !isSalesPersonsLoading) {
+      console.log("total data",draftData)
+      const draft = draftData;
+      console.log("single data",draft)
+      setOrderReference(draft?.OrderReference || null);
+      setSelectedSalesPerson(draft?.SalesPersonId || null);
     }
   }, [draftData, isSalesPersonsLoading]);
 

@@ -12,13 +12,15 @@ import {
   useGetBrandCatByIdQuery,
   useUpdateBrandCategoryMutation,
 } from "../../../api/brandCategory";
+import { useGetAllBrandsQuery } from "../../../api/brandsApi";
 
 const EditBrandCategory = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation();
-  const {access,user} = useSelector((state) => state.auth);
+  const { access, user } = useSelector((state) => state.auth);
   const [brandName, setBrandName] = useState("");
+  const [Brands, setBrands] = useState("");
 
   const {
     data: brandCategory,
@@ -29,16 +31,33 @@ const EditBrandCategory = () => {
     useCreateBrandCategoryMutation();
   const [updateBrandCategory, { isLoading: isBrandCatUpdating }] =
     useUpdateBrandCategoryMutation();
-  const { data: allBrands } = useGetAllBrandCatsQuery();
+  const { data: allBrands, isLoading: isBrandLoading } =
+    useGetAllBrandCatsQuery();
+  const {
+    data: mainBrands,
+    isLoading: isMainLoading,
+    isSuccess: isMainSucces,
+  } = useGetAllBrandsQuery();
 
   const isEnabled = location.pathname.includes("/view");
 
   // Prefill values if editing
   useEffect(() => {
-    if (id && isSuccess && brandCategory?.data) {
-      setBrandName(brandCategory.data.BrandCategoryName || "");
-    }
-  }, [id, brandCategory, isSuccess]);
+    console.log("Main Brands:", mainBrands, mainBrands?.length);
+    if (!id || !brandCategory?.data || !mainBrands) return;
+
+    setBrandName(brandCategory.data.BrandCategoryName || "");
+    const filteredBrands = mainBrands
+      ?.filter((b) => b.BrandCategoryId == id)
+      .map((n) => n.BrandName)
+      .join(", ");
+    console.log(
+      "match",
+      mainBrands?.map((b) => b.BrandCategoryId == 1)
+    );
+
+    setBrands(filteredBrands);
+  }, [id, brandCategory?.data, mainBrands]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -50,7 +69,7 @@ const EditBrandCategory = () => {
       toast.error("Cannot exceed more than 50 characters");
       return;
     }
-    
+
     const payload = {
       BrandCategoryName: brandName,
     };
@@ -74,11 +93,12 @@ const EditBrandCategory = () => {
     }
   };
 
-  if (id && isBrandCatLoading) return <h1>Loading brands category...</h1>;
+  if (id && (isBrandCatLoading || isMainLoading))
+    return <h1>Loading brands category...</h1>;
 
   return (
     <div className="max-w-2xl bg-white rounded-lg shadow-sm p-4">
-      <div className="flex items-center mb-6">
+      <div className="flex items-center mb-3">
         <button
           onClick={() => navigate(-1)}
           className="mr-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
@@ -129,6 +149,29 @@ const EditBrandCategory = () => {
           )}
         </div>
       </form>
+      {isEnabled && (
+        <div className=" p-4 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">
+            Applicable Brands
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {Brands ? (
+              Brands.split(", ").map((brand, index) => (
+                <span
+                  key={index}
+                  className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-sm font-medium text-blue-700"
+                >
+                  {brand}
+                </span>
+              ))
+            ) : (
+              <p className="text-sm text-gray-500 italic">
+                No brands available for this category
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

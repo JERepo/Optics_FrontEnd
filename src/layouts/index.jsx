@@ -49,6 +49,8 @@ import Vendor from "../pages/Vendor/Vendor";
 import EditVendor from "../pages/Vendor/EditVendor";
 import NotFound from "../components/NotFound";
 import TotalOrder from "../pages/Order";
+import OrderList from "../pages/Order/MainOrder/OrderList";
+import ErrorBoundary from "../components/ErrorBoundary";
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
 export const router = createBrowserRouter([
@@ -606,9 +608,22 @@ export const router = createBrowserRouter([
       },
 
       {
-        path: "order",
-        element: <TotalOrder />,
+        path: "order-list",
+        element: (
+          <ErrorBoundary>
+            <OrderList />
+          </ErrorBoundary>
+        ),
       },
+      {
+        path: "add-order",
+        element: (
+          <ErrorBoundary>
+            <TotalOrder />
+          </ErrorBoundary>
+        ),
+      },
+      
     ],
   },
   {

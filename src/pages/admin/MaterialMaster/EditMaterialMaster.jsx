@@ -99,9 +99,9 @@ const EditmaterialMaster = () => {
         <h1 className="text-2xl font-semibold text-gray-800">
           {id
             ? isEnabled
-              ? "View Material Master"
-              : "Edit Material Master"
-            : "Create New Material Master"}
+              ? "View Material Name"
+              : "Edit Material Name"
+            : "Create New Material Name"}
         </h1>
       </div>
 
@@ -109,7 +109,7 @@ const EditmaterialMaster = () => {
         {/* Season Name Field */}
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
-            Frame Material Master
+            Material Name
           </label>
           <input
             type="text"

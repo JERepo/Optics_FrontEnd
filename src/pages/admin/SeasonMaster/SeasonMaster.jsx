@@ -1,12 +1,11 @@
 import React, { useState, useMemo } from "react";
-import { FiSearch, FiPlus, FiEdit2, FiEye } from "react-icons/fi";
+import { FiSearch, FiPlus, FiEdit2, FiEye, FiArrowUp, FiArrowDown } from "react-icons/fi";
 import Button from "../../../components/ui/Button";
 import { useNavigate } from "react-router";
 import { Table, TableRow, TableCell } from "../../../components/Table";
 import Toggle from "../../../components/ui/Toggle";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import HasPermission from "../../../components/HasPermission";
-
 import { useDeActivateMutation, useGetAllseasonsQuery } from "../../../api/seasonMaster";
 
 const SeasonMaster = () => {
@@ -14,6 +13,7 @@ const SeasonMaster = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [sortOrder, setSortOrder] = useState("newToOld"); // State for sorting order
   const locale = navigator.language || navigator.languages[0] || "en-IN";
 
   const [selectedBrandId, setSelectedBrandId] = useState(null);
@@ -26,18 +26,29 @@ const SeasonMaster = () => {
   const brands = useMemo(() => {
     if (!data?.data) return [];
 
-    return data.data.map((brand) => ({
+    let sortedBrands = data.data.map((brand) => ({
       id: brand.Id,
       name: brand.SeasonName,
-
       createdAt: new Intl.DateTimeFormat(locale, {
         year: "numeric",
         month: "short",
         day: "2-digit",
       }).format(new Date(brand.CreatedDate)),
+      createdAtRaw: new Date(brand.CreatedDate), // Store raw date for sorting
       enabled: brand.IsActive,
     }));
-  }, [data, searchQuery]);
+
+    // Sort by createdAtRaw based on sortOrder
+    sortedBrands.sort((a, b) => {
+      if (sortOrder === "newToOld") {
+        return b.createdAtRaw - a.createdAtRaw; // Newest first
+      } else {
+        return a.createdAtRaw - b.createdAtRaw; // Oldest first
+      }
+    });
+
+    return sortedBrands;
+  }, [data, sortOrder]);
 
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedPools = brands.slice(startIndex, startIndex + pageSize);
@@ -65,8 +76,12 @@ const SeasonMaster = () => {
   };
 
   const handleEdit = (poolId) => {
-  
     navigate(`edit/${poolId}`);
+  };
+
+  // Toggle sort order
+  const handleSortToggle = () => {
+    setSortOrder(sortOrder === "newToOld" ? "oldToNew" : "newToOld");
   };
 
   return (
@@ -93,14 +108,28 @@ const SeasonMaster = () => {
               className="bg-primary/90 text-neutral-50 hover:bg-primary/70 transition-all whitespace-nowrap"
               onClick={() => navigate("create")}
             >
-              Add Season Master
+              Add Frame Season
             </Button>
           </HasPermission>
         </div>
       </div>
 
       <Table
-        columns={["S.No", "season master", "created on", "Action"]}
+        columns={[
+          "S.No",
+          "Season Name",
+          <div className="flex items-center gap-2">
+            Created On
+            <button onClick={handleSortToggle} className="focus:outline-none">
+              {sortOrder === "newToOld" ? (
+                <FiArrowDown className="text-neutral-500" />
+              ) : (
+                <FiArrowUp className="text-neutral-500" />
+              )}
+            </button>
+          </div>,
+          "",
+        ]}
         data={paginatedPools}
         renderRow={(pool, index) => (
           <TableRow key={pool.id}>
@@ -110,7 +139,6 @@ const SeasonMaster = () => {
             <TableCell className="text-sm text-neutral-500">
               {pool.name}
             </TableCell>
-
             <TableCell className="text-sm text-neutral-500">
               {pool.createdAt}
             </TableCell>
@@ -131,8 +159,6 @@ const SeasonMaster = () => {
                     <FiEdit2 size={18} />
                   </button>
                 </HasPermission>
-
-                {/* Only show toggle if enabled field is available */}
                 <HasPermission module="Season Master" action="deactivate">
                   <Toggle
                     enabled={pool.enabled}

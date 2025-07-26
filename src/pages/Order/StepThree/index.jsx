@@ -4,11 +4,13 @@ import FrameSunglass from "./FrameSunglass";
 import AccessoryFrame from "./AccessoryFrame";
 import ContactLens from "./ContactLens";
 import OpticalLens from "./OpticalLens";
+import FrameSunglassAndOpticalLens from "./FrameSunglassAndOpticalLens";
 
 const StepThreeMain = (props) => {
-  const { currentSubStep, nextSubStep, prevSubStep, goToStep } = useOrder();
+  const { currentSubStep } = useOrder();
 
   const renderSubStep = () => {
+    console.log("current sub step",currentSubStep)
     switch (currentSubStep) {
       case 1:
         return <FrameSunglass />;
@@ -18,6 +20,8 @@ const StepThreeMain = (props) => {
         return <ContactLens />;
       case 4:
         return <OpticalLens />;
+      case 5:
+        return <FrameSunglassAndOpticalLens />;
       default:
         return <div></div>;
     }

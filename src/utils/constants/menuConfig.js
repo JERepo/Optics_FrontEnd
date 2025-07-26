@@ -145,6 +145,6 @@ export const menuItems = [
     name: "Order",
     icon: FiBox,
     module: "Order",
-    path: "/order",
+    path: "/order-list",
   },
 ];

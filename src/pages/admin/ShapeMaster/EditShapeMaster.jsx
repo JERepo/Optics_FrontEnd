@@ -88,9 +88,9 @@ const EditShapeMaster = () => {
         <h1 className="text-2xl font-semibold text-gray-800">
           {id
             ? isEnabled
-              ? "View Shape Master"
-              : "Edit Shape Master"
-            : "Create New Shape Master"}
+              ? "View Shape Name"
+              : "Edit Shape Name"
+            : "Create New Shape Name"}
         </h1>
       </div>
 

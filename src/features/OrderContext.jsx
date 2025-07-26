@@ -1,6 +1,6 @@
 import { createContext, useContext, useState } from "react";
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 7;
 
 const OrderContext = createContext();
 
@@ -20,13 +20,15 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
   });
   const [draftData, setDraftData] = useState(null);
 
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(0);
   const [currentSubStep, setCurrentSubStep] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState({
     value: 1,
     label: "Frame/Sunglass",
   });
   const [customerDetails, setCustomerDetails] = useState(null);
+
+  const [FrameDetailedId,setFrameDetaildId] = useState(null)
 
   const goToStep = (step) => {
     if (step >= 1 && step <= TOTAL_STEPS) {
@@ -58,6 +60,13 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
     setCurrentSubStep((prev) => (prev > 1 ? prev - 1 : prev));
   };
 
+  const setSubStep = (step) => {
+    setCurrentSubStep(step);
+  };
+
+  const setFrameId = (id) =>{
+    setFrameDetaildId(id)
+  }
   return (
     <OrderContext.Provider
       value={{
@@ -78,6 +87,9 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
         setDraftData,
         customerDetails,
         setCustomerDetails,
+        setSubStep,
+        setFrameId,
+        FrameDetailedId
       }}
     >
       {children}

@@ -82,6 +82,7 @@ const ContactLens = () => {
     goToStep,
     setCustomerId,
   } = useOrder();
+
   const [openChange, setOpenChange] = useState(false);
   const [openAdd, setOpenAdd] = useState(false);
   const [items, setItems] = useState([]);
@@ -266,7 +267,7 @@ const ContactLens = () => {
     }
 
     const payload = {
-      CLMainId: 10 || null,
+      CLMainId: lensData.productId,
       Spherical: parseFloat(newItem.sphericalPower),
       Cylindrical: parseFloat(newItem.cylindricalPower) || null,
       Axis: parseInt(newItem.axis) || null,
@@ -304,12 +305,16 @@ const ContactLens = () => {
     setItems(updatedItems);
   };
 
+  const handlePreviousBack = () => {
+    prevStep();
+  };
+
   const handleSaveOrder = async () => {
     if (items.length === 0) {
       toast.error("Please add at least one item before saving");
       return;
     }
-
+    console.log("selected items",items)
     const payload = {
       lenses: items.map((item) => ({
         CLDetailId: item.CLDetailId,
@@ -351,10 +356,12 @@ const ContactLens = () => {
                 <h3 className="text-xl font-bold text-gray-900">
                   Patient Name : {customerId.patientName}
                 </h3>
+
                 <Button onClick={() => setOpenChange(true)}>Change</Button>
                 <Button variant="outline" onClick={() => setOpenAdd(true)}>
                   Add
                 </Button>
+
                 <ModifyPatient
                   customerId={customerId}
                   setCustomerId={setCustomerId}
@@ -375,11 +382,19 @@ const ContactLens = () => {
                 />
               </div>
               <h1 className="text-2xl font-bold text-gray-900">
-                Step {currentStep}: {selectedProduct.label}
+                Step {currentStep}
+                {selectedProduct.value === 6 ? "(b)" : ""}:{" "}
+                {selectedProduct.value === 6
+                  ? "Optical Lens"
+                  : selectedProduct.label}
               </h1>
             </div>
             <div className="flex gap-3">
-              <Button onClick={prevStep} icon={FiArrowLeft} variant="outline">
+              <Button
+                onClick={handlePreviousBack}
+                icon={FiArrowLeft}
+                variant="outline"
+              >
                 Back
               </Button>
               <Button onClick={handleRefresh}>Refresh</Button>
@@ -395,7 +410,7 @@ const ContactLens = () => {
             <input
               type="text"
               name="orderReference"
-              value={lensData.orderReference || draftData[0]?.OrderReference}
+              value={lensData.orderReference || draftData?.OrderReference}
               onChange={handleInputChangeTop}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter order reference"
@@ -863,7 +878,7 @@ const AddPatient = ({
         setCustomerId((prev) => ({
           ...prev,
           patientId: response?.data.data.contact.Id,
-          patientName: response?.data.data.CustomerName,
+          patientName: response?.data.data.contact.CustomerName,
         }));
       }
 

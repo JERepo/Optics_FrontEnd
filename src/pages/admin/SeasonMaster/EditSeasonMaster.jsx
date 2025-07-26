@@ -88,9 +88,9 @@ const EditSeasonMaster = () => {
         <h1 className="text-2xl font-semibold text-gray-800">
           {id
             ? isEnabled
-              ? "View Season Master"
-              : "Edit Season Master"
-            : "Create New Season Master"}
+              ? "View Season Name"
+              : "Edit Season Name"
+            : "Create New Season Name"}
         </h1>
       </div>
 

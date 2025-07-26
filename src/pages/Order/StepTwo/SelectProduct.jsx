@@ -6,7 +6,7 @@ import Radio from "../../../components/Form/Radio";
 import toast from "react-hot-toast";
 
 const Products = [
-  { value: 0, label: "Frame/Sunglass + lens" },
+  { value: 6, label: "Frame/Sunglass + lens" },
   { value: 1, label: "Frame/Sunglass" },
   { value: 2, label: "Optical Lens" },
   { value: 3, label: "Contact Lens" },
@@ -15,13 +15,10 @@ const Products = [
 ];
 
 const SelectProduct = () => {
-  const {
-    goToSubStep,
-    goToStep,
-    setSelectedProduct,
-    selectedProduct,
-  } = useOrder();
+  const { goToSubStep, goToStep, setSelectedProduct, selectedProduct } =
+    useOrder();
   const handleAddProduct = () => {
+    console.log(selectedProduct,"ssss")
     if (selectedProduct?.value === 1) {
       setSelectedProduct(selectedProduct);
       goToStep(3);
@@ -38,6 +35,10 @@ const SelectProduct = () => {
       setSelectedProduct(selectedProduct);
       goToStep(3);
       goToSubStep(4); // Optical Lens
+    } else if (selectedProduct?.value === 6) {
+      setSelectedProduct(selectedProduct);
+      goToStep(3);
+      goToSubStep(5); // Optical Lens
     } else {
       toast.error("Invalid selection type no product available");
       console.warn("Invalid product selection. No matching substep.");
@@ -95,8 +96,8 @@ const SelectProduct = () => {
             >
               <div className="flex items-center">
                 <Radio
-                  label={product.label || "Frame/Sunglass"}
-                  value={product.value || 1}
+                  label={product.label}
+                  value={product.value}
                   name="productType"
                   checked={selectedProduct.value === product.value}
                   onChange={() => setSelectedProduct(product)}

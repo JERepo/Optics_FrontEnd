@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { FiSearch, FiPlus, FiEdit2, FiEye } from "react-icons/fi";
+import { FiSearch, FiPlus, FiEdit2, FiEye, FiArrowUp, FiArrowDown } from "react-icons/fi";
 import Button from "../../../components/ui/Button";
 import { useNavigate } from "react-router";
 import { Table, TableRow, TableCell } from "../../../components/Table";
@@ -8,7 +8,6 @@ import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import HasPermission from "../../../components/HasPermission";
 import {
   useDeActivateMainMutation,
-  useDeActivateMutation,
   useGetAllMasterQuery,
 } from "../../../api/accessoriesMaster";
 
@@ -17,6 +16,7 @@ const AccessoriesMaster = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [sortOrder, setSortOrder] = useState("newToOld"); 
   const locale = navigator.language || navigator.languages[0] || "en-IN";
 
   const [selectedBrandId, setSelectedBrandId] = useState(null);
@@ -24,27 +24,37 @@ const AccessoriesMaster = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { data: allAccessories, isLoading, error } = useGetAllMasterQuery();
-
   const [deActivate, { isLoading: isDeActivating }] =
     useDeActivateMainMutation();
 
   const accessories = useMemo(() => {
     if (!allAccessories?.data) return [];
 
-    return allAccessories?.data.map((acc) => ({
+    let sortedAccessories = allAccessories?.data.map((acc) => ({
       id: acc.Id,
       BrandName: acc.Brand.BrandName,
       ProductName: acc.ProductName,
       code: acc.HSN,
-
       createdAt: new Intl.DateTimeFormat(locale, {
         year: "numeric",
         month: "short",
         day: "2-digit",
       }).format(new Date(acc.CreatedDate)),
+      createdAtRaw: new Date(acc.CreatedDate),
       enabled: acc.IsActive === 1,
     }));
-  }, [allAccessories, searchQuery]);
+
+    // Sort by createdAtRaw based on sortOrder
+    sortedAccessories.sort((a, b) => {
+      if (sortOrder === "newToOld") {
+        return b.createdAtRaw - a.createdAtRaw; // Newest first
+      } else {
+        return a.createdAtRaw - b.createdAtRaw; // Oldest first
+      }
+    });
+
+    return sortedAccessories;
+  }, [allAccessories, sortOrder]);
 
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedPools = accessories.slice(startIndex, startIndex + pageSize);
@@ -74,6 +84,12 @@ const AccessoriesMaster = () => {
   const handleEdit = (poolId) => {
     navigate(`edit/${poolId}`);
   };
+
+  // Toggle sort order
+  const handleSortToggle = () => {
+    setSortOrder(sortOrder === "newToOld" ? "oldToNew" : "newToOld");
+  };
+
   if (isLoading) return <h1>Loading...</h1>;
   if (error) return <h1>Error</h1>;
 
@@ -104,7 +120,7 @@ const AccessoriesMaster = () => {
                 window.location.reload();
               }}
             >
-              Add Accessory Master
+              Add Accessory
             </Button>
           </HasPermission>
         </div>
@@ -113,11 +129,19 @@ const AccessoriesMaster = () => {
       <Table
         columns={[
           "S.No",
-          "Accessory master name",
+          "Brand Name",
           "Product Name",
-          "HSN Code",
-          "created on",
-          "Action",
+          <div className="flex items-center gap-2">
+            Created On
+            <button onClick={handleSortToggle} className="focus:outline-none">
+              {sortOrder === "newToOld" ? (
+                <FiArrowDown className="text-neutral-500" />
+              ) : (
+                <FiArrowUp className="text-neutral-500" />
+              )}
+            </button>
+          </div>,
+          "",
         ]}
         data={paginatedPools}
         renderRow={(pool, index) => (
@@ -131,10 +155,6 @@ const AccessoriesMaster = () => {
             <TableCell className="text-sm text-neutral-500">
               {pool.ProductName}
             </TableCell>
-            <TableCell className="text-sm text-neutral-500">
-              {pool.code}
-            </TableCell>
-
             <TableCell className="text-sm text-neutral-500">
               {pool.createdAt}
             </TableCell>
@@ -155,8 +175,6 @@ const AccessoriesMaster = () => {
                     <FiEdit2 size={18} />
                   </button>
                 </HasPermission>
-
-                {/* Only show toggle if enabled field is available */}
                 <HasPermission module="Accessory Master" action="deactivate">
                   <Toggle
                     enabled={pool.enabled}

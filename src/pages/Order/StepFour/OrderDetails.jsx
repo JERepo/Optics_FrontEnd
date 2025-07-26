@@ -180,7 +180,7 @@ const DiscountInput = ({
 };
 
 const OrderDetails = () => {
-  const { goToStep, customerDetails, draftData, currentStep, customerId } =
+  const { goToStep, customerDetails, draftData, currentStep, customerId,setSubStep } =
     useOrder();
 
   // State for discount management
@@ -204,9 +204,11 @@ const OrderDetails = () => {
   const [applyContactDiscount] = useApplyContactLensDiscountMutation();
   const [removeContactDiscount] = useRemoveContactLensDiscountMutation();
 
+
   const handleBack = () => goToStep(currentStep - 1);
   const handleAddProduct = () => {
     goToStep(2);
+    // setSubStep(1)
   };
 
   const handleDiscountTypeChange = (orderDetailId, value) => {
@@ -423,7 +425,7 @@ const OrderDetails = () => {
         : "";
 
       const barcodeLine = Barcode || "";
-      const patientLine = PatientName ? `\n\n${PatientName}` : "";
+      const patientLine = PatientName ? `\n${PatientName}` : "";
 
       return `${nameLine}\n${specs}\n${barcodeLine}${patientLine}`;
     }
@@ -433,11 +435,11 @@ const OrderDetails = () => {
 
   // Calculate totals for summary row
   const calculateTotals = () => {
-    if (!savedOrders || savedOrders.length === 0) {
+    if (!savedOrders || savedOrders?.length === 0) {
       return { totalQty: 0, totalGST: 0, totalAmount: 0 };
     }
 
-    return savedOrders.reduce(
+    return savedOrders?.reduce(
       (acc, item) => {
         const qty = parseInt(item.OrderQty);
         const total = parseFloat(item.Total);
@@ -558,7 +560,7 @@ const OrderDetails = () => {
                   Order Reference
                 </p>
                 <p className="text-base font-medium text-gray-900">
-                  {draftData[0]?.OrderReference || "Not specified"}
+                  {draftData?.OrderReference || "Not specified"}
                 </p>
               </div>
             </div>

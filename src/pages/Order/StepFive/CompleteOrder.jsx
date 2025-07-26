@@ -371,7 +371,7 @@ const CompleteOrder = () => {
                   Order Reference
                 </p>
                 <p className="text-base font-medium text-gray-900">
-                  {draftData[0]?.OrderReference || "Not specified"}
+                  {draftData?.OrderReference || "Not specified"}
                 </p>
               </div>
             </div>
@@ -475,7 +475,7 @@ const CompleteOrder = () => {
         isOpen={showConfirmModal}
         onClose={() => setShowConfirmModal(false)}
         onConfirm={submitFinalOrder}
-        title="Stock Warning"
+        title="Total Advance warning"
         message="Do you want to process the order without taking an advance?"
         confirmText="Yes, Proceed"
         cancelText="Cancel"

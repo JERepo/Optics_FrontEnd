@@ -87,10 +87,10 @@ const EditFrameMaster = () => {
         FrontMaterialID: String(masterData.FrontMaterialID),
         TempleMaterialID: String(masterData.TempleMaterialID),
         Gender: String(masterData.Gender),
-        IsClipOn: masterData.IsClipOn,
+        IsClipOn: masterData.IsClipOn == 1 ? true :false,
         NoOfClips: masterData.NoOfClips,
         IsRxable: masterData.IsRxable,
-        CaptureSlNo: masterData.CaptureSlNo,
+        CaptureSlNo: String(masterData.CaptureSlNo),
         HSN: masterData.HSN,
         TaxID: masterData.TaxID,
       });
@@ -166,7 +166,7 @@ const EditFrameMaster = () => {
       IsClipOn: formData.IsClipOn ? 1 : 0,
       NoOfClips: Number(formData.NoOfClips) || null,
       IsRxable: formData.IsRxable ? 1 : 0,
-      CaptureSlNo: formData.CaptureSlNo || 0,
+      CaptureSlNo: Number(formData.CaptureSlNo) || 0,
       HSN: formData.HSN,
       TaxID: Number(formData.TaxID),
       ApplicationUserId: user.Id,
@@ -341,8 +341,6 @@ const EditFrameMaster = () => {
     setIsEditingVariation(false);
     setEditingIndex(null);
   };
-
-  console.log("brands data", allBrands?.data);
 
   if (
     isFrameLoading ||

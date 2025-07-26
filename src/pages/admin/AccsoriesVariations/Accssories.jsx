@@ -1,5 +1,12 @@
 import React, { useState, useMemo } from "react";
-import { FiSearch, FiPlus, FiEdit2, FiEye } from "react-icons/fi";
+import {
+  FiSearch,
+  FiPlus,
+  FiEdit2,
+  FiEye,
+  FiArrowUp,
+  FiArrowDown,
+} from "react-icons/fi";
 import Button from "../../../components/ui/Button";
 import { useNavigate } from "react-router";
 import { Table, TableRow, TableCell } from "../../../components/Table";
@@ -21,6 +28,10 @@ const Accssories = () => {
   const [selectedBrandId, setSelectedBrandId] = useState(null);
   const [currentStatus, setCurrentStatus] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [sortConfig, setSortConfig] = useState({
+    key: "name",
+    direction: "asc",
+  });
 
   const { data, isLoading } = useGetVariationsQuery();
 
@@ -29,7 +40,7 @@ const Accssories = () => {
   const brands = useMemo(() => {
     if (!data?.data) return [];
 
-    return data.data.map((brand) => ({
+    let processed = data.data.map((brand) => ({
       id: brand.Id,
       name: brand.VariationName,
 
@@ -40,13 +51,31 @@ const Accssories = () => {
       }).format(new Date(brand.CreatedDate)),
       enabled: brand.IsActive === 1,
     }));
-  }, [data, searchQuery]);
 
+    if (sortConfig.key === "name") {
+      processed.sort((a, b) => {
+        const nameA = a.name.toLowerCase().trim();
+        const nameB = b.name.toLowerCase().trim();
+        return sortConfig.direction === "asc"
+          ? nameA.localeCompare(nameB, locale, { sensitivity: "base" })
+          : nameB.localeCompare(nameA, locale, { sensitivity: "base" });
+      });
+    }
+
+    return processed;
+  }, [data, searchQuery, sortConfig]);
 
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedPools = brands.slice(startIndex, startIndex + pageSize);
   const totalPages = Math.ceil(brands.length / pageSize);
 
+  // Handlers
+  const handleSort = (key) => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  };
   const requestToggle = (poolId, status) => {
     setSelectedBrandId(poolId);
     setCurrentStatus(status);
@@ -75,7 +104,9 @@ const Accssories = () => {
   return (
     <div className="max-w-5xl">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div className="text-3xl text-neutral-700 font-semibold">Variations</div>
+        <div className="text-3xl text-neutral-700 font-semibold">
+          Variations
+        </div>
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
           <div className="flex items-center gap-2 border-2 border-neutral-300 rounded-md px-3 w-full sm:w-[250px] h-10 bg-white">
             <FiSearch className="text-neutral-500 text-lg" />
@@ -101,8 +132,27 @@ const Accssories = () => {
       </div>
 
       <Table
-        columns={["S.No", "variation Name", "created on", "Action"]}
+        columns={["S.No", "variation Name", "created on", ""]}
         data={paginatedPools}
+        renderHeader={(column) => {
+          if (column === "variation Name") {
+            return (
+              <div className="flex items-center gap-2">
+                <span>{column}</span>
+                <button onClick={() => handleSort("name")}>
+                  {sortConfig.key === "name" &&
+                  sortConfig.direction === "asc" ? (
+                    <FiArrowUp className="text-neutral-500 hover:text-primary" />
+                  ) : (
+                    <FiArrowDown className="text-neutral-500 hover:text-primary" />
+                  )}
+                </button>
+              </div>
+            );
+          }
+
+          return column;
+        }}
         renderRow={(pool, index) => (
           <TableRow key={pool.id}>
             <TableCell className="text-sm font-medium text-neutral-900">

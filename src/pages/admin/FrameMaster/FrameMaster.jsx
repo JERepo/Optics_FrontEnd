@@ -1,5 +1,13 @@
 import React, { useState, useMemo } from "react";
-import { FiSearch, FiPlus, FiEdit2, FiEye } from "react-icons/fi";
+import {
+  FiSearch,
+  FiPlus,
+  FiEdit2,
+  FiEye,
+  FiArrowUp,
+  FiArrowDown,
+} from "react-icons/fi";
+import { IoFilter } from "react-icons/io5";
 import Button from "../../../components/ui/Button";
 import { useNavigate } from "react-router";
 import { Table, TableRow, TableCell } from "../../../components/Table";
@@ -16,6 +24,12 @@ const FrameMaster = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [sortConfig, setSortConfig] = useState({
+    key: "ModelNo",
+    direction: "asc",
+  });
+  const [brandFilter, setBrandFilter] = useState(null);
+  const [isBrandPopupOpen, setIsBrandPopupOpen] = useState(false);
   const locale = navigator.language || navigator.languages[0] || "en-IN";
 
   const [selectedBrandId, setSelectedBrandId] = useState(null);
@@ -23,19 +37,17 @@ const FrameMaster = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { data: allAccessories, isLoading } = useGetAllFrameMasterQuery();
-
   const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
 
   const accessories = useMemo(() => {
     if (!allAccessories?.data) return [];
 
-    return allAccessories.data.map((acc) => ({
+    let processed = allAccessories.data.map((acc) => ({
       id: acc.Id,
       BrandName: acc.Brand.BrandName,
       ModelNo: acc.ModelNo,
       RimType: acc.FrameRimType.FrameRimTypeName,
       RimShape: acc.FrameShapeMaster?.ShapeName,
-
       createdAt: new Intl.DateTimeFormat(locale, {
         year: "numeric",
         month: "short",
@@ -43,11 +55,56 @@ const FrameMaster = () => {
       }).format(new Date(acc.CreatedDate)),
       enabled: acc.IsActive === 1,
     }));
-  }, [allAccessories, searchQuery]);
+
+    // Apply brand name filter
+    if (brandFilter) {
+      processed = processed.filter(
+        (pool) => pool.BrandName.toLowerCase() === brandFilter.toLowerCase()
+      );
+    }
+
+    // Apply sorting
+    if (sortConfig.key === "ModelNo") {
+      processed.sort((a, b) => {
+        const modelA = a.ModelNo.toLowerCase().trim();
+        const modelB = b.ModelNo.toLowerCase().trim();
+        return sortConfig.direction === "asc"
+          ? modelA.localeCompare(modelB, locale, { sensitivity: "base" })
+          : modelB.localeCompare(modelA, locale, { sensitivity: "base" });
+      });
+    }
+
+    return processed;
+  }, [allAccessories, brandFilter, sortConfig, locale]);
+
+  // Get unique brand names for filter
+  const uniqueBrands = useMemo(() => {
+    if (!allAccessories?.data) return [];
+    return [
+      ...new Set(allAccessories.data.map((acc) => acc.Brand.BrandName)),
+    ].sort((a, b) => a.localeCompare(b, locale, { sensitivity: "base" }));
+  }, [allAccessories, locale]);
 
   const startIndex = (currentPage - 1) * pageSize;
-  const paginatedPools = accessories?.slice(startIndex, startIndex + pageSize);
-  const totalPages = Math.ceil(accessories?.length / pageSize);
+  const paginatedPools = accessories.slice(startIndex, startIndex + pageSize);
+  const totalPages = Math.ceil(accessories.length / pageSize);
+
+  // Handlers
+  const handleSort = (key) => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
+  const handleBrandFilter = (brand) => {
+    setBrandFilter(brand);
+    setIsBrandPopupOpen(false);
+  };
+
+  const toggleBrandPopup = () => {
+    setIsBrandPopupOpen((prev) => !prev);
+  };
 
   const requestToggle = (poolId, status) => {
     setSelectedBrandId(poolId);
@@ -73,6 +130,7 @@ const FrameMaster = () => {
   const handleEdit = (poolId) => {
     navigate(`edit/${poolId}`);
   };
+
   if (isLoading) return <h1>Loading...</h1>;
 
   return (
@@ -99,8 +157,7 @@ const FrameMaster = () => {
               className="bg-primary/90 text-neutral-50 hover:bg-primary/70 transition-all whitespace-nowrap"
               onClick={() => {
                 navigate("create");
-                 window.location.reload();
-                
+                window.location.reload();
               }}
             >
               Add Frame Master
@@ -112,13 +169,68 @@ const FrameMaster = () => {
       <Table
         columns={[
           "S.No",
-          "frame master",
-          "Model No",
+          { content: "Brand Name", renderHeader: true },
+          { content: "Model No", renderHeader: true },
           "Rim Type",
           "Rim Shape",
-          "created on",
-          "Action",
+          "Created On",
+          "",
         ]}
+        renderHeader={(column) => {
+          if (column.content === "Brand Name") {
+            return (
+              <div className="relative flex items-center gap-2">
+                <span className="text-sm">{column.content}</span>
+                <IoFilter
+                  onClick={toggleBrandPopup}
+                  className="cursor-pointer text-neutral-500 hover:text-primary"
+                />
+                {isBrandPopupOpen && (
+                  <div className="absolute top-8 left-0 bg-white border border-neutral-200 rounded-md shadow-lg z-10 p-4 w-[600px]">
+                    <div className="grid grid-cols-4 gap-2">
+                      {uniqueBrands.map((brand) => (
+                        <div
+                          key={brand}
+                          onClick={() => handleBrandFilter(brand)}
+                          className="px-2 py-1 hover:bg-neutral-100 cursor-pointer text-sm truncate hover:rounded-sm"
+                        >
+                          {brand}
+                        </div>
+                      ))}
+                    </div>
+                    <div
+                      onClick={() => handleBrandFilter(null)}
+                      className="px-2 py-1 mt-2 hover:bg-neutral-100 cursor-pointer border-t text-sm text-center"
+                    >
+                      Clear Filter
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          if (column.content === "Model No") {
+            return (
+              <div className="flex items-center gap-2">
+                <span className="text-sm">{column.content}</span>
+                <button
+                  onClick={() => handleSort("ModelNo")}
+                  className="focus:outline-none"
+                >
+                  {sortConfig.key === "ModelNo" &&
+                  sortConfig.direction === "asc" ? (
+                    <FiArrowUp className="text-neutral-500 hover:text-primary" />
+                  ) : (
+                    <FiArrowDown className="text-neutral-500 hover:text-primary" />
+                  )}
+                </button>
+              </div>
+            );
+          }
+
+          return column.content || column;
+        }}
         data={paginatedPools}
         renderRow={(pool, index) => (
           <TableRow key={pool.id}>
@@ -137,7 +249,6 @@ const FrameMaster = () => {
             <TableCell className="text-sm text-neutral-500">
               {pool.RimShape}
             </TableCell>
-
             <TableCell className="text-sm text-neutral-500">
               {pool.createdAt}
             </TableCell>
@@ -158,8 +269,6 @@ const FrameMaster = () => {
                     <FiEdit2 size={18} />
                   </button>
                 </HasPermission>
-
-                {/* Only show toggle if enabled field is available */}
                 <HasPermission module="Frame Master" action="deactivate">
                   <Toggle
                     enabled={pool.enabled}
@@ -172,10 +281,10 @@ const FrameMaster = () => {
         )}
         emptyMessage={
           isLoading
-            ? "Loading accessories..."
+            ? "Loading frames..."
             : searchQuery
-            ? "No accessories match your search criteria"
-            : "No accessories found. Click 'Add accessories' to create one."
+            ? "No frames match your search criteria"
+            : "No frames found. Click 'Add frame' to create one."
         }
         pagination={true}
         currentPage={currentPage}
@@ -183,7 +292,7 @@ const FrameMaster = () => {
         onPageChange={setCurrentPage}
         pageSize={pageSize}
         onPageSizeChange={setPageSize}
-        totalItems={allAccessories.length}
+        totalItems={accessories.length}
       />
       <ConfirmationModal
         isOpen={isModalOpen}

@@ -129,12 +129,6 @@ const Customer = ({ isPop, onSubmit }) => {
   const { data: allCustomerGroupIds } = useGetAllCompanyLocationsQuery();
 
   useEffect(() => {
-    const exactDefaultId = allCustomerGroupIds?.data?.data.find(
-      (c) => c.CustomerPoolID === CustomerPoolID
-    );
-
-    console.log("exact customer group", exactDefaultId);
-
     const allMatching = allCustomerGroupIds?.data?.data.filter(
       (c) => c.CustomerPoolID === CustomerPoolID
     );

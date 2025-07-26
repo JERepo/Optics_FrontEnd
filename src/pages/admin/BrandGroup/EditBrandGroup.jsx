@@ -12,6 +12,7 @@ import {
   useUpdateBrandGroupMutation,
 } from "../../../api/brandGroup";
 import { useSelector } from "react-redux";
+import { useGetAllBrandsQuery } from "../../../api/brandsApi";
 
 const EditBrandGroup = () => {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ const EditBrandGroup = () => {
   const location = useLocation();
   const [brandName, setBrandName] = useState("");
   const { user } = useSelector((state) => state.auth);
+  const [Brands, setBrands] = useState("");
 
   const {
     data: brandCategory,
@@ -30,15 +32,26 @@ const EditBrandGroup = () => {
   const [updateBrandGroup, { isLoading: isBrandCatUpdating }] =
     useUpdateBrandGroupMutation();
   const { data: allBrands } = useGetAllBrandGroupsQuery();
+  const {
+    data: mainBrands,
+    isLoading: isMainLoading,
+    isSuccess: isMainSucces,
+  } = useGetAllBrandsQuery();
 
   const isEnabled = location.pathname.includes("/view");
 
   // Prefill values if editing
   useEffect(() => {
-    if (id && isSuccess && brandCategory?.data) {
-      setBrandName(brandCategory.data.BrandGroupName || "");
-    }
-  }, [id, brandCategory, isSuccess]);
+    if (!id || !brandCategory?.data || !mainBrands) return;
+    setBrandName(brandCategory.data.BrandGroupName || "");
+
+    const filteredBrands = mainBrands
+      ?.filter((b) => b.BrandCategoryId == id)
+      .map((n) => n.BrandName)
+      .join(", ");
+
+    setBrands(filteredBrands);
+  }, [id, brandCategory?.data, mainBrands]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -73,7 +86,8 @@ const EditBrandGroup = () => {
     }
   };
 
-  if (id && isBrandCatLoading) return <h1>Loading brands category...</h1>;
+  if (id && (isBrandCatLoading || isMainLoading))
+    return <h1>Loading brands category...</h1>;
 
   return (
     <div className="max-w-2xl bg-white rounded-lg shadow-sm p-4">
@@ -128,6 +142,29 @@ const EditBrandGroup = () => {
           )}
         </div>
       </form>
+      {isEnabled && (
+        <div className=" p-4 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">
+            Applicable Brands
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {Brands ? (
+              Brands.split(", ").map((brand, index) => (
+                <span
+                  key={index}
+                  className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-sm font-medium text-blue-700"
+                >
+                  {brand}
+                </span>
+              ))
+            ) : (
+              <p className="text-sm text-gray-500 italic">
+                No brands available for this category
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

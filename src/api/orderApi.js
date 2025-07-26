@@ -4,7 +4,7 @@ import { customBaseQuery } from "./customBaseQuery";
 export const orderApi = createApi({
   reducerPath: "orderApi",
   baseQuery: customBaseQuery,
-  tagTypes: ["Order"],
+  tagTypes: ["Order", "Patient"],
   endpoints: (builder) => ({
     searchCustomer: builder.query({
       query: ({ input }) => ({
@@ -18,7 +18,7 @@ export const orderApi = createApi({
         method: "POST",
         body: payload,
       }),
-      invalidatesTags: ["Order"],
+      invalidatesTags: ["Order", "Patient"],
     }),
     createSalesOrder: builder.mutation({
       query: ({ userId, payload }) => ({
@@ -32,13 +32,13 @@ export const orderApi = createApi({
       query: ({ id }) => ({
         url: `/api/v1/order?patientId=${id}`,
       }),
-      providesTags: ["Order"],
+      providesTags: ["Order", "Patient"],
     }),
     getCustomerContactDetails: builder.query({
       query: () => ({
         url: `/api/v1/customer/getdetailsall`,
       }),
-      providesTags: ["Order"],
+      providesTags: ["Order", "Patient"],
     }),
     getByBarCode: builder.query({
       query: ({ barcode, locationId }) => ({
@@ -60,8 +60,9 @@ export const orderApi = createApi({
     }),
     getOrderDetails: builder.query({
       query: ({ patientId, customerId }) => ({
-        url: `/api/v1/order?patientId=${patientId}&CustomerId=${customerId}`,
+        url: `/api/v1/order?PatientID=${patientId}&customerId=${customerId}`,
       }),
+      providesTags: ["Order", "Patient"],
     }),
     getByBrandAndProductName: builder.query({
       query: ({ brand, product, locationId }) => ({
@@ -117,6 +118,7 @@ export const orderApi = createApi({
       query: ({ id }) => ({
         url: `/api/v1/customer/getbymasterid/${id}`,
       }),
+      providesTags: ["Patient"],
     }),
     getSavedOrderDetails: builder.query({
       query: ({ orderId }) => ({
@@ -171,7 +173,7 @@ export const orderApi = createApi({
     }),
 
     removeOrder: builder.mutation({
-      query: ({ orderId, comment, payload }) => ({
+      query: ({ orderId, payload }) => ({
         url: `/api/v1/order/addcomment?orderId=${orderId}`,
         method: "PUT",
         body: payload,
@@ -185,10 +187,68 @@ export const orderApi = createApi({
         body: payload,
       }),
     }),
+    // OPTICAL LENS API'S
+
+    getOrderPreference: builder.query({
+      query: ({ orderId }) => ({
+        url: `/api/v1/optical-lens/order-reference?orderId=${orderId}`,
+      }),
+    }),
+    getFocality: builder.query({
+      query: ({ brandId, productType }) => ({
+        url: `/api/v1/optical-lens/focality?brandId=${brandId}&productType=${productType}`,
+      }),
+    }),
+    getFamily: builder.query({
+      query: ({ brandId, productType, focalityId }) => ({
+        url: `/api/v1/optical-lens/product-families?brandId=${brandId}&productType=${productType}&focalityId=${focalityId}`,
+      }),
+    }),
+    getProductDesign: builder.query({
+      query: ({ brandId, productType, focalityId, familyId }) => ({
+        url: `/api/v1/optical-lens/product-designs?brandId=${brandId}&productType=${productType}&focalityId=${focalityId}&familyId=${familyId}`,
+      }),
+    }),
+    getIndexValues: builder.query({
+      query: ({ brandId, productType, focalityId, familyId, designId }) => ({
+        url: `api/v1/optical-lens/index-values?brandId=${brandId}&productType=${productType}&focalityId=${focalityId}&familyId=${familyId}&designId=${designId}`,
+      }),
+    }),
+    getCoatings: builder.query({
+      query: ({ masterId }) => ({
+        url: `/api/v1/optical-lens/get-coatings?masterIds=${masterId}`,
+      }),
+    }),
+    getTreatments: builder.query({
+      query: ({ masterId, coatingId }) => ({
+        url: `/api/v1/optical-lens/get-treatments?masterIds=${masterId}&coatingId=${coatingId}`,
+      }),
+    }),
+    checkTint: builder.query({
+      query: ({ comboId, locationId }) => ({
+        url: `/api/v1/optical-lens/check-tint?coatingComboId=${comboId}&locationId=${locationId}`,
+      }),
+    }),
+    getAddOn: builder.query({
+      query: ({ comboId, locationId }) => ({
+        url: `/api/v1/optical-lens/getAddOns?coatingComboId=${comboId}&locationId=${locationId}`,
+      }),
+    }),
   }),
 });
 
 export const {
+  // OPTICAL LENS
+  useGetOrderPreferenceQuery,
+  useGetFocalityQuery,
+  useGetFamilyQuery,
+  useGetProductDesignQuery,
+  useGetIndexValuesQuery,
+  useGetCoatingsQuery,
+  useGetTreatmentsQuery,
+  useCheckTintQuery,
+  useGetAddOnQuery,
+
   useLazySearchCustomerQuery,
   useCreateNewCustomerMutation,
   useCreateSalesOrderMutation,
@@ -215,5 +275,5 @@ export const {
   useRemoveAccessoryDiscountMutation,
   useApplyContactLensDiscountMutation,
   useRemoveContactLensDiscountMutation,
-  useCompleteOrderFinalMutation
+  useCompleteOrderFinalMutation,
 } = orderApi;
