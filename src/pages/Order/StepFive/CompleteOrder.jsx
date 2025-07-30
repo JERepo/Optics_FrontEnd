@@ -206,8 +206,14 @@ const OrderSummary = ({
 );
 
 const CompleteOrder = () => {
-  const { goToStep, customerDetails, draftData, currentStep, customerId } =
-    useOrder();
+  const {
+    goToStep,
+    customerDetails,
+    draftData,
+    currentStep,
+    customerId,
+    updatePaymentDetails,
+  } = useOrder();
   const [advancedAmounts, setAdvancedAmounts] = useState({});
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -272,9 +278,10 @@ const CompleteOrder = () => {
         TotalGSTValue: totalGST,
         TotalValue: totalAmount,
       };
-      console.log("payload", payload);
       await updateFinalOrder({ orderId: customerId.orderId, payload }).unwrap();
+      updatePaymentDetails({ ...payload, totalAdvance });
       toast.success("Successfully updated the products");
+      goToStep(6)
     } catch (error) {
       toast.error("Please try again after some time or try re-load the page!");
     } finally {

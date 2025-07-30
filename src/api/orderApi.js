@@ -4,7 +4,7 @@ import { customBaseQuery } from "./customBaseQuery";
 export const orderApi = createApi({
   reducerPath: "orderApi",
   baseQuery: customBaseQuery,
-  tagTypes: ["Order", "Patient"],
+  tagTypes: ["Order", "Patient", "Prescription"],
   endpoints: (builder) => ({
     searchCustomer: builder.query({
       query: ({ input }) => ({
@@ -234,6 +234,37 @@ export const orderApi = createApi({
         url: `/api/v1/optical-lens/getAddOns?coatingComboId=${comboId}&locationId=${locationId}`,
       }),
     }),
+
+    createNewPrescription: builder.mutation({
+      query: ({ payload }) => ({
+        url: `/api/v1/prescription/create`,
+        method: "POST",
+        body: payload,
+      }),
+      invalidatesTags: ["Prescription"],
+    }),
+    getAllPrescription: builder.query({
+      query: ({ patientId }) => ({
+        url: `/api/v1/prescription?PatientID=${patientId}`,
+      }),
+      providesTags: ["Prescription"],
+    }),
+    getDIaDetails: builder.mutation({
+      query: ({ payload }) => ({
+        url: `/api/v1/optical-lens/getdia`,
+        method: "POST",
+        body: payload,
+      }),
+      invalidatesTags: [],
+    }),
+
+    getPrice: builder.mutation({
+      query: ({ payload }) => ({
+        url: `/api/v1/optical-lens/getprice`,
+        method: "POST",
+        body: payload,
+      }),
+    }),
   }),
 });
 
@@ -248,6 +279,10 @@ export const {
   useGetTreatmentsQuery,
   useCheckTintQuery,
   useGetAddOnQuery,
+  useCreateNewPrescriptionMutation,
+  useGetAllPrescriptionQuery,
+  useGetDIaDetailsMutation,
+  useGetPriceMutation,
 
   useLazySearchCustomerQuery,
   useCreateNewCustomerMutation,

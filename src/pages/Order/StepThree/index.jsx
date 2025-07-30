@@ -3,8 +3,8 @@ import { useOrder } from "../../../features/OrderContext";
 import FrameSunglass from "./FrameSunglass";
 import AccessoryFrame from "./AccessoryFrame";
 import ContactLens from "./ContactLens";
-import OpticalLens from "./OpticalLens";
 import FrameSunglassAndOpticalLens from "./FrameSunglassAndOpticalLens";
+import OpticalLens from "./OptcalLens/OpticalLens";
 
 const StepThreeMain = (props) => {
   const { currentSubStep } = useOrder();

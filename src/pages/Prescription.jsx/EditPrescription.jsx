@@ -1,3 +1,5 @@
+import NewPrescription from "../Order/StepThree/OptcalLens/NewPerscription";
+import { useOrder } from "../../features/OrderContext";
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -7,58 +9,45 @@ import {
   FiArrowLeft,
   FiFilter,
 } from "react-icons/fi";
-import { Table, TableCell, TableRow } from "../../../components/Table";
-import Loader from "../../../components/ui/Loader";
-import Select from "../../../components/Form/Select";
+import { Table, TableCell, TableRow } from "../../components/Table";
+import Loader from "../../components/ui/Loader";
+import Select from "../../components/Form/Select";
 import {
   useGetAllCompanyLocationsQuery,
   useGetAllCustomersQuery,
   useGetCompanyIdQuery,
   useGetCountriesQuery,
   useGetIsdQuery,
-} from "../../../api/customerApi";
-import { useGetAllSalesPersonsQuery } from "../../../api/salesPersonApi";
-import Input from "../../../components/Form/Input";
-import Modal from "../../../components/ui/Modal";
+} from "../../api/customerApi";
+import Input from "../../components/Form/Input";
+import Modal from "../../components/ui/Modal";
 import { useSelector } from "react-redux";
-import { useGetLocationByIdQuery } from "../../../api/roleManagementApi";
-import Customer from "../../customers/Customer";
+import Customer from "../../pages/customers/Customer";
 import toast from "react-hot-toast";
 import {
   useCreateNewCustomerMutation,
-  useCreateSalesOrderMutation,
   useGetCustomerContactDetailsQuery,
-  useGetOrderQuery,
-} from "../../../api/orderApi";
-import Button from "../../../components/ui/Button";
-import { useOrder } from "../../../features/OrderContext";
-import Checkbox from "../../../components/Form/Checkbox";
+} from "../../api/orderApi";
+import Button from "../../components/ui/Button";
+import { useGetLocationByIdQuery } from "../../api/roleManagementApi";
+import { useGetAllSalesPersonsQuery } from "../../api/salesPersonApi";
+import Checkbox from "../../components/Form/Checkbox";
 
-const AddOrder = ({
-  handleGetPatient,
-  getOrderData,
-  isGetOrderDataLoading,
-  location,
-  locationById,
-  companyType,
-  countryIsd,
-  companySettings,
-  CustomerPoolID,
-  setLocation,
-}) => {
+const EditPrescription = () => {
   const navigate = useNavigate();
-  const { setCustomerId, draftData, goToStep } = useOrder();
+  const { setCustomerId, draftData, goToStep, customerId } = useOrder();
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
   const [input, setInput] = useState("");
 
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [selectedCustomer, setSelectedCustomer] = useState(false);
   const [customerOpen, setCustomerOpen] = useState(false);
   const [openCustomer, setOpenCustomer] = useState(false);
+  const [openPrescription, setOpenPrescription] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [tempCustomer, setTempCustomer] = useState(null);
-  const [loadingCustomerId, setLoadingCustomerId] = useState(null);
+
   const [creatinfCustomerLoading, setCreatingCustomerLoading] = useState(false);
+  const [location, setLocation] = useState(null);
 
   const [errors, setErrors] = useState({});
 
@@ -79,6 +68,39 @@ const AddOrder = ({
     ExistingCustomer: 0,
     ExistingCustomerId: null,
   });
+
+  const { data: locationById } = useGetLocationByIdQuery(
+    { id: location },
+    { skip: !location }
+  );
+  const { data: salesPersons } = useGetAllSalesPersonsQuery();
+
+  const countrId = locationById?.data?.data.BillingCountryCode;
+  const companyId = locationById?.data?.data.Id;
+
+  const { data: countryIsd } = useGetIsdQuery(
+    { id: countrId },
+    { skip: !countrId }
+  );
+
+  const { data: companySettings } = useGetCompanyIdQuery(
+    { id: companyId },
+    { skip: !companyId }
+  );
+  const CustomerPoolID = companySettings?.data?.data.CustomerPoolID;
+
+  // Location handling
+  useEffect(() => {
+    const locations = Array.isArray(hasMultipleLocations)
+      ? hasMultipleLocations
+      : hasMultipleLocations !== undefined && hasMultipleLocations !== null
+      ? [hasMultipleLocations]
+      : [];
+
+    if (locations.length === 1) {
+      setLocation(locations[0]);
+    }
+  }, [hasMultipleLocations]);
 
   const customerHandleChange = (e) => {
     const { name, value, checked, type } = e.target;
@@ -164,35 +186,17 @@ const AddOrder = ({
     setFilters({ name: "", mobileNo: "", customerName: "" });
     setCurrentPage(1);
   };
-  useEffect(() => {
-    if (tempCustomer) {
-      setSelectedCustomer(tempCustomer);
-      setTempCustomer(null);
-    }
-  }, [getOrderData, tempCustomer]);
 
   const handleCustomerSelect = (customerWithContact) => {
     const patient = customerWithContact.CustomerContactDetails?.[0];
-
+    
     if (!patient) {
       toast.error("No patient (contact) found for selected customer.");
       return;
     }
 
-    const selectedData = {
-      ...customerWithContact,
-      CustomerContactDetails: [patient],
-    };
-
-    // Set loading for the selected row
-    setLoadingCustomerId(customerWithContact.Id);
     setCustomerOpen(false);
-    setTempCustomer(selectedData);
-    handleGetPatient(
-      customerWithContact.CustomerContactDetails?.[0].Id,
-      customerWithContact.Id,
-      customerWithContact
-    );
+
     setCustomerId((prev) => ({
       ...prev,
       patientName: customerWithContact.CustomerContactDetails?.[0].CustomerName,
@@ -201,6 +205,7 @@ const AddOrder = ({
       customerId: customerWithContact.Id,
     }));
     setCreatingCustomerLoading(false);
+    setOpenPrescription(true);
   };
 
   const onBack = () => setSelectedCustomer(null);
@@ -374,10 +379,10 @@ const AddOrder = ({
       </div>
     </div>
   );
-console.log("by id",locationById)
+
   return (
     <>
-      {!selectedCustomer ? (
+      {!openPrescription ? (
         <div className="max-w-6xl p-6 bg-white rounded-lg shadow-md pb-6">
           <div className="mb-6">
             <span className="text-lg font-semibold text-blue-600">
@@ -408,7 +413,7 @@ console.log("by id",locationById)
 
             <div className="flex gap-2 sm:gap-3">
               <button
-                onClick={() => navigate("/order-list")}
+                onClick={() => navigate(-1)}
                 className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm"
               >
                 <FiArrowLeft />
@@ -499,14 +504,16 @@ console.log("by id",locationById)
           )}
         </div>
       ) : (
-        <StepB
-          selectedCustomer={selectedCustomer}
-          onBack={onBack}
-          user={user}
-          setCustomerId={setCustomerId}
-          draftData={draftData}
-          location={locationById}
-        />
+        <div className="max-w-6xl p-6 bg-white rounded-lg shadow-md pb-6">
+          <NewPrescription
+            customerId={customerId}
+            onOpen={openPrescription}
+            onClose={() => setOpenPrescription(false)}
+            salesPersons={salesPersons?.data.data}
+            lensData={[]}
+            isPrescription={true}
+          />
+        </div>
       )}
       <AddNewCustomer
         newCustomer={newCustomer}
@@ -536,8 +543,6 @@ console.log("by id",locationById)
     </>
   );
 };
-
-export default AddOrder;
 
 const AddNewCustomer = ({
   newCustomer,
@@ -765,160 +770,6 @@ const CustomerPage = ({ isOpen, onClose, onSubmit }) => {
   );
 };
 
-const StepB = ({
-  selectedCustomer,
-  onBack,
-  user,
-  setCustomerId,
-  draftData,
-  location,
-}) => {
-  console.log("location",location);
-  const [orderReference, setOrderReference] = useState("");
-  const [selectedSalesPerson, setSelectedSalesPerson] = useState(null);
-  const { goToStep } = useOrder();
-  const { data: salesPersons, isLoading: isSalesPersonsLoading } =
-    useGetAllSalesPersonsQuery();
-  const [createSalesOrder, { isLoading: isSalesCreating }] =
-    useCreateSalesOrderMutation();
-
-  const handleSaveSales = async () => {
-    if (!selectedSalesPerson) {
-      toast.error("Please select a sales person type");
-      return;
-    }
-
-    if (draftData && draftData.Status === 0) {
-      setCustomerId((prev) => ({
-        ...prev,
-        orderId: draftData?.Id,
-      }));
-      goToStep(4);
-      return;
-    }
-
-    const payload = {
-      CompanyId: location?.data.data.Id,
-      CustomerId: selectedCustomer.Id,
-      PatientID: selectedCustomer.CustomerContactDetails[0].Id,
-      OrderReference: orderReference,
-      SalesPersonID: parseInt(selectedSalesPerson),
-    };
-    console.log(payload);
-    try {
-      const response = await createSalesOrder({
-        userId: user.Id,
-        payload,
-      }).unwrap();
-      setCustomerId((prev) => ({
-        ...prev,
-        orderId: response?.data.data.Id,
-      }));
-      toast.success("Sales person type is created");
-      goToStep(2);
-    } catch (error) {
-      toast.error("Please try agian after some time!");
-    }
-  };
-
-  useEffect(() => {
-    if (draftData && !isSalesPersonsLoading) {
-      const draft = draftData;
-
-      setOrderReference(draft?.OrderReference || null);
-      setSelectedSalesPerson(draft?.SalesPersonId || null);
-    }
-  }, [draftData, isSalesPersonsLoading]);
-
-  return (
-    <div className="max-w-4xl p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold text-blue-600 mb-4">
-        Step 1: Customer Details
-      </h2>
-
-      <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
-        <h3 className="text-lg font-medium text-gray-800 mb-4">
-          Customer Information
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Detail label="Customer Name" value={selectedCustomer.CustomerName} />
-          <Detail
-            label="Patient Name"
-            value={selectedCustomer.CustomerContactDetails[0].CustomerName}
-          />
-          <Detail
-            label="Mobile Number"
-            value={`${selectedCustomer.MobileISDCode} ${selectedCustomer.MobNumber}`}
-          />
-          <Detail
-            label="Billing Method"
-            value={selectedCustomer.BillingMethod === 0 ? "Invoice" : "DC"}
-          />
-          <Detail label="GST Number" value={selectedCustomer.TAXNo} />
-          <Detail
-            label="Credit Billing"
-            value={selectedCustomer.CreditBilling === 0 ? "No" : "Yes"}
-          />
-        </div>
-
-        {selectedCustomer.BillAddress1 && (
-          <div className="mt-4">
-            <p className="text-sm text-gray-500">Address</p>
-            <p className="font-medium">
-              {selectedCustomer.BillAddress1}
-              {selectedCustomer.BillAddress2 &&
-                `, ${selectedCustomer.BillAddress2}`}
-              {selectedCustomer.BillCity && `, ${selectedCustomer.BillCity}`}
-              {selectedCustomer.BillPin && ` - ${selectedCustomer.BillPin}`}
-            </p>
-          </div>
-        )}
-      </div>
-
-      <h3 className="text-lg font-medium text-gray-800 mb-4">Order Details</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {isSalesPersonsLoading ? (
-          <Loader />
-        ) : (
-          <Select
-            label="Sales Person"
-            value={selectedSalesPerson}
-            onChange={(e) => setSelectedSalesPerson(e.target.value)}
-            options={salesPersons?.data.data}
-            optionLabel="PersonName"
-            optionValue="Id"
-            defaultOption="Select Sales person"
-          />
-        )}
-
-        <div>
-          <Input
-            label="Order Reference"
-            type="text"
-            value={orderReference}
-            onChange={(e) => setOrderReference(e.target.value)}
-            placeholder="Enter order reference"
-          />
-        </div>
-      </div>
-
-      <div className="flex justify-between mt-8">
-        <button
-          onClick={onBack}
-          className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50"
-        >
-          Back
-        </button>
-
-        <Button onClick={handleSaveSales} isLoading={isSalesCreating}>
-          {!isSalesCreating ? "Next" : "Saving.."}
-        </Button>
-      </div>
-    </div>
-  );
-};
-
 // Reusable Detail Display Component
 const Detail = ({ label, value }) => (
   <div>
@@ -926,3 +777,5 @@ const Detail = ({ label, value }) => (
     <p className="font-medium">{value || "N/A"}</p>
   </div>
 );
+
+export default EditPrescription;

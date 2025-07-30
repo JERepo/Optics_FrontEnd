@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { lazy } from "react";
 import {
   useCheckTintQuery,
   useGetAddOnQuery,
+  useGetAllPrescriptionQuery,
   useGetCoatingsQuery,
   useGetFamilyQuery,
   useGetFocalityQuery,
@@ -10,17 +12,22 @@ import {
   useGetProductDesignQuery,
   useGetSavedOrderDetailsQuery,
   useGetTreatmentsQuery,
-} from "../../../api/orderApi";
-import { useOrder } from "../../../features/OrderContext";
+} from "../../../../api/orderApi";
+import { useOrder } from "../../../../features/OrderContext";
 import { FiArrowLeft, FiPlus } from "react-icons/fi";
 import { Autocomplete, TextField } from "@mui/material";
-import { useGetAllBrandsQuery } from "../../../api/brandsApi";
-import Loader from "../../../components/ui/Loader";
+import { useGetAllBrandsQuery } from "../../../../api/brandsApi";
+import Loader from "../../../../components/ui/Loader";
+import { useGetAllSalesPersonsQuery } from "../../../../api/salesPersonApi";
+import Modal from "../../../../components/ui/Modal";
+import { useGetAllRimTypeQuery } from "../../../../api/materialMaster";
 
-const Input = React.lazy(() => import("../../../components/Form/Input"));
-const Radio = React.lazy(() => import("../../../components/Form/Radio"));
-const Checkbox = React.lazy(() => import("../../../components/Form/Checkbox"));
-const Button = React.lazy(() => import("../../../components/ui/Button"));
+const PowerDetailsFetch = lazy(() => import("./PowerDetailsFetch"));
+const NewPerscription = lazy(() => import("./NewPerscription"));
+const Input = lazy(() => import("../../../../components/Form/Input"));
+const Radio = lazy(() => import("../../../../components/Form/Radio"));
+const Checkbox = lazy(() => import("../../../../components/Form/Checkbox"));
+const Button = lazy(() => import("../../../../components/ui/Button"));
 
 const productTypes = [
   { value: 0, lable: "Stock" },
@@ -37,7 +44,7 @@ const OpticalLens = () => {
     setSubStep,
     FrameDetailedId,
   } = useOrder();
-  console.log("selected frame deyaild id", FrameDetailedId);
+
   const [lensData, setLensData] = useState({
     orderReference: null,
     brandId: null,
@@ -55,14 +62,27 @@ const OpticalLens = () => {
     tintvalue: 0,
     tintId: null,
     addOnData: [],
+    powerSingleORboth: 1,
+    withFitting: 1,
+    prescriptionId: null,
+    selectedPrescription: null,
+    rimType: null,
   });
 
   // API calls
+  const { data: salesPersons } = useGetAllSalesPersonsQuery();
   const { data: savedOrders, isLoading: isSavedOrdersLoading } =
     useGetSavedOrderDetailsQuery({ orderId: customerId.orderId });
 
   const { data: orderReferenceData, isLoading: isLoadingOrderReference } =
     useGetOrderPreferenceQuery({ orderId: customerId.orderId });
+
+  useEffect(() => {
+    setLensData((prev) => ({
+      ...prev,
+      orderReference: orderReferenceData?.data.OrderReference,
+    }));
+  }, [orderReferenceData]);
 
   const { data: allBrandsData, isLoading: isLoadingAllBrands } =
     useGetAllBrandsQuery();
@@ -164,6 +184,12 @@ const OpticalLens = () => {
     { skip: !lensData.coatingComboId }
   );
 
+  const { data: prescriptionData } = useGetAllPrescriptionQuery({
+    patientId: customerId.patientId,
+  });
+
+  const { data: rimTypes } = useGetAllRimTypeQuery();
+
   const handleRefresh = () => {
     setLensData({
       brandId: null,
@@ -192,7 +218,10 @@ const OpticalLens = () => {
       prevStep();
     }
   };
-  console.log("coating data", lensData);
+
+  const [isperscriptionOpen, setIsPerscriptionOpen] = useState(false);
+
+  console.log("ss", lensData.selectedPrescription);
   return (
     <div className="max-w-7xl">
       <div className="bg-white rounded-xl shadow-sm">
@@ -255,7 +284,7 @@ const OpticalLens = () => {
           <div className="mt-4">
             <Input
               label="Order reference"
-              value={orderReferenceData?.data.OrderReference || ""}
+              value={lensData.orderReference || ""}
               onChange={(e) =>
                 setLensData({ ...lensData, orderReference: e.target.value })
               }
@@ -474,17 +503,19 @@ const OpticalLens = () => {
               )}
             </div>
 
-            <div className="mt-3">
-              <Input
-                label="Product Name"
-                value={lensData.productName || ""}
-                onChange={(e) =>
-                  setLensData({ ...lensData, productName: e.target.value })
-                }
-                placeholder="Enter product name"
-                className="w-1/2"
-              />
-            </div>
+            {lensData.treatmentId && (
+              <div className="mt-3">
+                <Input
+                  label="Product Name"
+                  value={lensData.productName || ""}
+                  onChange={(e) =>
+                    setLensData({ ...lensData, productName: e.target.value })
+                  }
+                  placeholder="Enter product name"
+                  className="w-1/2"
+                />
+              </div>
+            )}
 
             <div className="tint-data flex gap-5 items-center">
               {tintData?.data.showTint && lensData.treatmentId && (
@@ -562,6 +593,136 @@ const OpticalLens = () => {
               )}
             </div>
           </div>
+          {/* Persctiption data */}
+          {lensData.treatmentId && (
+            <div>
+              <div className="flex items-center justify-between">
+                <div className="w-1/3">
+                  <div className="">
+                    <label className="text-sm font-medium text-gray-700">
+                      Prescription
+                    </label>
+                    <Autocomplete
+                      options={prescriptionData?.data.data}
+                      getOptionLabel={(option) => {
+                        const date = option?.PrescriptionDate;
+                        const remarks = option?.Remarks || "";
+                        return `${date} ${remarks}`;
+                      }}
+                      value={
+                        prescriptionData?.data.data?.find(
+                          (brand) => brand.Id === lensData.prescriptionId
+                        ) || null
+                      }
+                      onChange={(_, newValue) =>
+                        setLensData((prev) => ({
+                          ...prev,
+                          prescriptionId: newValue?.Id || null,
+                          selectedPrescription: newValue || null,
+                        }))
+                      }
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          placeholder="Select prescription"
+                          size="small"
+                        />
+                      )}
+                      fullWidth
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Button onClick={() => setIsPerscriptionOpen(true)}>
+                    New Perscription
+                  </Button>
+                </div>
+              </div>
+              <Modal
+                isOpen={isperscriptionOpen}
+                onClose={() => setIsPerscriptionOpen(false)}
+                width="max-w-5xl"
+              >
+                <NewPerscription
+                  salesPersons={salesPersons?.data.data}
+                  lensData={lensData}
+                />
+              </Modal>
+              {/* Power details shown  */}
+              {lensData.prescriptionId && (
+                <div>
+                  <PowerDetailsFetch
+                    lensData={lensData}
+                    setLensData={setLensData}
+                    prescriptionData={lensData.selectedPrescription}
+                    focalityData={focalityData?.data}
+                    customerId={customerId}
+                  />
+                  <div className="mt-5 flex justify-between">
+                    <div className="flex gap-3 items-center">
+                      <div className="text-xl text-neutral-700 font-normal">
+                        With Fitting *
+                      </div>
+                      <Radio
+                        label="Yes"
+                        value="1"
+                        name="withFitting"
+                        onChange={() =>
+                          setLensData((prev) => ({ ...prev, withFitting: 1 }))
+                        }
+                        checked={lensData.withFitting === 1}
+                      />
+                      <Radio
+                        label="No"
+                        value="0"
+                        name="withFitting"
+                        onChange={() =>
+                          setLensData((prev) => ({
+                            ...prev,
+                            withFitting: 0,
+                            rimType: null,
+                          }))
+                        }
+                        checked={lensData.withFitting === 0}
+                      />
+                    </div>
+                    {lensData.withFitting === 1 && (
+                      <div className="w-1/3">
+                        <div className="">
+                          <label className="text-sm font-medium text-gray-700">
+                            Select Frame Type
+                          </label>
+                          <Autocomplete
+                            options={rimTypes?.data}
+                            getOptionLabel={(option) => option.FrameRimTypeName}
+                            value={
+                              rimTypes?.data?.find(
+                                (brand) => brand.Id === lensData.rimType
+                              ) || null
+                            }
+                            onChange={(_, newValue) =>
+                              setLensData((prev) => ({
+                                ...prev,
+                                rimType: newValue?.Id || null,
+                              }))
+                            }
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                placeholder="Select Frame Type"
+                                size="small"
+                              />
+                            )}
+                            fullWidth
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
