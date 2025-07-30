@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { data, useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     ArrowLeft,
@@ -12,6 +12,7 @@ import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
 import { useGetAllVendorMutation } from "../../api/vendorApi";
 import { useSavePurchaseOrderMutation } from "../../api/purchaseOrderApi";
 import { useGetCompanySettingsQuery } from "../../api/companySettingsApi";
+import { useGetCompanyByIdQuery } from "../../api/companiesApi";
 
 export default function SavePurchaseOrder() {
     const [showAlert, setShowAlert] = useState(false);
@@ -25,22 +26,29 @@ export default function SavePurchaseOrder() {
         referenceNo: "",
         vendorDetails: null
     });
-    const [companyDetails, setCompanyDetails] = useState(null);
+    // const [companyDetails, setCompanyDetails] = useState(null);
 
     const { user, hasMultipleLocations } = useSelector((state) => state.auth);
     const [getAllVendor] = useGetAllVendorMutation();
     const [SavePurchaseOrder] = useSavePurchaseOrderMutation();
-    const { data: companySettingsData, error: companySettingsError } = useGetCompanySettingsQuery(
-        { id: selectedLocation },
-        { skip: !selectedLocation }
-    );
 
     // User assigned locations
-    const hasLocation = allLocations?.data?.filter(loc =>
+    const hasLocation = allLocations?.data ? allLocations?.data?.filter(loc =>
         hasMultipleLocations.includes(loc.Id)
-    );
+    ) : [];
 
     console.log("User Locations:", hasLocation);
+
+
+    const { data: companySettingsData, error: companySettingsError } = useGetCompanySettingsQuery(
+        { id: selectedLocation || hasLocation?.[0]?.Id || '' },
+        { skip: !selectedLocation && !hasLocation?.[0]?.Id }
+    );
+
+    const { data: companiesData, error: companiesError } = useGetCompanyByIdQuery(
+        { id: formState?.vendorDetails?.MultiDelivery === 1 ? selectedLocation : formState?.vendorDetails?.DeliveryLocationId },
+        { skip: !selectedLocation && !hasLocation?.[0]?.Id }
+    );
 
     const fetchVendors = async (locationId) => {
         if (!locationId) return;
@@ -65,6 +73,12 @@ export default function SavePurchaseOrder() {
     };
 
     useEffect(() => {
+        if (hasLocation?.length === 1) {
+            setSelectedLocation(hasLocation[0].Id.toString());
+        }
+    }, [hasLocation]);
+
+    useEffect(() => {
         if (companySettingsError) {
             console.error("Error fetching company settings:", companySettingsError);
             setAlertMessage({
@@ -82,16 +96,6 @@ export default function SavePurchaseOrder() {
         }
     }, [selectedLocation]);
 
-    useEffect(() => {
-        if (selectedVendor) {
-            const vendor = vendors.find(v => v.Id === parseInt(selectedVendor));
-            setFormState(prev => ({
-                ...prev,
-                vendorDetails: vendor
-            }));
-        }
-    }, [selectedVendor, vendors]);
-
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormState(prev => ({
@@ -99,6 +103,16 @@ export default function SavePurchaseOrder() {
             [name]: value
         }));
     };
+
+    const handleVendorChange = (vendorId) => {
+        setSelectedVendor(vendorId);
+        const vendor = vendors.find(v => v.Id === parseInt(vendorId));
+        setFormState(prev => ({
+            ...prev,
+            vendorDetails: vendor
+        }));
+    };
+
 
     const handleSubmit = async () => {
         try {
@@ -176,6 +190,9 @@ export default function SavePurchaseOrder() {
 
     // Render company details if needed
     console.log("Company Details:", companySettingsData?.data);
+    console.log("Companies Details:", companiesData?.data);
+    
+    
 
     return (
         <>
@@ -269,7 +286,7 @@ export default function SavePurchaseOrder() {
                                 </label>
                                 <select
                                     value={selectedVendor}
-                                    onChange={(e) => setSelectedVendor(e.target.value)}
+                                    onChange={(e) => handleVendorChange(e.target.value)}
                                     className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 >
                                     <option value="">Select a vendor</option>
@@ -318,7 +335,23 @@ export default function SavePurchaseOrder() {
                             ))}
 
                         <div className="flex mt-6 space-x-16">
-                            <p className="text-gray-700 "><span className="font-bold flex">Ship to address :  </span></p>
+                            <div>
+                                <p className="text-gray-700 "><span className="font-bold flex">Ship to address :  </span></p>
+                                <div>
+                                    <p className="text-gray-700">
+                                        {companiesData?.data?.data?.BillingAddress1}
+                                    </p>
+                                    <p className="text-gray-700">
+                                        {companiesData?.data?.data?.BillingAddress2}
+                                    </p>
+                                    <p className="text-gray-700">
+                                        {companiesData?.data?.data?.BillingCity} {companiesData?.data?.data?.BillingZipCode}
+                                    </p>
+                                    <p className="text-gray-700">
+                                        {companiesData?.data?.data?.State?.StateName} {companiesData?.data?.data?.Country?.CountryName}
+                                    </p>
+                                </div>
+                            </div>
                             <div className="flex items-center space-x-15">
                                 <div className="flex items-center space-x-2">
                                     <input
