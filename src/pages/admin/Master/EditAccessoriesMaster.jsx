@@ -93,7 +93,7 @@ const EditFrameMaster = () => {
         });
 
         transformedStock.push({
-          id: detail.Stock?.Id || null,
+          OPDetailId: detail.Stock?.OPDetailId || null,
           FrameBatch: detail.Stock?.FrameBatch || "1",
           FrameSRP: detail.Stock?.OPMRP || "0",
         });
@@ -160,20 +160,21 @@ const EditFrameMaster = () => {
 
         const baseDetail = {
           Id: variation.id || null,
-          SKUCode: variation.SKUCode || "",
-          Barcode: isBarcodeChanged ? variation.Barcode : undefined,
+          SKUCode: variation.SKUCode || null,
           OPVariationID: Number(variation.OPVariationID) || 1,
           OPMainID: Number(variation.OPMainID) || null,
           IsActive: variation.IsActive ?? 1,
           Stock: {
-            Id: stockData.id || null,
+            OPDetailId: stockData.OPDetailId || null,
             OPBatchCode: stockData.FrameBatch || 1,
             OPMRP: parseFloat(stockData.FrameSRP) || 0,
             location: locationIds,
             ...locationPricing,
           },
         };
-
+        if (isBarcodeChanged) {
+          baseDetail.Barcode = variation.Barcode;
+        }
         return baseDetail;
       }),
     };
@@ -232,8 +233,8 @@ const EditFrameMaster = () => {
     }
     if (!formData.HSN) {
       newErrors.HSN = "HSN Code is required.";
-    } else if (formData.HSN.length > 6) {
-      newErrors.HSN = "HSN Code cannot exceed 6 characters.";
+    } else if (formData.HSN.length > 8) {
+      newErrors.HSN = "HSN Code cannot exceed 8 characters.";
     }
     if (!formData.TaxID) {
       newErrors.TaxID = "Tax is required.";
@@ -422,14 +423,16 @@ const EditFrameMaster = () => {
                             <span className="font-medium text-gray-600">
                               {item.location}
                             </span>
-                            <HasPermission
-                              module="Accessory Master"
-                              action={["edit", "create"]}
-                            >
-                              <span>
-                                {parseFloat(item.buyingPrice).toFixed(2)}
-                              </span>
-                            </HasPermission>
+                            {!isEnabled && (
+                              <HasPermission
+                                module="Accessory Master"
+                                action={["edit", "create"]}
+                              >
+                                <span>
+                                  {parseFloat(item.buyingPrice).toFixed(2)}
+                                </span>
+                              </HasPermission>
+                            )}
                           </div>
                         ))}
                       </div>

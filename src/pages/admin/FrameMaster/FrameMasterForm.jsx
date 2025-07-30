@@ -1,6 +1,7 @@
 import React, { useState, forwardRef, useImperativeHandle } from "react";
 import { useFrameMaster } from "../../../features/frameMasterContext";
 import Input from "../../../components/Form/Input";
+import Radio from "../../../components/Form/Radio";
 
 const FrameMasterForm = forwardRef(
   (
@@ -41,16 +42,15 @@ const FrameMasterForm = forwardRef(
       } else if (formData.ModelNo.length > 30) {
         newErrors.ModelNo = "Model No cannot exceed 30 characters";
       }
-
       if (formData.IsClipOn) {
-        if (
-          formData.NoOfClips !== "" &&
-          (isNaN(formData.NoOfClips) ||
-            parseInt(formData.NoOfClips) > 1 ||
-            parseInt(formData.NoOfClips) < 0)
-        ) {
-          newErrors.NoOfClips =
-            "No. of Clips must be a single non-negative number.";
+        if (!formData.NoOfClips) {
+          newErrors.NoOfClips = "No Of Clips is Required!";
+        } else if (isNaN(formData.NoOfClips)) {
+          newErrors.NoOfClips = "No Of Clips is not a number!";
+        } else if (formData.NoOfClips.length > 1) {
+          newErrors.NoOfClips = "No Of Clips must be in between 0 - 9";
+        } else if (Number(formData.NoOfClips) < 0) {
+          newErrors.NoOfClips = "No Of Clips should be a positive Number";
         }
       }
 
@@ -76,7 +76,7 @@ const FrameMasterForm = forwardRef(
 
     return (
       <form className="space-y-6 p-6">
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid sm:grid-cols-2 gap-6">
           <div>
             <label>Brand *</label>
             <select
@@ -116,42 +116,10 @@ const FrameMasterForm = forwardRef(
               <p className="text-red-500 text-sm">{errors.ModelNo}</p>
             )}
           </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Category *
-            </label>
-            <div className="flex gap-6">
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="Category"
-                  value="0"
-                  checked={formData.Category === "0"}
-                  onChange={handleChange}
-                  disabled={isEnabled}
-                />
-                Optical Frame
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="Category"
-                  value="1"
-                  checked={formData.Category === "1"}
-                  onChange={handleChange}
-                  disabled={isEnabled}
-                />
-                Sun Glasses
-              </label>
-            </div>
-            {errors.Category && (
-              <p className="text-red-500 text-sm">{errors.Category}</p>
-            )}
-          </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-4">
-          <div>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div className="">
             <label>Rim Type *</label>
             <select
               name="Type"
@@ -218,9 +186,62 @@ const FrameMasterForm = forwardRef(
               ))}
             </select>
           </div>
+          <div>
+            <label>Front Material</label>
+            <select
+              name="FrontMaterialID"
+              value={formData.FrontMaterialID}
+              onChange={handleChange}
+              className="input"
+              disabled={isEnabled}
+            >
+              <option value="">Select Front Material</option>
+              {materials.map((m) => (
+                <>
+                  {m.IsActive === 1 && m.MaterialFor === 0 && (
+                    <option key={m.Id} value={m.Id}>
+                      {m.MaterialName}
+                    </option>
+                  )}
+                </>
+              ))}
+            </select>
+          </div>
         </div>
 
-        <div className="flex gap-10">
+        <div className="flex gap-10 items-center">
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Category *
+            </label>
+            <div className="flex gap-6">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="Category"
+                  value="0"
+                  checked={formData.Category === "0"}
+                  onChange={handleChange}
+                  disabled={isEnabled}
+                />
+                Optical Frame
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="Category"
+                  value="1"
+                  checked={formData.Category === "1"}
+                  onChange={handleChange}
+                  disabled={isEnabled}
+                />
+                Sunglasses
+              </label>
+            </div>
+            {errors.Category && (
+              <p className="text-red-500 text-sm">{errors.Category}</p>
+            )}
+          </div>
           <label className="flex gap-2 items-baseline">
             <input
               type="checkbox"
@@ -242,8 +263,8 @@ const FrameMasterForm = forwardRef(
             Clip-on
           </label>
           {formData.IsClipOn && (
-            <div className="flex gap-2 items-start">
-              <label>NoOfClips:</label>
+            <div className="flex gap-2 items-center">
+              <label>No Of Clips:</label>
               <Input
                 name="NoOfClips"
                 value={formData.NoOfClips}
@@ -254,7 +275,7 @@ const FrameMasterForm = forwardRef(
           )}
         </div>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-4 items-center">
           <div>
             <label>Gender</label>
             <select
@@ -303,6 +324,27 @@ const FrameMasterForm = forwardRef(
             {errors.TaxID && (
               <p className="text-red-500 text-sm">{errors.TaxID}</p>
             )}
+          </div>
+          <div className="flex items-center gap-3">
+            <label>Capture Serial No</label>
+            <Radio
+              label="Yes"
+              name="CaptureSlNo"
+              type="radio"
+              value="0"
+              checked={formData.CaptureSlNo === "0"}
+              onChange={handleChange}
+              disabled={isEnabled}
+            />
+            <Radio
+              label="No"
+              type="radio"
+              name="CaptureSlNo"
+              value="1"
+              checked={formData.CaptureSlNo === "1"}
+              onChange={handleChange}
+              disabled={isEnabled}
+            />
           </div>
         </div>
       </form>

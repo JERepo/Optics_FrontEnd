@@ -221,7 +221,7 @@ const EditVendor = () => {
     } else if (vendorFormData.pan_no.length !== 10) {
       newErrors.pan_no = "Invalid PAN number format";
     }
-    if (vendorFormData.gstStatus !== 1) {
+    if (vendorFormData.gstStatus === 1 || vendorFormData.gstStatus === 2) {
       if (!vendorFormData.gst_no?.trim()) {
         newErrors.gst_no = "GST number is required for registered vendors";
       }
@@ -272,7 +272,7 @@ const EditVendor = () => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
+  console.log("company settings", companySettings);
   const handleSave = async () => {
     console.log("handleSave triggered, id:", id);
     const isValid = validateVendorForm();
@@ -282,10 +282,10 @@ const EditVendor = () => {
       return;
     }
     const payload = {
+      ...vendorFormData,
       company_id:
         Number(companySettings?.data?.data.CompanyId) ||
         Number(vendorFormData.company_id),
-      ...vendorFormData,
       tax_registration: vendorFormData.gstStatus,
 
       vendor_state: Number(vendorFormData.vendor_state),

@@ -20,7 +20,7 @@ const EditBrands = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation();
-   const { user } = useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.auth);
   const isEnabled = location.pathname.includes("/view");
 
   const [brandName, setBrandName] = useState("");
@@ -45,7 +45,6 @@ const EditBrands = () => {
   const { data: allBrands } = useGetAllBrandsQuery();
   const { data: allBrandGroups } = useGetAllBrandGroupsQuery();
   const { data: allBrandCats } = useGetAllBrandCatsQuery();
-
 
   useEffect(() => {
     if (id && isSuccess && brand?.data) {
@@ -86,7 +85,6 @@ const EditBrands = () => {
       return;
     }
 
-  
     const payload = {
       BrandName: brandName,
       BrandGroupID: parseInt(selectedBrandGroup),
@@ -96,7 +94,7 @@ const EditBrands = () => {
       FrameActive: categoryToggles.FrameActive ? 1 : 0,
       OthersProductsActive: categoryToggles.OthersProductsActive ? 1 : 0,
     };
- 
+
     try {
       if (id) {
         await updateBrands({ id, payload }).unwrap();
@@ -189,11 +187,15 @@ const EditBrands = () => {
             className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition"
           >
             <option value="">Select Brand Group</option>
-            {allBrandGroups?.data?.map((group) => (
-              <option key={group.Id} value={group.Id}>
-                {group.BrandGroupName}
-              </option>
-            ))}
+           
+            {allBrandGroups?.data
+              .filter((group) => group.IsActive === 1)
+              .sort((a, b) => a.BrandGroupName.localeCompare(b.BrandGroupName))
+              ?.map((g) => (
+                <option key={g.Id} value={g.Id}>
+                  {g.BrandGroupName}
+                </option>
+              ))}
           </select>
         </div>
 
@@ -209,11 +211,16 @@ const EditBrands = () => {
             className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition"
           >
             <option value="">Select Brand</option>
-            {allBrandCats?.data?.map((cat) => (
-              <option key={cat.Id} value={cat.Id}>
-                {cat.BrandCategoryName}
-              </option>
-            ))}
+            {allBrandCats?.data
+              ?.filter((cat) => cat.IsActive)
+              ?.sort((a, b) =>
+                a.BrandCategoryName.localeCompare(b.BrandCategoryName)
+              )
+              ?.map((cat) => (
+                <option key={cat.Id} value={cat.Id}>
+                  {cat.BrandCategoryName}
+                </option>
+              ))}
           </select>
         </div>
 

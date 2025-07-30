@@ -1,4 +1,12 @@
-import { FiUsers, FiSettings, FiUserCheck, FiShoppingBag, FiFileText, FiClipboard, FiBox } from "react-icons/fi";
+import {
+  FiUsers,
+  FiSettings,
+  FiUserCheck,
+  FiShoppingBag,
+  FiFileText,
+  FiClipboard,
+  FiBox,
+} from "react-icons/fi";
 import {
   IoPeopleOutline,
   IoSettingsOutline,
@@ -104,28 +112,28 @@ export const menuItems = [
         path: "/customer-group",
       },
       {
-        name : "Sales Person",
-        icons : IoBriefcaseOutline,
-        module : "Sales Person",
-        path : "/sales"
+        name: "Sales Person",
+        icons: IoBriefcaseOutline,
+        module: "Sales Person",
+        path: "/sales",
       },
-       {
-        name : "Bank Master",
-        icons : IoBriefcaseOutline,
-        module : "Bank Master",
-        path : "/bank-master"
+      {
+        name: "Bank Master",
+        icons: IoBriefcaseOutline,
+        module: "Bank Master",
+        path: "/bank-master",
       },
-       {
-        name : "Bank Account Details",
-        icons : IoBriefcaseOutline,
-        module : "Bank Account Details",
-        path : "/bank-account-details"
+      {
+        name: "Bank Account Details",
+        icons: IoBriefcaseOutline,
+        module: "Bank Account Details",
+        path: "/bank-account-details",
       },
-       {
-        name : "Payment Machine",
-        icons : IoBriefcaseOutline,
-        module : "Payment Machine",
-        path : "/payment-machine"
+      {
+        name: "Payment Machine",
+        icons: IoBriefcaseOutline,
+        module: "Payment Machine",
+        path: "/payment-machine",
       },
     ],
   },
@@ -135,7 +143,7 @@ export const menuItems = [
     module: "Customer",
     path: "/customer",
   },
-   {
+  {
     name: "Vendor",
     icon: FiShoppingBag,
     module: "Vendor",
@@ -145,6 +153,12 @@ export const menuItems = [
     name: "Order",
     icon: FiBox,
     module: "Order",
-    path: "/order",
+    path: "/order-list",
+  },
+  {
+    name: "Prescription",
+    icon: FiFileText,
+    module: "Prescription",
+    path: "/prescription",
   },
 ];

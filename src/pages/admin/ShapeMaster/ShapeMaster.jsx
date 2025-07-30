@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { FiSearch, FiPlus, FiEdit2, FiEye } from "react-icons/fi";
+import { FiSearch, FiPlus, FiEdit2, FiEye, FiArrowUp, FiArrowDown } from "react-icons/fi";
 import Button from "../../../components/ui/Button";
 import { useNavigate } from "react-router";
 import { Table, TableRow, TableCell } from "../../../components/Table";
@@ -16,6 +16,7 @@ const ShapeMaster = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [sortOrder, setSortOrder] = useState("asc"); // State for sorting order (asc/desc)
   const locale = navigator.language || navigator.languages[0] || "en-IN";
 
   const [selectedBrandId, setSelectedBrandId] = useState(null);
@@ -28,10 +29,9 @@ const ShapeMaster = () => {
   const brands = useMemo(() => {
     if (!data) return [];
 
-    return data.map((brand) => ({
+    let sortedBrands = data.map((brand) => ({
       id: brand.Id,
       name: brand.ShapeName,
-
       createdAt: new Intl.DateTimeFormat(locale, {
         year: "numeric",
         month: "short",
@@ -39,7 +39,18 @@ const ShapeMaster = () => {
       }).format(new Date(brand.CreatedDate)),
       enabled: brand.IsActive,
     }));
-  }, [data, searchQuery]);
+
+    // Sort by shape name based on sortOrder
+    sortedBrands.sort((a, b) => {
+      if (sortOrder === "asc") {
+        return a.name.localeCompare(b.name); // A-Z
+      } else {
+        return b.name.localeCompare(a.name); // Z-A
+      }
+    });
+
+    return sortedBrands;
+  }, [data, sortOrder]);
 
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedPools = brands.slice(startIndex, startIndex + pageSize);
@@ -70,6 +81,11 @@ const ShapeMaster = () => {
     navigate(`edit/${poolId}`);
   };
 
+  // Toggle sort order
+  const handleSortToggle = () => {
+    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+  };
+
   return (
     <div className="max-w-5xl">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -94,14 +110,28 @@ const ShapeMaster = () => {
               className="bg-primary/90 text-neutral-50 hover:bg-primary/70 transition-all whitespace-nowrap"
               onClick={() => navigate("create")}
             >
-              Add Shape Master
+              Add Shape
             </Button>
           </HasPermission>
         </div>
       </div>
 
       <Table
-        columns={["S.No", "shape master", "created on", "Action"]}
+        columns={[
+          "S.No",
+          <div className="flex items-center gap-2">
+            Shape Name
+            <button onClick={handleSortToggle} className="focus:outline-none">
+              {sortOrder === "asc" ? (
+                <FiArrowUp className="text-neutral-500" />
+              ) : (
+                <FiArrowDown className="text-neutral-500" />
+              )}
+            </button>
+          </div>,
+          "Created On",
+          "",
+        ]}
         data={paginatedPools}
         renderRow={(pool, index) => (
           <TableRow key={pool.id}>
@@ -111,7 +141,6 @@ const ShapeMaster = () => {
             <TableCell className="text-sm text-neutral-500">
               {pool.name}
             </TableCell>
-
             <TableCell className="text-sm text-neutral-500">
               {pool.createdAt}
             </TableCell>
@@ -132,8 +161,6 @@ const ShapeMaster = () => {
                     <FiEdit2 size={18} />
                   </button>
                 </HasPermission>
-
-                {/* Only show toggle if enabled field is available */}
                 <HasPermission module="Shape Master" action="deactivate">
                   <Toggle
                     enabled={pool.enabled}

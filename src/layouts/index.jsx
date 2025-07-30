@@ -49,6 +49,10 @@ import Vendor from "../pages/Vendor/Vendor";
 import EditVendor from "../pages/Vendor/EditVendor";
 import NotFound from "../components/NotFound";
 import TotalOrder from "../pages/Order";
+import OrderList from "../pages/Order/MainOrder/OrderList";
+import ErrorBoundary from "../components/ErrorBoundary";
+import Prescription from "../pages/Prescription.jsx/Prescription";
+import EditPrescription from "../pages/Prescription.jsx/EditPrescription";
 import ClBatchDetails from "../pages/cl_batch_details/ClBatchDetails";
 import SavePurchaseOrder from "../pages/PurchaseOrder/savePurchaseOrderPage";
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
@@ -608,8 +612,36 @@ export const router = createBrowserRouter([
       },
 
       {
-        path: "order",
-        element: <TotalOrder />,
+        path: "order-list",
+        element: (
+          <ErrorBoundary>
+            <OrderList />
+          </ErrorBoundary>
+        ),
+      },
+      {
+        path: "add-order",
+        element: (
+          <ErrorBoundary>
+            <TotalOrder />
+          </ErrorBoundary>
+        ),
+      },
+      {
+        path: "prescription",
+        element: (
+          <ErrorBoundary>
+            <Prescription />
+          </ErrorBoundary>
+        ),
+      },
+       {
+        path: "prescription/create",
+        element: (
+          <ErrorBoundary>
+            <EditPrescription />
+          </ErrorBoundary>
+        ),
       },
       {
         path: "cl-batch-details",

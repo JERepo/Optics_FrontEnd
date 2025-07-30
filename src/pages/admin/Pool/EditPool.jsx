@@ -10,9 +10,13 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Button from "../../../components/ui/Button";
 import { PoolCat } from "../../../utils/constants/PoolCategory";
 import toast from "react-hot-toast";
-import { hasPermission } from "../../../utils/permissionUtils";
 import { useSelector } from "react-redux";
 import HasPermission from "../../../components/HasPermission";
+import {
+  useGetAllCompanyLocationsQuery,
+  useGetCompanyIdQuery,
+} from "../../../api/customerApi";
+import { useGetAllLocationsQuery } from "../../../api/roleManagementApi";
 
 const EditPool = () => {
   const navigate = useNavigate();
@@ -26,6 +30,7 @@ const EditPool = () => {
   const [createPool, { isLoading: isCreatingPool }] = useCreatePoolMutation();
   const [updatePool, { isLoading: isUpdatingPool }] = useUpdatePoolMutation();
   const isEnabled = location.pathname.includes("/view");
+  const [locations, setLocations] = useState([]);
 
   const {
     data,
@@ -39,13 +44,38 @@ const EditPool = () => {
     }
   );
 
+  const { data: allCustomerGroupIds, isLoading: isAllLocationsLoading } =
+    useGetAllCompanyLocationsQuery();
+  const { data: allLocations, isLoading: isLocationsLoading } =
+    useGetAllLocationsQuery();
+
   // Prefill values if editing
   useEffect(() => {
-    if (id && isSuccess && data?.data) {
+    if (
+      id &&
+      isSuccess &&
+      allLocations?.data &&
+      allCustomerGroupIds?.data?.data
+    ) {
       setPoolName(data.data.PoolName);
       setSelectedCategoryId(data?.data.PoolCategory);
+
+      const companyIds = allCustomerGroupIds.data.data
+        .filter(
+          (c) =>
+            c.CustomerPoolID == id ||
+            c.VendorPoolID == id ||
+            c.StockPoolID == id
+        )
+        .map((f) => f.CompanyId);
+
+      const filteredLocations = allLocations.data.filter((l) =>
+        companyIds.includes(l.Id)
+      );
+      setLocations(filteredLocations);
+      console.log(filteredLocations);
     }
-  }, [id, data, isSuccess]);
+  }, [id, data, isSuccess, allLocations, allCustomerGroupIds]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -54,6 +84,16 @@ const EditPool = () => {
       return;
     }
 
+    const poolExists = allPool?.data.find(
+      (p) =>
+        p.PoolName.toLowerCase().split(" ").join("") ===
+        poolName.toLowerCase().split(" ").join("")
+    );
+    if (poolExists) {
+      toast.error("Pool name must be unique");
+      return;
+    }
+    console.log(poolExists, "pool exists");
     const payload = {
       PoolName: poolName,
       PoolCategory: selectedCategoryId,
@@ -74,15 +114,16 @@ const EditPool = () => {
         setPoolName("");
         setSelectedCategoryId(null);
       }
-
       navigate(-1);
     } catch (error) {
       toast.error("Something went wrong!");
       console.error(error);
+      throw new Error(error.message);
     }
   };
 
-  if (id && isPoolLoading) return <h1>Loading pool...</h1>;
+  if (id && (isPoolLoading || isLocationsLoading || isAllLocationsLoading))
+    return <h1>Loading pool...</h1>;
 
   return (
     <div className="max-w-2xl bg-white rounded-lg shadow-sm p-4">
@@ -156,6 +197,20 @@ const EditPool = () => {
           )}
         </div>
       </form>
+      {isEnabled && (
+        <div>
+          <div className="text-lg">Applicable for Locations:</div>
+          {locations?.length > 0 && (
+            <div className="flex gap-3 items-center">
+              {locations.map((l) => (
+                <div className="flex">
+                  {l.CompanyName}({l.LocationName})
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

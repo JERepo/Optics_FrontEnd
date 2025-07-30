@@ -1,5 +1,12 @@
 import React, { useState, useMemo } from "react";
-import { FiSearch, FiPlus, FiEdit2, FiEye } from "react-icons/fi";
+import {
+  FiSearch,
+  FiPlus,
+  FiEdit2,
+  FiEye,
+  FiArrowUp,
+  FiArrowDown,
+} from "react-icons/fi";
 import Button from "../../../components/ui/Button";
 import { useNavigate } from "react-router";
 import { Table, TableRow, TableCell } from "../../../components/Table";
@@ -23,6 +30,10 @@ const BrandGroup = () => {
   const [selectedBrandId, setSelectedBrandId] = useState(null);
   const [currentStatus, setCurrentStatus] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [sortConfig, setSortConfig] = useState({
+    key: "name",
+    direction: "asc",
+  });
 
   const { data, isLoading } = useGetAllBrandGroupsQuery();
   const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
@@ -30,7 +41,7 @@ const BrandGroup = () => {
   const brands = useMemo(() => {
     if (!data?.data) return [];
 
-    return data.data.map((brand) => ({
+    let processed = data.data.map((brand) => ({
       id: brand.Id,
       name: brand.BrandGroupName,
 
@@ -41,12 +52,29 @@ const BrandGroup = () => {
       }).format(new Date(brand.CreatedDate)),
       enabled: brand.IsActive,
     }));
-  }, [data, searchQuery]);
+    if (sortConfig.key === "name") {
+      processed.sort((a, b) => {
+        const nameA = a.name.toLowerCase().trim();
+        const nameB = b.name.toLowerCase().trim();
+        return sortConfig.direction === "asc"
+          ? nameA.localeCompare(nameB, "en", { sensitivity: "base" })
+          : nameB.localeCompare(nameA, "en", { sensitivity: "base" });
+      });
+    }
+
+    return processed;
+  }, [data, searchQuery,sortConfig]);
 
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedPools = brands.slice(startIndex, startIndex + pageSize);
   const totalPages = Math.ceil(brands.length / pageSize);
 
+  const handleSort = (name) => {
+    setSortConfig((prev) => ({
+      ...prev,
+      direction: prev.key === name && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  };
   const requestToggle = (poolId, status) => {
     setSelectedBrandId(poolId);
     setCurrentStatus(status);
@@ -103,8 +131,26 @@ const BrandGroup = () => {
       </div>
 
       <Table
-        columns={["S.No", "Brand Group", "created on", "Action"]}
+        columns={["S.No", "Brand Group", "created on", ""]}
         data={paginatedPools}
+        renderHeader={(column) => {
+          if (column === "Brand Group") {
+            return (
+              <div className="flex items-center gap-2">
+                <span>{column}</span>
+                <button onClick={() => handleSort("name")}>
+                  {sortConfig.key === "name" &&
+                  sortConfig.direction === "asc" ? (
+                    <FiArrowUp className="text-neutral-500 hover:text-primary" />
+                  ) : (
+                    <FiArrowDown className="text-neutral-500 hover:text-primary" />
+                  )}
+                </button>
+              </div>
+            );
+          }
+          return column;
+        }}
         renderRow={(pool, index) => (
           <TableRow key={pool.id}>
             <TableCell className="text-sm font-medium text-neutral-900">

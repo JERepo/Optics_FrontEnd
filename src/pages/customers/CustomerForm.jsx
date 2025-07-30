@@ -14,7 +14,6 @@ const CustomerForm = ({
   companyType,
   handleVerifyGST,
   isVerifyGSTLoading,
-  
 }) => {
   // Auto-fill country code when countryIsd is available
   useEffect(() => {
@@ -25,7 +24,6 @@ const CustomerForm = ({
       }));
     }
   }, [countryIsd, setFormData]);
-
 
   // Auto-fill and disable PAN number when GST number is valid
   useEffect(() => {
@@ -38,7 +36,7 @@ const CustomerForm = ({
     } else if (formData.GSTNumber?.length < 15 && formData?.PANNumber) {
       setFormData((prev) => ({
         ...prev,
-        PANNumber: "",
+        PANNumber: null,
       }));
     }
   }, [formData.GSTNumber, setFormData]);
@@ -54,14 +52,12 @@ const CustomerForm = ({
     const newValue = type === "checkbox" ? checked : value;
 
     // Handle customer type change - reset relevant fields
-   
 
-    // Handle GST registration type change if you have it
     if (name === "GSTINType") {
       setFormData((prev) => ({
         ...prev,
         [name]: newValue,
-        GSTNumber: newValue === 0 ? prev.GSTNumber : "", // Reset GST if not registered
+        GSTNumber: newValue === 0 ? prev.GSTNumber : null,
       }));
 
       // Reset GST error if unregistering
@@ -292,7 +288,6 @@ const CustomerForm = ({
                             className="whitespace-nowrap px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm font-medium disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                             onClick={handleVerifyGST}
                             disabled={formData.GSTNumber?.length !== 15}
-
                           >
                             {isVerifyGSTLoading
                               ? "Getting data.."

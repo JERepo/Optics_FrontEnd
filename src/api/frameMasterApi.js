@@ -35,8 +35,8 @@ export const frameMasterApi = createApi({
       invalidatesTags: ["Frame"],
     }),
     updateFramemaster: builder.mutation({
-      query: ({ id, payload }) => ({
-        url: `/api/v1/frame-main/update/${id}`,
+      query: ({ id, payload, appId }) => ({
+        url: `/api/v1/frame-main/update/${id}?ApplicationUserId=${appId}`,
         method: "PUT",
         body: payload,
       }),

@@ -87,12 +87,12 @@ const EditFrameMaster = () => {
         FrontMaterialID: String(masterData.FrontMaterialID),
         TempleMaterialID: String(masterData.TempleMaterialID),
         Gender: String(masterData.Gender),
-        IsClipOn: masterData.IsClipOn,
+        IsClipOn: masterData.IsClipOn == 1 ? true :false,
         NoOfClips: masterData.NoOfClips,
         IsRxable: masterData.IsRxable,
-        CaptureSlNo: masterData.CaptureSlNo,
+        CaptureSlNo: String(masterData.CaptureSlNo),
         HSN: masterData.HSN,
-        TaxID: String(masterData.TaxID),
+        TaxID: masterData.TaxID,
       });
 
       const transformedVariations = [];
@@ -119,7 +119,7 @@ const EditFrameMaster = () => {
         });
 
         transformedStock.push({
-          id: detail.Stock?.Id || null,
+          FrameDetailId: detail.Stock?.FrameDetailId || null,
           FrameBatch: detail.Stock?.FrameBatch || 1,
           FrameSRP: detail.Stock?.FrameSRP.toString() || 0,
         });
@@ -166,9 +166,10 @@ const EditFrameMaster = () => {
       IsClipOn: formData.IsClipOn ? 1 : 0,
       NoOfClips: Number(formData.NoOfClips) || null,
       IsRxable: formData.IsRxable ? 1 : 0,
-      CaptureSlNo: formData.CaptureSlNo || 0,
+      CaptureSlNo: Number(formData.CaptureSlNo) || 0,
       HSN: formData.HSN,
       TaxID: Number(formData.TaxID),
+      ApplicationUserId: user.Id,
       Details: variationData.map((variation, index) => {
         const stockData = stock[index] || {};
         const pricingDataForVariation = pricingData[index] || [];
@@ -198,10 +199,9 @@ const EditFrameMaster = () => {
           Id: variation.id || null,
           ColourCode: variation.ColourCode,
           Size: variation.Size,
-          DBL: variation.DBL,
+          DBL: !variation.DBL ? null : variation.DBL,
           TempleLength: variation.TempleLength,
           SkuCode: variation.SkuCode,
-          Barcode: isBarcodeChanged ? variation.Barcode : undefined,
           FrameFrontColor: variation.FrameFrontColor,
           TempleColor: variation.TempleColor,
           LensColor: variation.LensColor,
@@ -211,14 +211,16 @@ const EditFrameMaster = () => {
           IsActive: Number(variation.IsActive ?? 1),
           FrameImages: variation.FrameImages || [],
           Stock: {
-            Id: Number(stockData.id) || null,
+            FrameDetailId: Number(stockData.FrameDetailId) || null,
             FrameBatch: stockData.FrameBatch || 1,
             FrameSRP: parseFloat(stockData.FrameSRP) || 0,
             location: locationIds,
             ...locationPricing,
           },
         };
-
+        if (isBarcodeChanged) {
+          baseDetail.Barcode = variation.Barcode;
+        }
         return baseDetail;
       }),
     };
@@ -244,6 +246,7 @@ const EditFrameMaster = () => {
         await updateFramemaster({
           id: parseInt(id),
           payload: finalPayload,
+          appId: user.Id,
         }).unwrap();
         toast.success("Frame updated successfully");
       } else {
@@ -338,8 +341,6 @@ const EditFrameMaster = () => {
     setIsEditingVariation(false);
     setEditingIndex(null);
   };
-
-  console.log("brands data",allBrands?.data)
 
   if (
     isFrameLoading ||
