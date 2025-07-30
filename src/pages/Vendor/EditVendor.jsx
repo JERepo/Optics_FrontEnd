@@ -27,7 +27,7 @@ import Radio from "../../components/Form/Radio";
 import Input from "../../components/Form/Input";
 import {
   useCreateVendorMutation,
-  useGetVendorByIdQuery,
+  useGetVendorByIdMutation,
   useUpdateVendorMutation,
 } from "../../api/vendorApi";
 
@@ -45,7 +45,7 @@ const EditVendor = () => {
 
   // API Queries
   const { data: vendoryIdData, isLoading: isVedorLoading } =
-    useGetVendorByIdQuery({ id: id }, { skip: !id });
+    useGetVendorByIdMutation({ id: id }, { skip: !id });
   const { data: allLocations } = useGetAllLocationsQuery();
   const { data: allCountries } = useGetCountriesQuery();
   const { data: allStates } = useGetStatesQuery();

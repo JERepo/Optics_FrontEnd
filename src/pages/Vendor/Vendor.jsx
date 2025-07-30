@@ -9,7 +9,7 @@ import HasPermission from "../../components/HasPermission";
 import Button from "../../components/ui/Button";
 import {
   useDeActivateMutation,
-  useGetAllVendorQuery,
+  useGetAllVendorMutation,
 } from "../../api/vendorApi";
 import { useSelector } from "react-redux";
 
@@ -25,7 +25,7 @@ const Vendor = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { user } = useSelector((state) => state.auth);
-  const { data, isLoading } = useGetAllVendorQuery();
+  const [getAllVendor] = useGetAllVendorMutation();
   const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
 
   const customers = useMemo(() => {

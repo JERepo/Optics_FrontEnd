@@ -49,6 +49,8 @@ import Vendor from "../pages/Vendor/Vendor";
 import EditVendor from "../pages/Vendor/EditVendor";
 import NotFound from "../components/NotFound";
 import TotalOrder from "../pages/Order";
+import ClBatchDetails from "../pages/cl_batch_details/ClBatchDetails";
+import SavePurchaseOrder from "../pages/PurchaseOrder/savePurchaseOrderPage";
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
 export const router = createBrowserRouter([
@@ -609,6 +611,14 @@ export const router = createBrowserRouter([
         path: "order",
         element: <TotalOrder />,
       },
+      {
+        path: "cl-batch-details",
+        element: <ClBatchDetails/>
+      },
+      {
+        path: "purchase-order/create",
+        element: <SavePurchaseOrder/>
+      }
     ],
   },
   {

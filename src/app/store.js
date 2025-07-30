@@ -24,6 +24,9 @@ import { bankMasterApi } from "../api/bankMasterApi";
 import { BankAccountDetailsApi } from "../api/BankAccountDetailsApi";
 import { paymentMachineApi } from "../api/paymentMachineApi";
 import { orderApi } from "../api/orderApi";
+import { contactLensApi } from "../api/clBatchDetailsApi";
+import { purchaseOrderApi } from "../api/purchaseOrderApi";
+import { companySettingsApi } from "../api/companySettingsApi";
 
 const persistConfig = {
   key: "auth",
@@ -64,6 +67,9 @@ export const store = configureStore({
     [BankAccountDetailsApi.reducerPath]: BankAccountDetailsApi.reducer,
     [paymentMachineApi.reducerPath]: paymentMachineApi.reducer,
     [orderApi.reducerPath]: orderApi.reducer,
+    [contactLensApi.reducerPath]: contactLensApi.reducer,
+    [purchaseOrderApi.reducerPath]: purchaseOrderApi.reducer,
+    [companySettingsApi.reducerPath]: companySettingsApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -89,7 +95,10 @@ export const store = configureStore({
       bankMasterApi.middleware,
       BankAccountDetailsApi.middleware,
       paymentMachineApi.middleware,
-      orderApi.middleware
+      orderApi.middleware,
+      contactLensApi.middleware,
+      purchaseOrderApi.middleware,
+      companySettingsApi.middleware
     ),
 });
 

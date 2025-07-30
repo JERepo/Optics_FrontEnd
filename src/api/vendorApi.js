@@ -6,9 +6,11 @@ export const vendorApi = createApi({
   baseQuery: customBaseQuery,
   tagTypes: ["Vendor"],
   endpoints: (builder) => ({
-    getAllVendor: builder.query({
-      query: () => ({
+    getAllVendor: builder.mutation({
+      query: (payload) => ({
         url: `/api/v1/vendor/`,
+        method: "POST",
+        body: payload,
       }),
       providesTags: ["Vendor"],
     }),
@@ -29,9 +31,11 @@ export const vendorApi = createApi({
       invalidatesTags: ["Vendor"],
     }),
 
-    getVendorById: builder.query({
-      query: ({ id }) => ({
-        url: `/api/v1/vendor/${id}`,
+    getVendorById: builder.mutation({
+      query: (payload) => ({
+        url: `/api/v1/vendor`,
+        method: "POST",
+        body: payload,
       }),
     }),
     updateVendor: builder.mutation({
@@ -47,9 +51,9 @@ export const vendorApi = createApi({
 });
 
 export const {
-  useGetAllVendorQuery,
+  useGetAllVendorMutation,
   useDeActivateMutation,
   useCreateVendorMutation,
-  useGetVendorByIdQuery,
+  useGetVendorByIdMutation,
   useUpdateVendorMutation,
 } = vendorApi;
