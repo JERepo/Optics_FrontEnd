@@ -1,6 +1,6 @@
 import { createContext, useContext, useState } from "react";
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 6;
 
 const OrderContext = createContext();
 

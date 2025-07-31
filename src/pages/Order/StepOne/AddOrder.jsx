@@ -47,7 +47,7 @@ const AddOrder = ({
   setLocation,
 }) => {
   const navigate = useNavigate();
-  const { setCustomerId, draftData, goToStep } = useOrder();
+  const { setCustomerId, goToStep } = useOrder();
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
   const [input, setInput] = useState("");
 
@@ -374,7 +374,7 @@ const AddOrder = ({
       </div>
     </div>
   );
-console.log("by id",locationById)
+  console.log("by id", locationById);
   return (
     <>
       {!selectedCustomer ? (
@@ -504,7 +504,6 @@ console.log("by id",locationById)
           onBack={onBack}
           user={user}
           setCustomerId={setCustomerId}
-          draftData={draftData}
           location={locationById}
         />
       )}
@@ -770,10 +769,12 @@ const StepB = ({
   onBack,
   user,
   setCustomerId,
-  draftData,
+
   location,
 }) => {
-  console.log("location",location);
+  const { draftData } = useOrder();
+  console.log("location", draftData);
+  const { hasMultipleLocations } = useSelector((state) => state.auth);
   const [orderReference, setOrderReference] = useState("");
   const [selectedSalesPerson, setSelectedSalesPerson] = useState(null);
   const { goToStep } = useOrder();
@@ -822,13 +823,26 @@ const StepB = ({
   };
 
   useEffect(() => {
-    if (draftData && !isSalesPersonsLoading) {
-      const draft = draftData;
-
-      setOrderReference(draft?.OrderReference || null);
-      setSelectedSalesPerson(draft?.SalesPersonId || null);
+    if (draftData) {
+      setOrderReference(draftData?.OrderReference || null);
+      setSelectedSalesPerson(draftData?.SalesPersonId || null);
     }
   }, [draftData, isSalesPersonsLoading]);
+
+  const filteredData = salesPersons?.data.data
+    ?.filter(
+      (person) =>
+        person.Type !== 1 &&
+        person.SalesPersonLinks?.some((link) =>
+          hasMultipleLocations.includes(link.Company?.Id)
+        )
+    )
+    .map((person) => ({
+      ...person,
+      SalesPersonLinks: person.SalesPersonLinks.filter((link) =>
+        hasMultipleLocations.includes(link.Company?.Id)
+      ),
+    }));
 
   return (
     <div className="max-w-4xl p-6 bg-white rounded-lg shadow-md">
@@ -883,9 +897,9 @@ const StepB = ({
         ) : (
           <Select
             label="Sales Person"
-            value={selectedSalesPerson}
+            value={selectedSalesPerson || null}
             onChange={(e) => setSelectedSalesPerson(e.target.value)}
-            options={salesPersons?.data.data}
+            options={filteredData}
             optionLabel="PersonName"
             optionValue="Id"
             defaultOption="Select Sales person"

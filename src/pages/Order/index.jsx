@@ -17,7 +17,7 @@ const TotalOrder = () => {
   const [patientId, setPatientId] = useState(null);
   const [customerId, setMainCustomerId] = useState(null);
   const [location, setLocation] = useState(null);
-  const { currentStep, setDraftData, setCustomerId, setCustomerDetails } =
+  const { currentStep, setDraftData, setCustomerId, setCustomerDetails,draftData } =
     useOrder();
 
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
@@ -40,14 +40,15 @@ const TotalOrder = () => {
   useEffect(() => {
     if (
       draftDetails?.data.data &&
-      draftDetails?.data.data[0]?.ApplicationUserId &&
       draftDetails?.data.data[0]?.ApplicationUserId === user?.Id &&
       draftDetails?.data.data[0]?.Status === 0 &&
       draftDetails?.data.data[0]?.CompanyId === locationById?.data?.data?.Id &&
       draftDetails?.data.data[0].PatientID === patientId
     ) {
+      console.log("coming to set draft")
       setDraftData(draftDetails?.data?.data[0]);
     } else {
+      console.log("coming to set as null")
       setDraftData(null);
     }
   }, [patientId, draftDetails]);

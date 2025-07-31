@@ -235,20 +235,6 @@ export const orderApi = createApi({
       }),
     }),
 
-    createNewPrescription: builder.mutation({
-      query: ({ payload }) => ({
-        url: `/api/v1/prescription/create`,
-        method: "POST",
-        body: payload,
-      }),
-      invalidatesTags: ["Prescription"],
-    }),
-    getAllPrescription: builder.query({
-      query: ({ patientId }) => ({
-        url: `/api/v1/prescription?PatientID=${patientId}`,
-      }),
-      providesTags: ["Prescription"],
-    }),
     getDIaDetails: builder.mutation({
       query: ({ payload }) => ({
         url: `/api/v1/optical-lens/getdia`,
@@ -262,6 +248,98 @@ export const orderApi = createApi({
       query: ({ payload }) => ({
         url: `/api/v1/optical-lens/getprice`,
         method: "POST",
+        body: payload,
+      }),
+    }),
+    saveOpticalLens: builder.mutation({
+      query: ({ orderId, payload }) => ({
+        url: `/api/v1/order/add-opticallens/${orderId}`,
+        method: "POST",
+        body: payload,
+      }),
+      invalidatesTags: ["Order"],
+    }),
+
+    mainApplyDiscount: builder.mutation({
+      query: ({ locationId, orderId, detailId, productType, payload }) => ({
+        url: `/api/v1/order/applydiscount?locationId=${locationId}&orderId=${orderId}&detailId=${detailId}&productType=${productType}`,
+        method: "PUT",
+        body: payload,
+      }),
+      invalidatesTags: ["Order"],
+    }),
+    mainApplyRemoveDiscount: builder.mutation({
+      query: ({ locationId, orderId, detailId, productType, payload }) => ({
+        url: `/api/v1/order/remove-discount?orderId=${orderId}&detailId=${detailId}&productType=${productType}`,
+        method: "PUT",
+        body: payload,
+      }),
+      invalidatesTags: ["Order"],
+    }),
+
+    // PRESCRIPTION API'S
+    createNewPrescription: builder.mutation({
+      query: ({ payload }) => ({
+        url: `/api/v1/prescription/create`,
+        method: "POST",
+        body: payload,
+      }),
+      invalidatesTags: ["Prescription"],
+    }),
+    updatePrescription: builder.mutation({
+      query: ({ id, payload }) => ({
+        url: `/api/v1/prescription/update/${id}`,
+        method: "PUT",
+        body: payload,
+      }),
+      invalidatesTags: ["Prescription"],
+    }),
+    deActivatePrescription: builder.mutation({
+      query: ({ id }) => ({
+        url: `/api/v1/prescription/delete/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Prescription"],
+    }),
+    getAllPrescription: builder.query({
+      query: ({ patientId }) => ({
+        url: `/api/v1/prescription?PatientID=${patientId}`,
+      }),
+      transformResponse: (response) => {
+        return response?.data?.data?.sort(
+          (a, b) => new Date(b.PrescriptionDate) - new Date(a.PrescriptionDate)
+        );
+      },
+      providesTags: ["Prescription"],
+    }),
+
+    getAllPrescriptionByPatient: builder.query({
+      query: ({ patientId }) => ({
+        url: `/api/v1/prescription?PatientID=${patientId}`,
+      }),
+      transformResponse: (response) => {
+        return response?.data?.data?.sort(
+          (a, b) => new Date(b.PrescriptionDate) - new Date(a.PrescriptionDate)
+        );
+      },
+      providesTags: ["Prescription"],
+    }),
+    getAllPrescriptions: builder.query({
+      query: () => ({
+        url: `/api/v1/prescription/all`,
+      }),
+      providesTags: ["Prescription"],
+    }),
+    getPrescriptionById: builder.query({
+      query: ({ id }) => ({
+        url: `/api/v1/prescription/getbyid/${id}`,
+      }),
+    }),
+
+    saveFinalPayment: builder.mutation({
+      query: ({ orderId, payload }) => ({
+        url: `/api/v1/order/withadvance/${orderId}`,
+        method: "PUT",
         body: payload,
       }),
     }),
@@ -283,6 +361,18 @@ export const {
   useGetAllPrescriptionQuery,
   useGetDIaDetailsMutation,
   useGetPriceMutation,
+  useSaveOpticalLensMutation,
+  useMainApplyDiscountMutation,
+  useMainApplyRemoveDiscountMutation,
+
+  useSaveFinalPaymentMutation,
+
+  // PRESCRIPTION
+  useGetAllPrescriptionsQuery,
+  useGetPrescriptionByIdQuery,
+  useUpdatePrescriptionMutation,
+  useDeActivatePrescriptionMutation,
+  useLazyGetAllPrescriptionByPatientQuery,
 
   useLazySearchCustomerQuery,
   useCreateNewCustomerMutation,

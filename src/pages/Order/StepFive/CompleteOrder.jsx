@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router";
 import { useOrder } from "../../../features/OrderContext";
 import Button from "../../../components/ui/Button";
 import {
@@ -140,18 +141,25 @@ const AdvanceAmountInput = ({
       [orderDetailId]: totalAmount,
     }));
   };
+  console.log("ad", advancedAmounts);
+  const handleAdvanceAmount = (e) => {
+    const { value } = e.target;
+    if (parseFloat(value) < 0 || parseFloat(value) > totalAmount) {
+      toast.error("Please Enter Valid Advance amount");
+      return;
+    }
+    setAdvancedAmounts((prev) => ({
+      ...prev,
+      [orderDetailId]: e.target.value,
+    }));
+  };
 
   return (
     <div className="flex items-center gap-2">
       <Input
         type="number"
         value={advancedAmounts[orderDetailId] || ""}
-        onChange={(e) =>
-          setAdvancedAmounts((prev) => ({
-            ...prev,
-            [orderDetailId]: e.target.value,
-          }))
-        }
+        onChange={handleAdvanceAmount}
         className="w-24"
         min="0"
         max={totalAmount}
@@ -206,6 +214,7 @@ const OrderSummary = ({
 );
 
 const CompleteOrder = () => {
+  const navigate = useNavigate();
   const {
     goToStep,
     customerDetails,
@@ -270,6 +279,18 @@ const CompleteOrder = () => {
   const { totalQty, totalGST, totalAmount } = calculateTotals();
 
   const submitFinalOrder = async () => {
+    const payload = {
+      CompanyId: customerId.companyId,
+      TotalQty: totalQty,
+      TotalGSTValue: totalGST,
+      TotalValue: totalAmount,
+    };
+    if (totalAdvance > 0) {
+      // const AdvanceAmount =
+      updatePaymentDetails({ ...payload, totalAdvance, advancedAmounts });
+      goToStep(6);
+      return;
+    }
     try {
       setIsSubmitting(true);
       const payload = {
@@ -279,9 +300,10 @@ const CompleteOrder = () => {
         TotalValue: totalAmount,
       };
       await updateFinalOrder({ orderId: customerId.orderId, payload }).unwrap();
-      updatePaymentDetails({ ...payload, totalAdvance });
+
       toast.success("Successfully updated the products");
-      goToStep(6)
+
+      navigate("/order-list");
     } catch (error) {
       toast.error("Please try again after some time or try re-load the page!");
     } finally {
@@ -294,7 +316,15 @@ const CompleteOrder = () => {
     if (totalAdvance === 0) {
       setShowConfirmModal(true);
     } else {
-      submitFinalOrder();
+      const payload = {
+        CompanyId: customerId.companyId,
+        TotalQty: totalQty,
+        TotalGSTValue: totalGST,
+        TotalValue: totalAmount,
+      };
+
+      updatePaymentDetails({ ...payload, totalAdvance, advancedAmounts });
+      goToStep(6);
     }
   };
 

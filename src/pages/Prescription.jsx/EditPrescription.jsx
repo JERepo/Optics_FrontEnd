@@ -189,7 +189,7 @@ const EditPrescription = () => {
 
   const handleCustomerSelect = (customerWithContact) => {
     const patient = customerWithContact.CustomerContactDetails?.[0];
-    
+
     if (!patient) {
       toast.error("No patient (contact) found for selected customer.");
       return;
@@ -508,7 +508,7 @@ const EditPrescription = () => {
           <NewPrescription
             customerId={customerId}
             onOpen={openPrescription}
-            onClose={() => setOpenPrescription(false)}
+            onClose={() => navigate("/prescription")}
             salesPersons={salesPersons?.data.data}
             lensData={[]}
             isPrescription={true}

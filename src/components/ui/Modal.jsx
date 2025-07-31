@@ -7,6 +7,7 @@ const Modal = ({
   children,
   width = "max-w-xl",
   height = "max-h-[90vh]",
+  scrollRef
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -41,6 +42,7 @@ const Modal = ({
 
       {/* Modal content */}
       <div
+       ref={scrollRef}
         className={`relative bg-white rounded-xl shadow-lg w-full ${width} ${height} overflow-y-auto transform transition-all duration-200 ${
           isVisible
             ? "opacity-100 translate-y-0 scale-100"
