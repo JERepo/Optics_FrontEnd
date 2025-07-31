@@ -27,6 +27,7 @@ import { orderApi } from "../api/orderApi";
 import { contactLensApi } from "../api/clBatchDetailsApi";
 import { purchaseOrderApi } from "../api/purchaseOrderApi";
 import { companySettingsApi } from "../api/companySettingsApi";
+import { companiesApi } from "../api/companiesApi";
 
 const persistConfig = {
   key: "auth",
@@ -70,6 +71,7 @@ export const store = configureStore({
     [contactLensApi.reducerPath]: contactLensApi.reducer,
     [purchaseOrderApi.reducerPath]: purchaseOrderApi.reducer,
     [companySettingsApi.reducerPath]: companySettingsApi.reducer,
+    [companiesApi.reducerPath]: companiesApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -98,7 +100,8 @@ export const store = configureStore({
       orderApi.middleware,
       contactLensApi.middleware,
       purchaseOrderApi.middleware,
-      companySettingsApi.middleware
+      companySettingsApi.middleware,
+      companiesApi.middleware
     ),
 });
 
