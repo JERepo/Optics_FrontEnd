@@ -31,6 +31,8 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
   const [FrameDetailedId, setFrameDetaildId] = useState(null);
   const [paymentDetails, setPaymentDetails] = useState(null);
 
+  const [selectedOrderDetails,setSelectedOrderDetails] = useState(null)
+
   const goToStep = (step) => {
     if (step >= 1 && step <= TOTAL_STEPS) {
       setCurrentStep(step);
@@ -72,6 +74,10 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
   const updatePaymentDetails = (details) => {
     setPaymentDetails(details);
   };
+
+  const updateSelectedOrderDetails = (details) =>{
+    setSelectedOrderDetails(details)
+  }
   return (
     <OrderContext.Provider
       value={{
@@ -97,6 +103,8 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
         FrameDetailedId,
         updatePaymentDetails,
         paymentDetails,
+        updateSelectedOrderDetails,
+        selectedOrderDetails
       }}
     >
       {children}

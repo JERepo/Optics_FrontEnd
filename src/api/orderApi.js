@@ -343,10 +343,20 @@ export const orderApi = createApi({
         body: payload,
       }),
     }),
+
+    // MAIN PAGE AND VIEW PAGE
+    getAllOrders: builder.query({
+      query: () => ({
+        url: `/api/v1/order/all`,
+      }),
+    }),
   }),
 });
 
 export const {
+  // MAIN PAGE AND VIEW PAGE
+  useGetAllOrdersQuery,
+
   // OPTICAL LENS
   useGetOrderPreferenceQuery,
   useGetFocalityQuery,

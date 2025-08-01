@@ -202,6 +202,7 @@ const OpticalLens = () => {
   const { data: prescriptionData } = useGetAllPrescriptionQuery({
     patientId: customerId.patientId,
   });
+  console.log("pre",prescriptionData)
   const { data: patientDetails, isLoading: isPatientDetailsLoading } =
     useGetPatientDetailsByIdQuery({ id: customerId.customerId });
   const { data: countryIsd } = useGetIsdQuery(
@@ -731,14 +732,14 @@ const OpticalLens = () => {
                       Prescription
                     </label>
                     <Autocomplete
-                      options={prescriptionData?.data.data}
+                      options={prescriptionData}
                       getOptionLabel={(option) => {
                         const date = option?.PrescriptionDate;
                         const remarks = option?.Remarks || "";
                         return `${date} ${remarks}`;
                       }}
                       value={
-                        prescriptionData?.data.data?.find(
+                        prescriptionData?.find(
                           (brand) => brand.Id === lensData.prescriptionId
                         ) || null
                       }
