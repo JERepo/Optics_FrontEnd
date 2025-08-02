@@ -38,17 +38,25 @@ const SalesPerson = () => {
   const brands = useMemo(() => {
     if (!data?.data) return [];
 
-    return data.data.data.map((brand) => ({
-      id: brand.Id,
-      name: brand.PersonName,
-      type: SalesType.find((s) => s.value === brand.Type).label,
-      createdAt: new Intl.DateTimeFormat(locale, {
-        year: "numeric",
-        month: "short",
-        day: "2-digit",
-      }).format(new Date(brand.CreatedDate)),
-      enabled: brand.IsActive,
-    }));
+    return data.data.data
+      .map((brand) => ({
+        id: brand.Id,
+        name: brand.PersonName,
+        type: SalesType.find((s) => s.value === brand.Type).label,
+        createdAt: new Intl.DateTimeFormat(locale, {
+          year: "numeric",
+          month: "short",
+          day: "2-digit",
+        }).format(new Date(brand.CreatedDate)),
+        enabled: brand.IsActive,
+      }))
+      .filter((customer) => {
+        const query = searchQuery.toLowerCase();
+        return (
+          customer.name.toLowerCase().includes(query) ||
+          customer.type.toLowerCase().includes(query)
+        );
+      });
   }, [data, searchQuery]);
 
   const startIndex = (currentPage - 1) * pageSize;

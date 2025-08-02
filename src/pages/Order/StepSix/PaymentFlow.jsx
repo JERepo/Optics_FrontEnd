@@ -52,21 +52,25 @@ const PaymentFlow = () => {
   const [errors, setErrors] = useState({});
 
   const updatedDetails = useMemo(() => {
+    const total = paymentDetails?.TotalValue || 0;
+    const advance = paymentDetails?.totalAdvance || 0;
+
     const totalPaid = fullPaymentDetails.reduce((sum, payment) => {
       const amt = parseFloat(payment.Amount);
       return sum + (isNaN(amt) ? 0 : amt);
     }, 0);
 
-    const total = paymentDetails?.TotalValue;
-    const advance = paymentDetails?.totalAdvance;
+    const remainingToPay = Math.max(advance - totalPaid, 0);
 
     return {
       TotalAmount: total,
       AdvanceAmount: advance,
       BalanceAmount: total - advance,
-      RemainingToPay: total - totalPaid,
+      RemainingToPay: remainingToPay,
     };
-  }, [fullPaymentDetails, paymentDetails]);
+  }, [paymentDetails, fullPaymentDetails]);
+
+  console.log("up", updatedDetails);
 
   const { data: paymentMachine } = useGetAllPaymentMachinesQuery();
   const { data: allbanks } = useGetAllBankMastersQuery();
@@ -108,80 +112,80 @@ const PaymentFlow = () => {
     }
   }, [selectedPaymentMethod, updatedDetails.RemainingToPay]);
 
-const preparePaymentsStructure = () => {
-  const payments = {};
+  const preparePaymentsStructure = () => {
+    const payments = {};
 
-  const normalizeType = (type) => {
-    switch (type.toLowerCase()) {
-      case "bank transfer":
-        return "bank";
-      case "cheque":
-        return "cheque";
-      case "upi":
-        return "upi";
-      case "card":
-        return "card";
-      case "cash":
-        return "cash";
-      case "advance":
-        return "advance";
-      default:
-        return type.toLowerCase();
-    }
+    const normalizeType = (type) => {
+      switch (type.toLowerCase()) {
+        case "bank transfer":
+          return "bank";
+        case "cheque":
+          return "cheque";
+        case "upi":
+          return "upi";
+        case "card":
+          return "card";
+        case "cash":
+          return "cash";
+        case "advance":
+          return "advance";
+        default:
+          return type.toLowerCase();
+      }
+    };
+
+    fullPaymentDetails.forEach((payment) => {
+      const typeKey = normalizeType(payment.Type || "");
+      const amount = parseFloat(payment.Amount);
+      if (isNaN(amount)) return;
+
+      if (typeKey === "cash") {
+        // Cash should be a single numeric value
+        payments.cash = (payments.cash || 0) + amount;
+        return;
+      }
+
+      // Initialize only if not cash
+      if (!payments[typeKey]) {
+        payments[typeKey] = { amount: 0 };
+      }
+
+      payments[typeKey].amount += amount;
+
+      switch (typeKey) {
+        case "card":
+          payments[typeKey].PaymentMachineID = payment.PaymentMachineID;
+          payments[typeKey].ApprCode = payment.RefNo;
+          if (payment.EMI) {
+            payments[typeKey].EMI = payment.EMI;
+            payments[typeKey].EMIMonths = parseInt(payment.EMIMonths);
+            payments[typeKey].EMIBank = payment.EMIBank;
+          }
+          break;
+        case "upi":
+          payments[typeKey].PaymentMachineID = payment.PaymentMachineID;
+          break;
+        case "cheque":
+          payments[typeKey].BankMasterID = payment.BankMasterID;
+          payments[typeKey].ChequeNo = payment.ChequeDetails;
+          payments[typeKey].ChequeDate = payment.ChequeDate
+            ? format(new Date(payment.ChequeDate), "yyyy-MM-dd")
+            : null;
+          break;
+        case "bank":
+          payments[typeKey].BankAccountID = payment.BankAccountID || null;
+          payments[typeKey].ReferenceNo = payment.RefNo || "";
+          break;
+        case "advance":
+          payments[typeKey].CustomerAdvanceIDs =
+            payment.CustomerAdvanceIDs || [];
+          break;
+      }
+    });
+
+    return payments;
   };
 
-  fullPaymentDetails.forEach((payment) => {
-    const typeKey = normalizeType(payment.Type || "");
-    const amount = parseFloat(payment.Amount);
-    if (isNaN(amount)) return;
-
-    if (typeKey === "cash") {
-      // Cash should be a single numeric value
-      payments.cash = (payments.cash || 0) + amount;
-      return;
-    }
-
-    // Initialize only if not cash
-    if (!payments[typeKey]) {
-      payments[typeKey] = { amount: 0 };
-    }
-
-    payments[typeKey].amount += amount;
-
-    switch (typeKey) {
-      case "card":
-        payments[typeKey].PaymentMachineID = payment.PaymentMachineID;
-        payments[typeKey].ApprCode = payment.RefNo;
-        if (payment.EMI) {
-          payments[typeKey].EMI = payment.EMI;
-          payments[typeKey].EMIMonths = parseInt(payment.EMIMonths);
-          payments[typeKey].EMIBank = payment.EMIBank;
-        }
-        break;
-      case "upi":
-        payments[typeKey].PaymentMachineID = payment.PaymentMachineID;
-        break;
-      case "cheque":
-        payments[typeKey].BankMasterID = payment.BankMasterID;
-        payments[typeKey].ChequeNo = payment.ChequeDetails;
-        payments[typeKey].ChequeDate = payment.ChequeDate
-          ? format(new Date(payment.ChequeDate), "yyyy-MM-dd")
-          : null;
-        break;
-      case "bank":
-        payments[typeKey].BankAccountID = payment.BankAccountID || null;
-        payments[typeKey].ReferenceNo = payment.RefNo || "";
-        break;
-      case "advance":
-        payments[typeKey].CustomerAdvanceIDs = payment.CustomerAdvanceIDs || [];
-        break;
-    }
-  });
-
-  return payments;
-};
-
-  console.log("dd", paymentDetails);
   const handleSave = async () => {
     if (updatedDetails.RemainingToPay > 0) {
       toast.error("Please cover the remaining balance before saving.");
@@ -421,45 +425,49 @@ const preparePaymentsStructure = () => {
 
             {/* Add Payment Method */}
             <div className="mt-8">
-              <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                <FiPlus className="text-blue-500" />
-                Add Payment Method
-              </h2>
+              {!parseInt(updatedDetails.RemainingToPay) <= 0 && (
+                <>
+                  <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                    <FiPlus className="text-blue-500" />
+                    Add Payment Method
+                  </h2>
 
-              <div className="flex flex-col md:flex-row gap-4 items-center">
-                <div className="text-lg text-neutral-700 font-medium">
-                  Choose Payment Method
-                </div>
-                <div className="w-full md:w-1/3">
-                  <Autocomplete
-                    options={methods}
-                    getOptionLabel={(option) => option.type}
-                    value={
-                      methods.find((p) => p.value === selectedPaymentMethod) ||
-                      null
-                    }
-                    onChange={(_, newValue) => {
-                      setSelectedPaymentMethod(newValue?.value || null);
-                      setNewPayment((prev) => ({
-                        ...prev,
-                        Type: newValue?.type || "",
-                      }));
-                      setErrors({});
-                    }}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        placeholder="Select Payment method"
-                        size="small"
-                        error={!!errors.method}
-                        helperText={errors.method}
+                  <div className="flex flex-col md:flex-row gap-4 items-center">
+                    <div className="text-lg text-neutral-700 font-medium">
+                      Choose Payment Method
+                    </div>
+                    <div className="w-full md:w-1/3">
+                      <Autocomplete
+                        options={methods}
+                        getOptionLabel={(option) => option.type}
+                        value={
+                          methods.find(
+                            (p) => p.value === selectedPaymentMethod
+                          ) || null
+                        }
+                        onChange={(_, newValue) => {
+                          setSelectedPaymentMethod(newValue?.value || null);
+                          setNewPayment((prev) => ({
+                            ...prev,
+                            Type: newValue?.type || "",
+                          }));
+                          setErrors({});
+                        }}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            placeholder="Select Payment method"
+                            size="small"
+                            error={!!errors.method}
+                            helperText={errors.method}
+                          />
+                        )}
+                        fullWidth
                       />
-                    )}
-                    fullWidth
-                  />
-                </div>
-              </div>
-
+                    </div>
+                  </div>
+                </>
+              )}
               {/* Method-Specific Forms */}
               <MethodForm
                 method={selectedPaymentMethod}

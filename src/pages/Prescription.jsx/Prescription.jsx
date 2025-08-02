@@ -62,6 +62,7 @@ const Prescription = () => {
           id: pers.Id,
           item: pers,
           patientName,
+          mobile :pers.CustomerContactDetail?.MobNumber,
           remarks: pers.Remarks,
           date: pers.PrescriptionDate,
         });
@@ -72,7 +73,7 @@ const Prescription = () => {
       const query = searchQuery?.toLowerCase();
       return (
         pers.patientName?.toLowerCase().includes(query) ||
-        pers.remarks?.toLowerCase().includes(query)
+        pers.mobile?.toLowerCase().includes(query)
       );
     });
   }, [allPrescriptions, searchQuery, isLoading]);
@@ -188,6 +189,7 @@ const Prescription = () => {
           "S.No",
           "Patient name",
           "Prescription Remarks",
+          "Mobile no",
           "Prescription date",
           "Action",
         ]}
@@ -200,8 +202,12 @@ const Prescription = () => {
             <TableCell className="text-sm text-neutral-500">
               {pool.patientName}
             </TableCell>
+            
             <TableCell className="text-sm text-neutral-500">
               {pool.remarks}
+            </TableCell>
+             <TableCell className="text-sm text-neutral-500">
+              {pool.mobile}
             </TableCell>
             <TableCell className="text-sm text-neutral-500">
               {pool.date}

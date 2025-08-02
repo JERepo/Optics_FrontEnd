@@ -348,7 +348,7 @@ const OrderDetails = () => {
       }).unwrap();
       toast.success("Product removed Successfully");
     } catch (error) {
-      console.log("Delete error:", error);
+      toast.error(error.message)
     } finally {
       setDeletingItems((prev) => {
         const newState = { ...prev };
@@ -359,7 +359,6 @@ const OrderDetails = () => {
   };
 
   const getShortTypeName = (id) => {
-    console.log("types", id);
     if (id === null || id === undefined) return;
 
     if (id === 1) {

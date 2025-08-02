@@ -815,7 +815,7 @@ const StepB = ({
         ...prev,
         orderId: response?.data.data.Id,
       }));
-      toast.success("Sales person type is created");
+      toast.success("Order created");
       goToStep(2);
     } catch (error) {
       toast.error("Please try agian after some time!");

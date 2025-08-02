@@ -1,8 +1,8 @@
-const Loader = ({ color = "border-neutral-50" }) => {
+const Loader = ({ color = "border-neutral-50" ,width="w-6",height="h-6" }) => {
   return (
     <div className="">
       <div
-        className={`h-6 w-6 animate-spin rounded-full border-2 ${color} border-t-transparent`}
+        className={`${height} ${width} animate-spin rounded-full border-2 ${color} border-t-transparent`}
       />
     </div>
   );

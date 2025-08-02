@@ -38,11 +38,21 @@ const calculateGST = (sellingPrice, taxPercentage) => {
   };
 };
 
-const getShortTypeName = (id) => {
-  if (!id) return "";
-  const types = { 1: "F/S", 2: "ACC", 3: "CL" };
-  return types[id] || "OL";
-};
+  const getShortTypeName = (id) => {
+    if (id === null || id === undefined) return;
+
+    if (id === 1) {
+      return "F/S";
+    } else if (id === 2) {
+      return "ACC";
+    } else if (id === 3) {
+      return "CL";
+    } else if (id === 0) {
+      return "OL";
+    } else {
+      return;
+    }
+  };
 
 const DiscountDisplay = ({ item }) => {
   const discountValue = item.DiscountValue || 0;
@@ -141,7 +151,6 @@ const AdvanceAmountInput = ({
       [orderDetailId]: totalAmount,
     }));
   };
-  console.log("ad", advancedAmounts);
   const handleAdvanceAmount = (e) => {
     const { value } = e.target;
     if (parseFloat(value) < 0 || parseFloat(value) > totalAmount) {

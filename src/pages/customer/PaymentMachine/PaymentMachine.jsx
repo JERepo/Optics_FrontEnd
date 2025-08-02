@@ -35,18 +35,28 @@ const PaymentMachine = () => {
   const brands = useMemo(() => {
     if (!data?.data) return [];
 
-    return data?.data.data.map((brand) => ({
-      id: brand.Id,
-      name: allBanks?.data.data.find((b) => b.Id === brand.BankMasterID).BankName,
-      machineName: brand.MachineName,
-      type: machineType.find((m) => m.value === brand.MachineType).label,
-      createdAt: new Intl.DateTimeFormat(locale, {
-        year: "numeric",
-        month: "short",
-        day: "2-digit",
-      }).format(new Date(brand.CreatedDate)),
-      enabled: brand.IsActive === 1,
-    }));
+    return data?.data.data
+      .map((brand) => ({
+        id: brand.Id,
+        name: allBanks?.data.data.find((b) => b.Id === brand.BankMasterID)
+          .BankName,
+        machineName: brand.MachineName,
+        type: machineType.find((m) => m.value === brand.MachineType).label,
+        createdAt: new Intl.DateTimeFormat(locale, {
+          year: "numeric",
+          month: "short",
+          day: "2-digit",
+        }).format(new Date(brand.CreatedDate)),
+        enabled: brand.IsActive === 1,
+      }))
+      .filter((machine) => {
+        const query = searchQuery?.toLocaleLowerCase();
+        return (
+          machine.name.toLocaleLowerCase().includes(query) ||
+          machine.machineName.toLocaleLowerCase().includes(query) ||
+          machine.type.toLocaleLowerCase().includes(query)
+        );
+      });
   }, [data, searchQuery]);
 
   const startIndex = (currentPage - 1) * pageSize;

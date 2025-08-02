@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useOrder } from "../../../features/OrderContext";
 import {
   useCreateNewCustomerMutation,
+  useGetIdentifierQuery,
   useGetPatientDetailsByIdQuery,
   useLazyGetByBarCodeQuery,
   useLazyGetByBrandAndModalQuery,
@@ -31,6 +32,8 @@ const FrameSunglassAndOpticalLens = () => {
     setCurrentSubStep,
     goToSubStep,
     setFrameId,
+    Identifiers,
+    setIdentifiers,
   } = useOrder();
 
   const [openChange, setOpenChange] = useState(false);
@@ -44,6 +47,8 @@ const FrameSunglassAndOpticalLens = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [warningPayload, setWarningPayload] = useState(null);
+
+  const { data: Identifier } = useGetIdentifierQuery();
 
   const { data: patientDetails, isLoading: isPatientDetailsLoading } =
     useGetPatientDetailsByIdQuery({ id: customerId.customerId });
@@ -139,6 +144,11 @@ const FrameSunglassAndOpticalLens = () => {
       }).unwrap();
       const frameId = response?.inserted[0]?.frameDetailId;
       setFrameId(frameId);
+      setIdentifiers((prev) => ({
+        ...prev,
+        frameDetailedId: frameId,
+        identifier: Identifier.identifier,
+      }));
       toast.success("Frame saved with warnings bypassed.");
       setShowConfirmModal(false);
 
@@ -188,7 +198,6 @@ const FrameSunglassAndOpticalLens = () => {
       b.IsActive === 1 &&
       b.BrandName.toLowerCase().includes(brandInput.toLowerCase())
   );
-  console.log("sele", selectedProduct);
 
   return (
     <div>

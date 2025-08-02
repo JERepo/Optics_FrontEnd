@@ -202,14 +202,13 @@ const OpticalLens = () => {
   const { data: prescriptionData } = useGetAllPrescriptionQuery({
     patientId: customerId.patientId,
   });
-  console.log("pre",prescriptionData)
   const { data: patientDetails, isLoading: isPatientDetailsLoading } =
     useGetPatientDetailsByIdQuery({ id: customerId.customerId });
   const { data: countryIsd } = useGetIsdQuery(
     { id: customerId.countryId },
     { skip: !customerId.countryId }
   );
-
+console.log("lens data",lensData)
   // Update productName based on dropdown selections
   useEffect(() => {
     const brand =
@@ -304,7 +303,6 @@ const OpticalLens = () => {
 
   const [isperscriptionOpen, setIsPerscriptionOpen] = useState(false);
 
-  console.log("ss", lensData);
 
   return (
     <div className="max-w-7xl">
@@ -793,6 +791,8 @@ const OpticalLens = () => {
                       setEnableSave={setEnableSave}
                       enableSave={enableSave}
                       goToStep={goToStep}
+                      selectedProduct={selectedProduct}
+                      savedOrders={savedOrders[savedOrders?.length - 1]}
                     />
                   </div>
                 </>
@@ -930,7 +930,6 @@ const AddPatient = ({
     createNewCustomer,
     { data: newCustomerData, isLoading: isNewCustomerLoading },
   ] = useCreateNewCustomerMutation();
-  console.log(country, customerId);
   useEffect(() => {
     if (isOpen && country?.ISDCode) {
       setNewCustomer({

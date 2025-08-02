@@ -280,7 +280,7 @@ const ContactLens = () => {
       const response = await getPowerDetails({ payload }).unwrap();
       if (response?.data?.data) {
         const data = response.data.data;
-        toast.success("Product match found!");
+        toast.success(`${response?.data.message}`);
         setNewItem({
           CLDetailId: data.CLDetailId,
           sphericalPower: data.SphericalPower,

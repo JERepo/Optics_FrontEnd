@@ -350,6 +350,18 @@ export const orderApi = createApi({
         url: `/api/v1/order/all`,
       }),
     }),
+    getIdentifier: builder.query({
+      query: () => ({
+        url: `/api/v1/order/identifer`,
+      }),
+    }),
+    updateIdentifier: builder.mutation({
+      query: ({ id, payload }) => ({
+        url: `/api/v1/order/update/${id}`,
+        method: "PUT",
+        body: payload,
+      }),
+    }),
   }),
 });
 
@@ -374,7 +386,8 @@ export const {
   useSaveOpticalLensMutation,
   useMainApplyDiscountMutation,
   useMainApplyRemoveDiscountMutation,
-
+  useGetIdentifierQuery,
+  useUpdateIdentifierMutation,
   useSaveFinalPaymentMutation,
 
   // PRESCRIPTION

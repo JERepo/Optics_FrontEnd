@@ -3,13 +3,16 @@ import Radio from "../../../../components/Form/Radio";
 import Button from "../../../../components/ui/Button";
 import {
   useGetDIaDetailsMutation,
+  useGetIdentifierQuery,
   useGetPriceMutation,
   useSaveOpticalLensMutation,
+  useUpdateIdentifierMutation,
 } from "../../../../api/orderApi";
 import toast from "react-hot-toast";
 import ConfirmationModal from "../../../../components/ui/ConfirmationModal";
 import { useGetAllRimTypeQuery } from "../../../../api/materialMaster";
 import { Autocomplete, TextField } from "@mui/material";
+import { useOrder } from "../../../../features/OrderContext";
 
 const inputTableColumns = ["SPH", "CYLD", "Axis", "ADD", "Dia", "Details"];
 
@@ -22,7 +25,11 @@ const PowerDetailsFetch = ({
   customerId,
   handleSaveOpticalLens,
   goToStep,
+  selectedProduct,
+  savedOrders,
 }) => {
+  const { Identifiers } = useOrder();
+  console.log("Ident", Identifiers);
   const selectedFocality = focalityData?.find(
     (f) => f.OpticalLensFocality.Id === lensData.focality
   )?.OpticalLensFocality?.Add_Value;
@@ -58,6 +65,8 @@ const PowerDetailsFetch = ({
   const [warningIssues, setWarningIssues] = useState([]);
   const [isPriceFetched, setIsPriceFetched] = useState(false);
 
+  const [updateIdentifier, { isLoading: isIdentfierSubmitting }] =
+    useUpdateIdentifierMutation();
   const [getDIADetails, { isLoading: isDiaLoading }] =
     useGetDIaDetailsMutation();
   const { data: rimTypes } = useGetAllRimTypeQuery();
@@ -175,6 +184,13 @@ const PowerDetailsFetch = ({
   };
 
   const isFieldDisabled = (eye, field) => {
+    if (field === "Dia") {
+      return (
+        isPriceFetched ||
+        !isEditable ||
+        (lensData.powerSingleORboth !== 1 && !selectedEyes.includes(eye))
+      );
+    }
     return (
       isDiaFetched ||
       (field === "ADD" && selectedFocality === 0) ||
@@ -433,8 +449,16 @@ const PowerDetailsFetch = ({
       index: lensData.indexValues,
       companyId: customerId.companyId,
     };
-
+    if (selectedProduct.value === 6) {
+      payload.identifier = Identifiers?.identifier || null;
+    }
     try {
+      if (selectedProduct.value === 6) {
+        await updateIdentifier({
+          id: savedOrders?.OrderDetailId,
+          payload: { Identifier: Identifiers.identifier },
+        });
+      }
       await saveOpticalLens({ orderId: customerId.orderId, payload }).unwrap();
       toast.success("Optical Lens got saved successfully");
       goToStep(4);
@@ -562,7 +586,7 @@ const PowerDetailsFetch = ({
                           </option>
                         ))}
                     </select>
-                  ) : field === "Details" && isDiaFetched ? (
+                  ) : field === "Details" && isPriceFetched ? (
                     <input
                       type="text"
                       value={`Selling Price: ${formValues[eye].SellingPrice}\n Qty: ${formValues[eye].AvailableQty}`}
@@ -683,8 +707,8 @@ const PowerDetailsFetch = ({
               Total Selling Price: {totalSellingPrice}
             </p>
             <Button
-              isLoading={isOlSaving}
-              disabled={isOlSaving}
+              isLoading={isOlSaving || isIdentfierSubmitting}
+              disabled={isOlSaving || isIdentfierSubmitting}
               onClick={handleSave}
             >
               Save & Next

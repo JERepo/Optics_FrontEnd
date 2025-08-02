@@ -50,7 +50,8 @@ const CustomerMain = () => {
         return (
           customer.name.toLowerCase().includes(query) ||
           customer.group.toLowerCase().includes(query) ||
-          customer.location.toLowerCase().includes(query)
+          customer.location.toLowerCase().includes(query) ||
+          customer.phone.toLowerCase().includes(query)
         );
       });
   }, [data, searchQuery, isLoading]);

@@ -4,6 +4,7 @@ import { useGetSavedOrderDetailsQuery } from "../../../api/orderApi";
 import { useOrder } from "../../../features/OrderContext";
 import { Table, TableCell, TableRow } from "../../../components/Table";
 import { FiTrash2 } from "react-icons/fi";
+import {format} from 'date-fns'
 
 const formatNumber = (num) => {
   return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "0";
@@ -41,17 +42,6 @@ const OrderView = () => {
     "Balance amount",
   ];
 
-  const calculateGST = (sellingPrice, taxPercentage) => {
-    const price = parseFloat(sellingPrice);
-    const taxRate = parseFloat(taxPercentage) / 100;
-    const gstAmount = price - price / (1 + taxRate);
-    return {
-      gstAmount: isNaN(gstAmount) ? 0 : gstAmount.toFixed(2),
-      taxPercentage: isNaN(taxPercentage)
-        ? 0
-        : parseFloat(taxPercentage).toFixed(2),
-    };
-  };
 
   const getProductName = (item) => {
     const {
@@ -147,14 +137,31 @@ const OrderView = () => {
   );
   const balanceAmount = grandTotal - advanceAmount;
 
+  const getOrderStatus = (status) => {
+    const types = {
+      1: "Confirmed",
+      2: "Partially Invoiced",
+      3: "Invoiced",
+      4: "Cancelled",
+    };
+    return types[status] || "Draft";
+  };
   return (
     <div className="max-w-7xl">
       <div className="bg-white rounded-sm shadow-sm overflow-hidden p-6">
         {/* Order Details */}
         <div className="grid grid-cols-3 gap-3">
           <Info label="Order No" value={selectedOrderDetails?.OrderNo} />
-          <Info label="Order Date" value={selectedOrderDetails?.CreatedOn} />
-          <Info label="Status" value="Partially Invoiced" />
+          <Info
+            label="Order Date"
+            value={
+              selectedOrderDetails?.OrderPlacedDate
+                ? format(new Date(selectedOrderDetails?.OrderPlacedDate), "dd/MM/yyyy")
+                : ""
+            }
+          />
+
+          <Info label="Status" value={getOrderStatus(selectedOrderDetails?.Status)} />
           <Info
             label="Customer Name"
             value={selectedOrderDetails?.CustomerMaster?.CustomerName}
@@ -203,7 +210,7 @@ const OrderView = () => {
                 <TableCell>{formatValue(order?.Rate)}</TableCell>
                 <TableCell>
                   {order?.DiscountValue
-                    ? `${order.DiscountValue}(${order.DiscountPercentage})`
+                    ? `${order.DiscountValue}(${order.DiscountPercentage}%)`
                     : 0}
                 </TableCell>
                 <TableCell>

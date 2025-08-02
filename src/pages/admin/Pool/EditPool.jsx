@@ -73,7 +73,6 @@ const EditPool = () => {
         companyIds.includes(l.Id)
       );
       setLocations(filteredLocations);
-      console.log(filteredLocations);
     }
   }, [id, data, isSuccess, allLocations, allCustomerGroupIds]);
 
@@ -93,7 +92,6 @@ const EditPool = () => {
       toast.error("Pool name must be unique");
       return;
     }
-    console.log(poolExists, "pool exists");
     const payload = {
       PoolName: poolName,
       PoolCategory: selectedCategoryId,

@@ -10,6 +10,8 @@ import Button from "../../../components/ui/Button";
 import { useOrder } from "../../../features/OrderContext";
 import { Table, TableCell, TableRow } from "../../../components/Table";
 import { useGetAllOrdersQuery } from "../../../api/orderApi";
+import { enGB } from "date-fns/locale";
+import Loader from "../../../components/ui/Loader";
 
 const OrderList = () => {
   const navigate = useNavigate();
@@ -79,7 +81,7 @@ const OrderList = () => {
       mobileNo: order.CustomerContactDetail?.MobNumber,
       orderValue: order.TotalValue,
       totalQty: order.TotalQty,
-      status: order.Status,
+      Status: order.Status,
     }));
   }, [allOrders, fromDate, toDate, searchQuery]);
 
@@ -95,7 +97,24 @@ const OrderList = () => {
     updateSelectedOrderDetails(order);
     navigate(`/add-order/view-order?orderId=${order.Id}`);
   };
-// Status	tinyint(3) unsigned		NOT NULL	0- Draft 1- Confirmed 2- Partially Invoiced 3- Invoiced 4- Cancelled																				
+
+  const getOrderStatus = (status) => {
+    const types = {
+      1: "Confirmed",
+      2: "Partially Invoiced",
+      3: "Invoiced",
+      4: "Cancelled",
+    };
+    return types[status] || "Draft";
+  };
+
+  if (isAllOrdersLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader color="black" width="w-10" height="h-10" />
+      </div>
+    );
+  }
   return (
     <div className="max-w-7xl">
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -140,16 +159,23 @@ const OrderList = () => {
         {/* Filters */}
         <div className="px-6 py-5 border-b border-gray-100">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Filters</h2>
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
+          <LocalizationProvider
+            dateAdapter={AdapterDateFns}
+            adapterLocale={enGB}
+          >
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <DatePicker
                 label="From Date"
                 value={fromDate}
                 onChange={setFromDate}
                 maxDate={today}
+                inputFormat="dd/MM/yyyy"
                 renderInput={(params) => (
                   <TextField
-                    {...params}
+                    inputProps={{
+                      ...params.inputProps,
+                      placeholder: "dd/MM/yyyy",
+                    }}
                     size="small"
                     fullWidth
                     variant="outlined"
@@ -162,9 +188,14 @@ const OrderList = () => {
                 onChange={setToDate}
                 minDate={fromDate}
                 maxDate={today}
+                inputFormat="dd/MM/yyyy"
                 renderInput={(params) => (
                   <TextField
-                    {...params}
+                    inputProps={{
+                      ...params.inputProps,
+                      placeholder: "dd/MM/yyyy",
+                    }}
+                    placeholder="dd/MM/yyyy"
                     size="small"
                     fullWidth
                     variant="outlined"
@@ -244,26 +275,14 @@ const OrderList = () => {
             renderRow={(order, index) => (
               <TableRow key={order.id}>
                 <TableCell>{startIndex + index + 1}</TableCell>
-                <TableCell>{`${order.orderNo} ${order.OrderPrefix}`}</TableCell>
+                <TableCell>{`${order.OrderPrefix}/${order.orderNo} `}</TableCell>
                 <TableCell>{order.orderDate}</TableCell>
                 <TableCell>{order.patientName}</TableCell>
                 <TableCell>{order.customerName}</TableCell>
                 <TableCell>{order.mobileNo}</TableCell>
                 <TableCell>{order.totalQty}</TableCell>
                 <TableCell>{order.orderValue}</TableCell>
-                <TableCell>
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs ${
-                      order.status === "Completed"
-                        ? "bg-green-100 text-green-800"
-                        : order.status === "Pending"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : "bg-blue-100 text-blue-800"
-                    }`}
-                  >
-                    {order.status}
-                  </span>
-                </TableCell>
+                <TableCell>{getOrderStatus(order.Status)}</TableCell>
                 <TableCell>
                   <button
                     onClick={() => handleViewOrder(order.order)}

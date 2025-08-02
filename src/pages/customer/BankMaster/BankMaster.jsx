@@ -29,17 +29,22 @@ const BankMaster = () => {
   const brands = useMemo(() => {
     if (!data?.data) return [];
 
-    return data.data.data.map((brand) => ({
-      id: brand.Id,
-      name: brand.BankName,
+    return data.data.data
+      .map((brand) => ({
+        id: brand.Id,
+        name: brand.BankName,
 
-      createdAt: new Intl.DateTimeFormat(locale, {
-        year: "numeric",
-        month: "short",
-        day: "2-digit",
-      }).format(new Date(brand.CreatedDate)),
-      enabled: brand.IsActive,
-    }));
+        createdAt: new Intl.DateTimeFormat(locale, {
+          year: "numeric",
+          month: "short",
+          day: "2-digit",
+        }).format(new Date(brand.CreatedDate)),
+        enabled: brand.IsActive,
+      }))
+      .filter((bank) => {
+        const query = searchQuery?.toLocaleLowerCase();
+        return bank.name.toLocaleLowerCase().includes(query);
+      });
   }, [data, searchQuery]);
 
   const startIndex = (currentPage - 1) * pageSize;

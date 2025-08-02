@@ -60,8 +60,7 @@ export default function ClBatchDetails() {
         setBarcodeInput('');
     };
 
-    // Extract the nested data for easier access
-    // console.log(productDetails);
+
 
     useEffect(() => {
         if (allLocations?.data?.length && pricing.length === 0) {

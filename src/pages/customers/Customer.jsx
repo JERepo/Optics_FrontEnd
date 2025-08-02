@@ -145,7 +145,6 @@ const Customer = ({ isPop, onSubmit }) => {
       setFilteredCustomerGroups(filteredGroups);
     }
 
-    console.log("filtered groups", filteredGroups);
     setFormData((prev) => ({
       ...prev,
       customerGroup: companySettings?.data?.data?.CustomerGroupDefault,
@@ -269,7 +268,6 @@ const Customer = ({ isPop, onSubmit }) => {
       });
     }
   }, [formData.customerType, formData.GSTINType, setFormData, setErrors]);
-  console.log("form data", JSON.stringify(formData));
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -603,7 +601,6 @@ const Customer = ({ isPop, onSubmit }) => {
         payload: payload,
       }).unwrap();
 
-      console.log("response from original customer", response?.data);
       if (isPop) {
         onSubmit(null, response);
       }
@@ -1122,7 +1119,6 @@ const Customer = ({ isPop, onSubmit }) => {
         <GstAddressSelector
           gstData={GSTData.data.data}
           onCopy={(data) => {
-            console.log("copy data", data);
             setFormData((prev) => ({
               ...prev,
               legalName: data.name,

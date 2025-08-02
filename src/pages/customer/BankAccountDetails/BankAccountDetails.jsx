@@ -31,23 +31,33 @@ const BankAccountDetails = () => {
 
   const { data, isLoading } = useGetAllBankAccountsQuery();
   const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
-   const { data: allBanks } = useGetAllBankMastersQuery();
+  const { data: allBanks } = useGetAllBankMastersQuery();
 
   const brands = useMemo(() => {
     if (!data?.data) return [];
 
-    return data.data.data.map((brand) => ({
-      id: brand.Id,
-      name: allBanks?.data.data.find((b) => b.Id === brand.BankMasterID).BankName,
-      number: brand.AccountNo,
-      type : accountType.find(a => a.value === brand.Type).label,
-      createdAt: new Intl.DateTimeFormat(locale, {
-        year: "numeric",
-        month: "short",
-        day: "2-digit",
-      }).format(new Date(brand.CreatedDate)),
-      enabled: brand.IsActive,
-    }));
+    return data.data.data
+      .map((brand) => ({
+        id: brand.Id,
+        name: allBanks?.data.data.find((b) => b.Id === brand.BankMasterID)
+          .BankName,
+        number: brand.AccountNo,
+        type: accountType.find((a) => a.value === brand.Type).label,
+        createdAt: new Intl.DateTimeFormat(locale, {
+          year: "numeric",
+          month: "short",
+          day: "2-digit",
+        }).format(new Date(brand.CreatedDate)),
+        enabled: brand.IsActive,
+      }))
+      .filter((master) => {
+        const query = searchQuery?.toLocaleLowerCase();
+        return (
+          master.name.toLocaleLowerCase().includes(query) ||
+          master.number.toLocaleLowerCase().includes(query) ||
+          master.type.toLocaleLowerCase().includes(query)
+        );
+      });
   }, [data, searchQuery]);
 
   const startIndex = (currentPage - 1) * pageSize;
@@ -126,14 +136,13 @@ const BankAccountDetails = () => {
             <TableCell className="text-sm text-neutral-500">
               {pool.name}
             </TableCell>
-             <TableCell className="text-sm text-neutral-500">
+            <TableCell className="text-sm text-neutral-500">
               {pool.number}
             </TableCell>
-             <TableCell className="text-sm text-neutral-500">
+            <TableCell className="text-sm text-neutral-500">
               {pool.type}
             </TableCell>
 
-        
             <TableCell>
               <div className="flex items-center gap-3">
                 <HasPermission module="Bank Account Details" action="view">

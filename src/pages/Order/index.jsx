@@ -45,10 +45,8 @@ const TotalOrder = () => {
       draftDetails?.data.data[0]?.CompanyId === locationById?.data?.data?.Id &&
       draftDetails?.data.data[0].PatientID === patientId
     ) {
-      console.log("coming to set draft")
       setDraftData(draftDetails?.data?.data[0]);
     } else {
-      console.log("coming to set as null")
       setDraftData(null);
     }
   }, [patientId, draftDetails]);

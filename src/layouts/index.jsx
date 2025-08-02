@@ -56,6 +56,7 @@ import EditPrescription from "../pages/Prescription.jsx/EditPrescription";
 import ClBatchDetails from "../pages/cl_batch_details/ClBatchDetails";
 import SavePurchaseOrder from "../pages/PurchaseOrder/savePurchaseOrderPage";
 import OrderView from "../pages/Order/MainOrder/OrderView";
+import CustomerSelect from "../pages/Invoice/CustomerSelect";
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
 export const router = createBrowserRouter([
@@ -660,6 +661,10 @@ export const router = createBrowserRouter([
         path: "purchase-order/create",
         element: <SavePurchaseOrder />,
       },
+      {
+        path : "invoice",
+        element : <CustomerSelect />
+      }
     ],
   },
   {
