@@ -133,9 +133,9 @@ const ProductDetails = ({ item }) => {
   };
 
   return (
-    <pre className="text-sm whitespace-pre-wrap word-wrap-break-word">
+    <div className="text-sm whitespace-pre-wrap word-wrap-break-word">
       {renderProductDetails()}
-    </pre>
+    </div>
   );
 };
 

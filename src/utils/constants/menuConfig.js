@@ -161,4 +161,10 @@ export const menuItems = [
     module: "Prescription",
     path: "/prescription",
   },
+  {
+    name: "Invoice",
+    icon: FiFileText,
+    module: "Invoice",
+    path: "/invoice",
+  },
 ];

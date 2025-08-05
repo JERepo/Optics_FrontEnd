@@ -11,6 +11,8 @@ const AdminSidebar = ({ isCollapsed, setIsCollapsed }) => {
   const [openDropdowns, setOpenDropdowns] = useState([]);
   const { access } = useSelector((state) => state.auth);
   const dropdownRefs = useRef({});
+  const [searchQuery, setSearchQuery] = useState("");
+
   const filteredMenuItems = menuItems
     .map((item) => {
       if (item.subItems) {
@@ -18,12 +20,43 @@ const AdminSidebar = ({ isCollapsed, setIsCollapsed }) => {
           hasPermission(access, sub.module, "view")
         );
 
-        return permittedSubItems.length
-          ? { ...item, subItems: permittedSubItems }
-          : null;
+        if (!permittedSubItems.length) return null;
+
+        // Apply search filter
+        const filteredSubItems = permittedSubItems.filter((sub) =>
+          sub.name.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+
+        // If searchQuery is empty, return all permitted subItems
+        if (searchQuery.trim() === "") {
+          return { ...item, subItems: permittedSubItems };
+        }
+
+        // Include this menu if its name or any subitem matches
+        if (
+          item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          filteredSubItems.length
+        ) {
+          return {
+            ...item,
+            subItems: filteredSubItems,
+          };
+        }
+
+        return null;
       }
-   
-      return hasPermission(access, item.module, "view") ? item : null;
+
+      // For top-level items without subItems
+      if (!hasPermission(access, item.module, "view")) return null;
+
+      if (
+        searchQuery.trim() === "" ||
+        item.name.toLowerCase().includes(searchQuery.toLowerCase())
+      ) {
+        return item;
+      }
+
+      return null;
     })
     .filter(Boolean);
 
@@ -93,6 +126,8 @@ const AdminSidebar = ({ isCollapsed, setIsCollapsed }) => {
               <input
                 type="text"
                 placeholder="Search menu..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="bg-transparent border-none outline-none w-full text-sm placeholder-neutral-400"
               />
             </>

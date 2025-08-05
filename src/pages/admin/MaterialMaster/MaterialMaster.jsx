@@ -32,6 +32,7 @@ const MaterialMaster = () => {
 
   const { data, isLoading } = useGetAllmaterialsQuery();
   const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
+  
 
   const brands = useMemo(() => {
     if (!data) return [];
@@ -55,6 +56,12 @@ const MaterialMaster = () => {
         return b.name.localeCompare(a.name); // Z-A
       }
     });
+
+     if (searchQuery) {
+      processed = processed.filter((brand) =>
+        brand.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
 
     return processed;
   }, [data, searchQuery, sortOrder]);

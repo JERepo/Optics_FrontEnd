@@ -12,6 +12,7 @@ import {
   useDeActivateMutation,
   useGetAllSalesPersonsQuery,
 } from "../../../api/salesPersonApi";
+import { IoFilter } from "react-icons/io5";
 
 const SalesType = [
   { value: 0, label: "Sales Person" },
@@ -29,6 +30,8 @@ const SalesPerson = () => {
   const [selectedBrandId, setSelectedBrandId] = useState(null);
   const [currentStatus, setCurrentStatus] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState(null);
+  const [isCategoryPopupOpen, setIsCategoryPopupOpen] = useState(false);
 
   //   const { data, isLoading } = useGetAllBrandGroupsQuery();
   //   const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
@@ -38,7 +41,7 @@ const SalesPerson = () => {
   const brands = useMemo(() => {
     if (!data?.data) return [];
 
-    return data.data.data
+    let processed = data.data.data
       .map((brand) => ({
         id: brand.Id,
         name: brand.PersonName,
@@ -57,7 +60,17 @@ const SalesPerson = () => {
           customer.type.toLowerCase().includes(query)
         );
       });
-  }, [data, searchQuery]);
+
+    if (categoryFilter) {
+      processed = processed.filter(
+        (brand) =>
+        
+          brand.type.toLowerCase() === categoryFilter.toLowerCase()
+      );
+    }
+
+    return processed
+  }, [data, searchQuery,categoryFilter]);
 
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedPools = brands.slice(startIndex, startIndex + pageSize);
@@ -67,6 +80,15 @@ const SalesPerson = () => {
     setSelectedBrandId(poolId);
     setCurrentStatus(status);
     setIsModalOpen(true);
+  };
+
+  const handleCategoryFilter = (category) => {
+    setCategoryFilter(category);
+    setIsCategoryPopupOpen(false);
+  };
+
+  const toggleCategoryPopup = () => {
+    setIsCategoryPopupOpen((prev) => !prev);
   };
 
   const handleConfirmToggle = async () => {
@@ -121,6 +143,40 @@ const SalesPerson = () => {
       <Table
         columns={["S.No", "Person Name", "Type", "Action"]}
         data={paginatedPools}
+        renderHeader={(column) => {
+          if (column === "Type") {
+            return (
+              <div className="relative flex items-center gap-2">
+                <span>{column}</span>
+                <IoFilter
+                  onClick={toggleCategoryPopup}
+                  className="cursor-pointer text-neutral-500 hover:text-primary"
+                />
+                {isCategoryPopupOpen && (
+                  <div className="absolute top-8 right-16 bg-white border border-neutral-200 rounded-md shadow-lg z-10">
+                    {["Sales Person", "Optometrist", "Others"].map((cat) => (
+                      <div
+                        key={cat}
+                        onClick={() => handleCategoryFilter(cat)}
+                        className="px-4 py-2 hover:bg-neutral-100 cursor-pointer"
+                      >
+                        {cat}
+                      </div>
+                    ))}
+                    <div
+                      onClick={() => handleCategoryFilter(null)}
+                      className="px-4 py-2 hover:bg-neutral-100 cursor-pointer border-t"
+                    >
+                      Clear Filter
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          return column;
+        }}
         renderRow={(pool, index) => (
           <TableRow key={pool.id}>
             <TableCell className="text-sm font-medium text-neutral-900">
@@ -132,10 +188,6 @@ const SalesPerson = () => {
             <TableCell className="text-sm text-neutral-500">
               {pool.type}
             </TableCell>
-
-            {/* <TableCell className="text-sm text-neutral-500">
-              {pool.createdAt}
-            </TableCell> */}
             <TableCell>
               <div className="flex items-center gap-3">
                 <HasPermission module="Brand group" action="view">

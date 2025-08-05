@@ -49,18 +49,24 @@ const OrderList = () => {
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
+
       filtered = filtered.filter((order) => {
-        const customerName =
-          order.CustomerMaster?.CustomerName?.toLowerCase() || "";
-        const patientName =
-          order.CustomerContactDetail?.CustomerName?.toLowerCase() || "";
-        const patientMobile =
-          order.CustomerContactDetail?.MobNumber?.toLowerCase() || "";
+        const customerName = String(
+          order.CustomerMaster?.CustomerName || ""
+        ).toLowerCase();
+        const patientName = String(
+          order.CustomerContactDetail?.CustomerName || ""
+        ).toLowerCase();
+        const patientMobile = String(
+          order.CustomerContactDetail?.MobNumber || ""
+        ).toLowerCase();
+        const orderNo = String(order.OrderNo || "").toLowerCase();
 
         return (
           customerName.includes(query) ||
           patientName.includes(query) ||
-          patientMobile.includes(query)
+          patientMobile.includes(query) ||
+          orderNo.includes(query)
         );
       });
     }

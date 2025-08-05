@@ -25,25 +25,34 @@ const CustomerGroup = () => {
   const { data, isLoading } = useGetAllCustomerGroupsQuery();
   const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
 
-  const brands = useMemo(() => {
-    if (!data?.data) return [];
+const brands = useMemo(() => {
+  if (!data?.data) return [];
 
-    return data.data.data.map((brand) => ({
-      id: brand.Id,
-      name: brand.GroupName,
+  let processed = data.data.data.map((brand) => ({
+    id: brand.Id,
+    name: brand.GroupName,
+    createdAt: new Intl.DateTimeFormat(locale, {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    }).format(new Date(brand.CreatedDate)),
+    enabled: brand.IsActive,
+  }));
 
-      createdAt: new Intl.DateTimeFormat(locale, {
-        year: "numeric",
-        month: "short",
-        day: "2-digit",
-      }).format(new Date(brand.CreatedDate)),
-      enabled: brand.IsActive,
-    }));
-  }, [data, searchQuery]);
+  if (searchQuery) {
+    const search = searchQuery.toLowerCase();
+    processed = processed.filter((c) =>
+      c.name.toLowerCase().includes(search)
+    );
+  }
+
+  return processed;
+}, [data, searchQuery, locale]);
+
 
   const startIndex = (currentPage - 1) * pageSize;
-  const paginatedPools = brands.slice(startIndex, startIndex + pageSize);
-  const totalPages = Math.ceil(brands.length / pageSize);
+  const paginatedPools = brands?.slice(startIndex, startIndex + pageSize);
+  const totalPages = Math.ceil(brands?.length / pageSize);
 
   const requestToggle = (poolId, status) => {
     setSelectedBrandId(poolId);
@@ -157,7 +166,7 @@ const CustomerGroup = () => {
         onPageChange={setCurrentPage}
         pageSize={pageSize}
         onPageSizeChange={setPageSize}
-        totalItems={brands.length}
+        totalItems={brands?.length}
       />
       <ConfirmationModal
         isOpen={isModalOpen}

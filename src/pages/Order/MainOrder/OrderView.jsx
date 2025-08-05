@@ -1,10 +1,11 @@
 import React from "react";
-import { useLocation } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { useGetSavedOrderDetailsQuery } from "../../../api/orderApi";
 import { useOrder } from "../../../features/OrderContext";
 import { Table, TableCell, TableRow } from "../../../components/Table";
 import { FiTrash2 } from "react-icons/fi";
-import {format} from 'date-fns'
+import { format } from "date-fns";
+import Button from "../../../components/ui/Button";
 
 const formatNumber = (num) => {
   return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "0";
@@ -12,6 +13,7 @@ const formatNumber = (num) => {
 
 const OrderView = () => {
   const { selectedOrderDetails } = useOrder();
+  const navigate = useNavigate();
   const { search } = useLocation();
   const params = new URLSearchParams(search);
   const orderId = params.get("orderId");
@@ -20,7 +22,8 @@ const OrderView = () => {
     { orderId },
     { skip: !orderId }
   );
-
+  console.log("selected order details", selectedOrderDetails);
+  console.log("order details", orderDetails);
   const getTypeName = (id) => {
     const types = { 1: "F/S", 2: "ACC", 3: "CL" };
     return types[id] || "OL";
@@ -41,7 +44,6 @@ const OrderView = () => {
     "Advance amount",
     "Balance amount",
   ];
-
 
   const getProductName = (item) => {
     const {
@@ -132,7 +134,7 @@ const OrderView = () => {
     0
   );
   const advanceAmount = orderDetails?.reduce(
-    (sum, item) => sum + (parseFloat(item.orderValue) || 0),
+    (sum, item) => sum + (parseFloat(item.AdvanceAmount) || 0),
     0
   );
   const balanceAmount = grandTotal - advanceAmount;
@@ -149,6 +151,14 @@ const OrderView = () => {
   return (
     <div className="max-w-7xl">
       <div className="bg-white rounded-sm shadow-sm overflow-hidden p-6">
+        <div className="flex justify-between items-center mb-3">
+          <div></div>
+          <div>
+            <Button variant="outline" onClick={() => navigate("/order-list")}>
+              Back
+            </Button>
+          </div>
+        </div>
         {/* Order Details */}
         <div className="grid grid-cols-3 gap-3">
           <Info label="Order No" value={selectedOrderDetails?.OrderNo} />
@@ -156,12 +166,18 @@ const OrderView = () => {
             label="Order Date"
             value={
               selectedOrderDetails?.OrderPlacedDate
-                ? format(new Date(selectedOrderDetails?.OrderPlacedDate), "dd/MM/yyyy")
+                ? format(
+                    new Date(selectedOrderDetails?.OrderPlacedDate),
+                    "dd/MM/yyyy"
+                  )
                 : ""
             }
           />
 
-          <Info label="Status" value={getOrderStatus(selectedOrderDetails?.Status)} />
+          <Info
+            label="Status"
+            value={getOrderStatus(selectedOrderDetails?.Status)}
+          />
           <Info
             label="Customer Name"
             value={selectedOrderDetails?.CustomerMaster?.CustomerName}
@@ -172,7 +188,7 @@ const OrderView = () => {
           />
           <Info
             label="Customer Address"
-            value="Plot No. A-21,A-22,A-43,A-44, HARDOI, UTTAR PRADESH"
+            value={`${selectedOrderDetails?.CustomerMaster?.BillAddress1} ${selectedOrderDetails?.CustomerMaster?.BillAddress2} ${selectedOrderDetails?.CustomerMaster?.BillCity}`}
           />
           <Info
             label="Sales Person"
@@ -182,7 +198,7 @@ const OrderView = () => {
             label="Order Reference"
             value={selectedOrderDetails?.OrderReference || "N/A"}
           />
-          <Info label="Order By" value="Srinivas" />
+         
         </div>
 
         {/* Product Table */}
@@ -195,16 +211,15 @@ const OrderView = () => {
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>{getTypeName(order?.typeid)}</TableCell>
                 <TableCell className="">
-                  <pre
+                  <div
                     className="text-sm"
                     style={{
                       whiteSpace: "pre-wrap",
                       wordWrap: "break-word",
-                      gap: "10px",
                     }}
                   >
                     {getProductName(order)}
-                  </pre>
+                  </div>
                 </TableCell>
                 <TableCell>{formatValue(order?.OrderQty)}</TableCell>
                 <TableCell>{formatValue(order?.Rate)}</TableCell>
@@ -222,10 +237,16 @@ const OrderView = () => {
                 <TableCell>
                   {formatValue(order?.DiscountedSellingPrice * order.OrderQty)}
                 </TableCell>
-                <TableCell>{formatValue(order?.orderValue)}</TableCell>
-                <TableCell>{formatValue(order?.orderValue)}</TableCell>
+                <TableCell>{formatValue(order?.AdvanceAmount)}</TableCell>
+                <TableCell>
+                  {formatValue(
+                    order?.DiscountedSellingPrice * order.OrderQty -
+                      order.AdvanceAmount
+                  )}
+                </TableCell>
               </TableRow>
             )}
+            emptyMessage={isLoading ? "Loading..." : "No data available"}
           />
         </div>
 

@@ -627,7 +627,7 @@ const OrderDetails = () => {
                     <TableCell>{item.SlNo}</TableCell>
                     <TableCell>{getShortTypeName(item.typeid)}</TableCell>
                     <TableCell>
-                      <pre
+                      <div
                         className="text-sm"
                         style={{
                           whiteSpace: "pre-wrap",
@@ -635,7 +635,7 @@ const OrderDetails = () => {
                         }}
                       >
                         {getProductName(item)}
-                      </pre>
+                      </div>
                     </TableCell>
                     <TableCell>{formatNumber(item.OrderQty)}</TableCell>
                     <TableCell>₹{formatNumber(item.Rate)}</TableCell>
