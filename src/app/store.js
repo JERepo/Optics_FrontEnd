@@ -40,6 +40,7 @@ const persistConfig = {
     "roles",
     "access",
     "hasMultipleLocations",
+    "companyId"
   ],
 };
 

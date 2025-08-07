@@ -84,6 +84,7 @@ const ContactLens = () => {
   } = useOrder();
 
   const [openChange, setOpenChange] = useState(false);
+  const [searchFethed,setSearchFetched] = useState(false)
   const [openAdd, setOpenAdd] = useState(false);
   const [items, setItems] = useState([]);
   const [showInputRow, setShowInputRow] = useState(true);
@@ -140,6 +141,7 @@ const ContactLens = () => {
       productId: null,
       color: null,
     });
+     setSearchFetched(false)
   };
 
   const handleRefeshPowerTable = () => {
@@ -154,6 +156,7 @@ const ContactLens = () => {
       sellingPrice: "",
     });
     setErrors({});
+    setSearchFetched(false)
   };
 
   const handleInputChangeTop = (e) => {
@@ -291,12 +294,14 @@ const ContactLens = () => {
           orderQty: data.DefaultOrderQty,
           sellingPrice: data.SellingPrice,
         });
+        setSearchFetched(true)
       } else {
         toast.error("No matching power found");
       }
     } catch (error) {
       console.error("error", error);
       toast.error("No matching power found");
+      setSearchFetched(false)
     }
   };
 
@@ -585,6 +590,8 @@ const ContactLens = () => {
                         value={newItem.sphericalPower}
                         onChange={handleInputChange}
                         error={errors.sphericalPower}
+                        // className={`${searchFethed ? "bg-neutral-400 pointer-events-none" : ""}`}
+                        grayOut={searchFethed}
                       />
                     </TableCell>
                     <TableCell>
@@ -593,6 +600,7 @@ const ContactLens = () => {
                         value={newItem.cylindricalPower}
                         onChange={handleInputChange}
                         error={errors.cylindricalPower}
+                        grayOut={searchFethed}
                       />
                     </TableCell>
                     <TableCell>
@@ -601,6 +609,7 @@ const ContactLens = () => {
                         value={newItem.axis}
                         onChange={handleInputChange}
                         error={errors.axis}
+                        grayOut={searchFethed}
                       />
                     </TableCell>
                     <TableCell>
@@ -609,6 +618,7 @@ const ContactLens = () => {
                         value={newItem.additional}
                         onChange={handleInputChange}
                         error={errors.additional}
+                        grayOut={searchFethed}
                       />
                     </TableCell>
 
@@ -620,6 +630,7 @@ const ContactLens = () => {
                             value={newItem.avlQty}
                             onChange={handleInputChange}
                             error={errors.avlQty}
+                            grayOut={searchFethed}
                           />
                         </TableCell>
                         <TableCell>
@@ -670,8 +681,8 @@ const ContactLens = () => {
           <div className="p-6">
             <Table
               columns={[
-                "Spherical Power",
-                "Cylindrical Power",
+                "Spherical",
+                "Cylindrical",
                 "Axis",
                 "Additional",
                 "Avl.Qty",

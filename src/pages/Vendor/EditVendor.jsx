@@ -27,7 +27,7 @@ import Radio from "../../components/Form/Radio";
 import Input from "../../components/Form/Input";
 import {
   useCreateVendorMutation,
-  useGetVendorByIdMutation,
+  useGetAllVendorMutation,
   useUpdateVendorMutation,
 } from "../../api/vendorApi";
 
@@ -44,8 +44,11 @@ const EditVendor = () => {
   const [editingIndex, setEditingIndex] = useState(null);
 
   // API Queries
-  const { data: vendoryIdData, isLoading: isVedorLoading } =
-    useGetVendorByIdMutation({ id: id }, { skip: !id });
+  // const { data: vendoryIdData, isLoading: isVedorLoading } =
+  //   useGetVendorByIdMutation({ id: id }, { skip: !id });
+  const [getAllVendorById, { data: vendoryIdData, isLoading: isVedorLoading }] =
+    useGetAllVendorMutation();
+
   const { data: allLocations } = useGetAllLocationsQuery();
   const { data: allCountries } = useGetCountriesQuery();
   const { data: allStates } = useGetStatesQuery();
@@ -81,6 +84,23 @@ const EditVendor = () => {
       skip: !(verifyGst && vendorFormData.gst_no?.length === 15),
     }
   );
+
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchVendorData = async () => {
+      const payload = {
+        id : id
+      }
+      try {
+        await getAllVendorById(payload);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    fetchVendorData();
+  }, [id]);
 
   const [createVendor, { isLoading: isVendorCreating }] =
     useCreateVendorMutation();
@@ -136,6 +156,10 @@ const EditVendor = () => {
       isServiceProvider: vendorData.IsServiceProvider,
       isReverseChargeApplicable: vendorData.IsReverseChargeApplicable,
       FittingPrice: vendorData.FittingCharges,
+      pOApproval: vendorData.POApproval,
+      multiDelivery: vendorData.MultiDelivery,
+      deliveryLocationId: vendorData.DeliveryLocationId,
+      dCGRNPrice: vendorData.DCGRNPrice,
       OBType: vendorData.OBType,
       credit_form: vendorData.CreditFrom || 0,
       credit_days: vendorData.CreditDays || 0,
@@ -245,6 +269,10 @@ const EditVendor = () => {
       newErrors.vendor_country = "Country is required";
     }
 
+    if(vendorFormData.multiDelivery === 0 && !vendorFormData.deliveryLocationId){
+      newErrors.deliveryLocationId = "Location should be mandatory"
+    }
+
     const hasAnyContact =
       vendorFormData.email?.trim() ||
       vendorFormData.telephone?.trim() ||
@@ -272,7 +300,7 @@ const EditVendor = () => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  console.log("company settings", companySettings);
+
   const handleSave = async () => {
     console.log("handleSave triggered, id:", id);
     const isValid = validateVendorForm();
@@ -635,6 +663,82 @@ const EditVendor = () => {
                 {renderFittingTable("Other Focal Types", "others", true)}
               </div>
             )}
+          </div>
+
+          <div className="flex flex-col gap-5 mt-5">
+            <div className="flex items-center gap-3">
+              <label>PO Approval</label>
+              <Radio
+                label="No"
+                name="pOApproval"
+                value="0"
+                onChange={handleChange}
+                checked={vendorFormData.pOApproval === 0}
+              />
+              <Radio
+                label="Yes"
+                name="pOApproval"
+                value="1"
+                onChange={handleChange}
+                checked={vendorFormData.pOApproval === 1}
+              />
+            </div>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-3">
+                <label>PO Multi Delivery</label>
+                <Radio
+                  label="No"
+                  name="multiDelivery"
+                  value="0"
+                  onChange={handleChange}
+                  checked={vendorFormData.multiDelivery === 0}
+                />
+                <Radio
+                  label="Yes"
+                  name="multiDelivery"
+                  value="1"
+                  onChange={handleChange}
+                  checked={vendorFormData.multiDelivery === 1}
+                />
+              </div>
+              {vendorFormData.multiDelivery === 0 && (
+                <div>
+                  <Select
+                  label="Select Location *"
+                    name="deliveryLocationId"
+                    value={vendorFormData.deliveryLocationId}
+                    options={allLocations?.data}
+                    optionLabel="LocationName"
+                    optionValue="Id"
+                    onChange={(e) =>
+                      setVendorFormData((prev) => ({
+                        ...prev,
+                        deliveryLocationId: e.target.value,
+                      }))
+                    }
+                    defaultOption="Select Location"
+                    error={errors.deliveryLocationId}
+                  />
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <label>GRN Price for DC</label>
+              <Radio
+                label="No"
+                name="dCGRNPrice"
+                value="0"
+                onChange={handleChange}
+                checked={vendorFormData.dCGRNPrice === 0}
+              />
+              <Radio
+                label="Yes"
+                name="dCGRNPrice"
+                value="1"
+                onChange={handleChange}
+                checked={vendorFormData.dCGRNPrice === 1}
+              />
+            </div>
           </div>
 
           {/* credit charge details */}

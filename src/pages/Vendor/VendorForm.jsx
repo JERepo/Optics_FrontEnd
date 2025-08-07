@@ -26,6 +26,8 @@ const VendorForm = ({
   isVerifyGSTLoading,
   countryIsd,
 }) => {
+
+  console.log("vendor form vendor pdata",formData)
   const [getPinCode, { isFetching: isFetchingPincode }] =
     useLazyGetPinCodeQuery();
 
@@ -110,7 +112,6 @@ const fetchLocationByPincode = async () => {
         vendor_country: matchedCountry?.Id || prev.vendor_country,
       }));
 
-      // ✅ Clear related location errors
       setErrors((prev) => ({
         ...prev,
         vendor_city: "",
@@ -192,7 +193,7 @@ const fetchLocationByPincode = async () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {(formData.gstStatus === 1 || formData.gstStatus === 2) && (
             <div className="flex flex-col gap-2">
-              <div className="flex gap-3 items-end">
+              <div className="flex gap-3 items-center">
                 <Input
                   label="GST Number *"
                   name="gst_no"
@@ -315,7 +316,7 @@ const fetchLocationByPincode = async () => {
             placeholder="Enter Landmark"
           />
           <div className="flex flex-col gap-2 w-full">
-            <div className="flex gap-3 items-end">
+            <div className="flex gap-3 items-center">
               <Input
                 label="PIN Code *"
                 name="vendor_pincode"

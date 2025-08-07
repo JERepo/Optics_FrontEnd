@@ -30,6 +30,11 @@ export const customerApi = createApi({
       }),
       providesTags: ["Customer"],
     }),
+    getAllCustomerById: builder.query({
+      query: ({ id }) => ({
+        url: `/api/v1/customer/bylocation/${id}`,
+      }),
+    }),
     getCustomerById: builder.query({
       query: ({ id }) => ({
         url: `/api/v1/customer/byid/${id}`,
@@ -68,6 +73,14 @@ export const customerApi = createApi({
         url: `/api/v1/location-settings`,
       }),
     }),
+    updateCreditLimit: builder.mutation({
+      query: ({ payload }) => ({
+        url: `/api/v1/customer/creditUpdate`,
+        method: "PUT",
+        body: payload,
+      }),
+      invalidatesTags : ["Customer"]
+    }),
   }),
 });
 
@@ -82,5 +95,7 @@ export const {
   useGetStatesQuery,
   useGetCountriesQuery,
   useGetIsdQuery,
-  useGetAllCompanyLocationsQuery
+  useGetAllCompanyLocationsQuery,
+  useGetAllCustomerByIdQuery,
+  useUpdateCreditLimitMutation
 } = customerApi;

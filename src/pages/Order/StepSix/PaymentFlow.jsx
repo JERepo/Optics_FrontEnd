@@ -75,7 +75,7 @@ const PaymentFlow = () => {
   const { data: paymentMachine } = useGetAllPaymentMachinesQuery();
   const { data: allbanks } = useGetAllBankMastersQuery();
   const { data: bankAccountDetails } = useGetAllBankAccountsQuery();
-  const [saveFinalPayment, { isLoading, isFinalSaving }] =
+  const [saveFinalPayment, { isLoading:isFinalSaving }] =
     useSaveFinalPaymentMutation();
 
   const filteredCardPaymentMachines = paymentMachine?.data.data.filter(
@@ -221,7 +221,7 @@ const PaymentFlow = () => {
         orderId: customerId.orderId,
         payload: finalStructure,
       }).unwrap();
-      toast.success("Payment created successfully");
+      toast.success("Order created Successfully");
       navigate("/order-list");
     } catch (error) {
       console.log("error");
@@ -603,47 +603,53 @@ const MethodForm = ({
               onChange={handleInputChange("RefNo")}
               error={errors.refNo}
             />
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={newPayment.EMI}
-                onChange={(e) =>
-                  setNewPayment((prev) => ({
-                    ...prev,
-                    EMI: e.target.checked,
-                    EMIMonths: e.target.checked ? prev.EMIMonths : null,
-                    EMIBank: e.target.checked ? prev.EMIBank : null,
-                  }))
-                }
-              />
-              <label>EMI</label>
-            </div>
-            {newPayment.EMI && (
-              <>
-                <Input
-                  label="EMI Months"
-                  type="number"
-                  value={newPayment.EMIMonths || ""}
-                  onChange={handleInputChange("EMIMonths")}
-                />
-                <Autocomplete
-                  options={banks}
-                  getOptionLabel={(option) => option.BankName || ""}
-                  value={banks.find((b) => b.Id === newPayment.EMIBank) || null}
-                  onChange={(_, newValue) =>
+            <div className="grid grid-cols-3 gap-5 items-center">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={newPayment.EMI}
+                  onChange={(e) =>
                     setNewPayment((prev) => ({
                       ...prev,
-                      BankName: newValue?.BankName || null,
-                      EMIBank: newValue?.Id || null,
+                      EMI: e.target.checked,
+                      EMIMonths: e.target.checked ? prev.EMIMonths : null,
+                      EMIBank: e.target.checked ? prev.EMIBank : null,
                     }))
                   }
-                  renderInput={(params) => (
-                    <TextField {...params} label="EMI Bank *" size="small" />
-                  )}
-                  fullWidth
                 />
-              </>
-            )}
+                <label>EMI</label>
+              </div>
+              {newPayment.EMI && (
+                <>
+                  <Input
+                    label="EMI Months"
+                    type="number"
+                    value={newPayment.EMIMonths || ""}
+                    onChange={handleInputChange("EMIMonths")}
+                  />
+                  <div className="">
+                  <Autocomplete
+                    options={banks}
+                    getOptionLabel={(option) => option.BankName || ""}
+                    value={
+                      banks.find((b) => b.Id === newPayment.EMIBank) || null
+                    }
+                    onChange={(_, newValue) =>
+                      setNewPayment((prev) => ({
+                        ...prev,
+                        BankName: newValue?.BankName || null,
+                        EMIBank: newValue?.Id || null,
+                      }))
+                    }
+                    renderInput={(params) => (
+                      <TextField {...params} label="EMI Bank *" size="small" />
+                    )}
+                    fullWidth
+                  />
+                  </div>
+                </>
+              )}
+            </div>
             {commonAmountInput}
           </>
         )}

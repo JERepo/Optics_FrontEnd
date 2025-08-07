@@ -362,12 +362,18 @@ export const orderApi = createApi({
         body: payload,
       }),
     }),
+    getOrderViewById: builder.query({
+      query: ({ id }) => ({
+        url: `/api/v1/order/getorder/${id}`,
+      }),
+    }),
   }),
 });
 
 export const {
   // MAIN PAGE AND VIEW PAGE
   useGetAllOrdersQuery,
+  useGetOrderViewByIdQuery,
 
   // OPTICAL LENS
   useGetOrderPreferenceQuery,

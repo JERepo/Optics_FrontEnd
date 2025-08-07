@@ -1,18 +1,21 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router";
-import { useGetSavedOrderDetailsQuery } from "../../../api/orderApi";
+import {
+  useGetOrderViewByIdQuery,
+  useGetSavedOrderDetailsQuery,
+} from "../../../api/orderApi";
 import { useOrder } from "../../../features/OrderContext";
 import { Table, TableCell, TableRow } from "../../../components/Table";
 import { FiTrash2 } from "react-icons/fi";
 import { format } from "date-fns";
 import Button from "../../../components/ui/Button";
+import Loader from '../../../components/ui/Loader'
 
 const formatNumber = (num) => {
   return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "0";
 };
 
 const OrderView = () => {
-  const { selectedOrderDetails } = useOrder();
   const navigate = useNavigate();
   const { search } = useLocation();
   const params = new URLSearchParams(search);
@@ -22,8 +25,9 @@ const OrderView = () => {
     { orderId },
     { skip: !orderId }
   );
-  console.log("selected order details", selectedOrderDetails);
-  console.log("order details", orderDetails);
+  const { data: customerDataById, isLoading: isViewLoading } =
+    useGetOrderViewByIdQuery({ id: orderId });
+
   const getTypeName = (id) => {
     const types = { 1: "F/S", 2: "ACC", 3: "CL" };
     return types[id] || "OL";
@@ -148,6 +152,12 @@ const OrderView = () => {
     };
     return types[status] || "Draft";
   };
+
+  if((isViewLoading || isLoading)){
+    return <div>
+      <Loader color="black" />
+    </div>
+  }
   return (
     <div className="max-w-7xl">
       <div className="bg-white rounded-sm shadow-sm overflow-hidden p-6">
@@ -161,13 +171,13 @@ const OrderView = () => {
         </div>
         {/* Order Details */}
         <div className="grid grid-cols-3 gap-3">
-          <Info label="Order No" value={selectedOrderDetails?.OrderNo} />
+          <Info label="Order No" value={`${customerDataById?.data.data.OrderPrefix}/${customerDataById?.data.data.OrderNo}`} />
           <Info
             label="Order Date"
             value={
-              selectedOrderDetails?.OrderPlacedDate
+              customerDataById?.data.data?.OrderPlacedDate
                 ? format(
-                    new Date(selectedOrderDetails?.OrderPlacedDate),
+                    new Date(customerDataById?.data.data?.OrderPlacedDate),
                     "dd/MM/yyyy"
                   )
                 : ""
@@ -176,29 +186,28 @@ const OrderView = () => {
 
           <Info
             label="Status"
-            value={getOrderStatus(selectedOrderDetails?.Status)}
+            value={getOrderStatus(customerDataById?.data.data?.Status)}
           />
           <Info
             label="Customer Name"
-            value={selectedOrderDetails?.CustomerMaster?.CustomerName}
+            value={customerDataById?.data.data?.CustomerMaster?.CustomerName}
           />
           <Info
             label="Customer No"
-            value={selectedOrderDetails?.CustomerMaster?.MobNumber}
+            value={customerDataById?.data.data?.CustomerMaster?.MobNumber}
           />
           <Info
             label="Customer Address"
-            value={`${selectedOrderDetails?.CustomerMaster?.BillAddress1} ${selectedOrderDetails?.CustomerMaster?.BillAddress2} ${selectedOrderDetails?.CustomerMaster?.BillCity}`}
+            value={`${customerDataById?.data.data?.CustomerMaster?.BillAddress1} ${customerDataById?.data.data?.CustomerMaster?.BillAddress2} ${customerDataById?.data.data?.CustomerMaster?.BillCity}`}
           />
           <Info
             label="Sales Person"
-            value={selectedOrderDetails?.SalesPerson?.PersonName}
+            value={customerDataById?.data.data?.SalesPerson?.PersonName}
           />
           <Info
             label="Order Reference"
-            value={selectedOrderDetails?.OrderReference || "N/A"}
+            value={customerDataById?.data.data?.OrderReference || "N/A"}
           />
-         
         </div>
 
         {/* Product Table */}

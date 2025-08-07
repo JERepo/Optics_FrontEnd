@@ -12,9 +12,11 @@ import { Table, TableCell, TableRow } from "../../../components/Table";
 import { useGetAllOrdersQuery } from "../../../api/orderApi";
 import { enGB } from "date-fns/locale";
 import Loader from "../../../components/ui/Loader";
+import { useSelector } from "react-redux";
 
 const OrderList = () => {
   const navigate = useNavigate();
+  const { hasMultipleLocations } = useSelector((state) => state.auth);
   const { goToStep, updateSelectedOrderDetails } = useOrder();
 
   const [fromDate, setFromDate] = useState(null);
@@ -71,24 +73,26 @@ const OrderList = () => {
       });
     }
 
-    return filtered.map((order) => ({
-      id: order.Id,
-      order: order,
-      orderNo: order.OrderNo,
-      OrderPrefix: order.OrderPrefix,
-      orderDate: new Intl.DateTimeFormat("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }).format(new Date(order.OrderPlacedDate)),
+    return filtered
+      .map((order) => ({
+        id: order.Id,
+        order: order,
+        orderNo: order.OrderNo,
+        OrderPrefix: order.OrderPrefix,
+        orderDate: new Intl.DateTimeFormat("en-GB", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }).format(new Date(order.OrderPlacedDate)),
 
-      customerName: order.CustomerMaster?.CustomerName,
-      patientName: order.CustomerContactDetail?.CustomerName,
-      mobileNo: order.CustomerContactDetail?.MobNumber,
-      orderValue: order.TotalValue,
-      totalQty: order.TotalQty,
-      Status: order.Status,
-    }));
+        customerName: order.CustomerMaster?.CustomerName,
+        patientName: order.CustomerContactDetail?.CustomerName,
+        mobileNo: order.CustomerContactDetail?.MobNumber,
+        orderValue: order.TotalValue,
+        totalQty: order.TotalQty,
+        Status: order.Status,
+      }))
+      // .filter((order) => order.CompanyId == hasMultipleLocations[0]);
   }, [allOrders, fromDate, toDate, searchQuery]);
 
   const startIndex = (currentPage - 1) * pageSize;

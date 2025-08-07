@@ -21,7 +21,20 @@ export const InvoiceApi = createApi({
         url: `/api/v1/invoice/BatchDetails/${clBatchId}?Location=${locationId}`,
       }),
     }),
+
+    getProductDetails: builder.mutation({
+      query: ({ payload }) => ({
+        url: `/api/v1/order/productdetails`,
+        method: "POST",
+        body: payload,
+      }),
+    }),
   }),
 });
 
-export const { useGetPatientsQuery, useGetAllOrderMasterQuery, useLazyGetBatchDetailsQuery } = InvoiceApi;
+export const {
+  useGetPatientsQuery,
+  useGetAllOrderMasterQuery,
+  useLazyGetBatchDetailsQuery,
+  useGetProductDetailsMutation,
+} = InvoiceApi;

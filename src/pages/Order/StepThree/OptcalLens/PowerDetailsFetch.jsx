@@ -64,6 +64,7 @@ const PowerDetailsFetch = ({
   const [warningMessage, setWarningMessage] = useState("");
   const [warningIssues, setWarningIssues] = useState([]);
   const [isPriceFetched, setIsPriceFetched] = useState(false);
+  
 
   const [updateIdentifier, { isLoading: isIdentfierSubmitting }] =
     useUpdateIdentifierMutation();
@@ -398,7 +399,7 @@ const PowerDetailsFetch = ({
   };
 
   const handleSave = async () => {
-    if (!lensData.rimType) {
+    if (lensData.rimType == null) {
       toast.error("Please select Frame Rim Type!");
       return;
     }
@@ -489,7 +490,7 @@ const PowerDetailsFetch = ({
     }
     return null;
   };
-
+console.log("frame rim types",rimTypes)
   return (
     <div className="bg-white shadow-sm p-4 mt-5 rounded-lg">
       <div className="flex justify-between items-center">
@@ -681,11 +682,12 @@ const PowerDetailsFetch = ({
                   ) || null
                 }
                 onChange={(_, newValue) =>
-                  setLensData((prev) => ({
-                    ...prev,
-                    rimType: newValue?.Id || null,
-                  }))
-                }
+  setLensData((prev) => ({
+    ...prev,
+    rimType: newValue ? newValue.Id : null,
+  }))
+}
+
                 renderInput={(params) => (
                   <TextField
                     {...params}

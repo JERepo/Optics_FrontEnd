@@ -66,78 +66,92 @@ const DiscountDisplay = ({ item }) => {
   );
 };
 
-const ProductDetails = ({ item }) => {
-  const {
-    typeid,
-    ProductName,
-    Size,
-    Barcode,
-    PatientName,
-    PowerSpecs,
-    Variation,
-  } = item;
-
-  const renderFrameDetails = () => (
-    <>
-      {ProductName || ""}
-      {Size && `\n${Size}`}
-      {Barcode && `\n${Barcode}`}
-      {PatientName && `\n${PatientName}`}
-    </>
-  );
-
-  const renderAccessoryDetails = () => (
-    <>
-      {ProductName || ""}
-      {Variation && `\n${Variation}`}
-      {Barcode && `\n${Barcode}`}
-      {PatientName && `\n${PatientName}`}
-    </>
-  );
-
-  const renderContactLensDetails = () => {
-    const specs = PowerSpecs
-      ? PowerSpecs.split(",")
-          .map((s) => {
-            const [key, val] = s.split(":");
-            const cleanedValue =
-              val && !["null", "undefined"].includes(val.trim())
-                ? val.trim()
-                : "";
-            return `${key.trim()}: ${cleanedValue}`;
-          })
-          .join(", ")
-      : "";
-
-    return (
-      <>
-        {ProductName || ""}
-        {specs && `\n${specs}`}
-        {Barcode && `\n${Barcode}`}
-        {PatientName && `\n${PatientName}`}
-      </>
-    );
-  };
-
-  const renderProductDetails = () => {
-    switch (typeid) {
-      case 1:
-        return renderFrameDetails();
-      case 2:
-        return renderAccessoryDetails();
-      case 3:
-        return renderContactLensDetails();
-      default:
-        return ProductName || "";
+  const getProductName = (item) => {
+    const {
+      typeid,
+      ProductName,
+      Size,
+      Barcode,
+      PatientName,
+      PowerSpecs,
+      Variation,
+      Specs,
+      Color
+    } = item;
+    const clean = (val) => {
+      if (
+        val === null ||
+        val === undefined ||
+        val === "undefined" ||
+        val === "null"
+      ) {
+        return "";
+      }
+      return val;
+    };
+    // For Frame (typeid = 1)
+    if (typeid === 1) {
+      const nameLine = ProductName || "";
+      const sizeLine = Size ? `${Size}` : "";
+      const barcodeLine = Barcode || "";
+      // const frameType = "OpticalFrame/Sunglass";
+      const patientLine = PatientName ? `\n${PatientName}` : "";
+      return `${nameLine}\n${sizeLine}\n${barcodeLine}\n${patientLine}`;
     }
-  };
 
-  return (
-    <div className="text-sm whitespace-pre-wrap word-wrap-break-word">
-      {renderProductDetails()}
-    </div>
-  );
-};
+    // For Accessories (typeid = 2)
+    if (typeid === 2) {
+      const nameLine = ProductName || "";
+
+      const barcodeLine = Barcode || "";
+      const patientLine = PatientName ? `\n${PatientName}` : "";
+
+      return `${nameLine}\n${Variation}\n${barcodeLine}${patientLine}`;
+    }
+
+    // For Contact Lens (typeid = 3)
+    if (typeid === 3) {
+      const nameLine = ProductName || "";
+
+      const specs = PowerSpecs
+        ? PowerSpecs.split(",")
+            .map((s) => {
+              const [key, val] = s.split(":");
+              const cleanedValue =
+                val && !["null", "undefined"].includes(val.trim())
+                  ? val.trim()
+                  : "";
+              return `${key.trim()}: ${cleanedValue}`;
+            })
+            .join(", ")
+        : "";
+
+      const barcodeLine = Barcode || "";
+      const patientLine = PatientName ? `\n${PatientName}` : "";
+
+      return `${nameLine}\n${specs}\n${barcodeLine}${patientLine}`;
+    }
+
+    if (typeid === 0) {
+      const specsLines = (Specs || [])
+        .map((spec) => {
+          const side = clean(spec.side);
+          const sph = clean(spec.sph);
+          const cyl = clean(spec.cyl);
+          const axis = clean(spec.axis);
+          const addition = clean(spec.addition);
+
+          return `${side}: SPH ${sph}, CYL ${cyl}, Axis ${axis}, Add ${addition}`;
+        })
+        .join("\n");
+
+      return `${clean(ProductName)}\n${specsLines}\n${clean(Barcode)}${
+        PatientName ? `\n${clean(PatientName)}` : ""
+      }`;
+    }
+
+    return "";
+  };
 
 const AdvanceAmountInput = ({
   orderDetailId,
@@ -449,7 +463,15 @@ const CompleteOrder = () => {
                     <TableCell>{item.SlNo}</TableCell>
                     <TableCell>{getShortTypeName(item.typeid)}</TableCell>
                     <TableCell>
-                      <ProductDetails item={item} />
+                     <div
+                        className="text-sm"
+                        style={{
+                          whiteSpace: "pre-wrap",
+                          wordWrap: "break-word",
+                        }}
+                      >
+                        {getProductName(item)}
+                      </div>
                     </TableCell>
                     <TableCell className="text-center">
                       {formatNumber(item.OrderQty)}

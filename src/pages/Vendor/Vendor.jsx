@@ -9,24 +9,44 @@ import HasPermission from "../../components/HasPermission";
 import Button from "../../components/ui/Button";
 import {
   useDeActivateMutation,
+  useGetAllvendorByLocationQuery,
   useGetAllVendorMutation,
 } from "../../api/vendorApi";
 import { useSelector } from "react-redux";
+import { useEffect } from "react";
 
 const Vendor = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const locale = navigator.language || navigator.languages[0] || "en-IN";
 
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [currentStatus, setCurrentStatus] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { user } = useSelector((state) => state.auth);
-  const [getAllVendor] = useGetAllVendorMutation();
+  const { user, hasMultipleLocations, companyId } = useSelector(
+    (state) => state.auth
+  );
+  // const [getAllVendor, { data, isLoading }] = useGetAllVendorMutation();
+  const { data, isLoading } = useGetAllvendorByLocationQuery({
+    id: hasMultipleLocations[0],
+  });
   const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
+
+  // useEffect(() => {
+  //   const fetchVendorData = async () => {
+  //     try {
+  //       const payload = {
+  //         company_id: companyId,
+  //       };
+  //       await getAllVendor(payload);
+  //     } catch (error) {
+  //       console.log(error);
+  //     }
+  //   };
+  //   fetchVendorData();
+  // }, []);
 
   const customers = useMemo(() => {
     if (!data?.data) return [];
@@ -114,11 +134,10 @@ const Vendor = () => {
         columns={[
           "S.No",
           "Vendor Name",
-
           "Phone No",
           "Email id",
           "billing method",
-          "Action",
+          "",
         ]}
         data={paginatedPools}
         renderRow={(pool, index) => (

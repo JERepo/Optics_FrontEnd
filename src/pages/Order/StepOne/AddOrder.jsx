@@ -448,17 +448,7 @@ const AddOrder = ({
                   "Action",
                 ]}
                 data={paginatedCustomers}
-                renderHeader={(col) => {
-                  if (col === "Patient name")
-                    return renderFilterInput("name", col);
-                  if (col === "Mobile no")
-                    return renderFilterInput("mobileNo", col);
-                  if (col === "Customer name")
-                    return renderFilterInput("customerName", col);
-                  return (
-                    <span className="font-medium text-gray-700">{col}</span>
-                  );
-                }}
+               
                 renderRow={(customer, index) => (
                   <TableRow key={customer.id} className="hover:bg-gray-50">
                     <TableCell className="px-4 py-3 text-sm">

@@ -21,35 +21,11 @@ import {
 import { MdOutlineAdminPanelSettings } from "react-icons/md";
 
 export const menuItems = [
-  {
-    name: "User Management",
-    icon: IoPeopleOutline, // Represents a group of users
-    module: "User Management",
-    path: "/user-management",
-  },
-  {
-    name: "Role Management",
-    icon: MdOutlineAdminPanelSettings, // More precise for roles/permissions
-    module: "Role Management",
-    path: "/role-management",
-  },
-  {
-    name: "Settings",
-    icon: IoSettingsOutline, // General settings icon
-    module: "Settings",
+   {
+    name: "Product Master",
+    icon: IoOptionsSharp,
+    module: "Product Master",
     subItems: [
-      {
-        name: "Pool Creation",
-        path: "/settings/pool-creation",
-        module: "Pool",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
-      {
-        name: "Brand Category",
-        path: "/settings/brand-category",
-        module: "Brand catagory",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
       {
         name: "Brand Group",
         path: "/settings/brand-group",
@@ -57,45 +33,15 @@ export const menuItems = [
         icon: IoConstructOutline, // Suggests building/setup
       },
       {
-        name: "Brand",
-        path: "/settings/brand",
-        module: "Brand",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
-      {
-        name: "Variation Master",
-        path: "/settings/accessories",
-        module: "Variation Master",
+        name: "Frame Master",
+        path: "/settings/frame-master",
+        module: "Frame Master",
         icon: IoConstructOutline, // Suggests building/setup
       },
       {
         name: "Accessory Master",
         path: "/settings/accessories-master",
         module: "Accessory Master",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
-      {
-        name: "Frame Shape Master",
-        path: "/settings/frameshape-master",
-        module: "Shape Master",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
-      {
-        name: "Season Master",
-        path: "/settings/season-master",
-        module: "Season Master",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
-      {
-        name: "Material Master",
-        path: "/settings/material-master",
-        module: "Material Master",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
-      {
-        name: "Frame Master",
-        path: "/settings/frame-master",
-        module: "Frame Master",
         icon: IoConstructOutline, // Suggests building/setup
       },
     ],
@@ -137,6 +83,70 @@ export const menuItems = [
       },
     ],
   },
+  {
+    name: "Settings",
+    icon: IoSettingsOutline, // General settings icon
+    module: "Settings",
+    subItems: [
+      {
+        name: "User Management",
+        icon: IoPeopleOutline, // Represents a group of users
+        module: "User Management",
+        path: "/user-management",
+      },
+      {
+        name: "Role Management",
+        icon: MdOutlineAdminPanelSettings, // More precise for roles/permissions
+        module: "Role Management",
+        path: "/role-management",
+      },
+      {
+        name: "Pool Creation",
+        path: "/settings/pool-creation",
+        module: "Pool",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+      {
+        name: "Brand Category",
+        path: "/settings/brand-category",
+        module: "Brand catagory",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+
+      {
+        name: "Brand",
+        path: "/settings/brand",
+        module: "Brand",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+      {
+        name: "Variation Master",
+        path: "/settings/accessories",
+        module: "Variation Master",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+
+      {
+        name: "Frame Shape Master",
+        path: "/settings/frameshape-master",
+        module: "Shape Master",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+      {
+        name: "Season Master",
+        path: "/settings/season-master",
+        module: "Season Master",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+      {
+        name: "Material Master",
+        path: "/settings/material-master",
+        module: "Material Master",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+    ],
+  },
+ 
   {
     name: "Customer",
     icon: IoPersonOutline,

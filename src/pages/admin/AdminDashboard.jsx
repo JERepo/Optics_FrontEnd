@@ -4,9 +4,11 @@ import { ROLES } from "../../utils/constants/roles";
 import { useDispatch, useSelector } from "react-redux";
 import {
   useGetAllLocationsQuery,
+  useGetLocationByIdQuery,
   useGetUserByIdQuery,
 } from "../../api/roleManagementApi";
-import { setLocations } from "../../features/auth/authSlice";
+import { setCompanyId, setLocations } from "../../features/auth/authSlice";
+import { useState } from "react";
 
 const AdminDashboard = () => {
   const dispatch = useDispatch();
@@ -14,6 +16,7 @@ const AdminDashboard = () => {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   const authUser = useSelector((state) => state.auth.user);
   const { data: allLocations } = useGetAllLocationsQuery();
+  const [location, setLocation] = useState(null);
 
   const userId = authUser.Id;
 
@@ -26,6 +29,13 @@ const AdminDashboard = () => {
     { skip: !isAuthenticated || !userId }
   );
 
+  const { data: locationById, isLoading: isLocationLoading } =
+    useGetLocationByIdQuery({ id: location }, { skip: !location });
+  const companyId = locationById?.data?.data.Id;
+
+  useEffect(() => {
+    setCompanyId(companyId);
+  }, [location, locationById, isLocationLoading]);
   useEffect(() => {
     if (isUserLoaded && userLocationData?.data?.Locations) {
       const locationArray =
@@ -34,6 +44,7 @@ const AdminDashboard = () => {
       if (locationArray.length > 1) {
         dispatch(setLocations(locationArray));
       } else {
+        setLocation(userLocationData.data.Locations[0]);
         dispatch(setLocations(userLocationData.data.Locations));
       }
     }
