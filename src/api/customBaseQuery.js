@@ -3,7 +3,8 @@ import { logout, setCredentials } from "../features/auth/authSlice";
 
 // prepare headers for authorization
 const baseQuery = fetchBaseQuery({
-  baseUrl: "http://uat.opticstest.in",
+  // baseUrl: "http://uat.opticstest.in",
+  baseUrl: "http://localhost:5001",
   credentials: "include",
   prepareHeaders: (headers, { getState, endpoint }) => {
     const token = getState().auth.token;

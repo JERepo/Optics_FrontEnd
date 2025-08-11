@@ -265,6 +265,26 @@ export const orderApi = createApi({
         body: payload,
       }),
     }),
+
+    // Get order details by orderMasterId, companyId and productType
+    getOrderDetailsById: builder.mutation({
+      query: (payload) => ({
+        url: `/api/v1/order/getorderdetails-byproduct/`,
+        method: "POST",
+        body: payload
+      }),
+      providesTags: ["OrderDetails"],
+    }),
+
+    getOrderDetailsAll: builder.mutation({
+      query: (payload) => ({
+        url: `/api/v1/order/productdetails`,
+        method: "POST",
+        body: payload
+      }),
+      providesTags: ["OrderDetails"],
+    }),
+
   }),
 });
 
@@ -311,4 +331,6 @@ export const {
   useApplyContactLensDiscountMutation,
   useRemoveContactLensDiscountMutation,
   useCompleteOrderFinalMutation,
+  useGetOrderDetailsByIdMutation,
+  useGetOrderDetailsAllMutation
 } = orderApi;
