@@ -448,7 +448,6 @@ const AddOrder = ({
                   "Action",
                 ]}
                 data={paginatedCustomers}
-               
                 renderRow={(customer, index) => (
                   <TableRow key={customer.id} className="hover:bg-gray-50">
                     <TableCell className="px-4 py-3 text-sm">
@@ -823,6 +822,7 @@ const StepB = ({
     ?.filter(
       (person) =>
         person.Type !== 1 &&
+        person.IsActive === 1 &&
         person.SalesPersonLinks?.some((link) =>
           hasMultipleLocations.includes(link.Company?.Id)
         )
@@ -833,7 +833,7 @@ const StepB = ({
         hasMultipleLocations.includes(link.Company?.Id)
       ),
     }));
-
+  console.log("selec", selectedCustomer);
   return (
     <div className="max-w-4xl p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-xl font-semibold text-blue-600 mb-4">
@@ -855,29 +855,40 @@ const StepB = ({
             label="Mobile Number"
             value={`${selectedCustomer.MobileISDCode} ${selectedCustomer.MobNumber}`}
           />
-          <Detail
-            label="Billing Method"
-            value={selectedCustomer.BillingMethod === 0 ? "Invoice" : "DC"}
-          />
-          <Detail label="GST Number" value={selectedCustomer.TAXNo} />
-          <Detail
-            label="Credit Billing"
-            value={selectedCustomer.CreditBilling === 0 ? "No" : "Yes"}
-          />
+          {selectedCustomer?.BillingMethod === 1 && (
+            <Detail
+              label="Billing Method"
+              value={selectedCustomer.BillingMethod === 0 ? "Invoice" : "DC"}
+            />
+          )}
+          {selectedCustomer?.TAXRegisteration === 1 && (
+            <>
+              <Detail label="GST Number" value={selectedCustomer.TAXNo} />
+              <div>
+                {selectedCustomer.BillAddress1 && (
+                  <div className="">
+                    <p className="text-sm text-gray-500">Address</p>
+                    <p className="font-medium">
+                      {selectedCustomer.BillAddress1}
+                      {selectedCustomer.BillAddress2 &&
+                        `, ${selectedCustomer.BillAddress2}`}
+                      {selectedCustomer.BillCity &&
+                        `, ${selectedCustomer.BillCity}`}
+                      {selectedCustomer.BillPin &&
+                        ` - ${selectedCustomer.BillPin}`}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+          {selectedCustomer?.CreditBilling === 1 && (
+            <Detail
+              label="Credit Billing"
+              value={selectedCustomer.CreditBilling === 0 ? "No" : "Yes"}
+            />
+          )}
         </div>
-
-        {selectedCustomer.BillAddress1 && (
-          <div className="mt-4">
-            <p className="text-sm text-gray-500">Address</p>
-            <p className="font-medium">
-              {selectedCustomer.BillAddress1}
-              {selectedCustomer.BillAddress2 &&
-                `, ${selectedCustomer.BillAddress2}`}
-              {selectedCustomer.BillCity && `, ${selectedCustomer.BillCity}`}
-              {selectedCustomer.BillPin && ` - ${selectedCustomer.BillPin}`}
-            </p>
-          </div>
-        )}
       </div>
 
       <h3 className="text-lg font-medium text-gray-800 mb-4">Order Details</h3>
@@ -925,8 +936,8 @@ const StepB = ({
 
 // Reusable Detail Display Component
 const Detail = ({ label, value }) => (
-  <div>
-    <p className="text-sm text-gray-500">{label}</p>
+  <div className="flex items-center gap-3">
+    <p className="text-sm text-gray-500">{label}</p>:
     <p className="font-medium">{value || "N/A"}</p>
   </div>
 );

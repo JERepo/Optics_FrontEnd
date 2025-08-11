@@ -17,6 +17,7 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
     locationId: null,
     customerId: null,
     orderId: null,
+    mobileNo: null,
   });
   const [draftData, setDraftData] = useState(null);
 
@@ -30,6 +31,7 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
 
   const [FrameDetailedId, setFrameDetaildId] = useState(null);
   const [paymentDetails, setPaymentDetails] = useState(null);
+  const [fullPayments, setFullPayments] = useState([]);
 
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
   const [Identifiers, setIdentifiers] = useState({
@@ -112,6 +114,8 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
         selectedOrderDetails,
         Identifiers,
         setIdentifiers,
+        fullPayments,
+        setFullPayments,
       }}
     >
       {children}

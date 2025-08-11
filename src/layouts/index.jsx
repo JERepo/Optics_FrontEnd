@@ -51,12 +51,14 @@ import NotFound from "../components/NotFound";
 import TotalOrder from "../pages/Order";
 import OrderList from "../pages/Order/MainOrder/OrderList";
 import ErrorBoundary from "../components/ErrorBoundary";
-import Prescription from "../pages/Prescription.jsx/Prescription";
-import EditPrescription from "../pages/Prescription.jsx/EditPrescription";
+import Prescription from "../pages/Prescription/Prescription";
+import EditPrescription from "../pages/Prescription/EditPrescription";
 import ClBatchDetails from "../pages/cl_batch_details/ClBatchDetails";
 import SavePurchaseOrder from "../pages/PurchaseOrder/savePurchaseOrderPage";
 import OrderView from "../pages/Order/MainOrder/OrderView";
 import CustomerSelect from "../pages/Invoice/CustomerSelect";
+import InvoiceList from "../pages/Invoice/InvoiceList";
+import InvoiceView from "../pages/Invoice/InvoiceView";
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
 export const router = createBrowserRouter([
@@ -663,6 +665,14 @@ export const router = createBrowserRouter([
       },
       {
         path : "invoice",
+        element : <InvoiceList />
+      },
+       {
+        path : "invoice/view",
+        element : <InvoiceView />
+      },
+      {
+        path : "invoice/create",
         element : <CustomerSelect />
       }
     ],

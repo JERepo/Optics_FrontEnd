@@ -342,7 +342,7 @@ const ContactLens = () => {
     "Spherical Power",
     "Cylindrical Power",
     "Axis",
-    "Additional",
+    "Additional Power",
   ];
 
   if (newItem.CLDetailId) {

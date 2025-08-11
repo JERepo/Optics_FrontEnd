@@ -242,107 +242,7 @@ const FrameSunglassAndOpticalLens = () => {
                 </Button>
               </div>
             </div>
-            {items.length > 0 && (
-              <div className="mt-5">
-                <Table
-                  columns={[
-                    "S.No",
-                    "Barcode",
-                    "Name",
-                    "Frame Size",
-                    "S/O",
-                    "Product details",
-                    "MRP",
-                    "Selling Price",
-                    "Qty",
-                    "Action",
-                  ]}
-                  data={items}
-                  renderRow={(item, index) => (
-                    <TableRow key={item.Barcode}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell>{item.Barcode}</TableCell>
-                      <TableCell>{item.Name}</TableCell>
-                      <TableCell>{item.Size}</TableCell>
-                      <TableCell>
-                        {item.Category === "O" ? "Optical Frame" : "Sunglass"}
-                      </TableCell>
-                      <TableCell>{item.PO}</TableCell>
-                      <TableCell>{item.MRP}</TableCell>
-                      <TableCell>{item.SellingPrice}</TableCell>
-                      <TableCell>{item.Quantity}</TableCell>
-                      <TableCell>
-                        <button
-                          onClick={() => handleDelete(item.Barcode)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <FiTrash2 />
-                        </button>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                />
-                <div className="flex justify-end mt-6">
-                  <Button
-                    type="submit"
-                    isLoading={isFrameSaving}
-                    className="px-6 py-3 bg-green-600 hover:bg-green-700"
-                    onClick={handleSave}
-                  >
-                    Save & Continue
-                  </Button>
-                </div>
-              </div>
-            )}
-            {!searchMode && searchResults.length > 0 && (
-              <div className="p-6">
-                <div className="mb-3 flex items-center justify-between">
-                  <h3 className="font-semibold">Select Frame</h3>
-                  <Button
-                    onClick={() => setSearchResults([])}
-                    variant="outline"
-                    icon={FiX}
-                  >
-                    Close
-                  </Button>
-                </div>
-                <Table
-                  columns={[
-                    "",
-                    "Barcode",
-                    "Name",
-                    "Frame Size",
-                    "S/O",
-                    "Product Details",
-                    "MRP",
-                    "Selling Price",
-                  ]}
-                  data={searchResults}
-                  renderRow={(item, index) => (
-                    <TableRow key={item.Barcode}>
-                      <TableCell>
-                        <Button
-                          onClick={() => handleSelectItem(item)}
-                          className="bg-blue-600 hover:bg-blue-700"
-                        >
-                          Select
-                        </Button>
-                      </TableCell>
-                      <TableCell>{item.Barcode}</TableCell>
-                      <TableCell>{item.Name}</TableCell>
-                      <TableCell>{item.Size}</TableCell>
-                      <TableCell>
-                        {item.Category === "O" ? "Optical Frame" : "Sunglass"}
-                      </TableCell>
-                      <TableCell>{item.PO}</TableCell>
-                      <TableCell>{item.MRP}</TableCell>
-                      <TableCell>{item.SellingPrice}</TableCell>
-                    </TableRow>
-                  )}
-                />
-              </div>
-            )}
-            {items.length === 0 && (
+             {items.length === 0 && (
               <div className="border-gray-100 mt-5">
                 {!searchMode ? (
                   <form onSubmit={handleBarcodeSubmit} className="space-y-2">
@@ -448,6 +348,107 @@ const FrameSunglassAndOpticalLens = () => {
                 )}
               </div>
             )}
+            {items.length > 0 && (
+              <div className="mt-5">
+                <Table
+                  columns={[
+                    "S.No",
+                    "Barcode",
+                    "Name",
+                    "Frame Size",
+                    "S/O",
+                    "Product details",
+                    "MRP",
+                    "Selling Price",
+                    "Qty",
+                    "Action",
+                  ]}
+                  data={items}
+                  renderRow={(item, index) => (
+                    <TableRow key={item.Barcode}>
+                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>{item.Barcode}</TableCell>
+                      <TableCell>{item.Name}</TableCell>
+                      <TableCell>{item.Size}</TableCell>
+                      <TableCell>
+                        {item.Category === "O" ? "Optical Frame" : "Sunglass"}
+                      </TableCell>
+                      <TableCell>{item.PO}</TableCell>
+                      <TableCell>{item.MRP}</TableCell>
+                      <TableCell>{item.SellingPrice}</TableCell>
+                      <TableCell>{item.Quantity}</TableCell>
+                      <TableCell>
+                        <button
+                          onClick={() => handleDelete(item.Barcode)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <FiTrash2 />
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                />
+                <div className="flex justify-end mt-6">
+                  <Button
+                    type="submit"
+                    isLoading={isFrameSaving}
+                    className="px-6 py-3 bg-green-600 hover:bg-green-700"
+                    onClick={handleSave}
+                  >
+                    Save & Continue
+                  </Button>
+                </div>
+              </div>
+            )}
+            {!searchMode && searchResults.length > 0 && (
+              <div className="p-6">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="font-semibold">Select Frame</h3>
+                  <Button
+                    onClick={() => setSearchResults([])}
+                    variant="outline"
+                    icon={FiX}
+                  >
+                    Close
+                  </Button>
+                </div>
+                <Table
+                  columns={[
+                    "",
+                    "Barcode",
+                    "Name",
+                    "Frame Size",
+                    "S/O",
+                    "Product Details",
+                    "MRP",
+                    "Selling Price",
+                  ]}
+                  data={searchResults}
+                  renderRow={(item, index) => (
+                    <TableRow key={item.Barcode}>
+                      <TableCell>
+                        <Button
+                          onClick={() => handleSelectItem(item)}
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          Select
+                        </Button>
+                      </TableCell>
+                      <TableCell>{item.Barcode}</TableCell>
+                      <TableCell>{item.Name}</TableCell>
+                      <TableCell>{item.Size}</TableCell>
+                      <TableCell>
+                        {item.Category === "O" ? "Optical Frame" : "Sunglass"}
+                      </TableCell>
+                      <TableCell>{item.PO}</TableCell>
+                      <TableCell>{item.MRP}</TableCell>
+                      <TableCell>{item.SellingPrice}</TableCell>
+                    </TableRow>
+                  )}
+                />
+              </div>
+            )}
+           
           </div>
         </div>
         <ConfirmationModal

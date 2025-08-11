@@ -64,7 +64,6 @@ const PowerDetailsFetch = ({
   const [warningMessage, setWarningMessage] = useState("");
   const [warningIssues, setWarningIssues] = useState([]);
   const [isPriceFetched, setIsPriceFetched] = useState(false);
-  
 
   const [updateIdentifier, { isLoading: isIdentfierSubmitting }] =
     useUpdateIdentifierMutation();
@@ -304,7 +303,7 @@ const PowerDetailsFetch = ({
         }
       }
     });
-
+console.log(lensData)
     const payload = {
       coatingComboId: lensData.coatingComboId,
       locationId: customerId.locationId,
@@ -315,8 +314,8 @@ const PowerDetailsFetch = ({
         ? parseFloat(lensData.tintPrice) / 2
         : parseFloat(lensData.tintPrice) || null,
       addonPrice: !isBothSelected
-        ? parseInt(lensData.AddOnData[0]?.price.substring(1)) / 2
-        : parseInt(lensData.AddOnData[0]?.price.substring(1)) || null,
+        ?  parseInt(lensData?.addOnData[0]?.price.substring(1)) / 2 || null
+        : parseInt(lensData?.addOnData[0]?.price.substring(1)) || null,
     };
 
     try {
@@ -411,6 +410,20 @@ const PowerDetailsFetch = ({
       return parsed !== "" && !isNaN(parsed) ? Number(parsed) : null;
     };
 
+    const olDetailId = [
+      parseInt(formValues[isBothSelected ? "R" : ""].OpticalLensDetailsId[0]),
+      parseInt(formValues[isBothSelected ? "L" : ""].OpticalLensDetailsId[0]),
+    ];
+
+    let actualPrice = parseFloat(totalSellingPrice);
+    let discountedPrice = parseFloat(totalSellingPrice);
+
+    // If both lens IDs are the same, divide prices by 2
+    if (olDetailId[0] === olDetailId[1]) {
+      actualPrice = actualPrice / 2;
+      discountedPrice = discountedPrice / 2;
+    }
+
     const payload = {
       OrderReference: lensData.orderReference,
       patientId: customerId.patientId,
@@ -434,19 +447,16 @@ const PowerDetailsFetch = ({
       tint: lensData.tintvalue === 1 ? true : false,
       tintId: lensData.tintId,
       tintPrice: parseFloat(lensData.tintPrice),
-      addOn: lensData.AddOnData.length > 0 ? true : false,
+      addOn: lensData.addOnData.length > 0 ? true : false,
       addonList: lensData.AddOnData?.map((a) => {
         return {
           addOnId: a.Id,
           addOnPrice: parseFloat(a.price.substring(1)),
         };
       }),
-      actualSellingPrice: parseFloat(totalSellingPrice),
-      discountedSellingPrice: parseFloat(totalSellingPrice),
-      olDetailId: [
-        parseInt(formValues[isBothSelected ? "R" : ""].OpticalLensDetailsId[0]),
-        parseInt(formValues[isBothSelected ? "L" : ""].OpticalLensDetailsId[0]),
-      ],
+      actualSellingPrice: actualPrice,
+      discountedSellingPrice: discountedPrice,
+      olDetailId,
       index: lensData.indexValues,
       companyId: customerId.companyId,
     };
@@ -490,7 +500,7 @@ const PowerDetailsFetch = ({
     }
     return null;
   };
-console.log("frame rim types",rimTypes)
+  console.log("frame rim types", rimTypes);
   return (
     <div className="bg-white shadow-sm p-4 mt-5 rounded-lg">
       <div className="flex justify-between items-center">
@@ -682,12 +692,11 @@ console.log("frame rim types",rimTypes)
                   ) || null
                 }
                 onChange={(_, newValue) =>
-  setLensData((prev) => ({
-    ...prev,
-    rimType: newValue ? newValue.Id : null,
-  }))
-}
-
+                  setLensData((prev) => ({
+                    ...prev,
+                    rimType: newValue ? newValue.Id : null,
+                  }))
+                }
                 renderInput={(params) => (
                   <TextField
                     {...params}

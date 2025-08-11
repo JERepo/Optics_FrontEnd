@@ -11,6 +11,7 @@ import {
   useGetIndexValuesQuery,
   useGetOrderPreferenceQuery,
   useGetPatientDetailsByIdQuery,
+  useGetAllVisualAcuityQuery,
   useGetProductDesignQuery,
   useGetSavedOrderDetailsQuery,
   useGetTreatmentsQuery,
@@ -208,7 +209,9 @@ const OpticalLens = () => {
     { id: customerId.countryId },
     { skip: !customerId.countryId }
   );
-console.log("lens data",lensData)
+
+  const { data: acuity } = useGetAllVisualAcuityQuery();
+ 
   // Update productName based on dropdown selections
   useEffect(() => {
     const brand =
@@ -303,7 +306,6 @@ console.log("lens data",lensData)
 
   const [isperscriptionOpen, setIsPerscriptionOpen] = useState(false);
 
-
   return (
     <div className="max-w-7xl">
       <div className="bg-white rounded-xl shadow-sm">
@@ -336,8 +338,6 @@ console.log("lens data",lensData)
                 country={countryIsd?.country}
               />
             </div>
-           
-           
           </div>
           {selectedProduct.value === 6 && (
             <div className="mt-4">
@@ -772,6 +772,7 @@ console.log("lens data",lensData)
                 width="max-w-5xl"
               >
                 <NewPerscription
+                  visualAcuityOptions={acuity?.data.data}
                   salesPersons={salesPersons?.data.data}
                   lensData={lensData}
                   onClose={() => setIsPerscriptionOpen(false)}

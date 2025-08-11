@@ -17,12 +17,10 @@ import {
 } from "react-icons/fi";
 import { Table, TableCell, TableRow } from "../../../components/Table";
 import {
-
   useApplyFrameDiscountMutation,
   useGetSavedOrderDetailsQuery,
   useMainApplyDiscountMutation,
   useMainApplyRemoveDiscountMutation,
-
   useRemoveFrameDiscountMutation,
   useRemoveOrderMutation,
 } from "../../../api/orderApi";
@@ -197,7 +195,6 @@ const OrderDetails = () => {
   const [removingDiscounts, setRemovingDiscounts] = useState({});
   const [deletingItems, setDeletingItems] = useState({});
   const [comment, setComment] = useState("");
-  
 
   // API queries
   const { data: savedOrders, isLoading: savedOrdersLoading } =
@@ -205,7 +202,6 @@ const OrderDetails = () => {
 
   const [removeOrder, { isLoading: isRemoveLoading }] =
     useRemoveOrderMutation();
-
 
   const [applyDiscount] = useMainApplyDiscountMutation();
   const [removeDiscount] = useMainApplyRemoveDiscountMutation();
@@ -345,7 +341,7 @@ const OrderDetails = () => {
       }).unwrap();
       toast.success("Product removed Successfully");
     } catch (error) {
-      toast.error(error.message)
+      toast.error(error.message);
     } finally {
       setDeletingItems((prev) => {
         const newState = { ...prev };
@@ -381,7 +377,7 @@ const OrderDetails = () => {
       PowerSpecs,
       Variation,
       Specs,
-      Color
+      Color,
     } = item;
     const clean = (val) => {
       if (
@@ -693,7 +689,11 @@ const OrderDetails = () => {
                   </TableRow>
                 );
               }}
-              emptyMessage="No orders found. Click 'Add Product' to create one."
+              emptyMessage={
+                savedOrdersLoading
+                  ? "Loading..."
+                  : "No orders found. Click 'Add Product' to create one."
+              }
               pagination={false}
             />
           </div>

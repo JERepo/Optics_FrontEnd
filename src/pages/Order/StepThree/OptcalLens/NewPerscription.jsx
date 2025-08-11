@@ -177,12 +177,7 @@ const NewPrescription = ({
     const remarksError = validateDataField("remarks", prescriptionData.remarks);
     if (remarksError) errors.add(remarksError);
 
-    if (
-      prescriptionData.prescriptionFrom === 1 &&
-      !prescriptionData.doctorFile
-    ) {
-      errors.add("Prescription file is required when selected 'From Doctor'.");
-    }
+   
 
     return Array.from(errors);
   };
@@ -222,21 +217,13 @@ const NewPrescription = ({
       liveErrors.filter(
         (e) =>
           !e.includes("Remarks") &&
-          !e.includes("Brand") &&
-          !e.includes("Prescription file")
+          !e.includes("Brand") 
       )
     );
 
     const err = validateDataField(field, value);
     if (err) errors.add(err);
 
-    if (
-      field === "prescriptionFrom" &&
-      value === 1 &&
-      !prescriptionData.doctorFile
-    ) {
-      errors.add("Prescription file is required when selected 'From Doctor'.");
-    }
 
     setLiveErrors([...errors]);
   };
@@ -413,6 +400,16 @@ const NewPrescription = ({
   };
   return (
     <div className="mt-5 space-y-4">
+      {isPrescription && 
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 text-lg font-medium text-neutral-600">
+            Patient Name : {customerId.patientName}
+        </div> 
+         <div className="flex items-center gap-3 text-lg font-medium text-neutral-600">
+            Patient Mobile : {customerId.mobileNo}
+        </div>
+        </div>}
+      <div></div>
       {/* Brand Selection */}
       <div className="flex justify-between w-full items-center">
         <div className="w-1/2">
@@ -528,7 +525,7 @@ const NewPrescription = ({
                           key={opt.value || opt.Id}
                           value={opt.value || opt.Id}
                         >
-                          {opt.label || opt.Name}
+                          {opt.label || opt.VisualAcuity}
                         </option>
                       ))}
                     </select>

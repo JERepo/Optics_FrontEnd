@@ -31,6 +31,13 @@ import {
   useUpdateVendorMutation,
 } from "../../api/vendorApi";
 
+const Section = ({ title, children }) => (
+  <div className="bg-white shadow-sm border border-gray-200 rounded-2xl p-6 space-y-4 mt-5">
+    {title && <h2 className="text-xl font-semibold text-gray-800">{title}</h2>}
+    {children}
+  </div>
+);
+
 const EditVendor = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -90,8 +97,8 @@ const EditVendor = () => {
 
     const fetchVendorData = async () => {
       const payload = {
-        id : id
-      }
+        id: id,
+      };
       try {
         await getAllVendorById(payload);
       } catch (error) {
@@ -256,7 +263,10 @@ const EditVendor = () => {
     }
     if (!vendorFormData.vendor_pincode?.trim()) {
       newErrors.vendor_pincode = "PIN code is required";
-    } else if (!/^\d{6}$/.test(vendorFormData.vendor_pincode)) {
+    } else if (
+      !/^\d{6}$/.test(vendorFormData.vendor_pincode) &&
+      vendorFormData.vendor_type === 0
+    ) {
       newErrors.vendor_pincode = "PIN code must be 6 digits";
     }
     if (!vendorFormData.vendor_city?.trim()) {
@@ -269,8 +279,11 @@ const EditVendor = () => {
       newErrors.vendor_country = "Country is required";
     }
 
-    if(vendorFormData.multiDelivery === 0 && !vendorFormData.deliveryLocationId){
-      newErrors.deliveryLocationId = "Location should be mandatory"
+    if (
+      vendorFormData.multiDelivery === 0 &&
+      !vendorFormData.deliveryLocationId
+    ) {
+      newErrors.deliveryLocationId = "Location should be mandatory";
     }
 
     const hasAnyContact =
@@ -522,7 +535,7 @@ const EditVendor = () => {
   if (isVedorLoading || isRimDataFetching || isIndexDataFetching)
     return <h1>Vendor loading</h1>;
   return (
-    <div className="max-w-6xl p-6 bg-white rounded-lg shadow-md">
+    <div className="max-w-7xl p-6 bg-white rounded-lg shadow-md">
       {/* Header */}
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">
@@ -642,7 +655,7 @@ const EditVendor = () => {
           />
 
           {/* Fitting Price Configuration */}
-          <div className="bg-white rounded-lg shadow-md p-6 mt-4">
+          <div className="bg-white rounded-lg shadow-md p-6 mt-4 mb-4">
             <h3 className="text-xl font-semibold text-gray-800 mb-4">
               Fitting Price Configuration
             </h3>
@@ -665,146 +678,135 @@ const EditVendor = () => {
             )}
           </div>
 
-          <div className="flex flex-col gap-5 mt-5">
-            <div className="flex items-center gap-3">
-              <label>PO Approval</label>
-              <Radio
-                label="No"
-                name="pOApproval"
-                value="0"
-                onChange={handleChange}
-                checked={vendorFormData.pOApproval === 0}
-              />
-              <Radio
-                label="Yes"
-                name="pOApproval"
-                value="1"
-                onChange={handleChange}
-                checked={vendorFormData.pOApproval === 1}
-              />
-            </div>
-            <div className="flex flex-col gap-4">
+          <Section title="Purchase Order (PO)">
+            <div className="flex flex-col gap-5 mt-5">
               <div className="flex items-center gap-3">
-                <label>PO Multi Delivery</label>
+                <label>Approval Required</label>
                 <Radio
                   label="No"
-                  name="multiDelivery"
+                  name="pOApproval"
                   value="0"
                   onChange={handleChange}
-                  checked={vendorFormData.multiDelivery === 0}
+                  checked={vendorFormData.pOApproval === 0}
                 />
                 <Radio
                   label="Yes"
-                  name="multiDelivery"
+                  name="pOApproval"
                   value="1"
                   onChange={handleChange}
-                  checked={vendorFormData.multiDelivery === 1}
+                  checked={vendorFormData.pOApproval === 1}
                 />
               </div>
-              {vendorFormData.multiDelivery === 0 && (
-                <div>
-                  <Select
-                  label="Select Location *"
-                    name="deliveryLocationId"
-                    value={vendorFormData.deliveryLocationId}
-                    options={allLocations?.data}
-                    optionLabel="LocationName"
-                    optionValue="Id"
-                    onChange={(e) =>
-                      setVendorFormData((prev) => ({
-                        ...prev,
-                        deliveryLocationId: e.target.value,
-                      }))
-                    }
-                    defaultOption="Select Location"
-                    error={errors.deliveryLocationId}
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-3">
+                  <label>Multi-Delivery Delivery</label>
+                  <Radio
+                    label="No"
+                    name="multiDelivery"
+                    value="0"
+                    onChange={handleChange}
+                    checked={vendorFormData.multiDelivery === 0}
+                  />
+                  <Radio
+                    label="Yes"
+                    name="multiDelivery"
+                    value="1"
+                    onChange={handleChange}
+                    checked={vendorFormData.multiDelivery === 1}
                   />
                 </div>
-              )}
+                {vendorFormData.multiDelivery === 0 && (
+                  <div className="w-1/2">
+                    <Select
+                      label="Select Location *"
+                      name="deliveryLocationId"
+                      value={vendorFormData.deliveryLocationId}
+                      options={allLocations?.data}
+                      optionLabel="LocationName"
+                      optionValue="Id"
+                      onChange={(e) =>
+                        setVendorFormData((prev) => ({
+                          ...prev,
+                          deliveryLocationId: e.target.value,
+                        }))
+                      }
+                      defaultOption="Select Location"
+                      error={errors.deliveryLocationId}
+                    />
+                  </div>
+                )}
+              </div>
+             
             </div>
-            <div className="flex items-center gap-3">
-              <label>GRN Price for DC</label>
-              <Radio
-                label="No"
-                name="dCGRNPrice"
-                value="0"
-                onChange={handleChange}
-                checked={vendorFormData.dCGRNPrice === 0}
-              />
-              <Radio
-                label="Yes"
-                name="dCGRNPrice"
-                value="1"
-                onChange={handleChange}
-                checked={vendorFormData.dCGRNPrice === 1}
-              />
-            </div>
-          </div>
-
+          </Section>
           {/* credit charge details */}
-          <div>
-            <div className="flex gap-5 mt-5">
-              <div className="flex gap-3 items-center">
-                <label className="font-medium text-gray-700">
-                  Credit From:
-                </label>
-                <div className="flex gap-3">
-                  <Radio
-                    label="Delivery date"
-                    name="credit_form"
-                    value="0"
-                    checked={vendorFormData.credit_form === 0}
-                    onChange={handleChange}
-                  />
-                  <Radio
-                    label="Invoice date"
-                    name="credit_form"
-                    value="1"
-                    checked={vendorFormData.credit_form === 1}
-                    onChange={handleChange}
-                  />
+          <Section title="Accounting Details">
+            <div>
+              <div className="flex gap-5 mt-5 flex-col">
+                <div className="flex gap-3 items-center">
+                  <label className="font-medium text-gray-700">
+                    Credit From:
+                  </label>
+                  <div className="flex gap-3">
+                    <Radio
+                      label="Delivery date"
+                      name="credit_form"
+                      value="0"
+                      checked={vendorFormData.credit_form === 0}
+                      onChange={handleChange}
+                    />
+                    <Radio
+                      label="Invoice date"
+                      name="credit_form"
+                      value="1"
+                      checked={vendorFormData.credit_form === 1}
+                      onChange={handleChange}
+                    />
+                  </div>
                 </div>
-              </div>
-              <div>
-                <Input
-                  name="credit_days"
-                  value={vendorFormData.credit_days}
-                  onChange={handleChange}
-                  placeholder="Enter Credit days"
-                  error={errors.credit_days}
-                />
-              </div>
-              <div>
-                <Input
-                  name="opening_balance"
-                  value={vendorFormData.opening_balance}
-                  onChange={handleChange}
-                  placeholder="Enter Opening balance"
-                  error={errors.opening_balance}
-                />
-              </div>
-              <div className="flex gap-3 items-center">
-                <label className="font-medium text-gray-700">OBType:</label>
-                <div className="flex gap-3">
-                  <Radio
-                    label="DR"
-                    name="OBType"
-                    value="0"
-                    checked={vendorFormData.OBType === 0}
-                    onChange={handleChange}
-                  />
-                  <Radio
-                    label="CR"
-                    name="OBType"
-                    value="1"
-                    checked={vendorFormData.OBType === 1}
-                    onChange={handleChange}
-                  />
+                <div className="flex gap-5 items-center">
+                  <div>
+                    <Input
+                      label="Credit Days"
+                      name="credit_days"
+                      value={vendorFormData.credit_days}
+                      onChange={handleChange}
+                      placeholder="Enter Credit days"
+                      error={errors.credit_days}
+                    />
+                  </div>
+                  <div>
+                    <Input
+                      label="Opening Balance"
+                      name="opening_balance"
+                      value={vendorFormData.opening_balance}
+                      onChange={handleChange}
+                      placeholder="Enter Opening balance"
+                      error={errors.opening_balance}
+                    />
+                  </div>
+                  <div className="flex gap-3 items-center">
+                    <div className="flex gap-3">
+                      <Radio
+                        label="DR"
+                        name="OBType"
+                        value="0"
+                        checked={vendorFormData.OBType === 0}
+                        onChange={handleChange}
+                      />
+                      <Radio
+                        label="CR"
+                        name="OBType"
+                        value="1"
+                        checked={vendorFormData.OBType === 1}
+                        onChange={handleChange}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-
+          </Section>
           <div className="mt-8 flex justify-end">
             <Button
               onClick={handleSave}
@@ -814,7 +816,7 @@ const EditVendor = () => {
               isLoading={isVendorCreating || isVendorUpdating}
               className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm"
             >
-              {id ? "Update Vendor Information" : "Save Vendor Information"}
+              {id ? "Update" : "Save"}
             </Button>
           </div>
 

@@ -335,6 +335,11 @@ export const orderApi = createApi({
         url: `/api/v1/prescription/getbyid/${id}`,
       }),
     }),
+    getAllVisualAcuity: builder.query({
+      query: () => ({
+        url: `/api/v1/prescription/all-visual-acuity`,
+      }),
+    }),
 
     saveFinalPayment: builder.mutation({
       query: ({ orderId, payload }) => ({
@@ -376,6 +381,7 @@ export const {
   useGetOrderViewByIdQuery,
 
   // OPTICAL LENS
+  useGetAllVisualAcuityQuery,
   useGetOrderPreferenceQuery,
   useGetFocalityQuery,
   useGetFamilyQuery,

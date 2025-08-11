@@ -221,7 +221,7 @@ export const CustomerProvider = ({ children }) => {
     pOApproval: 1,
     multiDelivery: 0,
     deliveryLocationId: null,
-    dCGRNPrice: 1,
+    dCGRNPrice: 0,
   });
 
   return (

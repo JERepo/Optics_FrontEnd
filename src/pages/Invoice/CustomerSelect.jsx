@@ -7,10 +7,12 @@ import {
 } from "../../api/customerApi";
 import Loader from "../../components/ui/Loader";
 import {
+  useGenerateInvoiceMutation,
   useGetAllOrderMasterQuery,
   useGetPatientsQuery,
   useGetProductDetailsMutation,
   useLazyGetBatchDetailsQuery,
+  useSaveBatchDetailsMutation,
 } from "../../api/InvoiceApi";
 import { useSelector } from "react-redux";
 import Radio from "../../components/Form/Radio";
@@ -19,9 +21,14 @@ import Button from "../../components/ui/Button";
 import { Table, TableCell, TableRow } from "../../components/Table";
 import Modal from "../../components/ui/Modal";
 import { useGetLocationByIdQuery } from "../../api/roleManagementApi";
-import { FiEdit } from "react-icons/fi";
+import { FiEdit, FiPlus, FiRefreshCw, FiTrash2 } from "react-icons/fi";
 import { formatINR } from "../../utils/formatINR";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router";
+import PaymentFlow from "../Order/StepSix/PaymentFlow";
+import { useOrder } from "../../features/OrderContext";
+import { format } from "date-fns";
+import Textarea from "../../components/Form/Textarea";
 
 const getShortTypeName = (id) => {
   if (id === null || id === undefined) return;
@@ -44,9 +51,12 @@ const getProductName = (order) => {
     treatmentName,
     specs,
     hSN,
+    category,
     barcode,
     fittingPrice,
     fittingGSTPercentage,
+    batchCode,
+    expiry,
   } = order;
 
   const clean = (val) => {
@@ -61,6 +71,14 @@ const getProductName = (order) => {
     return String(val).trim();
   };
 
+  const cleanPower = (val) => {
+    const cleaned = clean(val);
+    if (!cleaned) return "";
+    const num = parseFloat(cleaned);
+    if (isNaN(num)) return "";
+    return num >= 0 ? `+${num}` : `${num}`;
+  };
+
   if (productType === 1) {
     const brand = clean(order.brandName);
     const model = clean(order.modelNo);
@@ -70,12 +88,18 @@ const getProductName = (order) => {
     const temple = clean(order.templeLength);
     const barcode = clean(order.barcode);
     const hsn = clean(order.hSN);
+    const cat = category === 1 ? "Optical Frame" : "Sunglass";
 
-    const line1 = `${[brand, model, color].filter(Boolean).join(" ")}`;
+    const line1 = [brand, model, color].filter(Boolean).join(" ");
     const line2 = [size, dbl, temple].filter(Boolean).join("-");
-    const line3 = "OpticalFrame/Sunglass";
 
-    return [line1, line2, line3, `Barcode: ${barcode}`, `HSN: ${hsn}`]
+    return [
+      line1,
+      line2,
+      cat,
+      barcode && `Barcode: ${barcode}`,
+      hsn && `HSN: ${hsn}`,
+    ]
       .filter(Boolean)
       .join("\n");
   }
@@ -88,11 +112,10 @@ const getProductName = (order) => {
     const hsn = clean(order.hSN);
 
     return [
-      `${brand} ${name}`.trim(),
-      `Variation: ${variation}`,
-      
-      `Barcode: ${barcode}`,
-      `HSN: ${hsn}`,
+      [brand, name].filter(Boolean).join(" "),
+      variation && `Variation: ${variation}`,
+      barcode && `Barcode: ${barcode}`,
+      hsn && `HSN: ${hsn}`,
     ]
       .filter(Boolean)
       .join("\n");
@@ -100,31 +123,42 @@ const getProductName = (order) => {
 
   if (productType === 3) {
     const name = clean(order.productName);
-    const brandName = clean(order.brandName)
+    const brand = clean(order.brandName);
     const hsn = clean(order.hSN);
-    const barcode = clean(order.barcode);
+    const barcode = clean(order.batchBarCode || order.barcode);
 
-    const sph = clean(specs?.sphericalPower);
-    const cyld = clean(specs?.cylindricalPower);
+    const sph = cleanPower(specs?.sphericalPower);
+    const cyld = cleanPower(specs?.cylindricalPower);
     const axis = clean(specs?.axis);
-    const addl = clean(specs?.additional);
+    const addl = cleanPower(specs?.additional);
     const clr = clean(specs?.color);
 
     const specsList = [
-      `SPH: ${sph}`,
-      `CYL: ${cyld}`,
-      `Axis: ${axis}`,
-      `Add: ${addl}`,
-      `Clr: ${clr}`,
-    ].join(", ");
+      sph && `SPH: ${sph}`,
+      cyld && `CYL: ${cyld}`,
+      axis && `Axis: ${axis}`,
+      addl && `Add: ${addl}`,
+    ]
+      .filter(Boolean)
+      .join(", ");
 
-    return [`${name} ${brandName}`, specsList, `Barcode: ${barcode}`, `HSN: ${hsn}`]
+    return [
+      [brand, name].filter(Boolean).join(" "),
+      specsList,
+      clr && `Color: ${clr}`,
+      barcode && `Barcode: ${barcode}`,
+      (batchCode || expiry) &&
+        `Batch Code: ${batchCode || "-"} | Expiry: ${
+          expiry ? expiry.split("-").reverse().join("/") : "-"
+        }`,
+      hsn && `HSN: ${hsn}`,
+    ]
       .filter(Boolean)
       .join("\n");
   }
 
   if (productType === 0) {
-    const olLine = `${[
+    const olLine = [
       brandName,
       focality,
       familyName,
@@ -135,31 +169,39 @@ const getProductName = (order) => {
     ]
       .map(clean)
       .filter(Boolean)
-      .join(" ")}`;
+      .join(" ");
 
     const right = specs?.powerDetails?.right || {};
     const left = specs?.powerDetails?.left || {};
 
-    const rightPower = [
-      `R:`,
-      `SPH: ${clean(right.sphericalPower)}`,
-      `Add: ${clean(right.addition)}`,
-      `Dia: ${clean(right.diameter)}`,
-    ].join(", ");
+    const rightParts = [
+      cleanPower(right.sphericalPower) &&
+        `SPH: ${cleanPower(right.sphericalPower)}`,
+      cleanPower(right.addition) && `Add: ${cleanPower(right.addition)}`,
+      clean(right.diameter) && `Dia: ${clean(right.diameter)}`,
+    ].filter(Boolean);
 
-    const leftPower = [
-      `L:`,
-      `SPH: ${clean(left.sphericalPower)}`,
-      `Add: ${clean(left.addition)}`,
-      `Dia: ${clean(left.diameter)}`,
-    ].join(", ");
+    const leftParts = [
+      cleanPower(left.sphericalPower) &&
+        `SPH: ${cleanPower(left.sphericalPower)}`,
+      cleanPower(left.addition) && `Add: ${cleanPower(left.addition)}`,
+      clean(left.diameter) && `Dia: ${clean(left.diameter)}`,
+    ].filter(Boolean);
 
-    const powerLine = `${rightPower}\n${leftPower}`;
+    const powerLine = [
+      rightParts.length > 0 ? `R: ${rightParts.join(", ")}` : "",
+      leftParts.length > 0 ? `L: ${leftParts.join(", ")}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
 
-    const addOnLine = `Addon: ${clean(specs?.addOn?.addOnName)}`;
-    const tintLine = `Tint: ${clean(specs?.tint?.tintName)}`;
-    const barcodeLine = `Barcode: ${clean(barcode)}`;
-    const hsnLine = `HSN: ${clean(hSN)}`;
+    const addOnLine =
+      clean(specs?.addOn?.addOnName) &&
+      `Addon: ${clean(specs?.addOn?.addOnName)}`;
+    const tintLine =
+      clean(specs?.tint?.tintName) && `Tint: ${clean(specs?.tint?.tintName)}`;
+    const barcodeLine = clean(barcode) && `Barcode: ${clean(barcode)}`;
+    const hsnLine = clean(hSN) && `HSN: ${clean(hSN)}`;
 
     let fittingLine = "";
     const fitPrice = parseFloat(fittingPrice);
@@ -169,15 +211,7 @@ const getProductName = (order) => {
       fittingLine = `Fitting Price: ₹${totalFitting}`;
     }
 
-    return [
-      olLine,
-      powerLine,
-      addOnLine,
-      tintLine,
-      barcodeLine,
-      hsnLine,
-      fittingLine,
-    ]
+    return [olLine, powerLine, addOnLine, tintLine, hsnLine, fittingLine]
       .filter(Boolean)
       .join("\n");
   }
@@ -186,7 +220,16 @@ const getProductName = (order) => {
 };
 
 const CustomerSelect = () => {
-  const { hasMultipleLocations } = useSelector((state) => state.auth);
+  const navigate = useNavigate();
+  const {
+    updatePaymentDetails,
+    customerId,
+    setCustomerId,
+    fullPayments,
+    setFullPayments,
+  } = useOrder();
+
+  const { hasMultipleLocations, user } = useSelector((state) => state.auth);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [billInTheName, setBillInTheName] = useState(0);
   const [isNextClicked, setIsNextClicked] = useState(false);
@@ -197,7 +240,8 @@ const CustomerSelect = () => {
   const [editValue, setEditValue] = useState("");
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [selectedOrderForBatch, setSelectedOrderForBatch] = useState(null);
-  console.log(selectedProducts)
+  const [collectPayment, setCollectPayment] = useState(false);
+  const [invoiceNote, setInvoiceNote] = useState("");
 
   const { data: contactResp, isLoading: isPatientLoading } =
     useGetPatientsQuery({
@@ -218,18 +262,51 @@ const CustomerSelect = () => {
       { skip: !selectedPatient?.CustomerMasterID }
     );
 
-  const { data: allMaster, isLoading: isMasterLoading } =
-    useGetAllOrderMasterQuery(
-      { patientId: selectedPatient?.Id },
-      { skip: !selectedPatient?.Id }
-    );
+  const {
+    data: allMaster,
+    isLoading: isMasterLoading,
+    refetch,
+  } = useGetAllOrderMasterQuery(
+    { patientId: selectedPatient?.Id },
+    { skip: !selectedPatient?.Id }
+  );
 
+  const [generateInvoice, { isLoading: isGenerateInvoice }] =
+    useGenerateInvoiceMutation();
   const [getBatches, { data: batchDetails, isFetching: isBatchesFetching }] =
     useLazyGetBatchDetailsQuery();
   const [
     getProductDetails,
     { data: productData, isLoading: isProductDataLoading },
   ] = useGetProductDetailsMutation();
+
+  const handleRefresh = async () => {
+    try {
+      setFullPayments([]);
+      updatePaymentDetails(null);
+      setLocalProductData([]);
+      setSelectedProducts([]);
+      setIsBatchCodeOpen(false);
+      setSelectedOrderForBatch(null);
+      setEditingOrderId(null);
+      setEditingField(null);
+      setEditValue("");
+
+      await refetch();
+
+      if (masterIds.length) {
+        const payload = {
+          masterId: masterIds,
+          productType: null,
+          locationId: parseInt(hasMultipleLocations[0]),
+        };
+        await getProductDetails({ payload }).unwrap();
+      }
+    } catch (error) {
+      console.error("Error during refresh:", error);
+      toast.error("Failed to refresh data");
+    }
+  };
 
   useEffect(() => {
     if (productData) {
@@ -240,7 +317,12 @@ const CustomerSelect = () => {
         totalValue:
           (order.discountedSellingPrice || 0) *
           (order.orderQty - order.billedQty - order.cancelledQty),
-        batchData: [], // Initialize batchData for each product
+        batchData: order.batchData || [],
+        availableQty:
+          order.stock?.reduce(
+            (sum, stockItem) => sum + (stockItem.quantity || 0),
+            0
+          ) || 0,
       }));
       setLocalProductData(updatedProductData);
     }
@@ -249,6 +331,7 @@ const CustomerSelect = () => {
   const masterIds = [
     ...new Set(allMaster?.data?.orders?.map((o) => o.OrderMasterId) || []),
   ];
+  console.log("master id", masterIds);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -286,8 +369,15 @@ const CustomerSelect = () => {
     return isAllowedStatus && hasStockInLocation;
   });
 
+  const handleSelectAndNext = () => {
+    setCustomerId({
+      companyId: selectedPatient?.CustomerMaster?.CompanyID,
+      locationId: selectedPatient?.CustomerMaster?.CompanyID,
+      customerId: selectedPatient?.CustomerMaster?.Id,
+    });
+    setIsNextClicked(true);
+  };
   const handleEditStart = (order, field, index) => {
-    console.log("editing starting at", field, index);
     setEditingOrderId(index);
     setEditingField(field);
     setEditValue(
@@ -300,7 +390,6 @@ const CustomerSelect = () => {
   const handleEditChange = (e) => {
     const value = e.target.value;
     setEditValue(value);
-    // Validate on change to provide immediate feedback
     if (value === "") {
       toast.error(
         `${
@@ -346,6 +435,20 @@ const CustomerSelect = () => {
         toast.error(`To Bill Qty cannot exceed ${maxToBillQty}`);
         return;
       }
+
+      // Check against batch data for contact lenses (productType === 3)
+      if (order.productType === 3 && order.batchData?.length) {
+        const totalBatchQty = order.batchData.reduce(
+          (sum, item) => sum + Number(item.availableQty),
+          0
+        );
+        if (numericValue !== totalBatchQty) {
+          toast.error(
+            `To Bill Qty (${numericValue}) must match total batch quantity (${totalBatchQty})`
+          );
+          return;
+        }
+      }
     }
 
     setLocalProductData((prev) =>
@@ -371,13 +474,28 @@ const CustomerSelect = () => {
 
   const getAvalQty = (order) => {
     if (order.productType === 0) {
-      return order.pricing?.quantity;
+      return order.pricing?.quantity || 0;
     } else if (order.productType === 3) {
-      const quantity = order.stock?.reduce(
-        (sum, stockItem) => sum + (stockItem.quantity || 0),
+      return order.availableQty || 0;
+    } else {
+      return 0;
+    }
+  };
+
+  const getPricing = (order) => {
+    if (
+      order.productType === 0 ||
+      order.productType === 1 ||
+      order.productType === 2
+    ) {
+      return order.pricing.mrp || 0;
+    } else if (order.productType === 3) {
+      const totalMrp = order.stock?.reduce(
+        (sum, p) => sum + parseFloat(p.mrp || 0),
         0
       );
-      return quantity;
+
+      return totalMrp || 0;
     } else {
       return 0;
     }
@@ -397,39 +515,274 @@ const CustomerSelect = () => {
       return [...prev, index];
     });
   };
+  console.log("local", localProductData);
+  const handleSelectAllProducts = (e) => {
+    if (e.target.checked) {
+      const allIndexes = localProductData?.map((_, idx) => idx);
+      setSelectedProducts(allIndexes);
+    } else {
+      setSelectedProducts([]);
+    }
+  };
+
+  const validateBatchCodes = () => {
+    const missingBatchCodes = selectedProducts.filter((index) => {
+      const order = localProductData[index];
+      return (
+        order.productType === 3 &&
+        order.cLBatchCode === 1 &&
+        !order.batchData?.length
+      );
+    });
+    return missingBatchCodes.length === 0;
+  };
+  const calculateGST = (sellingPrice, taxPercentage) => {
+    const price = parseFloat(sellingPrice);
+    const taxRate = parseFloat(taxPercentage) / 100;
+    const gstAmount = price - price / (1 + taxRate);
+    return {
+      gstAmount: isNaN(gstAmount) ? 0 : gstAmount.toFixed(2),
+      taxPercentage: isNaN(taxPercentage)
+        ? 0
+        : parseFloat(taxPercentage).toFixed(2),
+    };
+  };
+
+  const totalAmount = selectedProducts.reduce((sum, index) => {
+    const order = localProductData[index];
+    return parseFloat(sum + order.toBillQty * order.sellingPrice);
+  }, 0);
+
+  const totalAdvance = selectedProducts.reduce((sum, index) => {
+    const order = localProductData[index];
+    return sum + (parseFloat(order.advanceAmount) || 0);
+  }, 0);
+
+  const totalQty = selectedProducts.reduce((sum, index) => {
+    const order = localProductData[index];
+    return sum + (order.toBillQty || 0);
+  }, 0);
+
+  const totalGst = selectedProducts.reduce((sum, index) => {
+    const order = localProductData[index];
+    const gstInfo = calculateGST(
+      order.toBillQty * order.sellingPrice,
+      order.taxPercentage
+    );
+    return parseFloat(sum + parseFloat(gstInfo.gstAmount || 0));
+  }, 0);
+
+  const totalPaid = fullPayments?.reduce(
+    (sum, payment) => sum + (parseFloat(payment.Amount) || 0),
+    0
+  );
+
+  const totalBalance =
+    totalPaid > 0
+      ? totalAmount - totalPaid - totalAdvance
+      : totalAmount - totalAdvance;
+
+  const handleCollectPayment = () => {
+    if (!validateBatchCodes()) {
+      toast.error("Please add batch codes For all the selected Contact Lens");
+      return;
+    }
+
+    const payload = {
+      CompanyId: customerId.companyId,
+      TotalQty: totalQty,
+      TotalGSTValue: totalGst,
+      TotalValue: totalAmount,
+      totalAdvance: totalBalance,
+      advance: totalAdvance,
+    };
+    console.log("new payment details", payload);
+    updatePaymentDetails({ ...payload });
+    if (totalBalance > 0) {
+      setCollectPayment(true);
+    }
+  };
+
+  const handleDeletePayment = (index) => {
+    setFullPayments((prev) => prev.filter((_, i) => i !== index));
+    toast.success("Payment removed successfully!");
+    const payload = {
+      CompanyId: customerId.companyId,
+      TotalQty: totalQty,
+      TotalGSTValue: totalGst,
+      TotalValue: totalAmount,
+      totalAdvance: totalBalance,
+      advance: totalAdvance,
+    };
+
+    updatePaymentDetails({ ...payload });
+  };
+
+  const preparePaymentsStructure = () => {
+    const payments = {};
+
+    const normalizeType = (type) => {
+      switch (type.toLowerCase()) {
+        case "bank transfer":
+          return "bank";
+        case "cheque":
+          return "cheque";
+        case "upi":
+          return "upi";
+        case "card":
+          return "card";
+        case "cash":
+          return "cash";
+        case "advance":
+          return "advance";
+        default:
+          return type.toLowerCase();
+      }
+    };
+
+    fullPayments.forEach((payment) => {
+      const typeKey = normalizeType(payment.Type || "");
+      const amount = parseFloat(payment.Amount);
+      if (isNaN(amount)) return;
+
+      if (typeKey === "cash") {
+        // Cash should be a single numeric value
+        payments.cash = (payments.cash || 0) + amount;
+        return;
+      }
+
+      // Initialize only if not cash
+      if (!payments[typeKey]) {
+        payments[typeKey] = { amount: 0 };
+      }
+
+      payments[typeKey].amount += amount;
+
+      switch (typeKey) {
+        case "card":
+          payments[typeKey].PaymentMachineID = payment.PaymentMachineID;
+          payments[typeKey].ApprCode = payment.RefNo;
+          if (payment.EMI) {
+            payments[typeKey].EMI = payment.EMI;
+            payments[typeKey].EMIMonths = parseInt(payment.EMIMonths);
+            payments[typeKey].EMIBank = payment.EMIBank;
+          }
+          break;
+        case "upi":
+          payments[typeKey].PaymentMachineID = payment.PaymentMachineID;
+          break;
+        case "cheque":
+          payments[typeKey].BankMasterID = payment.BankMasterID;
+          payments[typeKey].ChequeNo = payment.ChequeDetails;
+          payments[typeKey].ChequeDate = payment.ChequeDate
+            ? format(new Date(payment.ChequeDate), "yyyy-MM-dd")
+            : null;
+          break;
+        case "bank":
+          payments[typeKey].BankAccountID = payment.BankAccountID || null;
+          payments[typeKey].ReferenceNo = payment.RefNo || "";
+          break;
+        case "advance":
+          payments[typeKey].CustomerAdvanceIDs =
+            payment.CustomerAdvanceIDs || [];
+          break;
+      }
+    });
+
+    return payments;
+  };
+
+  const handleGenerateInvoice = async () => {
+    const invoiceItems = localProductData.map((item) => {
+      return {
+        orderDetailId: item.orderDetailId,
+        batchCode: item.batchData[0]?.batchCode || null,
+        toBillQty: item.toBillQty,
+        srp: parseFloat(getPricing(item)),
+        invoicePrice: parseFloat(item.sellingPrice) || null,
+        discountedSellingPrice : parseFloat(item.discountedSellingPrice) || null,
+        AdvanceAmountused: parseFloat(item.advanceAmount) || null,
+      };
+    });
+    const payload = {
+      invoiceItems,
+      locationId: parseInt(hasMultipleLocations[0]),
+      customerId: selectedPatient.CustomerMaster?.Id,
+      patientId: selectedPatient?.Id,
+      invoiceByMethod: 0,
+      invoiceName: parseInt(billInTheName),
+      invoiceRemarks: invoiceNote,
+      totalQty: totalQty,
+      totalGSTValue: totalGst,
+      totalValue: totalAmount,
+      roundOff: 0.0,
+      balanceAmount: 0,
+      applicationUserId: user.Id,
+      creditBilling:
+        selectedPatient?.CustomerMaster?.CreditBilling === 1 ? true : false,
+    };
+
+    if (payload.creditBilling) {
+      payload.payments = preparePaymentsStructure();
+    }
+
+    console.log("final payload", payload);
+
+    try {
+      const response = await generateInvoice({ payload }).unwrap();
+      toast.success(response?.message);
+      setFullPayments([]);
+      updatePaymentDetails(null);
+    } catch (error) {
+      console.error(error);
+      const message =
+        error?.data?.message || error?.message || "Something went wrong";
+
+      toast.error(message);
+    }
+  };
 
   return (
     <div className="max-w-7xl">
       <div className="bg-white rounded-xl shadow-sm">
         <div className="p-6 border-b border-gray-100">
           {!isNextClicked && (
-            <div className="w-1/2">
-              <Autocomplete
-                options={contactResp?.data?.patients || []}
-                getOptionLabel={(option) =>
-                  `${option.CustomerName} ${option.MobNumber}`
-                }
-                value={
-                  contactResp?.data?.patients.find(
-                    (master) =>
-                      master.CustomerMasterID ===
-                      selectedPatient?.CustomerMasterID
-                  ) || null
-                }
-                onChange={(_, newValue) => setSelectedPatient(newValue || null)}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    placeholder="Select by Customer name or mobile"
-                    size="medium"
-                  />
-                )}
-                isOptionEqualToValue={(option, value) =>
-                  option.CustomerMasterID === value.CustomerMasterID
-                }
-                loading={isPatientLoading}
-                fullWidth
-              />
+            <div className="flex justify-between">
+              <div className="w-1/2">
+                <Autocomplete
+                  options={contactResp?.data?.patients || []}
+                  getOptionLabel={(option) =>
+                    `${option.CustomerName} (${option.MobNumber})`
+                  }
+                  value={
+                    contactResp?.data?.patients.find(
+                      (master) =>
+                        master.CustomerMasterID ===
+                        selectedPatient?.CustomerMasterID
+                    ) || null
+                  }
+                  onChange={(_, newValue) =>
+                    setSelectedPatient(newValue || null)
+                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      placeholder="Select by Patient name or mobile"
+                      size="medium"
+                    />
+                  )}
+                  isOptionEqualToValue={(option, value) =>
+                    option.CustomerMasterID === value.CustomerMasterID
+                  }
+                  loading={isPatientLoading}
+                  fullWidth
+                />
+              </div>
+              <div>
+                <Button variant="outline" onClick={() => navigate("/invoice")}>
+                  Back
+                </Button>
+              </div>
             </div>
           )}
 
@@ -439,39 +792,39 @@ const CustomerSelect = () => {
             selectedPatient &&
             customerData && (
               <div className="p-6 grid grid-cols-5 gap-4 text-sm">
-                <div>
+                <div className="flex gap-1">
                   <strong>Patient Name:</strong> {selectedPatient.CustomerName}
                 </div>
-                <div>
+                <div className="flex gap-1">
                   <strong>Customer Name:</strong>
                   {customerData?.data?.data?.CustomerName}
                 </div>
-                <div>
+                <div className="flex gap-1">
                   <strong>Mobile Number:</strong>
                   {customerData?.data?.data?.MobNumber}
                 </div>
                 {customerData?.data?.data?.TAXRegisteration === 1 && (
                   <>
-                    <div>
+                    <div className="flex gap-1">
                       <strong>GST No:</strong> {customerData?.data?.data?.TAXNo}
                     </div>
-                    <div>
+                    <div className="flex gap-1">
                       <strong>Address:</strong>
                       {`${customerData?.data?.data.BillAddress1} ${customerData?.data?.data.BillAddress2} ${customerData?.data?.data.BillCity}`}
                     </div>
                   </>
                 )}
                 {customerData?.data?.data?.BillingMethod === 1 && (
-                  <div>
+                  <div className="flex gap-1">
                     <strong>Billing Method:</strong> Delivery Challan(DC)
                   </div>
                 )}
                 {customerData?.data?.data?.CreditBilling === 1 && (
                   <>
-                    <div>
+                    <div className="flex gap-1">
                       <strong>Credit Billing:</strong> Yes
                     </div>
-                    <div>
+                    <div className="flex gap-1">
                       <strong>Credit Limit Available:</strong>
                       {parseFloat(
                         customerData?.data?.data?.CreditLimit
@@ -503,34 +856,49 @@ const CustomerSelect = () => {
 
           {selectedPatient && !isNextClicked && !isCustomerLoading && (
             <div className="flex justify-end">
-              <Button onClick={() => setIsNextClicked(true)}>
-                Select & Next
-              </Button>
+              <Button onClick={handleSelectAndNext}>Select & Next</Button>
             </div>
           )}
 
           {isNextClicked && (
             <div>
-              <div className="flex justify-between items-center mb-10">
-                <div className="grid grid-cols-5 gap-4 text-sm">
-                  <div>
-                    <strong>Patient Name:</strong>
-                    {selectedPatient?.CustomerName}
-                  </div>
-                  <div>
-                    <strong>Customer Name:</strong>
-                    {customerData?.data?.data?.CustomerName}
-                  </div>
-                  <div>
-                    <strong>Mobile Number:</strong> {selectedPatient?.MobNumber}
+              <div>
+                <div className="flex justify-between items-center mb-10">
+                  <div className="flex items-center gap-4 text-sm">
+                    <div className="flex gap-1">
+                      <strong>Patient Name:</strong>
+                      {selectedPatient?.CustomerName}
+                    </div>
+                    <div className="flex gap-1">
+                      <strong>Customer Name:</strong>
+                      {customerData?.data?.data?.CustomerName}
+                    </div>
+                    <div className="flex gap-1">
+                      <strong>Mobile Number:</strong>{" "}
+                      {selectedPatient?.MobNumber}
+                    </div>
                   </div>
                 </div>
-                <Button
-                  onClick={() => setIsNextClicked(false)}
-                  variant="outline"
-                >
-                  Back
-                </Button>
+                <div className="flex gap-2 justify-end mb-3">
+                  <Button
+                    onClick={handleRefresh}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <FiRefreshCw className="text-base" />
+                    Refresh
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setIsNextClicked(false);
+                      updatePaymentDetails(null);
+                      setFullPayments([]);
+                    }}
+                    variant="outline"
+                  >
+                    Back
+                  </Button>
+                </div>
               </div>
               <Table
                 columns={[
@@ -551,8 +919,28 @@ const CustomerSelect = () => {
                 ]}
                 freeze={true}
                 data={localProductData}
+                renderHeader={(column) => {
+                  if (column === "Select") {
+                    const allSelected =
+                      localProductData?.length > 0 &&
+                      selectedProducts.length === localProductData.length;
+
+                    return (
+                      <div className="flex items-center gap-1">
+                        {column}
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          onChange={handleSelectAllProducts}
+                          className="h-3 w-3"
+                        />
+                      </div>
+                    );
+                  }
+                  return column;
+                }}
                 renderRow={(order, index) => (
-                  <TableRow key={index}>
+                  <TableRow key={index} className="text-[13px]">
                     <TableCell>
                       <input
                         type="checkbox"
@@ -566,7 +954,6 @@ const CustomerSelect = () => {
                     <TableCell>{getShortTypeName(order.productType)}</TableCell>
                     <TableCell>
                       <div
-                        className="text-[13px]"
                         style={{
                           whiteSpace: "pre-wrap",
                           wordWrap: "break-word",
@@ -575,7 +962,11 @@ const CustomerSelect = () => {
                         {getProductName(order)}
                       </div>
                     </TableCell>
-                    <TableCell>{formatINR(order.pricing?.mrp) || 0}</TableCell>
+                    <TableCell>
+                      ₹{order.batchData?.length > 0
+                        ? order.mrp
+                        : formatINR(getPricing(order))}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {editingOrderId === index &&
@@ -593,7 +984,7 @@ const CustomerSelect = () => {
                           />
                         ) : (
                           <>
-                            <span>{formatINR(order.sellingPrice) || 0}</span>
+                            <span>₹{formatINR(order.sellingPrice) || 0}</span>
                             {companySettings?.data?.data?.EditInvoicePrice ===
                               1 && (
                               <FiEdit
@@ -607,9 +998,7 @@ const CustomerSelect = () => {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-[12px]">
-                      {order.orderQty}
-                    </TableCell>
+                    <TableCell>{order.orderQty}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {editingOrderId === index &&
@@ -642,27 +1031,43 @@ const CustomerSelect = () => {
                     <TableCell>
                       {formatINR(order.toBillQty * order.sellingPrice)}
                     </TableCell>
-                    <TableCell>{formatINR(order.advanceAmount) || 0}</TableCell>
+                    <TableCell>₹{formatINR(order.advanceAmount) || 0}</TableCell>
                     <TableCell>
-                      {formatINR(
+                      ₹{formatINR(
                         order.toBillQty * order.sellingPrice -
                           (order.advanceAmount || 0),
                         true
                       )}
                     </TableCell>
                     <TableCell>
-                      <button
-                        onClick={() => {
-                          setIsBatchCodeOpen(true);
-                          setSelectedOrderForBatch({ ...order, index });
-                          getBatches({
-                            clBatchId: order.cLDetailId,
-                            locationId: hasMultipleLocations[0],
-                          });
-                        }}
-                      >
-                        Add Batch Code
-                      </button>
+                      {order.productType === 3 &&
+                        order.cLBatchCode === 1 &&
+                        !order.batchData?.length &&
+                        selectedProducts.includes(index) && (
+                          <button
+                            onClick={() => {
+                              setIsBatchCodeOpen(true);
+                              setSelectedOrderForBatch({ ...order, index });
+                              getBatches({
+                                clBatchId: order.cLDetailId,
+                                locationId: hasMultipleLocations[0],
+                              });
+                            }}
+                            className="
+                            bg-black hover:bg-primary-600 
+                            text-white 
+                            py-2 px-4 
+                            rounded 
+                            transition-colors duration-200 
+                            flex items-center gap-2
+                            shadow-sm hover:shadow-md
+                            text-sm font-medium
+                          "
+                          >
+                            <FiPlus className="text-base" />
+                            Batch Code
+                          </button>
+                        )}
                     </TableCell>
                   </TableRow>
                 )}
@@ -670,17 +1075,137 @@ const CustomerSelect = () => {
                   isProductDataLoading ? "Loading..." : "No data found"
                 }`}
               />
-              <div className="flex justify-end mt-4">
-                <Button
-                  onClick={() => {
-                    // Add your invoice generation logic here using selectedProducts
-                    console.log("Selected products for invoicing:", selectedProducts.map(i => localProductData[i]));
-                  }}
-                  disabled={selectedProducts.length === 0}
-                >
-                  Generate Invoice
-                </Button>
+              {/* Payment Entries */}
+              {fullPayments.length > 0 && !collectPayment && (
+                <div className="mt-8">
+                  <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                    Payment Entries
+                  </h2>
+                  <div className="rounded-lg">
+                    <Table
+                      columns={[
+                        "Type",
+                        "Amount",
+                        "Ref No",
+                        "Payment Machine",
+                        "Bank Name",
+                        "Cheque Details",
+                        "Account Number",
+                        "Action",
+                      ]}
+                      data={fullPayments}
+                      renderRow={(item, index) => (
+                        <TableRow key={index} className="hover:bg-gray-50">
+                          <TableCell>{item.Type}</TableCell>
+                          <TableCell className="font-medium">
+                            ₹
+                            {Number(item.Amount).toLocaleString("en-IN", {
+                              minimumFractionDigits: 2,
+                            })}
+                          </TableCell>
+                          <TableCell>{item.RefNo || "-"}</TableCell>
+                          <TableCell>{item.PaymentMachine || "-"}</TableCell>
+                          <TableCell>{item.BankName || "-"}</TableCell>
+                          <TableCell>
+                            {item.ChequeDetails ? (
+                              <>
+                                {item.ChequeDetails}
+                                <br />
+                                Cheque Date:{" "}
+                                {item.ChequeDate
+                                  ? format(
+                                      new Date(item.ChequeDate),
+                                      "dd-MM-yyyy"
+                                    )
+                                  : "-"}
+                              </>
+                            ) : (
+                              "-"
+                            )}
+                          </TableCell>
+                          <TableCell>{item.AccountNumber || "-"}</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              onClick={() => handleDeletePayment(index)}
+                              className="text-red-500 hover:text-red-700"
+                              icon={FiTrash2}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    />
+                  </div>
+                </div>
+              )}
+              <PaymentDetails
+                isOpen={collectPayment}
+                onClose={() => setCollectPayment(false)}
+                collectPayment={collectPayment}
+              />
+
+              <div className="flex justify-end mt-4 gap-2">
+                {selectedProducts.length > 0 && (
+                  <div className="flex gap-10">
+                    <div className="flex gap-3">
+                      <span className="text-xl font-semibold">
+                        Total Qty: ₹{formatINR(totalQty)}
+                      </span>
+                      <span className="text-xl font-semibold">
+                        Total GST: ₹{formatINR(totalGst)}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="flex flex-col gap-3">
+                        <span className="text-xl font-semibold">
+                          Total Amount: ₹{formatINR(totalAmount)}
+                        </span>
+                        <span className="text-xl font-semibold">
+                          Total Advance: ₹{formatINR(totalAdvance)}
+                        </span>
+                        <span className="text-xl font-semibold">
+                          Total Balance: ₹{formatINR(totalBalance, true)}
+                        </span>
+                      </div>
+                      <div className="mt-5">
+                        {selectedPatient?.CustomerMaster?.CreditBilling ===
+                          0 && (
+                          <>
+                            {totalBalance > 0 && (
+                              <Button onClick={handleCollectPayment}>
+                                Collect Payment
+                              </Button>
+                            )}
+                          </>
+                        )}
+
+                        {(totalBalance === 0 ||
+                          selectedPatient?.CustomerMaster?.CreditBilling ===
+                            1) && (
+                          <Button
+                            onClick={handleGenerateInvoice}
+                            isLoading={isGenerateInvoice}
+                            disabled={isGenerateInvoice}
+                          >
+                            {customerData?.data?.data?.BillingMethod === 1
+                              ? "Generate DC"
+                              : "Generate Invoice"}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
+            </div>
+          )}
+          {isNextClicked && (
+            <div className="mt-5">
+              <Textarea
+                label="Invoice Note"
+                value={invoiceNote}
+                onChange={(e) => setInvoiceNote(e.target.value)}
+              />
             </div>
           )}
 
@@ -692,13 +1217,9 @@ const CustomerSelect = () => {
             }}
             batchDetails={batchDetails}
             selectedOrder={selectedOrderForBatch}
-            updateProductBatchData={(index, newBatchData) => {
-              setLocalProductData((prev) =>
-                prev.map((item, idx) =>
-                  idx === index ? { ...item, batchData: newBatchData } : item
-                )
-              );
-            }}
+            locations={hasMultipleLocations}
+            setLocalProductData={setLocalProductData}
+            setSelectedProducts={setSelectedProducts}
           />
         </div>
       </div>
@@ -706,9 +1227,15 @@ const CustomerSelect = () => {
   );
 };
 
-export default CustomerSelect;
-
-const BatchCode = ({ isOpen, onClose, batchDetails, selectedOrder, updateProductBatchData }) => {
+const BatchCode = ({
+  isOpen,
+  onClose,
+  batchDetails,
+  selectedOrder,
+  locations,
+  setLocalProductData,
+  setSelectedProducts,
+}) => {
   const [batchData, setBatchData] = useState({
     isBatchSelectorEnter: 0,
     batchCode: null,
@@ -718,6 +1245,9 @@ const BatchCode = ({ isOpen, onClose, batchDetails, selectedOrder, updateProduct
     toBillQty: 1,
     batchData: [],
   });
+
+  const [saveBatchDetails, { isLoading: isBatchDetailsSaving }] =
+    useSaveBatchDetailsMutation();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -737,13 +1267,20 @@ const BatchCode = ({ isOpen, onClose, batchDetails, selectedOrder, updateProduct
       batchData: existingData,
     } = batchData;
 
-    // Validation: To Bill Qty <= Available Qty
+    const matchedBatch = batchDetails?.data?.batches?.find(
+      (item) => item.CLBatchBarCode === barcode
+    );
+
+    if (!matchedBatch) {
+      toast.error("Invalid batch selected");
+      return;
+    }
+
     if (Number(toBillQty) > Number(avlQty)) {
       toast.error("To Bill Qty cannot be greater than Available Qty");
       return;
     }
 
-    // Validation: Prevent duplicate batchCode
     const isDuplicate = existingData.some(
       (item) => item.batchCode === batchCode
     );
@@ -752,12 +1289,19 @@ const BatchCode = ({ isOpen, onClose, batchDetails, selectedOrder, updateProduct
       return;
     }
 
-    // Add batch and reset relevant fields
     setBatchData((prev) => ({
       ...prev,
       batchData: [
         ...prev.batchData,
-        { batchCode, expiryDate, toBillQty, barcode },
+        {
+          batchCode,
+          expiryDate,
+          toBillQty,
+          barcode,
+          avlQty,
+          mrp: matchedBatch.CLMRP,
+          sellingPrice: matchedBatch.SellingPrice,
+        },
       ],
       barcode: null,
       batchCode: null,
@@ -767,32 +1311,95 @@ const BatchCode = ({ isOpen, onClose, batchDetails, selectedOrder, updateProduct
     }));
   };
 
-  const handleSaveFinalBatch = () => {
+  const handleSaveFinalBatch = async () => {
     const totalBatchQty = batchData.batchData.reduce(
       (sum, item) => sum + Number(item.toBillQty),
       0
     );
-    
-    if (totalBatchQty >= selectedOrder?.toBillQty) {
+
+    if (totalBatchQty > selectedOrder?.toBillQty) {
       toast.error(
         `Total batch quantity (${totalBatchQty}) cannot exceed product's To Bill Qty (${selectedOrder?.toBillQty})`
       );
       return;
     }
 
-    // Update the product's batchData
-    updateProductBatchData(selectedOrder?.index, batchData.batchData);
+    const payload = {
+      CLDetailId: selectedOrder?.cLDetailId,
+      batches: batchData.batchData.map((item) => ({
+        BatchCode: item.batchCode,
+        ExpiryDate: item.expiryDate,
+        AvlQty: item.avlQty,
+        ToBillQty: item.toBillQty,
+      })),
+    };
 
-    // Here you would typically make an API call to save the batch data
-    // For example:
-    // await saveBatchData({
-    //   orderId: selectedOrder?.id,
-    //   batchData: batchData.batchData,
-    //   locationId: hasMultipleLocations[0],
-    // });
+    try {
+      const response = await saveBatchDetails({
+        orderDetailedId: selectedOrder?.orderDetailId,
+        locationId: locations[0],
+        payload,
+      }).unwrap();
 
-    toast.success("Batch codes saved successfully");
-    onClose();
+      setLocalProductData((prev) => {
+        const newProductData = prev.filter(
+          (_, idx) => idx !== selectedOrder.index
+        );
+        const batchProducts = response.map((batch, idx) => ({
+          ...prev[selectedOrder.index],
+          orderNo: prev[selectedOrder.index].orderNo,
+          productName: batch.ProductName.split(" ").slice(1).join(" "),
+          hSN: batch.HSN,
+          discountedSellingPrice: batch.DiscountedSellingPrice,
+          orderQty: batch.OrderQty,
+          batchCode: batch.BatchCode,
+          batchBarCode: batch.BatchBarCode,
+          expiry: batch.Expiry,
+          mrp: batch.MRP,
+          availableQty: batch.AvailableQty,
+          toBillQty: batch.ToBillQty,
+          totalValue: batch.RowTotal,
+          advanceAmount: batch.AdvanceUsed,
+          balance: batch.BalanceAtRow,
+          orderDetailId: prev[selectedOrder.index].orderDetailId,
+          productType: 3,
+          batchData: [
+            {
+              batchCode: batch.BatchCode,
+              batchBarCode: batch.BatchBarCode,
+              expiry: batch.Expiry,
+              mrp: batch.MRP,
+              availableQty: batch.AvailableQty,
+              toBillQty: batch.ToBillQty,
+            },
+          ],
+        }));
+
+        newProductData.splice(selectedOrder.index, 0, ...batchProducts);
+        return newProductData;
+      });
+
+      setSelectedProducts((prev) => {
+        const filteredIndices = prev.filter((i) => i !== selectedOrder.index);
+        const newIndices = response.map((_, idx) => selectedOrder.index + idx);
+        return [...new Set([...filteredIndices, ...newIndices])];
+      });
+
+      setBatchData({
+        isBatchSelectorEnter: 0,
+        batchCode: null,
+        barcode: null,
+        expiryDate: null,
+        avlQty: null,
+        toBillQty: 1,
+        batchData: [],
+      });
+      toast.success("Batch details added successfully");
+      onClose();
+    } catch (error) {
+      console.error(error);
+      toast.error(error.message);
+    }
   };
 
   return (
@@ -849,17 +1456,26 @@ const BatchCode = ({ isOpen, onClose, batchDetails, selectedOrder, updateProduct
 
         {batchData.barcode && (
           <>
-            <div>
-              <Input
-                label="Expiry date"
-                value={
-                  batchData.expiryDate
-                    ? batchData.expiryDate.split("-").reverse().join("/")
-                    : ""
-                }
-                disabled
-              />
-            </div>
+            {batchData.expiryDate && (
+              <div className="flex gap-6 items-center">
+                <div>
+                  <span className="font-semibold">Expiry Date:</span>{" "}
+                  {batchData.expiryDate.split("-").reverse().join("/")}
+                </div>
+                <div>
+                  <span className="font-semibold">MRP:</span> ₹
+                  {batchDetails?.data?.batches?.find(
+                    (b) => b.CLBatchBarCode === batchData.barcode
+                  )?.CLMRP || "N/A"}
+                </div>
+                <div>
+                  <span className="font-semibold">Selling Price:</span> ₹
+                  {batchDetails?.data?.batches?.find(
+                    (b) => b.CLBatchBarCode === batchData.barcode
+                  )?.SellingPrice || "N/A"}
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center gap-4">
               <Input
@@ -881,15 +1497,18 @@ const BatchCode = ({ isOpen, onClose, batchDetails, selectedOrder, updateProduct
               />
               <Button onClick={handleSaveBatch}>Save</Button>
             </div>
+          </>
+        )}
 
+        {batchData.batchData.length > 0 && (
+          <>
             <div>
               <Table
-                columns={["batch code", "expiry date", "to bill qty", "action"]}
+                columns={["Batch Code", "To Bill Qty", "Action"]}
                 data={batchData.batchData}
                 renderRow={(row, index) => (
                   <TableRow key={index}>
                     <TableCell>{row.batchCode}</TableCell>
-                    <TableCell>{row.expiryDate}</TableCell>
                     <TableCell>{row.toBillQty}</TableCell>
                     <TableCell>
                       <Button
@@ -912,7 +1531,13 @@ const BatchCode = ({ isOpen, onClose, batchDetails, selectedOrder, updateProduct
             </div>
 
             <div className="flex justify-end">
-              <Button onClick={handleSaveFinalBatch}>Submit</Button>
+              <Button
+                onClick={handleSaveFinalBatch}
+                isLoading={isBatchDetailsSaving}
+                disabled={isBatchDetailsSaving}
+              >
+                Submit
+              </Button>
             </div>
           </>
         )}
@@ -920,3 +1545,13 @@ const BatchCode = ({ isOpen, onClose, batchDetails, selectedOrder, updateProduct
     </Modal>
   );
 };
+
+const PaymentDetails = ({ isOpen, onClose, collectPayment }) => {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} width="max-w-5xl">
+      <PaymentFlow collectPayment={collectPayment} onClose={onClose} />
+    </Modal>
+  );
+};
+
+export default CustomerSelect;

@@ -26,11 +26,18 @@ const methods = [
   { value: 6, type: "Advance" },
 ];
 
-const PaymentFlow = () => {
+const PaymentFlow = ({ collectPayment, onClose }) => {
   const navigate = useNavigate();
-  const { goToStep, currentStep, paymentDetails, customerId } = useOrder();
+  const {
+    goToStep,
+    currentStep,
+    paymentDetails,
+    customerId,
+    fullPayments,
+    setFullPayments,
+  } = useOrder();
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
-
+  console.log("pppppp", paymentDetails);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
   const [fullPaymentDetails, setFullPaymentDetails] = useState([]);
   const [newPayment, setNewPayment] = useState({
@@ -55,27 +62,46 @@ const PaymentFlow = () => {
     const total = paymentDetails?.TotalValue || 0;
     const advance = paymentDetails?.totalAdvance || 0;
 
-    const totalPaid = fullPaymentDetails.reduce((sum, payment) => {
-      const amt = parseFloat(payment.Amount);
-      return sum + (isNaN(amt) ? 0 : amt);
-    }, 0);
+    const totalPaid =
+      fullPayments?.length > 0
+        ? fullPaymentDetails.reduce((sum, payment) => {
+            const amt = parseFloat(payment.Amount);
+            return sum + (isNaN(amt) ? 0 : amt);
+          }, 0)
+        : 0;
 
     const remainingToPay = Math.max(advance - totalPaid, 0);
 
-    return {
-      TotalAmount: total,
-      AdvanceAmount: advance,
-      BalanceAmount: total - advance,
-      RemainingToPay: remainingToPay,
-    };
-  }, [paymentDetails, fullPaymentDetails]);
+    if (collectPayment) {
+      // After payment is made
+      return {
+        TotalAmount: total,
+       
+        AdvanceAmount: paymentDetails.advance,
+         BalanceAmount: advance,
+        RemainingToPay: remainingToPay,
+      };
+    } else {
+      // Before any payment
+      return {
+        TotalAmount: total,
+        AdvanceAmount: advance,
+        BalanceAmount: total - advance,
+        RemainingToPay: remainingToPay,
+      };
+    }
+  }, [paymentDetails, fullPaymentDetails, fullPayments]);
 
-  console.log("up", updatedDetails);
+  useEffect(() => {
+    if (updatedDetails?.RemainingToPay <= 0 && collectPayment) {
+      onClose();
+    }
+  }, [updatedDetails?.RemainingToPay]);
 
   const { data: paymentMachine } = useGetAllPaymentMachinesQuery();
   const { data: allbanks } = useGetAllBankMastersQuery();
   const { data: bankAccountDetails } = useGetAllBankAccountsQuery();
-  const [saveFinalPayment, { isLoading:isFinalSaving }] =
+  const [saveFinalPayment, { isLoading: isFinalSaving }] =
     useSaveFinalPaymentMutation();
 
   const filteredCardPaymentMachines = paymentMachine?.data.data.filter(
@@ -284,6 +310,7 @@ const PaymentFlow = () => {
     }
 
     setFullPaymentDetails((prev) => [...prev, newPayment]);
+    setFullPayments((prev) => [...prev, newPayment]);
     setNewPayment({
       Type: "",
       RefNo: "",
@@ -310,6 +337,14 @@ const PaymentFlow = () => {
     toast.success("Payment removed successfully!");
   };
 
+  const handlePaymentBack = () => {
+    if (collectPayment) {
+      onClose();
+    } else {
+      goToStep(currentStep - 1);
+    }
+  };
+
   return (
     <div className="">
       <div className="max-w-7xl">
@@ -320,23 +355,27 @@ const PaymentFlow = () => {
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">
                   Payment Summary{" "}
-                  <span className="ml-2 text-gray-500">
-                    (Step {currentStep})
-                  </span>
+                  {!collectPayment && (
+                    <span className="ml-2 text-gray-500">
+                      (Step {currentStep})
+                    </span>
+                  )}
                 </h1>
                 <p className="text-gray-500 mt-1">
                   Review your payment details
                 </p>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                <Button
-                  icon={FiArrowLeft}
-                  variant="outline"
-                  onClick={() => goToStep(currentStep - 1)}
-                >
-                  Back
-                </Button>
-              </div>
+              {!collectPayment && (
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                  <Button
+                    icon={FiArrowLeft}
+                    variant="outline"
+                    onClick={handlePaymentBack}
+                  >
+                    Back
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Summary Cards */}
@@ -491,19 +530,23 @@ const PaymentFlow = () => {
                   </Button>
                 </div>
               )}
-              {updatedDetails.RemainingToPay <= 0 &&
-                fullPaymentDetails.length > 0 && (
-                  <div className="mt-4 flex justify-end">
-                    <Button
-                      isLoading={isFinalSaving}
-                      disabled={isFinalSaving}
-                      onClick={handleSave}
-                      className="flex items-center gap-2"
-                    >
-                      Complete Order
-                    </Button>
-                  </div>
-                )}
+              {!collectPayment && (
+                <>
+                  {updatedDetails.RemainingToPay <= 0 &&
+                    fullPaymentDetails.length > 0 && (
+                      <div className="mt-4 flex justify-end">
+                        <Button
+                          isLoading={isFinalSaving}
+                          disabled={isFinalSaving}
+                          onClick={handleSave}
+                          className="flex items-center gap-2"
+                        >
+                          Complete Order
+                        </Button>
+                      </div>
+                    )}
+                </>
+              )}
 
               {updatedDetails.RemainingToPay > 0 &&
                 fullPaymentDetails.length > 0 && (
@@ -628,24 +671,28 @@ const MethodForm = ({
                     onChange={handleInputChange("EMIMonths")}
                   />
                   <div className="">
-                  <Autocomplete
-                    options={banks}
-                    getOptionLabel={(option) => option.BankName || ""}
-                    value={
-                      banks.find((b) => b.Id === newPayment.EMIBank) || null
-                    }
-                    onChange={(_, newValue) =>
-                      setNewPayment((prev) => ({
-                        ...prev,
-                        BankName: newValue?.BankName || null,
-                        EMIBank: newValue?.Id || null,
-                      }))
-                    }
-                    renderInput={(params) => (
-                      <TextField {...params} label="EMI Bank *" size="small" />
-                    )}
-                    fullWidth
-                  />
+                    <Autocomplete
+                      options={banks}
+                      getOptionLabel={(option) => option.BankName || ""}
+                      value={
+                        banks.find((b) => b.Id === newPayment.EMIBank) || null
+                      }
+                      onChange={(_, newValue) =>
+                        setNewPayment((prev) => ({
+                          ...prev,
+                          BankName: newValue?.BankName || null,
+                          EMIBank: newValue?.Id || null,
+                        }))
+                      }
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="EMI Bank *"
+                          size="small"
+                        />
+                      )}
+                      fullWidth
+                    />
                   </div>
                 </>
               )}
