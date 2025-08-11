@@ -9,12 +9,17 @@ import HasPermission from "../../components/HasPermission";
 import Button from "../../components/ui/Button";
 import {
   useDeActivateMutation,
-  useGetAllCustomersQuery,
+  useGetAllCustomerByIdQuery,
+  useUpdateCreditLimitMutation,
 } from "../../api/customerApi";
 import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
+import { useSelector } from "react-redux";
+import Modal from "../../components/ui/Modal";
+import Input from "../../components/Form/Input";
 
 const CustomerMain = () => {
   const navigate = useNavigate();
+  const { user, hasMultipleLocations } = useSelector((state) => state.auth);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -23,8 +28,12 @@ const CustomerMain = () => {
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [currentStatus, setCurrentStatus] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreditLimitOpened, setIsCreditLimitOpened] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
 
-  const { data, isLoading } = useGetAllCustomersQuery();
+  const { data, isLoading } = useGetAllCustomerByIdQuery({
+    id: hasMultipleLocations[0],
+  });
   const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
   const { data: allLocations } = useGetAllLocationsQuery();
 
@@ -34,8 +43,10 @@ const CustomerMain = () => {
     return data?.data?.data
       .map((customer) => ({
         id: customer.Id,
+        item: customer,
         name: customer.CustomerName,
-        location: allLocations?.data.find((l) => l.Id === customer.CompanyID).LocationName,
+        location: allLocations?.data.find((l) => l.Id === customer.CompanyID)
+          .LocationName,
         phone: customer.MobNumber,
         group: customer.CustomerGroup.GroupName,
         createdAt: new Intl.DateTimeFormat(locale, {
@@ -50,7 +61,8 @@ const CustomerMain = () => {
         return (
           customer.name.toLowerCase().includes(query) ||
           customer.group.toLowerCase().includes(query) ||
-          customer.location.toLowerCase().includes(query)
+          customer.location.toLowerCase().includes(query) ||
+          customer.phone.toLowerCase().includes(query)
         );
       });
   }, [data, searchQuery, isLoading]);
@@ -82,6 +94,13 @@ const CustomerMain = () => {
 
   const handleEdit = (poolId) => {
     navigate(`edit/${poolId}`);
+  };
+  const handleOpenCredit = (item) => {
+    if (!item) {
+      return;
+    }
+    setSelectedItem(item);
+    setIsCreditLimitOpened(true);
   };
 
   return (
@@ -122,7 +141,7 @@ const CustomerMain = () => {
           "Location name",
           "Phone No",
           "Customer Group",
-          "Action",
+          "",
         ]}
         data={paginatedPools}
         renderRow={(pool, index) => (
@@ -144,18 +163,20 @@ const CustomerMain = () => {
             </TableCell>
             <TableCell>
               <div className="flex items-center gap-3">
-                <div>
-                  <Button
-                    variant="outline"
-                    size="xs"
-                    className="hover:shadow-xs transition-all"
-                    icon={FiCreditCard}
-                    iconPosition="left"
-                    aria-label="Credit Limit"
-                  >
-                    Credit Limit
-                  </Button>
-                </div>
+                {pool.item.CreditBilling == 1 && (
+                  <div onClick={() => handleOpenCredit(pool.item)}>
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      className="hover:shadow-xs transition-all"
+                      icon={FiCreditCard}
+                      iconPosition="left"
+                      aria-label="Credit Limit"
+                    >
+                      Credit Limit
+                    </Button>
+                  </div>
+                )}
                 <HasPermission module="Customer" action="view">
                   <FiEye
                     onClick={() => navigate(`view/${pool.id}`)}
@@ -198,6 +219,15 @@ const CustomerMain = () => {
         onPageSizeChange={setPageSize}
         totalItems={customers.length}
       />
+
+      <ApplyCreditLimit
+        isOpen={isCreditLimitOpened}
+        onClose={() => {
+          setIsCreditLimitOpened(false);
+          setSelectedItem(null);
+        }}
+        creditLimit={selectedItem}
+      />
       <ConfirmationModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -217,3 +247,91 @@ const CustomerMain = () => {
 };
 
 export default CustomerMain;
+
+const ApplyCreditLimit = ({ isOpen, onClose, creditLimit }) => {
+  const [newCreditLimit, setNewCreditLimit] = useState(0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [updateCreditLimit, { isLoading: isCreditUpdating }] =
+    useUpdateCreditLimitMutation();
+
+  const handleNewCredit = (e) => {
+    const value = e.target.value;
+    if (isNaN(value) || parseFloat(value) < 0) return;
+    setNewCreditLimit(value);
+  };
+
+  const handleUpdateCredit = () => {
+    const currentLimit = parseFloat(creditLimit?.CreditLimit || 0);
+    const newLimit = parseFloat(newCreditLimit || 0);
+
+    if (newLimit < currentLimit) {
+      setIsModalOpen(true);
+    } else {
+      saveCreditLimit(newLimit);
+    }
+  };
+
+  const saveCreditLimit = async (limit) => {
+    try {
+      console.log("Saving new credit limit:", limit, creditLimit);
+      const payload = {
+        id: creditLimit.Id,
+        newCreditLimit: limit,
+      };
+      await updateCreditLimit({ payload }).unwrap();
+      onClose();
+      setNewCreditLimit(0);
+    } catch (err) {
+      console.error("Failed to update credit limit", err);
+    }
+  };
+
+  const handleConfirmToggle = () => {
+    saveCreditLimit(parseFloat(newCreditLimit));
+    setIsModalOpen(false);
+  };
+
+  return (
+    <div>
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <h2 className="text-lg font-semibold mb-4">Update Credit Limit</h2>
+        <div className="flex flex-col gap-5 mt-5">
+          <Input
+            label="Current Credit Limit"
+            value={creditLimit?.CreditLimit}
+            disabled
+          />
+          <Input
+            label="Credit Limit Available"
+            value={creditLimit?.CustomerCreditLimit?.CreditLimitAvl}
+            disabled
+          />
+          <Input
+            name="credit"
+            label="New Credit Limit"
+            value={newCreditLimit}
+            onChange={handleNewCredit}
+          />
+          <Button
+            disabled={isCreditUpdating}
+            isLoading={isCreditUpdating}
+            onClick={handleUpdateCredit}
+          >
+            Save
+          </Button>
+        </div>
+      </Modal>
+
+      <ConfirmationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={handleConfirmToggle}
+        title="New Credit Limit value is less than the current limit"
+        message="Are you sure you want to continue?"
+        confirmText="Continue"
+        danger={false}
+      />
+    </div>
+  );
+};

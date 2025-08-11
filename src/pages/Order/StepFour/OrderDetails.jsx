@@ -17,12 +17,10 @@ import {
 } from "react-icons/fi";
 import { Table, TableCell, TableRow } from "../../../components/Table";
 import {
-  useApplyAccessoryDiscountMutation,
-  useApplyContactLensDiscountMutation,
   useApplyFrameDiscountMutation,
   useGetSavedOrderDetailsQuery,
-  useRemoveAccessoryDiscountMutation,
-  useRemoveContactLensDiscountMutation,
+  useMainApplyDiscountMutation,
+  useMainApplyRemoveDiscountMutation,
   useRemoveFrameDiscountMutation,
   useRemoveOrderMutation,
 } from "../../../api/orderApi";
@@ -180,8 +178,14 @@ const DiscountInput = ({
 };
 
 const OrderDetails = () => {
-  const { goToStep, customerDetails, draftData, currentStep, customerId,setSubStep } =
-    useOrder();
+  const {
+    goToStep,
+    customerDetails,
+    draftData,
+    currentStep,
+    customerId,
+    setSubStep,
+  } = useOrder();
 
   // State for discount management
   const [discountTypes, setDiscountTypes] = useState({});
@@ -195,15 +199,12 @@ const OrderDetails = () => {
   // API queries
   const { data: savedOrders, isLoading: savedOrdersLoading } =
     useGetSavedOrderDetailsQuery({ orderId: customerId.orderId });
-  const [applyFrameDiscount] = useApplyFrameDiscountMutation();
-  const [removeFrameDiscount] = useRemoveFrameDiscountMutation();
+
   const [removeOrder, { isLoading: isRemoveLoading }] =
     useRemoveOrderMutation();
-  const [applyAccessoryDiscount] = useApplyAccessoryDiscountMutation();
-  const [removeAccessoryDiscount] = useRemoveAccessoryDiscountMutation();
-  const [applyContactDiscount] = useApplyContactLensDiscountMutation();
-  const [removeContactDiscount] = useRemoveContactLensDiscountMutation();
 
+  const [applyDiscount] = useMainApplyDiscountMutation();
+  const [removeDiscount] = useMainApplyRemoveDiscountMutation();
 
   const handleBack = () => goToStep(currentStep - 1);
   const handleAddProduct = () => {
@@ -257,18 +258,12 @@ const OrderDetails = () => {
       value: input,
     };
 
-    // Select correct mutation based on typeid
-    let mutation;
-    if (typeid === 1) mutation = applyFrameDiscount;
-    else if (typeid === 2) mutation = applyAccessoryDiscount;
-    else if (typeid === 3) mutation = applyContactDiscount;
-    else return; // Handle unknown types if needed
-
     try {
-      const response = await mutation({
+      const response = await applyDiscount({
         locationId: customerId.locationId,
         orderId: customerId.orderId,
         detailId: OrderDetailId,
+        productType: typeid,
         payload,
       }).unwrap();
 
@@ -305,17 +300,11 @@ const OrderDetails = () => {
 
     setRemovingDiscounts((prev) => ({ ...prev, [orderDetailId]: true }));
 
-    // Select correct mutation based on typeid
-    let mutation;
-    if (typeid === 1) mutation = removeFrameDiscount;
-    else if (typeid === 2) mutation = removeAccessoryDiscount;
-    else if (typeid === 3) mutation = removeContactDiscount;
-    else return;
-
     try {
-      await mutation({
+      await removeDiscount({
         orderId: customerId.orderId,
         detailId: orderDetailId,
+        productType: typeid,
       }).unwrap();
 
       setDiscountResults((prev) => {
@@ -352,7 +341,7 @@ const OrderDetails = () => {
       }).unwrap();
       toast.success("Product removed Successfully");
     } catch (error) {
-      console.log("Delete error:", error);
+      toast.error(error.message);
     } finally {
       setDeletingItems((prev) => {
         const newState = { ...prev };
@@ -363,7 +352,7 @@ const OrderDetails = () => {
   };
 
   const getShortTypeName = (id) => {
-    if (!id) return;
+    if (id === null || id === undefined) return;
 
     if (id === 1) {
       return "F/S";
@@ -371,10 +360,13 @@ const OrderDetails = () => {
       return "ACC";
     } else if (id === 3) {
       return "CL";
-    } else {
+    } else if (id === 0) {
       return "OL";
+    } else {
+      return;
     }
   };
+
   const getProductName = (item) => {
     const {
       typeid,
@@ -384,11 +376,22 @@ const OrderDetails = () => {
       PatientName,
       PowerSpecs,
       Variation,
+      Specs,
+      Color,
     } = item;
-    console.log(`variation ${typeid} :`, PowerSpecs);
+    const clean = (val) => {
+      if (
+        val === null ||
+        val === undefined ||
+        val === "undefined" ||
+        val === "null"
+      ) {
+        return "";
+      }
+      return val;
+    };
     // For Frame (typeid = 1)
     if (typeid === 1) {
-      // Example: RAY-BAN F12345 BLK
       const nameLine = ProductName || "";
       const sizeLine = Size ? `${Size}` : "";
       const barcodeLine = Barcode || "";
@@ -428,6 +431,24 @@ const OrderDetails = () => {
       const patientLine = PatientName ? `\n${PatientName}` : "";
 
       return `${nameLine}\n${specs}\n${barcodeLine}${patientLine}`;
+    }
+
+    if (typeid === 0) {
+      const specsLines = (Specs || [])
+        .map((spec) => {
+          const side = clean(spec.side);
+          const sph = clean(spec.sph);
+          const cyl = clean(spec.cyl);
+          const axis = clean(spec.axis);
+          const addition = clean(spec.addition);
+
+          return `${side}: SPH ${sph}, CYL ${cyl}, Axis ${axis}, Add ${addition}`;
+        })
+        .join("\n");
+
+      return `${clean(ProductName)}\n${specsLines}\n${clean(Barcode)}${
+        PatientName ? `\n${clean(PatientName)}` : ""
+      }`;
     }
 
     return "";
@@ -600,7 +621,7 @@ const OrderDetails = () => {
                     <TableCell>{item.SlNo}</TableCell>
                     <TableCell>{getShortTypeName(item.typeid)}</TableCell>
                     <TableCell>
-                      <pre
+                      <div
                         className="text-sm"
                         style={{
                           whiteSpace: "pre-wrap",
@@ -608,7 +629,7 @@ const OrderDetails = () => {
                         }}
                       >
                         {getProductName(item)}
-                      </pre>
+                      </div>
                     </TableCell>
                     <TableCell>{formatNumber(item.OrderQty)}</TableCell>
                     <TableCell>₹{formatNumber(item.Rate)}</TableCell>
@@ -668,7 +689,11 @@ const OrderDetails = () => {
                   </TableRow>
                 );
               }}
-              emptyMessage="No orders found. Click 'Add Product' to create one."
+              emptyMessage={
+                savedOrdersLoading
+                  ? "Loading..."
+                  : "No orders found. Click 'Add Product' to create one."
+              }
               pagination={false}
             />
           </div>

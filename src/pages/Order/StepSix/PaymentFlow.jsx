@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useOrder } from "../../../features/OrderContext";
-import { FiArrowLeft, FiTrash2, FiPlus, FiInfo } from "react-icons/fi";
+import { FiArrowLeft, FiTrash2, FiPlus, FiInfo, FiSave } from "react-icons/fi";
 import Button from "../../../components/ui/Button";
 import { Autocomplete, TextField } from "@mui/material";
 import Input from "../../../components/Form/Input";
@@ -14,48 +14,105 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { isBefore, isAfter, subDays, startOfDay, format } from "date-fns";
+import { useSaveFinalPaymentMutation } from "../../../api/orderApi";
+import { useNavigate } from "react-router";
 
 const methods = [
   { value: 1, type: "Cash" },
   { value: 2, type: "Card" },
   { value: 3, type: "UPI" },
-  { value: 4, type: "Check" },
+  { value: 4, type: "Cheque" },
   { value: 5, type: "Bank Transfer" },
   { value: 6, type: "Advance" },
 ];
 
-const PaymentFlow = () => {
-  const { goToStep, currentStep, paymentDetails } = useOrder();
-  const { hasMultipleLocations } = useSelector((state) => state.auth);
-
+const PaymentFlow = ({ collectPayment, onClose }) => {
+  const navigate = useNavigate();
+  const {
+    goToStep,
+    currentStep,
+    paymentDetails,
+    customerId,
+    fullPayments,
+    setFullPayments,
+  } = useOrder();
+  const { hasMultipleLocations, user } = useSelector((state) => state.auth);
+  console.log("pppppp", paymentDetails);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
   const [fullPaymentDetails, setFullPaymentDetails] = useState([]);
   const [newPayment, setNewPayment] = useState({
     Type: "",
     RefNo: "",
     PaymentMachine: "",
+    PaymentMachineID: null,
     BankName: "",
+    BankMasterID: null,
     ChequeDetails: "",
-    AccountNumber: "",
-    Amount: "",
     ChequeDate: null,
+    AccountNumber: "",
+    BankAccountID: null,
+    Amount: "",
+    EMI: false,
+    EMIMonths: null,
+    EMIBank: null,
   });
   const [errors, setErrors] = useState({});
 
-  const updatedDetails = {
-    TotalAmount: paymentDetails?.TotalValue,
-    AdvanceAmount: paymentDetails?.totalAdvance,
-    BalanceAmount: paymentDetails?.TotalValue - paymentDetails?.totalAdvance,
-    RemainingToPay:
-      paymentDetails?.TotalValue -
-      fullPaymentDetails.reduce((sum, p) => sum + Number(p.Amount || 0), 0),
-  };
+  const updatedDetails = useMemo(() => {
+    const total = paymentDetails?.TotalValue || 0;
+    const advance = paymentDetails?.totalAdvance || 0;
+
+    const totalPaid =
+      fullPayments?.length > 0
+        ? fullPaymentDetails.reduce((sum, payment) => {
+            const amt = parseFloat(payment.Amount);
+            return sum + (isNaN(amt) ? 0 : amt);
+          }, 0)
+        : 0;
+
+    const remainingToPay = Math.max(advance - totalPaid, 0);
+
+    if (collectPayment) {
+      // After payment is made
+      return {
+        TotalAmount: total,
+       
+        AdvanceAmount: paymentDetails.advance,
+         BalanceAmount: advance,
+        RemainingToPay: remainingToPay,
+      };
+    } else {
+      // Before any payment
+      return {
+        TotalAmount: total,
+        AdvanceAmount: advance,
+        BalanceAmount: total - advance,
+        RemainingToPay: remainingToPay,
+      };
+    }
+  }, [paymentDetails, fullPaymentDetails, fullPayments]);
+
+  useEffect(() => {
+    if (updatedDetails?.RemainingToPay <= 0 && collectPayment) {
+      onClose();
+    }
+  }, [updatedDetails?.RemainingToPay]);
 
   const { data: paymentMachine } = useGetAllPaymentMachinesQuery();
   const { data: allbanks } = useGetAllBankMastersQuery();
   const { data: bankAccountDetails } = useGetAllBankAccountsQuery();
+  const [saveFinalPayment, { isLoading: isFinalSaving }] =
+    useSaveFinalPaymentMutation();
 
-  const filteredPaymentMachines = paymentMachine?.data.data.filter(
+  const filteredCardPaymentMachines = paymentMachine?.data.data.filter(
+    (p) =>
+      p.MachineType === 0 &&
+      p.IsActive === 1 &&
+      p.CompanyLinks?.some((link) =>
+        hasMultipleLocations.includes(link.CompanyID)
+      )
+  );
+  const filteredUpiPaymentMachines = paymentMachine?.data.data.filter(
     (p) =>
       p.MachineType === 1 &&
       p.IsActive === 1 &&
@@ -81,6 +138,123 @@ const PaymentFlow = () => {
     }
   }, [selectedPaymentMethod, updatedDetails.RemainingToPay]);
 
+  const preparePaymentsStructure = () => {
+    const payments = {};
+
+    const normalizeType = (type) => {
+      switch (type.toLowerCase()) {
+        case "bank transfer":
+          return "bank";
+        case "cheque":
+          return "cheque";
+        case "upi":
+          return "upi";
+        case "card":
+          return "card";
+        case "cash":
+          return "cash";
+        case "advance":
+          return "advance";
+        default:
+          return type.toLowerCase();
+      }
+    };
+
+    fullPaymentDetails.forEach((payment) => {
+      const typeKey = normalizeType(payment.Type || "");
+      const amount = parseFloat(payment.Amount);
+      if (isNaN(amount)) return;
+
+      if (typeKey === "cash") {
+        // Cash should be a single numeric value
+        payments.cash = (payments.cash || 0) + amount;
+        return;
+      }
+
+      // Initialize only if not cash
+      if (!payments[typeKey]) {
+        payments[typeKey] = { amount: 0 };
+      }
+
+      payments[typeKey].amount += amount;
+
+      switch (typeKey) {
+        case "card":
+          payments[typeKey].PaymentMachineID = payment.PaymentMachineID;
+          payments[typeKey].ApprCode = payment.RefNo;
+          if (payment.EMI) {
+            payments[typeKey].EMI = payment.EMI;
+            payments[typeKey].EMIMonths = parseInt(payment.EMIMonths);
+            payments[typeKey].EMIBank = payment.EMIBank;
+          }
+          break;
+        case "upi":
+          payments[typeKey].PaymentMachineID = payment.PaymentMachineID;
+          break;
+        case "cheque":
+          payments[typeKey].BankMasterID = payment.BankMasterID;
+          payments[typeKey].ChequeNo = payment.ChequeDetails;
+          payments[typeKey].ChequeDate = payment.ChequeDate
+            ? format(new Date(payment.ChequeDate), "yyyy-MM-dd")
+            : null;
+          break;
+        case "bank":
+          payments[typeKey].BankAccountID = payment.BankAccountID || null;
+          payments[typeKey].ReferenceNo = payment.RefNo || "";
+          break;
+        case "advance":
+          payments[typeKey].CustomerAdvanceIDs =
+            payment.CustomerAdvanceIDs || [];
+          break;
+      }
+    });
+
+    return payments;
+  };
+
+  const handleSave = async () => {
+    if (updatedDetails.RemainingToPay > 0) {
+      toast.error("Please cover the remaining balance before saving.");
+      return;
+    }
+
+    if (fullPaymentDetails.length === 0 && updatedDetails.TotalAmount > 0) {
+      toast.error("Please add at least one payment method.");
+      return;
+    }
+
+    const finalStructure = {
+      CompanyID: customerId.locationId,
+      CreatedBy: user.Id,
+      totalQty: paymentDetails.TotalQty,
+      totalGST: paymentDetails.TotalGSTValue,
+      totalValue: updatedDetails.TotalAmount,
+
+      AdvanceAmount: Object.entries(paymentDetails.advancedAmounts).map(
+        ([key, value]) => ({
+          detailid: Number(key),
+          Amount: Number(value),
+        })
+      ),
+
+      payments: preparePaymentsStructure(),
+    };
+
+    console.log("Final saving structure:", finalStructure);
+
+    try {
+      await saveFinalPayment({
+        orderId: customerId.orderId,
+        payload: finalStructure,
+      }).unwrap();
+      toast.success("Order created Successfully");
+      navigate("/order-list");
+    } catch (error) {
+      console.log("error");
+      toast.error("Please try again!");
+    }
+  };
+
   const handleAddPayment = () => {
     const validationErrors = {};
 
@@ -94,20 +268,20 @@ const PaymentFlow = () => {
 
     switch (selectedPaymentMethod) {
       case 2:
-        if (!newPayment.PaymentMachine)
+        if (!newPayment.PaymentMachineID)
           validationErrors.paymentMachine = "Please select a payment machine";
         if (!newPayment.RefNo)
           validationErrors.refNo = "Approval code is required";
         break;
       case 3:
-        if (!newPayment.PaymentMachine)
+        if (!newPayment.PaymentMachineID)
           validationErrors.paymentMachine = "Please select a payment machine";
         break;
       case 4:
-        if (!newPayment.BankName)
+        if (!newPayment.BankMasterID)
           validationErrors.bankName = "Please select a bank";
         if (!newPayment.ChequeDetails)
-          validationErrors.chequeDetails = "Check number is required";
+          validationErrors.chequeDetails = "Cheque number is required";
         if (!newPayment.ChequeDate) {
           validationErrors.chequeDate = "Cheque date is required";
         } else {
@@ -120,10 +294,9 @@ const PaymentFlow = () => {
               "Cheque date must be within the past 90 days";
           }
         }
-
         break;
       case 5:
-        if (!newPayment.AccountNumber)
+        if (!newPayment.BankAccountID)
           validationErrors.accountNumber = "Please select an account";
         if (!newPayment.RefNo)
           validationErrors.refNo = "Reference number is required";
@@ -136,33 +309,40 @@ const PaymentFlow = () => {
       return;
     }
 
-    const selectedMethodObj = methods.find(
-      (m) => m.value === selectedPaymentMethod
-    );
-
-    const newEntry = {
-      ...newPayment,
-      Type: selectedMethodObj?.type || "Unknown",
-      MethodValue: selectedPaymentMethod,
-      Amount: Number(newPayment.Amount).toFixed(2),
-    };
-
-    setFullPaymentDetails((prev) => [...prev, newEntry]);
+    setFullPaymentDetails((prev) => [...prev, newPayment]);
+    setFullPayments((prev) => [...prev, newPayment]);
     setNewPayment({
       Type: "",
       RefNo: "",
       PaymentMachine: "",
+      PaymentMachineID: null,
       BankName: "",
+      BankMasterID: null,
       ChequeDetails: "",
+      ChequeDate: null,
       AccountNumber: "",
+      BankAccountID: null,
       Amount: "",
+      EMI: false,
+      EMIMonths: null,
+      EMIBank: null,
     });
     setSelectedPaymentMethod(null);
     setErrors({});
+    toast.success("Payment added successfully!");
   };
 
   const handleDeletePayment = (index) => {
     setFullPaymentDetails((prev) => prev.filter((_, i) => i !== index));
+    toast.success("Payment removed successfully!");
+  };
+
+  const handlePaymentBack = () => {
+    if (collectPayment) {
+      onClose();
+    } else {
+      goToStep(currentStep - 1);
+    }
   };
 
   return (
@@ -175,23 +355,27 @@ const PaymentFlow = () => {
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">
                   Payment Summary{" "}
-                  <span className="ml-2 text-gray-500">
-                    (Step {currentStep})
-                  </span>
+                  {!collectPayment && (
+                    <span className="ml-2 text-gray-500">
+                      (Step {currentStep})
+                    </span>
+                  )}
                 </h1>
                 <p className="text-gray-500 mt-1">
                   Review your payment details
                 </p>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                <Button
-                  icon={FiArrowLeft}
-                  variant="outline"
-                  onClick={() => goToStep(currentStep - 1)}
-                >
-                  Back
-                </Button>
-              </div>
+              {!collectPayment && (
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                  <Button
+                    icon={FiArrowLeft}
+                    variant="outline"
+                    onClick={handlePaymentBack}
+                  >
+                    Back
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Summary Cards */}
@@ -250,7 +434,7 @@ const PaymentFlow = () => {
                             <>
                               {item.ChequeDetails}
                               <br />
-                              Check Date:{" "}
+                              Cheque Date:{" "}
                               {item.ChequeDate
                                 ? format(
                                     new Date(item.ChequeDate),
@@ -262,7 +446,6 @@ const PaymentFlow = () => {
                             "-"
                           )}
                         </TableCell>
-
                         <TableCell>{item.AccountNumber || "-"}</TableCell>
                         <TableCell>
                           <Button
@@ -281,45 +464,49 @@ const PaymentFlow = () => {
 
             {/* Add Payment Method */}
             <div className="mt-8">
-              <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                <FiPlus className="text-blue-500" />
-                Add Payment Method
-              </h2>
+              {!parseInt(updatedDetails.RemainingToPay) <= 0 && (
+                <>
+                  <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                    <FiPlus className="text-blue-500" />
+                    Add Payment Method
+                  </h2>
 
-              <div className="flex flex-col md:flex-row gap-4 items-center">
-                <div className="text-lg text-neutral-700 font-medium">
-                  Choose Payment Method
-                </div>
-                <div className="w-full md:w-1/3">
-                  <Autocomplete
-                    options={methods}
-                    getOptionLabel={(option) => option.type}
-                    value={
-                      methods.find((p) => p.value === selectedPaymentMethod) ||
-                      null
-                    }
-                    onChange={(_, newValue) => {
-                      setSelectedPaymentMethod(newValue?.value || null);
-                      setNewPayment((prev) => ({
-                        ...prev,
-                        Type: newValue?.type || "",
-                      }));
-                      setErrors({});
-                    }}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        placeholder="Select Payment method"
-                        size="small"
-                        error={!!errors.method}
-                        helperText={errors.method}
+                  <div className="flex flex-col md:flex-row gap-4 items-center">
+                    <div className="text-lg text-neutral-700 font-medium">
+                      Choose Payment Method
+                    </div>
+                    <div className="w-full md:w-1/3">
+                      <Autocomplete
+                        options={methods}
+                        getOptionLabel={(option) => option.type}
+                        value={
+                          methods.find(
+                            (p) => p.value === selectedPaymentMethod
+                          ) || null
+                        }
+                        onChange={(_, newValue) => {
+                          setSelectedPaymentMethod(newValue?.value || null);
+                          setNewPayment((prev) => ({
+                            ...prev,
+                            Type: newValue?.type || "",
+                          }));
+                          setErrors({});
+                        }}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            placeholder="Select Payment method"
+                            size="small"
+                            error={!!errors.method}
+                            helperText={errors.method}
+                          />
+                        )}
+                        fullWidth
                       />
-                    )}
-                    fullWidth
-                  />
-                </div>
-              </div>
-
+                    </div>
+                  </div>
+                </>
+              )}
               {/* Method-Specific Forms */}
               <MethodForm
                 method={selectedPaymentMethod}
@@ -327,7 +514,8 @@ const PaymentFlow = () => {
                 setNewPayment={setNewPayment}
                 errors={errors}
                 setErrors={setErrors}
-                machines={filteredPaymentMachines}
+                cardMachines={filteredCardPaymentMachines}
+                UPIMachine={filteredUpiPaymentMachines}
                 banks={allbanks?.data.data || []}
                 accounts={filteredBankAccounts}
               />
@@ -342,15 +530,22 @@ const PaymentFlow = () => {
                   </Button>
                 </div>
               )}
-              {updatedDetails.RemainingToPay <= 0 && (
-                <div className="mt-4 flex justify-end">
-                  <Button
-                    onClick={handleAddPayment}
-                    className="flex items-center gap-2"
-                  >
-                    Complete Order
-                  </Button>
-                </div>
+              {!collectPayment && (
+                <>
+                  {updatedDetails.RemainingToPay <= 0 &&
+                    fullPaymentDetails.length > 0 && (
+                      <div className="mt-4 flex justify-end">
+                        <Button
+                          isLoading={isFinalSaving}
+                          disabled={isFinalSaving}
+                          onClick={handleSave}
+                          className="flex items-center gap-2"
+                        >
+                          Complete Order
+                        </Button>
+                      </div>
+                    )}
+                </>
               )}
 
               {updatedDetails.RemainingToPay > 0 &&
@@ -379,20 +574,19 @@ const PaymentFlow = () => {
   );
 };
 
-export default PaymentFlow;
-
 const MethodForm = ({
   method,
   newPayment,
   setNewPayment,
   errors,
   setErrors,
-  machines,
+  UPIMachine,
+  cardMachines,
   banks,
   accounts,
 }) => {
   if (!method) return null;
-  console.log("banks acc", accounts);
+
   const handleInputChange = (key) => (e) =>
     setNewPayment((prev) => ({ ...prev, [key]: e.target.value }));
 
@@ -408,7 +602,7 @@ const MethodForm = ({
 
   const uniqueAccounts = useMemo(() => {
     return Array.from(
-      new Map(accounts.map((item) => [item.AccountNumber, item])).values()
+      new Map(accounts?.map((item) => [item.AccountNumber, item])).values()
     );
   }, [accounts]);
 
@@ -420,17 +614,18 @@ const MethodForm = ({
         {method === 2 && (
           <>
             <Autocomplete
-              options={machines || []}
+              options={cardMachines || []}
               getOptionLabel={(option) => option.MachineName || ""}
               value={
-                machines?.find(
-                  (p) => p.MachineName === newPayment.PaymentMachine
+                cardMachines?.find(
+                  (p) => p.Id === newPayment.PaymentMachineID
                 ) || null
               }
               onChange={(_, newValue) => {
                 setNewPayment((prev) => ({
                   ...prev,
                   PaymentMachine: newValue?.MachineName || "",
+                  PaymentMachineID: newValue?.Id || null,
                 }));
                 setErrors((prev) => ({ ...prev, paymentMachine: "" }));
               }}
@@ -451,6 +646,57 @@ const MethodForm = ({
               onChange={handleInputChange("RefNo")}
               error={errors.refNo}
             />
+            <div className="grid grid-cols-3 gap-5 items-center">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={newPayment.EMI}
+                  onChange={(e) =>
+                    setNewPayment((prev) => ({
+                      ...prev,
+                      EMI: e.target.checked,
+                      EMIMonths: e.target.checked ? prev.EMIMonths : null,
+                      EMIBank: e.target.checked ? prev.EMIBank : null,
+                    }))
+                  }
+                />
+                <label>EMI</label>
+              </div>
+              {newPayment.EMI && (
+                <>
+                  <Input
+                    label="EMI Months"
+                    type="number"
+                    value={newPayment.EMIMonths || ""}
+                    onChange={handleInputChange("EMIMonths")}
+                  />
+                  <div className="">
+                    <Autocomplete
+                      options={banks}
+                      getOptionLabel={(option) => option.BankName || ""}
+                      value={
+                        banks.find((b) => b.Id === newPayment.EMIBank) || null
+                      }
+                      onChange={(_, newValue) =>
+                        setNewPayment((prev) => ({
+                          ...prev,
+                          BankName: newValue?.BankName || null,
+                          EMIBank: newValue?.Id || null,
+                        }))
+                      }
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="EMI Bank *"
+                          size="small"
+                        />
+                      )}
+                      fullWidth
+                    />
+                  </div>
+                </>
+              )}
+            </div>
             {commonAmountInput}
           </>
         )}
@@ -458,17 +704,17 @@ const MethodForm = ({
         {method === 3 && (
           <>
             <Autocomplete
-              options={machines || []}
+              options={UPIMachine || []}
               getOptionLabel={(option) => option.MachineName || ""}
               value={
-                machines?.find(
-                  (p) => p.MachineName === newPayment.PaymentMachine
-                ) || null
+                UPIMachine?.find((p) => p.Id === newPayment.PaymentMachineID) ||
+                null
               }
               onChange={(_, newValue) => {
                 setNewPayment((prev) => ({
                   ...prev,
                   PaymentMachine: newValue?.MachineName || "",
+                  PaymentMachineID: newValue?.Id || null,
                 }));
                 setErrors((prev) => ({ ...prev, paymentMachine: "" }));
               }}
@@ -493,12 +739,13 @@ const MethodForm = ({
               options={banks}
               getOptionLabel={(option) => option.BankName || ""}
               value={
-                banks.find((b) => b.BankName === newPayment.BankName) || null
+                banks.find((b) => b.Id === newPayment.BankMasterID) || null
               }
               onChange={(_, newValue) => {
                 setNewPayment((prev) => ({
                   ...prev,
                   BankName: newValue?.BankName || "",
+                  BankMasterID: newValue?.Id || null,
                 }));
                 setErrors((prev) => ({ ...prev, bankName: "" }));
               }}
@@ -513,9 +760,8 @@ const MethodForm = ({
               )}
               fullWidth
             />
-
             <Input
-              label="Check Number *"
+              label="Cheque Number *"
               value={newPayment.ChequeDetails}
               onChange={(e) =>
                 setNewPayment((prev) => ({
@@ -525,7 +771,6 @@ const MethodForm = ({
               }
               error={errors.chequeDetails}
             />
-
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
                 label="Cheque Date *"
@@ -556,11 +801,9 @@ const MethodForm = ({
                     helperText: errors.chequeDate,
                   },
                 }}
-                // ✅ only limit the past (not the future)
                 minDate={subDays(new Date(), 90)}
               />
             </LocalizationProvider>
-
             {commonAmountInput}
           </>
         )}
@@ -575,15 +818,15 @@ const MethodForm = ({
                   : ""
               }
               value={
-                accounts.find(
-                  (acc) => acc.AccountNo === newPayment.AccountNumber
-                ) || null
+                accounts?.find((acc) => acc.Id === newPayment.BankAccountID) ||
+                null
               }
               onChange={(_, newValue) => {
                 setNewPayment((prev) => ({
                   ...prev,
                   AccountNumber: newValue?.AccountNo || "",
                   BankName: newValue?.Bank?.BankName || "",
+                  BankAccountID: newValue?.Id || null,
                 }));
                 setErrors((prev) => ({ ...prev, accountNumber: "" }));
               }}
@@ -611,3 +854,5 @@ const MethodForm = ({
     </div>
   );
 };
+
+export default PaymentFlow;

@@ -1,4 +1,3 @@
-// components/ui/Table.jsx
 import React from "react";
 import Pagination from "./Pagination";
 
@@ -16,20 +15,25 @@ export const Table = ({
   pageSize = 10,
   onPageSizeChange = () => {},
   totalItems = 0,
+  freeze = false,
 }) => {
   return (
     <div className="space-y-4">
       <div
-        className={`overflow-x-auto bg-white rounded-lg shadow ${className}`}
+        className={`overflow-auto bg-white rounded-lg shadow max-h-[500px] ${className}`} // Added overflow-auto and max-h-[500px]
       >
-        <table className="min-w-full divide-y divide-neutral-200">
+        <table className="min-w-full divide-y divide-neutral-200 table-fixed">
           <thead className="bg-neutral-50">
             <tr>
               {columns.map((column, index) => (
                 <th
                   key={index}
                   scope="col"
-                  className="px-6 py-3 min-h-[3.5rem] text-left text-xs font-medium text-neutral-500 uppercase tracking-wider align-top"
+                  className={`px-6 py-3 min-h-[3.5rem] text-left text-xs font-medium text-neutral-500 uppercase tracking-wider align-top whitespace-nowrap ${
+                    column === "Product Details"
+                      ? "min-w-[300px] max-w-[300px]"
+                      : ""
+                  } ${freeze ? "sticky top-0 z-10 bg-neutral-50" : ""}`} // Applied sticky to <th>
                 >
                   {typeof renderHeader === "function"
                     ? renderHeader(column)
@@ -70,7 +74,6 @@ export const Table = ({
   );
 };
 
-// TableRow and TableCell components remain the same
 export const TableRow = ({ children, className = "" }) => {
   return (
     <tr className={`hover:bg-neutral-50 transition-colors ${className}`}>
@@ -79,8 +82,16 @@ export const TableRow = ({ children, className = "" }) => {
   );
 };
 
-export const TableCell = ({ children, className = "" }) => {
+export const TableCell = ({ children, className = "", columnName }) => {
   return (
-    <td className={`px-6 py-4 whitespace-nowrap ${className}`}>{children}</td>
+    <td
+      className={`px-6 py-4 ${
+        columnName === "Product Details"
+          ? "min-w-[300px] max-w-[300px]"
+          : "whitespace-nowrap"
+      } ${className}`}
+    >
+      {children}
+    </td>
   );
 };

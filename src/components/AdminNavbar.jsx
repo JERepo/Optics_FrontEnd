@@ -22,16 +22,8 @@ const AdminNavbar = () => {
   };
 
   return (
-    <header className="bg-white p-4 flex items-center justify-between shadow-sm">
-      {/* Search Bar */}
-      <div className="flex items-center bg-gray-100 rounded-lg px-3 py-2 w-64">
-        <FiSearch className="text-gray-500 mr-2" />
-        <input
-          type="text"
-          placeholder="Search..."
-          className="bg-transparent border-none outline-none w-full text-sm"
-        />
-      </div>
+    <header className="bg-white p-4 flex items-center justify-end shadow-sm">
+     
 
       {/* Right Side: Location + User + Logout */}
       <div className="flex items-center space-x-6">

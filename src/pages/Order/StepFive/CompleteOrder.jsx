@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router";
 import { useOrder } from "../../../features/OrderContext";
 import Button from "../../../components/ui/Button";
 import {
@@ -37,11 +38,21 @@ const calculateGST = (sellingPrice, taxPercentage) => {
   };
 };
 
-const getShortTypeName = (id) => {
-  if (!id) return "";
-  const types = { 1: "F/S", 2: "ACC", 3: "CL" };
-  return types[id] || "OL";
-};
+  const getShortTypeName = (id) => {
+    if (id === null || id === undefined) return;
+
+    if (id === 1) {
+      return "F/S";
+    } else if (id === 2) {
+      return "ACC";
+    } else if (id === 3) {
+      return "CL";
+    } else if (id === 0) {
+      return "OL";
+    } else {
+      return;
+    }
+  };
 
 const DiscountDisplay = ({ item }) => {
   const discountValue = item.DiscountValue || 0;
@@ -55,78 +66,92 @@ const DiscountDisplay = ({ item }) => {
   );
 };
 
-const ProductDetails = ({ item }) => {
-  const {
-    typeid,
-    ProductName,
-    Size,
-    Barcode,
-    PatientName,
-    PowerSpecs,
-    Variation,
-  } = item;
-
-  const renderFrameDetails = () => (
-    <>
-      {ProductName || ""}
-      {Size && `\n${Size}`}
-      {Barcode && `\n${Barcode}`}
-      {PatientName && `\n${PatientName}`}
-    </>
-  );
-
-  const renderAccessoryDetails = () => (
-    <>
-      {ProductName || ""}
-      {Variation && `\n${Variation}`}
-      {Barcode && `\n${Barcode}`}
-      {PatientName && `\n${PatientName}`}
-    </>
-  );
-
-  const renderContactLensDetails = () => {
-    const specs = PowerSpecs
-      ? PowerSpecs.split(",")
-          .map((s) => {
-            const [key, val] = s.split(":");
-            const cleanedValue =
-              val && !["null", "undefined"].includes(val.trim())
-                ? val.trim()
-                : "";
-            return `${key.trim()}: ${cleanedValue}`;
-          })
-          .join(", ")
-      : "";
-
-    return (
-      <>
-        {ProductName || ""}
-        {specs && `\n${specs}`}
-        {Barcode && `\n${Barcode}`}
-        {PatientName && `\n${PatientName}`}
-      </>
-    );
-  };
-
-  const renderProductDetails = () => {
-    switch (typeid) {
-      case 1:
-        return renderFrameDetails();
-      case 2:
-        return renderAccessoryDetails();
-      case 3:
-        return renderContactLensDetails();
-      default:
-        return ProductName || "";
+  const getProductName = (item) => {
+    const {
+      typeid,
+      ProductName,
+      Size,
+      Barcode,
+      PatientName,
+      PowerSpecs,
+      Variation,
+      Specs,
+      Color
+    } = item;
+    const clean = (val) => {
+      if (
+        val === null ||
+        val === undefined ||
+        val === "undefined" ||
+        val === "null"
+      ) {
+        return "";
+      }
+      return val;
+    };
+    // For Frame (typeid = 1)
+    if (typeid === 1) {
+      const nameLine = ProductName || "";
+      const sizeLine = Size ? `${Size}` : "";
+      const barcodeLine = Barcode || "";
+      // const frameType = "OpticalFrame/Sunglass";
+      const patientLine = PatientName ? `\n${PatientName}` : "";
+      return `${nameLine}\n${sizeLine}\n${barcodeLine}\n${patientLine}`;
     }
-  };
 
-  return (
-    <pre className="text-sm whitespace-pre-wrap word-wrap-break-word">
-      {renderProductDetails()}
-    </pre>
-  );
-};
+    // For Accessories (typeid = 2)
+    if (typeid === 2) {
+      const nameLine = ProductName || "";
+
+      const barcodeLine = Barcode || "";
+      const patientLine = PatientName ? `\n${PatientName}` : "";
+
+      return `${nameLine}\n${Variation}\n${barcodeLine}${patientLine}`;
+    }
+
+    // For Contact Lens (typeid = 3)
+    if (typeid === 3) {
+      const nameLine = ProductName || "";
+
+      const specs = PowerSpecs
+        ? PowerSpecs.split(",")
+            .map((s) => {
+              const [key, val] = s.split(":");
+              const cleanedValue =
+                val && !["null", "undefined"].includes(val.trim())
+                  ? val.trim()
+                  : "";
+              return `${key.trim()}: ${cleanedValue}`;
+            })
+            .join(", ")
+        : "";
+
+      const barcodeLine = Barcode || "";
+      const patientLine = PatientName ? `\n${PatientName}` : "";
+
+      return `${nameLine}\n${specs}\n${barcodeLine}${patientLine}`;
+    }
+
+    if (typeid === 0) {
+      const specsLines = (Specs || [])
+        .map((spec) => {
+          const side = clean(spec.side);
+          const sph = clean(spec.sph);
+          const cyl = clean(spec.cyl);
+          const axis = clean(spec.axis);
+          const addition = clean(spec.addition);
+
+          return `${side}: SPH ${sph}, CYL ${cyl}, Axis ${axis}, Add ${addition}`;
+        })
+        .join("\n");
+
+      return `${clean(ProductName)}\n${specsLines}\n${clean(Barcode)}${
+        PatientName ? `\n${clean(PatientName)}` : ""
+      }`;
+    }
+
+    return "";
+  };
 
 const AdvanceAmountInput = ({
   orderDetailId,
@@ -140,18 +165,24 @@ const AdvanceAmountInput = ({
       [orderDetailId]: totalAmount,
     }));
   };
+  const handleAdvanceAmount = (e) => {
+    const { value } = e.target;
+    if (parseFloat(value) < 0 || parseFloat(value) > totalAmount) {
+      toast.error("Please Enter Valid Advance amount");
+      return;
+    }
+    setAdvancedAmounts((prev) => ({
+      ...prev,
+      [orderDetailId]: e.target.value,
+    }));
+  };
 
   return (
     <div className="flex items-center gap-2">
       <Input
         type="number"
         value={advancedAmounts[orderDetailId] || ""}
-        onChange={(e) =>
-          setAdvancedAmounts((prev) => ({
-            ...prev,
-            [orderDetailId]: e.target.value,
-          }))
-        }
+        onChange={handleAdvanceAmount}
         className="w-24"
         min="0"
         max={totalAmount}
@@ -206,6 +237,7 @@ const OrderSummary = ({
 );
 
 const CompleteOrder = () => {
+  const navigate = useNavigate();
   const {
     goToStep,
     customerDetails,
@@ -270,6 +302,18 @@ const CompleteOrder = () => {
   const { totalQty, totalGST, totalAmount } = calculateTotals();
 
   const submitFinalOrder = async () => {
+    const payload = {
+      CompanyId: customerId.companyId,
+      TotalQty: totalQty,
+      TotalGSTValue: totalGST,
+      TotalValue: totalAmount,
+    };
+    if (totalAdvance > 0) {
+      // const AdvanceAmount =
+      updatePaymentDetails({ ...payload, totalAdvance, advancedAmounts });
+      goToStep(6);
+      return;
+    }
     try {
       setIsSubmitting(true);
       const payload = {
@@ -279,9 +323,10 @@ const CompleteOrder = () => {
         TotalValue: totalAmount,
       };
       await updateFinalOrder({ orderId: customerId.orderId, payload }).unwrap();
-      updatePaymentDetails({ ...payload, totalAdvance });
+
       toast.success("Successfully updated the products");
-      goToStep(6)
+
+      navigate("/order-list");
     } catch (error) {
       toast.error("Please try again after some time or try re-load the page!");
     } finally {
@@ -294,7 +339,15 @@ const CompleteOrder = () => {
     if (totalAdvance === 0) {
       setShowConfirmModal(true);
     } else {
-      submitFinalOrder();
+      const payload = {
+        CompanyId: customerId.companyId,
+        TotalQty: totalQty,
+        TotalGSTValue: totalGST,
+        TotalValue: totalAmount,
+      };
+
+      updatePaymentDetails({ ...payload, totalAdvance, advancedAmounts });
+      goToStep(6);
     }
   };
 
@@ -410,7 +463,15 @@ const CompleteOrder = () => {
                     <TableCell>{item.SlNo}</TableCell>
                     <TableCell>{getShortTypeName(item.typeid)}</TableCell>
                     <TableCell>
-                      <ProductDetails item={item} />
+                     <div
+                        className="text-sm"
+                        style={{
+                          whiteSpace: "pre-wrap",
+                          wordWrap: "break-word",
+                        }}
+                      >
+                        {getProductName(item)}
+                      </div>
                     </TableCell>
                     <TableCell className="text-center">
                       {formatNumber(item.OrderQty)}

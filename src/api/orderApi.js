@@ -235,20 +235,6 @@ export const orderApi = createApi({
       }),
     }),
 
-    createNewPrescription: builder.mutation({
-      query: ({ payload }) => ({
-        url: `/api/v1/prescription/create`,
-        method: "POST",
-        body: payload,
-      }),
-      invalidatesTags: ["Prescription"],
-    }),
-    getAllPrescription: builder.query({
-      query: ({ patientId }) => ({
-        url: `/api/v1/prescription?PatientID=${patientId}`,
-      }),
-      providesTags: ["Prescription"],
-    }),
     getDIaDetails: builder.mutation({
       query: ({ payload }) => ({
         url: `/api/v1/optical-lens/getdia`,
@@ -285,11 +271,137 @@ export const orderApi = createApi({
       providesTags: ["OrderDetails"],
     }),
 
+    saveOpticalLens: builder.mutation({
+      query: ({ orderId, payload }) => ({
+        url: `/api/v1/order/add-opticallens/${orderId}`,
+        method: "POST",
+        body: payload,
+      }),
+      invalidatesTags: ["Order"],
+    }),
+
+    mainApplyDiscount: builder.mutation({
+      query: ({ locationId, orderId, detailId, productType, payload }) => ({
+        url: `/api/v1/order/applydiscount?locationId=${locationId}&orderId=${orderId}&detailId=${detailId}&productType=${productType}`,
+        method: "PUT",
+        body: payload,
+      }),
+      invalidatesTags: ["Order"],
+    }),
+    mainApplyRemoveDiscount: builder.mutation({
+      query: ({ locationId, orderId, detailId, productType, payload }) => ({
+        url: `/api/v1/order/remove-discount?orderId=${orderId}&detailId=${detailId}&productType=${productType}`,
+        method: "PUT",
+        body: payload,
+      }),
+      invalidatesTags: ["Order"],
+    }),
+
+    // PRESCRIPTION API'S
+    createNewPrescription: builder.mutation({
+      query: ({ payload }) => ({
+        url: `/api/v1/prescription/create`,
+        method: "POST",
+        body: payload,
+      }),
+      invalidatesTags: ["Prescription"],
+    }),
+    updatePrescription: builder.mutation({
+      query: ({ id, payload }) => ({
+        url: `/api/v1/prescription/update/${id}`,
+        method: "PUT",
+        body: payload,
+      }),
+      invalidatesTags: ["Prescription"],
+    }),
+    deActivatePrescription: builder.mutation({
+      query: ({ id }) => ({
+        url: `/api/v1/prescription/delete/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Prescription"],
+    }),
+    getAllPrescription: builder.query({
+      query: ({ patientId }) => ({
+        url: `/api/v1/prescription?PatientID=${patientId}`,
+      }),
+      transformResponse: (response) => {
+        return response?.data?.data?.sort(
+          (a, b) => new Date(b.PrescriptionDate) - new Date(a.PrescriptionDate)
+        );
+      },
+      providesTags: ["Prescription"],
+    }),
+
+    getAllPrescriptionByPatient: builder.query({
+      query: ({ patientId }) => ({
+        url: `/api/v1/prescription?PatientID=${patientId}`,
+      }),
+      transformResponse: (response) => {
+        return response?.data?.data?.sort(
+          (a, b) => new Date(b.PrescriptionDate) - new Date(a.PrescriptionDate)
+        );
+      },
+      providesTags: ["Prescription"],
+    }),
+    getAllPrescriptions: builder.query({
+      query: () => ({
+        url: `/api/v1/prescription/all`,
+      }),
+      providesTags: ["Prescription"],
+    }),
+    getPrescriptionById: builder.query({
+      query: ({ id }) => ({
+        url: `/api/v1/prescription/getbyid/${id}`,
+      }),
+    }),
+    getAllVisualAcuity: builder.query({
+      query: () => ({
+        url: `/api/v1/prescription/all-visual-acuity`,
+      }),
+    }),
+
+    saveFinalPayment: builder.mutation({
+      query: ({ orderId, payload }) => ({
+        url: `/api/v1/order/withadvance/${orderId}`,
+        method: "PUT",
+        body: payload,
+      }),
+    }),
+
+    // MAIN PAGE AND VIEW PAGE
+    getAllOrders: builder.query({
+      query: () => ({
+        url: `/api/v1/order/all`,
+      }),
+    }),
+    getIdentifier: builder.query({
+      query: () => ({
+        url: `/api/v1/order/identifer`,
+      }),
+    }),
+    updateIdentifier: builder.mutation({
+      query: ({ id, payload }) => ({
+        url: `/api/v1/order/update/${id}`,
+        method: "PUT",
+        body: payload,
+      }),
+    }),
+    getOrderViewById: builder.query({
+      query: ({ id }) => ({
+        url: `/api/v1/order/getorder/${id}`,
+      }),
+    }),
   }),
 });
 
 export const {
+  // MAIN PAGE AND VIEW PAGE
+  useGetAllOrdersQuery,
+  useGetOrderViewByIdQuery,
+
   // OPTICAL LENS
+  useGetAllVisualAcuityQuery,
   useGetOrderPreferenceQuery,
   useGetFocalityQuery,
   useGetFamilyQuery,
@@ -303,6 +415,19 @@ export const {
   useGetAllPrescriptionQuery,
   useGetDIaDetailsMutation,
   useGetPriceMutation,
+  useSaveOpticalLensMutation,
+  useMainApplyDiscountMutation,
+  useMainApplyRemoveDiscountMutation,
+  useGetIdentifierQuery,
+  useUpdateIdentifierMutation,
+  useSaveFinalPaymentMutation,
+
+  // PRESCRIPTION
+  useGetAllPrescriptionsQuery,
+  useGetPrescriptionByIdQuery,
+  useUpdatePrescriptionMutation,
+  useDeActivatePrescriptionMutation,
+  useLazyGetAllPrescriptionByPatientQuery,
 
   useLazySearchCustomerQuery,
   useCreateNewCustomerMutation,

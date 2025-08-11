@@ -28,6 +28,7 @@ import { contactLensApi } from "../api/clBatchDetailsApi";
 import { purchaseOrderApi } from "../api/purchaseOrderApi";
 import { companySettingsApi } from "../api/companySettingsApi";
 import { companiesApi } from "../api/companiesApi";
+import { InvoiceApi } from "../api/InvoiceApi";
 
 const persistConfig = {
   key: "auth",
@@ -39,6 +40,7 @@ const persistConfig = {
     "roles",
     "access",
     "hasMultipleLocations",
+    "companyId"
   ],
 };
 
@@ -72,6 +74,7 @@ export const store = configureStore({
     [purchaseOrderApi.reducerPath]: purchaseOrderApi.reducer,
     [companySettingsApi.reducerPath]: companySettingsApi.reducer,
     [companiesApi.reducerPath]: companiesApi.reducer,
+    [InvoiceApi.reducerPath]: InvoiceApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -101,7 +104,8 @@ export const store = configureStore({
       contactLensApi.middleware,
       purchaseOrderApi.middleware,
       companySettingsApi.middleware,
-      companiesApi.middleware
+      companiesApi.middleware,
+      InvoiceApi.middleware
     ),
 });
 

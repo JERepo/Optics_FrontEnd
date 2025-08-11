@@ -17,7 +17,6 @@ const AddressForm = ({
   useDifferentShipping,
 }) => {
   const prefix = title.toLowerCase().replace(" ", "");
-  console.log("address",useDifferentShipping,prefix)
 
   return (
     <div className="p-6 border border-gray-200 rounded-lg mb-6 bg-white shadow-sm">

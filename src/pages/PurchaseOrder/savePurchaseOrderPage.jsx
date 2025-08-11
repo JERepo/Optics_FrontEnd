@@ -82,23 +82,33 @@ export default function SavePurchaseOrder() {
         }
     }, [hasLocation]);
 
-    useEffect(() => {
-        if (companySettingsError) {
-            console.error("Error fetching company settings:", companySettingsError);
-            setAlertMessage({
-                type: "error",
-                message: "Failed to fetch company details"
-            });
-            setShowAlert(true);
-            setTimeout(() => setShowAlert(false), 3000);
-        }
-    }, [companySettingsError]);
+  useEffect(() => {
+    if (companySettingsError) {
+      console.error("Error fetching company settings:", companySettingsError);
+      setAlertMessage({
+        type: "error",
+        message: "Failed to fetch company details",
+      });
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+    }
+  }, [companySettingsError]);
 
-    useEffect(() => {
-        if (selectedLocation) {
-            fetchVendors(selectedLocation);
-        }
-    }, [selectedLocation]);
+  useEffect(() => {
+    if (selectedLocation) {
+      fetchVendors(selectedLocation);
+    }
+  }, [selectedLocation]);
+
+  useEffect(() => {
+    if (selectedVendor) {
+      const vendor = vendors.find((v) => v.Id === parseInt(selectedVendor));
+      setFormState((prev) => ({
+        ...prev,
+        vendorDetails: vendor,
+      }));
+    }
+  }, [selectedVendor, vendors]);
 
 
     useEffect(() => {
@@ -178,15 +188,15 @@ export default function SavePurchaseOrder() {
                 return;
             }
 
-            if (!selectedVendor) {
-                setAlertMessage({
-                    type: "error",
-                    message: "Please select a vendor"
-                });
-                setShowAlert(true);
-                setTimeout(() => setShowAlert(false), 3000);
-                return;
-            }
+      if (!selectedVendor) {
+        setAlertMessage({
+          type: "error",
+          message: "Please select a vendor",
+        });
+        setShowAlert(true);
+        setTimeout(() => setShowAlert(false), 3000);
+        return;
+      }
 
             if (!formState.shiptoAddress) {
                 setAlertMessage({

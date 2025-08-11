@@ -14,6 +14,11 @@ export const vendorApi = createApi({
       }),
       providesTags: ["Vendor"],
     }),
+    getAllvendorByLocation : builder.query({
+      query : ({id}) => ({
+        url : `/api/v1/vendor/all-vendors/${id}`
+      })
+    }),
     deActivate: builder.mutation({
       query: ({ id, appId, payload }) => ({
         url: `/api/v1/vendor/status-update/${id}?ApplicationUserId=${appId}`,
@@ -56,4 +61,5 @@ export const {
   useCreateVendorMutation,
   useGetVendorByIdMutation,
   useUpdateVendorMutation,
+  useGetAllvendorByLocationQuery
 } = vendorApi;

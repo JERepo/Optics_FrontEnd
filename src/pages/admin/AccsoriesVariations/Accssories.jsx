@@ -62,6 +62,11 @@ const Accssories = () => {
       });
     }
 
+     if (searchQuery) {
+      processed = processed.filter((brand) =>
+        brand.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
     return processed;
   }, [data, searchQuery, sortConfig]);
 

@@ -26,6 +26,7 @@ import Customer from "../../pages/customers/Customer";
 import toast from "react-hot-toast";
 import {
   useCreateNewCustomerMutation,
+  useGetAllVisualAcuityQuery,
   useGetCustomerContactDetailsQuery,
 } from "../../api/orderApi";
 import Button from "../../components/ui/Button";
@@ -152,6 +153,8 @@ const EditPrescription = () => {
     isFetching,
     refetch,
   } = useGetAllCustomersQuery();
+  const { data: acuity } = useGetAllVisualAcuityQuery();
+
   // --- derived data ---
   const allCus = useMemo(() => {
     if (!customersResp?.data?.data || !contactResp?.data) return [];
@@ -189,7 +192,8 @@ const EditPrescription = () => {
 
   const handleCustomerSelect = (customerWithContact) => {
     const patient = customerWithContact.CustomerContactDetails?.[0];
-    
+    console.log("patient", patient);
+
     if (!patient) {
       toast.error("No patient (contact) found for selected customer.");
       return;
@@ -203,6 +207,7 @@ const EditPrescription = () => {
       patientId: customerWithContact.CustomerContactDetails?.[0].Id,
       locationId: parseInt(location),
       customerId: customerWithContact.Id,
+      mobileNo: patient.MobNumber,
     }));
     setCreatingCustomerLoading(false);
     setOpenPrescription(true);
@@ -506,9 +511,10 @@ const EditPrescription = () => {
       ) : (
         <div className="max-w-6xl p-6 bg-white rounded-lg shadow-md pb-6">
           <NewPrescription
+            visualAcuityOptions={acuity?.data.data}
             customerId={customerId}
             onOpen={openPrescription}
-            onClose={() => setOpenPrescription(false)}
+            onClose={() => navigate("/prescription")}
             salesPersons={salesPersons?.data.data}
             lensData={[]}
             isPrescription={true}

@@ -1,5 +1,12 @@
 import React, { useState, useMemo } from "react";
-import { FiSearch, FiPlus, FiEdit2, FiEye, FiArrowUp, FiArrowDown } from "react-icons/fi";
+import {
+  FiSearch,
+  FiPlus,
+  FiEdit2,
+  FiEye,
+  FiArrowUp,
+  FiArrowDown,
+} from "react-icons/fi";
 import Button from "../../../components/ui/Button";
 import { useNavigate } from "react-router";
 import { Table, TableRow, TableCell } from "../../../components/Table";
@@ -16,7 +23,7 @@ const AccessoriesMaster = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [sortOrder, setSortOrder] = useState("newToOld"); 
+  const [sortOrder, setSortOrder] = useState("newToOld");
   const locale = navigator.language || navigator.languages[0] || "en-IN";
 
   const [selectedBrandId, setSelectedBrandId] = useState(null);
@@ -53,8 +60,14 @@ const AccessoriesMaster = () => {
       }
     });
 
-    return sortedAccessories;
-  }, [allAccessories, sortOrder]);
+    return sortedAccessories.filter((frame) => {
+      const query = searchQuery?.toLocaleLowerCase();
+      return (
+        frame.BrandName.toLocaleLowerCase().includes(query) ||
+        frame.ProductName.toLocaleLowerCase().includes(query)
+      );
+    });
+  }, [allAccessories, sortOrder,searchQuery]);
 
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedPools = accessories.slice(startIndex, startIndex + pageSize);

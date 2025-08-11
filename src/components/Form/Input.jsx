@@ -1,4 +1,4 @@
-const Input = ({ label, type = "text", name, placeholder, value, onChange, error, className = "", ...props }) => {
+const Input = ({ label, type = "text", name, placeholder, value, onChange, error, className = "",grayOut, ...props }) => {
   return (
     <div className={`relative ${className}`}> {/* Make container relative for absolute error positioning */}
       {label && (
@@ -14,7 +14,7 @@ const Input = ({ label, type = "text", name, placeholder, value, onChange, error
           placeholder={placeholder}
           value={value}
           onChange={onChange}
-          className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+          className={`${!grayOut ?  "w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" : "bg-neutral-300 pointer-events-none w-full px-3 py-2  border rounded-md shadow-sm "} ${
             error ? "border-red-500" : "border-gray-300"
           }`}
           {...props}

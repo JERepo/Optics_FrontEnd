@@ -49,8 +49,14 @@ const ShapeMaster = () => {
       }
     });
 
+     if (searchQuery) {
+      sortedBrands = sortedBrands.filter((brand) =>
+        brand.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
     return sortedBrands;
-  }, [data, sortOrder]);
+  }, [data, sortOrder,searchQuery]);
 
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedPools = brands.slice(startIndex, startIndex + pageSize);

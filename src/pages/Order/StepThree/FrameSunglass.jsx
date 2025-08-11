@@ -99,7 +99,7 @@ const FrameSunglass = () => {
               : i
           );
         }
-        return [...prev, { ...data, Quantity: 1 }];
+        return [{ ...data, Quantity: 1 },...prev];
       });
     } else {
       toast.error(`Barcode doesn't exist!`);
@@ -317,6 +317,109 @@ const FrameSunglass = () => {
             </div>
           </div>
         </div>
+        <div className="p-6 border-gray-100">
+          {!searchMode ? (
+            <form onSubmit={handleBarcodeSubmit} className="space-y-2">
+              <div className="flex flex-col gap-3">
+                <label
+                  htmlFor="barcode"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Enter Barcode
+                </label>
+                <div className="flex gap-2">
+                  <div className="relative flex items-center">
+                    <input
+                      id="barcode"
+                      type="text"
+                      value={barcode}
+                      onChange={(e) => setBarcode(e.target.value)}
+                      placeholder="Scan or enter barcode"
+                      className="w-[400px] pl-10 pr-4 py-3 border border-gray-300 rounded-lg"
+                    />
+                    <FiSearch className="absolute left-3 text-gray-400" />
+                  </div>
+                  <Button
+                    type="submit"
+                    isLoading={isBarcodeLoading || isBarCodeFetching}
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => setSearchMode(true)}
+                    variant="outline"
+                  >
+                    Search
+                  </Button>
+                </div>
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={handleBrandModelSubmit} className="space-y-2">
+              <div className="flex flex-col gap-3">
+                <label className="text-sm font-medium text-gray-700">
+                  Search by Brand & Model *
+                </label>
+                <div className="flex gap-2">
+                  <Autocomplete
+                    options={filteredBrands}
+                    getOptionLabel={(option) => option.BrandName}
+                    onInputChange={(event, value) => {
+                      setBrandInput(value);
+                      setShowBrandDropdown(true);
+                    }}
+                    onChange={(event, newValue) => {
+                      if (newValue) {
+                        setBrandInput(newValue.BrandName);
+                        setBrandId(newValue.Id);
+                        setShowBrandDropdown(false);
+                      }
+                    }}
+                    value={
+                      filteredBrands.find((b) => b.BrandName === brandInput) ||
+                      null
+                    }
+                    isOptionEqualToValue={(option, value) =>
+                      option.Id === value.Id
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Search Brand"
+                        variant="outlined"
+                        fullWidth
+                      />
+                    )}
+                    sx={{ width: 400 }}
+                  />
+                  <input
+                    type="text"
+                    value={modelNo}
+                    onChange={(e) => setModelNo(e.target.value)}
+                    placeholder="Model Number"
+                    className="flex-1 pl-4 pr-4 py-3 border border-gray-300 rounded-lg"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={isBrandModelLoading || !brandId}
+                    isLoading={isBrandModelLoading || isBrandAndModalFetching}
+                  >
+                    Search
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => setSearchMode(false)}
+                    variant="outline"
+                    icon={FiX}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </form>
+          )}
+        </div>
         {items.length > 0 && (
           <div className="p-6">
             <Table
@@ -440,109 +543,7 @@ const FrameSunglass = () => {
           </div>
         )}
 
-        <div className="p-6 border-gray-100">
-          {!searchMode ? (
-            <form onSubmit={handleBarcodeSubmit} className="space-y-2">
-              <div className="flex flex-col gap-3">
-                <label
-                  htmlFor="barcode"
-                  className="text-sm font-medium text-gray-700"
-                >
-                  Enter Barcode
-                </label>
-                <div className="flex gap-2">
-                  <div className="relative flex items-center">
-                    <input
-                      id="barcode"
-                      type="text"
-                      value={barcode}
-                      onChange={(e) => setBarcode(e.target.value)}
-                      placeholder="Scan or enter barcode"
-                      className="w-[400px] pl-10 pr-4 py-3 border border-gray-300 rounded-lg"
-                    />
-                    <FiSearch className="absolute left-3 text-gray-400" />
-                  </div>
-                  <Button
-                    type="submit"
-                    isLoading={isBarcodeLoading || isBarCodeFetching}
-                  >
-                    Add
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={() => setSearchMode(true)}
-                    variant="outline"
-                  >
-                    Search
-                  </Button>
-                </div>
-              </div>
-            </form>
-          ) : (
-            <form onSubmit={handleBrandModelSubmit} className="space-y-2">
-              <div className="flex flex-col gap-3">
-                <label className="text-sm font-medium text-gray-700">
-                  Search by Brand & Model *
-                </label>
-                <div className="flex gap-2">
-                  <Autocomplete
-                    options={filteredBrands}
-                    getOptionLabel={(option) => option.BrandName}
-                    onInputChange={(event, value) => {
-                      setBrandInput(value);
-                      setShowBrandDropdown(true);
-                    }}
-                    onChange={(event, newValue) => {
-                      if (newValue) {
-                        setBrandInput(newValue.BrandName);
-                        setBrandId(newValue.Id);
-                        setShowBrandDropdown(false);
-                      }
-                    }}
-                    value={
-                      filteredBrands.find((b) => b.BrandName === brandInput) ||
-                      null
-                    }
-                    isOptionEqualToValue={(option, value) =>
-                      option.Id === value.Id
-                    }
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label="Search Brand"
-                        variant="outlined"
-                        fullWidth
-                      />
-                    )}
-                    sx={{ width: 400 }}
-                  />
-                  <input
-                    type="text"
-                    value={modelNo}
-                    onChange={(e) => setModelNo(e.target.value)}
-                    placeholder="Model Number"
-                    className="flex-1 pl-4 pr-4 py-3 border border-gray-300 rounded-lg"
-                  />
-                  <Button
-                    type="submit"
-                    disabled={isBrandModelLoading || !brandId}
-                    isLoading={isBrandModelLoading || isBrandAndModalFetching}
-                  >
-                    Search
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={() => setSearchMode(false)}
-                    variant="outline"
-                    icon={FiX}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </form>
-          )}
-        </div>
+        
       </div>
       <ConfirmationModal
         isOpen={showConfirmModal}

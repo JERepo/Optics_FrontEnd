@@ -202,7 +202,7 @@ export const CustomerProvider = ({ children }) => {
     billingMethod: 0,
     vendor_address1: null,
     vendor_address2: null,
-    vendor_landmark:null,
+    vendor_landmark: null,
     vendor_pincode: null,
     vendor_city: null,
     vendor_state: null,
@@ -218,6 +218,10 @@ export const CustomerProvider = ({ children }) => {
     credit_form: 0,
     credit_days: null,
     opening_balance: null,
+    pOApproval: 1,
+    multiDelivery: 0,
+    deliveryLocationId: null,
+    dCGRNPrice: 0,
   });
 
   return (

@@ -43,7 +43,6 @@ const EditBrandCategory = () => {
 
   // Prefill values if editing
   useEffect(() => {
-    console.log("Main Brands:", mainBrands, mainBrands?.length);
     if (!id || !brandCategory?.data || !mainBrands) return;
 
     setBrandName(brandCategory.data.BrandCategoryName || "");
@@ -51,10 +50,7 @@ const EditBrandCategory = () => {
       ?.filter((b) => b.BrandCategoryId == id)
       .map((n) => n.BrandName)
       .join(", ");
-    console.log(
-      "match",
-      mainBrands?.map((b) => b.BrandCategoryId == 1)
-    );
+  
 
     setBrands(filteredBrands);
   }, [id, brandCategory?.data, mainBrands]);

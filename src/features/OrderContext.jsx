@@ -1,6 +1,6 @@
 import { createContext, useContext, useState } from "react";
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 6;
 
 const OrderContext = createContext();
 
@@ -17,6 +17,7 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
     locationId: null,
     customerId: null,
     orderId: null,
+    mobileNo: null,
   });
   const [draftData, setDraftData] = useState(null);
 
@@ -30,6 +31,13 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
 
   const [FrameDetailedId, setFrameDetaildId] = useState(null);
   const [paymentDetails, setPaymentDetails] = useState(null);
+  const [fullPayments, setFullPayments] = useState([]);
+
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
+  const [Identifiers, setIdentifiers] = useState({
+    frameDetailedId: null,
+    identifier: null,
+  });
 
   const goToStep = (step) => {
     if (step >= 1 && step <= TOTAL_STEPS) {
@@ -72,6 +80,11 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
   const updatePaymentDetails = (details) => {
     setPaymentDetails(details);
   };
+
+  const updateSelectedOrderDetails = (details) => {
+    setSelectedOrderDetails(details);
+  };
+
   return (
     <OrderContext.Provider
       value={{
@@ -97,6 +110,12 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
         FrameDetailedId,
         updatePaymentDetails,
         paymentDetails,
+        updateSelectedOrderDetails,
+        selectedOrderDetails,
+        Identifiers,
+        setIdentifiers,
+        fullPayments,
+        setFullPayments,
       }}
     >
       {children}

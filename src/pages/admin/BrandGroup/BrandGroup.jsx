@@ -62,8 +62,14 @@ const BrandGroup = () => {
       });
     }
 
+    if (searchQuery) {
+      processed = processed.filter((brand) =>
+        brand.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
     return processed;
-  }, [data, searchQuery,sortConfig]);
+  }, [data, searchQuery, sortConfig]);
 
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedPools = brands.slice(startIndex, startIndex + pageSize);

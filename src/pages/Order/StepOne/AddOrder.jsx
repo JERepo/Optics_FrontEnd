@@ -47,7 +47,7 @@ const AddOrder = ({
   setLocation,
 }) => {
   const navigate = useNavigate();
-  const { setCustomerId, draftData, goToStep } = useOrder();
+  const { setCustomerId, goToStep } = useOrder();
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
   const [input, setInput] = useState("");
 
@@ -374,7 +374,7 @@ const AddOrder = ({
       </div>
     </div>
   );
-console.log("by id",locationById)
+  console.log("by id", locationById);
   return (
     <>
       {!selectedCustomer ? (
@@ -448,17 +448,6 @@ console.log("by id",locationById)
                   "Action",
                 ]}
                 data={paginatedCustomers}
-                renderHeader={(col) => {
-                  if (col === "Patient name")
-                    return renderFilterInput("name", col);
-                  if (col === "Mobile no")
-                    return renderFilterInput("mobileNo", col);
-                  if (col === "Customer name")
-                    return renderFilterInput("customerName", col);
-                  return (
-                    <span className="font-medium text-gray-700">{col}</span>
-                  );
-                }}
                 renderRow={(customer, index) => (
                   <TableRow key={customer.id} className="hover:bg-gray-50">
                     <TableCell className="px-4 py-3 text-sm">
@@ -504,7 +493,6 @@ console.log("by id",locationById)
           onBack={onBack}
           user={user}
           setCustomerId={setCustomerId}
-          draftData={draftData}
           location={locationById}
         />
       )}
@@ -770,10 +758,12 @@ const StepB = ({
   onBack,
   user,
   setCustomerId,
-  draftData,
+
   location,
 }) => {
-  console.log("location",location);
+  const { draftData } = useOrder();
+  console.log("location", draftData);
+  const { hasMultipleLocations } = useSelector((state) => state.auth);
   const [orderReference, setOrderReference] = useState("");
   const [selectedSalesPerson, setSelectedSalesPerson] = useState(null);
   const { goToStep } = useOrder();
@@ -814,7 +804,7 @@ const StepB = ({
         ...prev,
         orderId: response?.data.data.Id,
       }));
-      toast.success("Sales person type is created");
+      toast.success("Order created");
       goToStep(2);
     } catch (error) {
       toast.error("Please try agian after some time!");
@@ -822,14 +812,28 @@ const StepB = ({
   };
 
   useEffect(() => {
-    if (draftData && !isSalesPersonsLoading) {
-      const draft = draftData;
-
-      setOrderReference(draft?.OrderReference || null);
-      setSelectedSalesPerson(draft?.SalesPersonId || null);
+    if (draftData) {
+      setOrderReference(draftData?.OrderReference || null);
+      setSelectedSalesPerson(draftData?.SalesPersonId || null);
     }
   }, [draftData, isSalesPersonsLoading]);
 
+  const filteredData = salesPersons?.data.data
+    ?.filter(
+      (person) =>
+        person.Type !== 1 &&
+        person.IsActive === 1 &&
+        person.SalesPersonLinks?.some((link) =>
+          hasMultipleLocations.includes(link.Company?.Id)
+        )
+    )
+    .map((person) => ({
+      ...person,
+      SalesPersonLinks: person.SalesPersonLinks.filter((link) =>
+        hasMultipleLocations.includes(link.Company?.Id)
+      ),
+    }));
+  console.log("selec", selectedCustomer);
   return (
     <div className="max-w-4xl p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-xl font-semibold text-blue-600 mb-4">
@@ -851,29 +855,40 @@ const StepB = ({
             label="Mobile Number"
             value={`${selectedCustomer.MobileISDCode} ${selectedCustomer.MobNumber}`}
           />
-          <Detail
-            label="Billing Method"
-            value={selectedCustomer.BillingMethod === 0 ? "Invoice" : "DC"}
-          />
-          <Detail label="GST Number" value={selectedCustomer.TAXNo} />
-          <Detail
-            label="Credit Billing"
-            value={selectedCustomer.CreditBilling === 0 ? "No" : "Yes"}
-          />
+          {selectedCustomer?.BillingMethod === 1 && (
+            <Detail
+              label="Billing Method"
+              value={selectedCustomer.BillingMethod === 0 ? "Invoice" : "DC"}
+            />
+          )}
+          {selectedCustomer?.TAXRegisteration === 1 && (
+            <>
+              <Detail label="GST Number" value={selectedCustomer.TAXNo} />
+              <div>
+                {selectedCustomer.BillAddress1 && (
+                  <div className="">
+                    <p className="text-sm text-gray-500">Address</p>
+                    <p className="font-medium">
+                      {selectedCustomer.BillAddress1}
+                      {selectedCustomer.BillAddress2 &&
+                        `, ${selectedCustomer.BillAddress2}`}
+                      {selectedCustomer.BillCity &&
+                        `, ${selectedCustomer.BillCity}`}
+                      {selectedCustomer.BillPin &&
+                        ` - ${selectedCustomer.BillPin}`}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+          {selectedCustomer?.CreditBilling === 1 && (
+            <Detail
+              label="Credit Billing"
+              value={selectedCustomer.CreditBilling === 0 ? "No" : "Yes"}
+            />
+          )}
         </div>
-
-        {selectedCustomer.BillAddress1 && (
-          <div className="mt-4">
-            <p className="text-sm text-gray-500">Address</p>
-            <p className="font-medium">
-              {selectedCustomer.BillAddress1}
-              {selectedCustomer.BillAddress2 &&
-                `, ${selectedCustomer.BillAddress2}`}
-              {selectedCustomer.BillCity && `, ${selectedCustomer.BillCity}`}
-              {selectedCustomer.BillPin && ` - ${selectedCustomer.BillPin}`}
-            </p>
-          </div>
-        )}
       </div>
 
       <h3 className="text-lg font-medium text-gray-800 mb-4">Order Details</h3>
@@ -883,9 +898,9 @@ const StepB = ({
         ) : (
           <Select
             label="Sales Person"
-            value={selectedSalesPerson}
+            value={selectedSalesPerson || null}
             onChange={(e) => setSelectedSalesPerson(e.target.value)}
-            options={salesPersons?.data.data}
+            options={filteredData}
             optionLabel="PersonName"
             optionValue="Id"
             defaultOption="Select Sales person"
@@ -921,8 +936,8 @@ const StepB = ({
 
 // Reusable Detail Display Component
 const Detail = ({ label, value }) => (
-  <div>
-    <p className="text-sm text-gray-500">{label}</p>
+  <div className="flex items-center gap-3">
+    <p className="text-sm text-gray-500">{label}</p>:
     <p className="font-medium">{value || "N/A"}</p>
   </div>
 );

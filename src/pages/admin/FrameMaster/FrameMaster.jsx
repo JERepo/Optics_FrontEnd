@@ -74,8 +74,14 @@ const FrameMaster = () => {
       });
     }
 
-    return processed;
-  }, [allAccessories, brandFilter, sortConfig, locale]);
+    return processed.filter((frame) => {
+      const query = searchQuery?.toLocaleLowerCase();
+      return (
+        frame.BrandName.toLocaleLowerCase().includes(query) ||
+        frame.ModelNo.toLocaleLowerCase().includes(query)
+      );
+    });
+  }, [allAccessories, brandFilter, sortConfig, locale,searchQuery]);
 
   // Get unique brand names for filter
   const uniqueBrands = useMemo(() => {

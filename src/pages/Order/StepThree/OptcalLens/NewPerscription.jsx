@@ -1,12 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Modal from "../../../../components/ui/Modal";
 import { Autocomplete, TextField } from "@mui/material";
 import Radio from "../../../../components/Form/Radio";
 import {
   FiCalendar,
   FiClipboard,
+  FiDelete,
+  FiEdit,
   FiEye,
   FiFileText,
+  FiTrash2,
   FiUploadCloud,
   FiUser,
   FiX,
@@ -14,7 +17,10 @@ import {
 import Input from "../../../../components/Form/Input";
 import {
   useCreateNewPrescriptionMutation,
+  useDeActivatePrescriptionMutation,
   useGetAllPrescriptionQuery,
+  useGetPrescriptionByIdQuery,
+  useUpdatePrescriptionMutation,
 } from "../../../../api/orderApi";
 import { useSelector } from "react-redux";
 import Button from "../../../../components/ui/Button";
@@ -49,9 +55,18 @@ const initialEyeValues = {
   Acuity: "",
 };
 
+// Utility validations
+const isQuarterStep = (val) => val === "" || Number(val) % 0.25 === 0;
+const isPositive = (val) => val === "" || Number(val) > 0;
+const isOneTo180 = (val) => {
+  if (val === "") return true;
+  const num = Number(val);
+  return Number.isInteger(num) && num >= 1 && num <= 180;
+};
+
 const NewPrescription = ({
   visualAcuityOptions,
-
+  setLensData,
   lensData,
   isPrescription,
   onClose,
@@ -61,10 +76,16 @@ const NewPrescription = ({
     patientId: customerId.patientId,
   });
   const { data: salesPersons } = useGetAllSalesPersonsQuery();
-  const [createPerscription, { isLoading: isSaving }] =
+  const [createPrescription, { isLoading: isSaving }] =
     useCreateNewPrescriptionMutation();
+  const [updatePrescription, { isLoading: isUpdating }] =
+    useUpdatePrescriptionMutation();
+  const [deletePrescription, { isLoading: isDeleting }] =
+    useDeActivatePrescriptionMutation();
   const { user, hasMultipleLocations } = useSelector((state) => state.auth);
   const [selectedPrescription, setSelectedPrescription] = useState(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editPrescriptionId, setEditPrescriptionId] = useState(null);
 
   const [prescriptionData, setPrescriptionData] = useState({
     salesId: null,
@@ -80,15 +101,6 @@ const NewPrescription = ({
 
   const [liveErrors, setLiveErrors] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Utility validations
-  const isQuarterStep = (val) => val === "" || Number(val) % 0.25 === 0;
-  const isPositive = (val) => val === "" || Number(val) > 0;
-  const isOneTo180 = (val) => {
-    if (val === "") return true;
-    const num = Number(val);
-    return Number.isInteger(num) && num >= 1 && num <= 180;
-  };
 
   // Validate a field in one eye
   const validateSingleField = (eye, field, value, allValues) => {
@@ -133,7 +145,6 @@ const NewPrescription = ({
   };
 
   const validateDataField = (field, value) => {
-    // if (field === "salesId" && !value) return "Brand selection is required.";
     if (field === "remarks" && !value.trim()) return "Remarks are required.";
     return "";
   };
@@ -166,12 +177,7 @@ const NewPrescription = ({
     const remarksError = validateDataField("remarks", prescriptionData.remarks);
     if (remarksError) errors.add(remarksError);
 
-    if (
-      prescriptionData.prescriptionFrom === 1 &&
-      !prescriptionData.doctorFile
-    ) {
-      errors.add("Prescription file is required when selected 'From Doctor'.");
-    }
+   
 
     return Array.from(errors);
   };
@@ -211,23 +217,59 @@ const NewPrescription = ({
       liveErrors.filter(
         (e) =>
           !e.includes("Remarks") &&
-          !e.includes("Brand") &&
-          !e.includes("Prescription file")
+          !e.includes("Brand") 
       )
     );
 
     const err = validateDataField(field, value);
     if (err) errors.add(err);
 
-    if (
-      field === "prescriptionFrom" &&
-      value === 1 &&
-      !prescriptionData.doctorFile
-    ) {
-      errors.add("Prescription file is required when selected 'From Doctor'.");
-    }
 
     setLiveErrors([...errors]);
+  };
+
+  const handleUpdate = (prescription) => {
+    setIsEditMode(true);
+    setEditPrescriptionId(prescription.Id);
+
+    // Prefill prescription data
+    setPrescriptionData({
+      salesId: prescription.SalesPersonId,
+      prescriptionFrom: prescription.PrescriptionFrom,
+      doctorFile: prescription.PrescriptionDoc || null,
+      remarks: prescription.Remarks || "",
+    });
+
+    // Prefill prescription values
+    setPrescriptionValues({
+      R: {
+        SPH: prescription.RSPH || "",
+        CYLD: prescription.RCYD || "",
+        Axis: prescription.RAxis || "",
+        ADD: prescription.RAddOn || "",
+        Prism: prescription.RPrism || "",
+        Base: prescription.RBase !== null ? String(prescription.RBase) : "",
+        Acuity:
+          prescription.RVisualAcuity !== null
+            ? String(prescription.RVisualAcuity)
+            : "",
+      },
+      L: {
+        SPH: prescription.LSPH || "",
+        CYLD: prescription.LCYD || "",
+        Axis: prescription.LAxis || "",
+        ADD: prescription.LAddOn || "",
+        Prism: prescription.LPrism || "",
+        Base: prescription.LBase !== null ? String(prescription.LBase) : "",
+        Acuity:
+          prescription.LVisualAcuity !== null
+            ? String(prescription.LVisualAcuity)
+            : "",
+      },
+    });
+
+    // Clear any existing errors
+    setLiveErrors([]);
   };
 
   const handleSubmit = async () => {
@@ -238,7 +280,9 @@ const NewPrescription = ({
     setIsSubmitting(true);
 
     const buildVal = (eye, field) =>
-      Number(prescriptionValues[eye][field]) || null;
+      prescriptionValues[eye][field] !== ""
+        ? Number(prescriptionValues[eye][field])
+        : null;
 
     const payload = {
       PatientId: customerId.patientId,
@@ -267,14 +311,36 @@ const NewPrescription = ({
 
     if (!payload.SalesPersonId) {
       toast.error("Can't save the Prescription please select the Optometrist!");
+      setIsSubmitting(false);
       return;
     }
 
     try {
-      console.log("Submitting:", payload);
-      await createPerscription({ payload }).unwrap();
+      if (isEditMode) {
+        // Update existing prescription
+        const response = await updatePrescription({
+          id: editPrescriptionId,
+          payload,
+        }).unwrap();
+        toast.success("Prescription updated successfully!");
+        setIsEditMode(false);
+        setEditPrescriptionId(null);
+      } else {
+        // Create new prescription
+        const response = await createPrescription({ payload }).unwrap();
+        if (!isPrescription) {
+          setLensData((prev) => ({
+            ...prev,
+            prescriptionId: response?.data.data.Id,
+            selectedPrescription: response?.data?.data,
+            powerSingleORboth: 1,
+          }));
+        }
+        toast.success("Prescription created successfully!");
+      }
       onClose();
-    } catch {
+    } catch (error) {
+      console.error("Submission error:", error);
       setLiveErrors(["Error submitting prescription. Please try again."]);
     } finally {
       setIsSubmitting(false);
@@ -323,9 +389,27 @@ const NewPrescription = ({
 
     setSelectedPrescription(parsedPrescription);
   };
-  console.log("selected", selectedPrescription);
+  const handleDelete = async (p) => {
+    try {
+      await deletePrescription({ id: p.Id }).unwrap();
+      toast.success("Deleted SUccessfully!");
+    } catch (error) {
+      console.log(error);
+      toast.error("Please try again!");
+    }
+  };
   return (
     <div className="mt-5 space-y-4">
+      {isPrescription && 
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 text-lg font-medium text-neutral-600">
+            Patient Name : {customerId.patientName}
+        </div> 
+         <div className="flex items-center gap-3 text-lg font-medium text-neutral-600">
+            Patient Mobile : {customerId.mobileNo}
+        </div>
+        </div>}
+      <div></div>
       {/* Brand Selection */}
       <div className="flex justify-between w-full items-center">
         <div className="w-1/2">
@@ -441,7 +525,7 @@ const NewPrescription = ({
                           key={opt.value || opt.Id}
                           value={opt.value || opt.Id}
                         >
-                          {opt.label || opt.Name}
+                          {opt.label || opt.VisualAcuity}
                         </option>
                       ))}
                     </select>
@@ -487,20 +571,30 @@ const NewPrescription = ({
 
       {/* Save Button */}
       <div className="flex justify-end mt-4">
-        <Button onClick={handleSubmit} disabled={isSaving} isLoading={isSaving}>
-          {isSubmitting ? "Saving..." : "Save Prescription"}
+        <Button
+          onClick={handleSubmit}
+          disabled={isSaving || isUpdating}
+          isLoading={isSaving || isUpdating}
+        >
+          {isSubmitting
+            ? isEditMode
+              ? "Updating..."
+              : "Saving..."
+            : isEditMode
+            ? "Update Prescription"
+            : "Save Prescription"}
         </Button>
       </div>
 
-      {/* showing the power details */}
-      {isPrescription && allPrescriptionData?.data.data.length > 0 && (
+      {/* Showing the power details */}
+      {isPrescription && allPrescriptionData?.length > 0 && (
         <div className="space-y-6">
           {/* Prescriptions Table */}
           <div className="">
             <Table
               columns={["Prescription Date", "Remarks", "Actions"]}
               headerClassName="bg-gray-50 text-gray-700 font-medium"
-              data={allPrescriptionData?.data.data}
+              data={allPrescriptionData}
               renderRow={(p, index) => (
                 <TableRow key={p.id} className="hover:bg-gray-50">
                   <TableCell className="">
@@ -515,13 +609,28 @@ const NewPrescription = ({
                       {p.Remarks}
                     </div>
                   </TableCell>
-                  <TableCell className="">
+                  <TableCell className="space-x-2">
                     <button
                       className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                       onClick={() => handleView(p)}
                     >
                       <FiEye className="mr-1.5" />
                       View
+                    </button>
+                    <button
+                      className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                      onClick={() => handleUpdate(p)}
+                    >
+                      <FiEdit className="mr-1.5" />
+                      Update
+                    </button>
+                    <button
+                      className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-red-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      onClick={() => handleDelete(p)}
+                      aria-label="Delete"
+                    >
+                      <FiTrash2 className="mr-1.5" />
+                      Delete
                     </button>
                   </TableCell>
                 </TableRow>
@@ -531,131 +640,137 @@ const NewPrescription = ({
 
           {/* Prescription Details Modal */}
           {selectedPrescription && (
-            <div className="mt-6 bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
-              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <h2 className="text-lg font-semibold text-gray-800 flex items-center">
-                  <FiClipboard className="mr-2 text-blue-500" />
-                  Prescription Details
-                </h2>
-                <button
-                  onClick={() => setSelectedPrescription(null)}
-                  className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100"
-                >
-                  <FiX size={20} />
-                </button>
-              </div>
-
-              <div className="p-6">
-                {/* Metadata Section */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div className="flex items-start">
-                    <FiCalendar className="mt-1 mr-3 text-gray-400" />
-                    <div>
-                      <p className="text-sm text-gray-500">Prescription Date</p>
-                      <p className="font-medium">
-                        {selectedPrescription.PrescriptionDate}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start">
-                    <FiFileText className="mt-1 mr-3 text-gray-400" />
-                    <div>
-                      <p className="text-sm text-gray-500">Remarks</p>
-                      <p className="font-medium">
-                        {selectedPrescription.Remarks || "--"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start">
-                    <FiUser className="mt-1 mr-3 text-gray-400" />
-                    <div>
-                      <p className="text-sm text-gray-500">Sales Person</p>
-                      <p className="font-medium">
-                        {salesPersons?.data?.data.find(
-                          (s) => s.Id === selectedPrescription.SalesPersonId
-                        )?.PersonName || "--"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start">
-                    <FiClipboard className="mt-1 mr-3 text-gray-400" />
-                    <div>
-                      <p className="text-sm text-gray-500">Prescription From</p>
-                      <p className="font-medium">
-                        {selectedPrescription.PrescriptionFrom === 0
-                          ? "Tested t store"
-                          : "From Doctor"}
-                      </p>
-                    </div>
-                  </div>
+            <Modal
+              isOpen={selectedPrescription}
+              onClose={() => setSelectedPrescription(null)}
+              width="max-w-4xl"
+            >
+              <div className="mt-6 bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                  <h2 className="text-lg font-semibold text-gray-800 flex items-center">
+                    <FiClipboard className="mr-2 text-blue-500" />
+                    Prescription Details
+                  </h2>
                 </div>
 
-                {/* Power Details Section */}
-                <div>
-                  <h3 className="text-md font-semibold mb-4 text-gray-800 flex items-center">
-                    <FiEye className="mr-2 text-blue-500" />
-                    Power Details
-                  </h3>
-                  <div className="overflow-x-auto shadow-sm rounded-sm">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          {[
-                            "Side",
-                            "SPH",
-                            "CYL",
-                            "Axis",
-                            "ADD",
-                            "Prism",
-                            "Base",
-                            "Acuity",
-                          ].map((item) => (
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              {item}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {["R", "L"].map((side) => (
-                          <tr key={side}>
-                            <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-                              {side}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {selectedPrescription.values?.[side]?.SPH ?? "--"}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {selectedPrescription.values?.[side]?.CYL ?? "--"}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {selectedPrescription.values?.[side]?.Axis ??
-                                "--"}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {selectedPrescription.values?.[side]?.ADD ?? "--"}
-                            </td>
+                <div className="p-6">
+                  {/* Metadata Section */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div className="flex items-start">
+                      <FiCalendar className="mt-1 mr-3 text-gray-400" />
+                      <div>
+                        <p className="text-sm text-gray-500">
+                          Prescription Date
+                        </p>
+                        <p className="font-medium">
+                          {selectedPrescription.PrescriptionDate}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <FiFileText className="mt-1 mr-3 text-gray-400" />
+                      <div>
+                        <p className="text-sm text-gray-500">Remarks</p>
+                        <p className="font-medium">
+                          {selectedPrescription.Remarks || "--"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <FiUser className="mt-1 mr-3 text-gray-400" />
+                      <div>
+                        <p className="text-sm text-gray-500">Sales Person</p>
+                        <p className="font-medium">
+                          {salesPersons?.data?.data.find(
+                            (s) => s.Id === selectedPrescription.SalesPersonId
+                          )?.PersonName || "--"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <FiClipboard className="mt-1 mr-3 text-gray-400" />
+                      <div>
+                        <p className="text-sm text-gray-500">
+                          Prescription From
+                        </p>
+                        <p className="font-medium">
+                          {selectedPrescription.PrescriptionFrom === 0
+                            ? "Tested at store"
+                            : "From Doctor"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
 
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {selectedPrescription.values?.[side]?.Prism ??
-                                "--"}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {selectedPrescription.values?.[side]?.Base ??
-                                "--"}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {selectedPrescription.values?.[side]
-                                ?.VisualAcuity ?? "--"}
-                            </td>
+                  {/* Power Details Section */}
+                  <div>
+                    <h3 className="text-md font-semibold mb-4 text-gray-800 flex items-center">
+                      <FiEye className="mr-2 text-blue-500" />
+                      Power Details
+                    </h3>
+                    <div className="overflow-x-auto shadow-sm rounded-sm">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            {[
+                              "Side",
+                              "SPH",
+                              "CYL",
+                              "Axis",
+                              "ADD",
+                              "Prism",
+                              "Base",
+                              "Acuity",
+                            ].map((item) => (
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                {item}
+                              </th>
+                            ))}
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {["R", "L"].map((side) => (
+                            <tr key={side}>
+                              <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                                {side}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {selectedPrescription.values?.[side]?.SPH ??
+                                  "--"}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {selectedPrescription.values?.[side]?.CYL ??
+                                  "--"}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {selectedPrescription.values?.[side]?.Axis ??
+                                  "--"}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {selectedPrescription.values?.[side]?.ADD ??
+                                  "--"}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {selectedPrescription.values?.[side]?.Prism ??
+                                  "--"}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {selectedPrescription.values?.[side]?.Base ??
+                                  "--"}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {selectedPrescription.values?.[side]
+                                  ?.VisualAcuity ?? "--"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </Modal>
           )}
         </div>
       )}

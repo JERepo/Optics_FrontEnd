@@ -6,15 +6,15 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
-import Button from "../../../components/ui/Button";
-import { useOrder } from "../../../features/OrderContext";
-import { Table, TableCell, TableRow } from "../../../components/Table";
-import { useGetAllOrdersQuery } from "../../../api/orderApi";
+import Button from "../../components/ui/Button";
+import { useOrder } from "../../features/OrderContext";
+import { Table, TableCell, TableRow } from "../../components/Table";
 import { enGB } from "date-fns/locale";
-import Loader from "../../../components/ui/Loader";
+import Loader from "../../components/ui/Loader";
 import { useSelector } from "react-redux";
+import { useGetAllInvoiceQuery } from "../../api/InvoiceApi";
 
-const OrderList = () => {
+const InvoiceList = () => {
   const navigate = useNavigate();
   const { hasMultipleLocations } = useSelector((state) => state.auth);
   const { goToStep, updateSelectedOrderDetails } = useOrder();
@@ -26,16 +26,16 @@ const OrderList = () => {
   const [pageSize, setPageSize] = useState(10);
 
   const { data: allOrders, isLoading: isAllOrdersLoading } =
-    useGetAllOrdersQuery();
+    useGetAllInvoiceQuery();
 
   useEffect(() => {
     setCurrentPage(1);
   }, [fromDate, toDate, searchQuery]);
 
   const Orders = useMemo(() => {
-    if (!allOrders?.data?.data) return [];
+    if (!allOrders) return [];
 
-    let filtered = allOrders.data.data;
+    let filtered = allOrders;
 
     if (fromDate) {
       filtered = filtered.filter(
@@ -50,62 +50,55 @@ const OrderList = () => {
     }
 
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((invoice) => {
+        const query = searchQuery.toLowerCase();
 
-      filtered = filtered.filter((order) => {
-        const customerName = String(
-          order.CustomerMaster?.CustomerName || ""
-        ).toLowerCase();
-        const patientName = String(
-          order.CustomerContactDetail?.CustomerName || ""
-        ).toLowerCase();
-        const patientMobile = String(
-          order.CustomerContactDetail?.MobNumber || ""
-        ).toLowerCase();
-        const orderNo = String(order.OrderNo || "").toLowerCase();
+        const customerName =
+          invoice.CustomerMaster?.CustomerName?.toLowerCase() || "";
+        const patientName = invoice.Patient?.CustomerName?.toLowerCase() || "";
+        const patientMobile =
+          invoice.CustomerMaster?.MobNumber?.toLowerCase() || "";
+        const invoiceNo = String(invoice.InvoiceNo)?.toLowerCase() || "";
 
         return (
           customerName.includes(query) ||
           patientName.includes(query) ||
           patientMobile.includes(query) ||
-          orderNo.includes(query)
+          invoiceNo.includes(query)
         );
       });
     }
 
-    return filtered
-      .map((order) => ({
-        id: order.Id,
-        order: order,
-        orderNo: order.OrderNo,
-        OrderPrefix: order.OrderPrefix,
-        orderDate: new Intl.DateTimeFormat("en-GB", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }).format(new Date(order.OrderPlacedDate)),
-
-        customerName: order.CustomerMaster?.CustomerName,
-        patientName: order.CustomerContactDetail?.CustomerName,
-        mobileNo: order.CustomerContactDetail?.MobNumber,
-        orderValue: order.TotalValue,
-        totalQty: order.TotalQty,
-        Status: order.Status,
-      }))
-      // .filter((order) => order.CompanyId == hasMultipleLocations[0]);
+    return filtered.map((invoice) => ({
+      id: invoice.Id,
+      invoice: invoice,
+      invoiceDate: new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }).format(new Date(invoice.InvoiceDate)),
+      invoiceNo: invoice.InvoiceNo,
+      customerName: invoice.CustomerMaster.CustomerName,
+      patientName: invoice.Patient.CustomerName,
+      mobileNo: invoice.CustomerMaster.MobNumber,
+      qty: invoice.TotalQty,
+      amount: invoice.TotalValue,
+      status: invoice.Status === 1 ? "Confirmed" : "Draft",
+    }));
+    // .filter((order) => order.CompanyID === parseInt(hasMultipleLocations[0]));
   }, [allOrders, fromDate, toDate, searchQuery]);
 
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedOrders = Orders.slice(startIndex, startIndex + pageSize);
   const totalPages = Math.ceil(Orders.length / pageSize);
 
-  const totalOrders = allOrders?.data?.data?.length || 0;
+  const totalOrders = allOrders?.length || 0;
   const filteredOrders = Orders.length;
   const today = new Date();
 
-  const handleViewOrder = (order) => {
-    updateSelectedOrderDetails(order);
-    navigate(`/add-order/view-order?orderId=${order.Id}`);
+  const handleViewinvoice = (invoice) => {
+    updateSelectedOrderDetails(invoice);
+    navigate(`/invoice/view?invoiceId=${invoice}`);
   };
 
   const getOrderStatus = (status) => {
@@ -131,38 +124,10 @@ const OrderList = () => {
         {/* Header */}
         <div className="px-6 py-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Order List</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Invoice List</h1>
             <p className="text-sm text-gray-500 mt-1">
-              Manage and track all your orders
+              Manage and track all your invoices
             </p>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="px-6 py-4 bg-gray-50 border-b border-gray-100">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[
-              { label: "Total Orders", value: totalOrders },
-              { label: "Filtered Orders", value: filteredOrders },
-              {
-                label: "Completion Rate",
-                value: totalOrders
-                  ? `${Math.round((filteredOrders / totalOrders) * 100)}%`
-                  : "0%",
-              },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className="bg-white p-4 rounded-lg shadow-xs border border-gray-100"
-              >
-                <p className="text-sm font-medium text-gray-500">
-                  {stat.label}
-                </p>
-                <p className="text-3xl font-semibold text-gray-900 mt-1">
-                  {stat.value}
-                </p>
-              </div>
-            ))}
           </div>
         </div>
 
@@ -240,14 +205,14 @@ const OrderList = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
             <div className="flex items-center gap-5">
               <h2 className="text-lg font-medium text-gray-900">
-                Order Details
+                Invoice Details
               </h2>
 
               <div className="relative flex items-center w-full sm:w-64">
                 <FiSearch className="absolute left-3 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search orders..."
+                  placeholder="Search invoice..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -260,10 +225,20 @@ const OrderList = () => {
                 className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
                 onClick={() => {
                   goToStep(1);
+                  navigate("/invoice/create");
+                }}
+              >
+                From Order
+              </Button>
+              <Button
+                icon={FiPlus}
+                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
+                onClick={() => {
+                  goToStep(1);
                   navigate("/add-order");
                 }}
               >
-                New Order
+                DC Invoice
               </Button>
             </div>
           </div>
@@ -271,31 +246,33 @@ const OrderList = () => {
           <Table
             columns={[
               "S.No",
-              "Order No",
-              "Date",
-              "Patient Name",
-              "Customer Name",
-              "Mobile No",
-              "Order Qty",
-              "Order Value",
-              "Status",
-              "Action",
+              "invoice date",
+              "invoice no",
+              "customer name",
+              "patient name",
+              "mobile no",
+              "qty",
+              "amount",
+              "status",
+              "action",
             ]}
             data={paginatedOrders}
-            renderRow={(order, index) => (
-              <TableRow key={order.id}>
+            renderRow={(invoice, index) => (
+              <TableRow key={invoice.id}>
                 <TableCell>{startIndex + index + 1}</TableCell>
-                <TableCell>{`${order.OrderPrefix}/${order.orderNo} `}</TableCell>
-                <TableCell>{order.orderDate}</TableCell>
-                <TableCell>{order.patientName}</TableCell>
-                <TableCell>{order.customerName}</TableCell>
-                <TableCell>{order.mobileNo}</TableCell>
-                <TableCell>{order.totalQty}</TableCell>
-                <TableCell>{order.orderValue}</TableCell>
-                <TableCell>{getOrderStatus(order.Status)}</TableCell>
+                <TableCell>{invoice.invoiceDate}</TableCell>
+                <TableCell>{`${
+                  invoice.InvoicePrefix ? invoice.InvoicePrefix : "N/A"
+                }/${invoice.invoiceNo}`}</TableCell>
+                <TableCell>{invoice.patientName}</TableCell>
+                <TableCell>{invoice.customerName}</TableCell>
+                <TableCell>{invoice.mobileNo}</TableCell>
+                <TableCell>{invoice.qty}</TableCell>
+                <TableCell>₹{invoice.amount}</TableCell>
+                <TableCell>{invoice.status}</TableCell>
                 <TableCell>
                   <button
-                    onClick={() => handleViewOrder(order.order)}
+                    onClick={() => handleViewinvoice(invoice.id)}
                     className="flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
                     <FiEye className="mr-1.5" />
@@ -323,4 +300,4 @@ const OrderList = () => {
   );
 };
 
-export default OrderList;
+export default InvoiceList;
