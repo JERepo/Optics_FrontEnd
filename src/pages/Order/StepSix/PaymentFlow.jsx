@@ -76,9 +76,9 @@ const PaymentFlow = ({ collectPayment, onClose }) => {
       // After payment is made
       return {
         TotalAmount: total,
-       
+
         AdvanceAmount: paymentDetails.advance,
-         BalanceAmount: advance,
+        BalanceAmount: advance,
         RemainingToPay: remainingToPay,
       };
     } else {
@@ -133,7 +133,7 @@ const PaymentFlow = ({ collectPayment, onClose }) => {
     if (selectedPaymentMethod && updatedDetails.RemainingToPay > 0) {
       setNewPayment((prev) => ({
         ...prev,
-        Amount: updatedDetails.RemainingToPay.toString(),
+        Amount: Number(updatedDetails.RemainingToPay.toFixed(2)),
       }));
     }
   }, [selectedPaymentMethod, updatedDetails.RemainingToPay]);
@@ -240,8 +240,6 @@ const PaymentFlow = ({ collectPayment, onClose }) => {
       payments: preparePaymentsStructure(),
     };
 
-    console.log("Final saving structure:", finalStructure);
-
     try {
       await saveFinalPayment({
         orderId: customerId.orderId,
@@ -262,7 +260,11 @@ const PaymentFlow = ({ collectPayment, onClose }) => {
       validationErrors.method = "Please select a payment method";
     if (!newPayment.Amount || isNaN(newPayment.Amount)) {
       validationErrors.amount = "Please enter a valid amount";
-    } else if (Number(newPayment.Amount) > updatedDetails.RemainingToPay) {
+    } else if (
+      Number(parseFloat(newPayment.Amount).toFixed(2)) >
+      Number(parseFloat(updatedDetails.RemainingToPay).toFixed(2))
+    ) {
+      
       validationErrors.amount = "Amount cannot exceed remaining balance";
     }
 

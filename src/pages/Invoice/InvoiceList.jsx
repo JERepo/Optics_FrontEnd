@@ -72,6 +72,7 @@ const InvoiceList = () => {
     return filtered.map((invoice) => ({
       id: invoice.Id,
       invoice: invoice,
+      prefix: invoice.InvoicePrefix,
       invoiceDate: new Intl.DateTimeFormat("en-GB", {
         day: "2-digit",
         month: "2-digit",
@@ -80,7 +81,7 @@ const InvoiceList = () => {
       invoiceNo: invoice.InvoiceNo,
       customerName: invoice.CustomerMaster.CustomerName,
       patientName: invoice.Patient.CustomerName,
-      mobileNo: invoice.CustomerMaster.MobNumber,
+      mobileNo: invoice.Patient.MobNumber,
       qty: invoice.TotalQty,
       amount: invoice.TotalValue,
       status: invoice.Status === 1 ? "Confirmed" : "Draft",
@@ -248,8 +249,9 @@ const InvoiceList = () => {
               "S.No",
               "invoice date",
               "invoice no",
-              "customer name",
               "patient name",
+              "customer name",
+
               "mobile no",
               "qty",
               "amount",
@@ -261,9 +263,9 @@ const InvoiceList = () => {
               <TableRow key={invoice.id}>
                 <TableCell>{startIndex + index + 1}</TableCell>
                 <TableCell>{invoice.invoiceDate}</TableCell>
-                <TableCell>{`${
-                  invoice.InvoicePrefix ? invoice.InvoicePrefix : "N/A"
-                }/${invoice.invoiceNo}`}</TableCell>
+                <TableCell>{`${invoice.prefix ? invoice.prefix : "NA"}/${
+                  invoice.invoiceNo
+                }`}</TableCell>
                 <TableCell>{invoice.patientName}</TableCell>
                 <TableCell>{invoice.customerName}</TableCell>
                 <TableCell>{invoice.mobileNo}</TableCell>

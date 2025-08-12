@@ -53,7 +53,8 @@ const InvoiceView = () => {
         val === null ||
         val === undefined ||
         val === "undefined" ||
-        val === "null"
+        val === "null" ||
+        val === "N/A"
       ) {
         return "";
       }
@@ -110,12 +111,23 @@ const InvoiceView = () => {
       const name = clean(order.productName);
       const hsn = clean(order.hSN);
       const barcodeVal = clean(order.barcode);
+      const batchCode = clean(order.BatchCode);
 
-      const sph = cleanPower(specs?.Sph);
-      const cyld = cleanPower(specs?.Cyld);
-      const axis = clean(specs?.Axis);
-      const addl = cleanPower(specs?.Add);
-      const clr = clean(specs?.colour);
+      // parse specs string into object
+      const specsObj = {};
+      if (typeof order.specs === "string") {
+        order.specs.split(",").forEach((pair) => {
+          let [key, value] = pair.split(":").map((s) => s.trim());
+          if (value === "null") value = null;
+          specsObj[key] = value;
+        });
+      }
+
+      const sph = cleanPower(specsObj.Sph);
+      const cyld = cleanPower(specsObj.Cyld);
+      const axis = clean(specsObj.Axis);
+      const addl = cleanPower(specsObj.Add);
+      const clr = clean(order.colour);
 
       const specsList = [
         sph && `SPH: ${sph}`,
@@ -127,7 +139,7 @@ const InvoiceView = () => {
         .join(", ");
 
       return [
-        [name].filter(Boolean).join(" "),
+        name,
         specsList,
         clr && `Color: ${clr}`,
         barcodeVal && `Barcode: ${barcodeVal}`,
@@ -200,20 +212,22 @@ const InvoiceView = () => {
     (sum, item) => sum + (parseInt(item.InvoiceQty) || 0),
     0
   );
-  const grandTotal = invoiceDetailsById?.reduce(
-    (sum, item) => sum + (parseFloat(item.InvoicePrice * item.InvoiceQty) || 0),
-    0
-  );
+  const grandTotal = invoiceDetailsById?.reduce((sum, item) => {
+    const invoicePrice = parseFloat(item.InvoicePrice || 0);
+    const qty = parseFloat(item.InvoiceQty || 0);
+    const fittingPrice = parseFloat(item.FittingPrice || 0);
 
-const gstAmount = invoiceDetailsById?.reduce((sum, item) => {
-  const price = parseFloat(item.InvoicePrice) || 0;
-  const qty = parseInt(item.InvoiceQty) || 0;
-  const taxPercent = parseFloat(item.TaxPercent) || 0;
+    return sum + (invoicePrice * qty + fittingPrice);
+  }, 0);
 
-  const { gstAmount } = calculateGST(price * qty, taxPercent);
-  return sum + parseFloat(gstAmount) || 0;
-}, 0);
+  const gstAmount = invoiceDetailsById?.reduce((sum, item) => {
+    const price = parseFloat(item.InvoicePrice) || 0;
+    const qty = parseInt(item.InvoiceQty) || 0;
+    const taxPercent = parseFloat(item.TaxPercent) || 0;
 
+    const { gstAmount } = calculateGST(price * qty, taxPercent);
+    return sum + parseFloat(gstAmount) || 0;
+  }, 0);
 
   const getOrderStatus = (status) => {
     const types = {
@@ -246,7 +260,14 @@ const gstAmount = invoiceDetailsById?.reduce((sum, item) => {
         </div>
         {/* Order Details */}
         <div className="grid grid-cols-3 gap-3">
-          <Info label="Invoice No" value={`${invoiceDetails?.InvoiceNo}`} />
+          <Info
+            label="Invoice No"
+            value={`${
+              invoiceDetails?.InvoicePrefix
+                ? invoiceDetails?.InvoicePrefix
+                : "NA"
+            }/${invoiceDetails?.InvoiceNo}`}
+          />
           <Info
             label="Invoice Date"
             value={
@@ -257,16 +278,17 @@ const gstAmount = invoiceDetailsById?.reduce((sum, item) => {
           />
           <Info label="Status" value={getOrderStatus(invoiceDetails?.Status)} />
           <Info
-            label="Patient Name"
-            value={invoiceDetails?.Patient?.CustomerName}
-          />
-          <Info
             label="Customer Name"
             value={invoiceDetails?.CustomerMaster?.CustomerName}
           />
           <Info
-            label="Customer No"
-            value={invoiceDetails?.CustomerMaster?.MobNumber}
+            label="Patient Name"
+            value={invoiceDetails?.Patient?.CustomerName}
+          />
+
+          <Info
+            label="Patient Mobile No"
+            value={invoiceDetails?.Patient?.MobNumber}
           />
         </div>
 
@@ -275,7 +297,7 @@ const gstAmount = invoiceDetailsById?.reduce((sum, item) => {
           <Table
             columns={[
               "S.No",
-              "order no + ref no",
+              "order no",
               "product type",
               "product details",
               "srp",
@@ -287,7 +309,7 @@ const gstAmount = invoiceDetailsById?.reduce((sum, item) => {
             renderRow={(invoice, index) => (
               <TableRow key={index}>
                 <TableCell>{index + 1}</TableCell>
-                <TableCell>{invoice.InvoiceSlNo}</TableCell>
+                <TableCell>{`${invoice.OrderMaster?.OrderPrefix}/${invoice.OrderMaster?.OrderNo}/${invoice.InvoiceSlNo}`}</TableCell>
                 <TableCell>{getTypeName(invoice?.ProductType)}</TableCell>
                 <TableCell className="">
                   <div
@@ -306,6 +328,7 @@ const gstAmount = invoiceDetailsById?.reduce((sum, item) => {
                 </TableCell>
                 <TableCell>{invoice.InvoiceQty}</TableCell>
                 <TableCell>
+                  ₹
                   {formatNumber(
                     parseFloat(invoice.InvoiceQty) *
                       parseFloat(invoice.InvoicePrice)
@@ -319,8 +342,8 @@ const gstAmount = invoiceDetailsById?.reduce((sum, item) => {
 
         {/* Summary Section */}
         {invoiceDetails && (
-          <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200 flex justify-end">
+            <div className="grid md:grid-cols-3 gap-5">
               <div className="flex flex-col">
                 <span className="text-neutral-700 font-semibold text-lg">
                   Total Qty
@@ -339,7 +362,7 @@ const gstAmount = invoiceDetailsById?.reduce((sum, item) => {
               </div>
               <div className="flex flex-col">
                 <span className="text-neutral-700 font-semibold text-lg">
-                  Total
+                  Total Amount
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
                   ₹{formatNumber(grandTotal?.toFixed(2)) || "0"}

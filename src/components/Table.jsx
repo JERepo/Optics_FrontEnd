@@ -16,6 +16,8 @@ export const Table = ({
   onPageSizeChange = () => {},
   totalItems = 0,
   freeze = false,
+  expand=false,
+  name
 }) => {
   return (
     <div className="space-y-4">
@@ -29,8 +31,8 @@ export const Table = ({
                 <th
                   key={index}
                   scope="col"
-                  className={`px-6 py-3 min-h-[3.5rem] text-left text-xs font-medium text-neutral-500 uppercase tracking-wider align-top whitespace-nowrap ${
-                    column === "Product Details"
+                  className={`px-6 py-3 min-h-[3.5rem] text-left text-xs font-medium text-neutral-500 uppercase tracking-wider align-top  ${
+                    expand && column === name
                       ? "min-w-[300px] max-w-[300px]"
                       : ""
                   } ${freeze ? "sticky top-0 z-10 bg-neutral-50" : ""}`} // Applied sticky to <th>

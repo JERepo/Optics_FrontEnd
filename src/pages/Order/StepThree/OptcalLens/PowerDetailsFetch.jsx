@@ -303,7 +303,14 @@ const PowerDetailsFetch = ({
         }
       }
     });
-console.log(lensData)
+
+    const addonSum =
+      lensData?.AddOnData?.length > 0
+        ? lensData.AddOnData.reduce(
+            (sum, item) => sum + parseFloat(item.price.substring(1)),
+            0
+          )
+        : 0;
     const payload = {
       coatingComboId: lensData.coatingComboId,
       locationId: customerId.locationId,
@@ -313,9 +320,10 @@ console.log(lensData)
       tintPrice: !isBothSelected
         ? parseFloat(lensData.tintPrice) / 2
         : parseFloat(lensData.tintPrice) || null,
-      addonPrice: !isBothSelected
-        ?  parseInt(lensData?.addOnData[0]?.price.substring(1)) / 2 || null
-        : parseInt(lensData?.addOnData[0]?.price.substring(1)) || null,
+      addonPrice:
+        !isBothSelected && lensData.AddOnData?.length > 0
+          ? addonSum / 2 || null
+          : addonSum || null,
     };
 
     try {
@@ -396,7 +404,7 @@ console.log(lensData)
     }
     setShowDiaDiffModal(false);
   };
-
+  console.log("add", lensData);
   const handleSave = async () => {
     if (lensData.rimType == null) {
       toast.error("Please select Frame Rim Type!");
@@ -447,13 +455,16 @@ console.log(lensData)
       tint: lensData.tintvalue === 1 ? true : false,
       tintId: lensData.tintId,
       tintPrice: parseFloat(lensData.tintPrice),
-      addOn: lensData.addOnData.length > 0 ? true : false,
-      addonList: lensData.AddOnData?.map((a) => {
-        return {
-          addOnId: a.Id,
-          addOnPrice: parseFloat(a.price.substring(1)),
-        };
-      }),
+      addOn: lensData.AddOnData?.length > 0 ? true : false,
+      addonList:
+        lensData?.AddOnData?.length > 0
+          ? lensData.AddOnData?.map((a) => {
+              return {
+                addOnId: a.Id,
+                addOnPrice: parseFloat(a.price.substring(1)),
+              };
+            })
+          : [],
       actualSellingPrice: actualPrice,
       discountedSellingPrice: discountedPrice,
       olDetailId,

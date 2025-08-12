@@ -515,7 +515,7 @@ const CustomerSelect = () => {
       return [...prev, index];
     });
   };
-  console.log("local", localProductData);
+
   const handleSelectAllProducts = (e) => {
     if (e.target.checked) {
       const allIndexes = localProductData?.map((_, idx) => idx);
@@ -584,7 +584,7 @@ const CustomerSelect = () => {
 
   const handleCollectPayment = () => {
     if (!validateBatchCodes()) {
-      toast.error("Please add batch codes For all the selected Contact Lens");
+      toast.error("Please add BatchCodes for all the selected Contact Lens");
       return;
     }
 
@@ -693,14 +693,17 @@ const CustomerSelect = () => {
   };
 
   const handleGenerateInvoice = async () => {
-    const invoiceItems = localProductData.map((item) => {
+    const filteredSelected = localProductData?.filter((_, index) =>
+      selectedProducts.includes(index)
+    );
+    const invoiceItems = filteredSelected?.map((item) => {
       return {
         orderDetailId: item.orderDetailId,
         batchCode: item.batchData[0]?.batchCode || null,
         toBillQty: item.toBillQty,
         srp: parseFloat(getPricing(item)),
         invoicePrice: parseFloat(item.sellingPrice) || null,
-        discountedSellingPrice : parseFloat(item.discountedSellingPrice) || null,
+        discountedSellingPrice: parseFloat(item.discountedSellingPrice) || null,
         AdvanceAmountused: parseFloat(item.advanceAmount) || null,
       };
     });
@@ -726,8 +729,6 @@ const CustomerSelect = () => {
       payload.payments = preparePaymentsStructure();
     }
 
-    console.log("final payload", payload);
-
     try {
       const response = await generateInvoice({ payload }).unwrap();
       toast.success(response?.message);
@@ -735,10 +736,12 @@ const CustomerSelect = () => {
       updatePaymentDetails(null);
     } catch (error) {
       console.error(error);
-      const message =
-        error?.data?.message || error?.message || "Something went wrong";
-
-      toast.error(message);
+      const errors = error?.data.errors;
+      if (errors?.length > 0) {
+        errors.forEach((err) => {
+          toast.error(err);
+        });
+      }
     }
   };
 
@@ -901,6 +904,8 @@ const CustomerSelect = () => {
                 </div>
               </div>
               <Table
+                expand={true}
+                name="Product Details"
                 columns={[
                   "Select",
                   "S.NO",
@@ -963,7 +968,8 @@ const CustomerSelect = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      ₹{order.batchData?.length > 0
+                      ₹
+                      {order.batchData?.length > 0
                         ? order.mrp
                         : formatINR(getPricing(order))}
                     </TableCell>
@@ -1031,9 +1037,12 @@ const CustomerSelect = () => {
                     <TableCell>
                       {formatINR(order.toBillQty * order.sellingPrice)}
                     </TableCell>
-                    <TableCell>₹{formatINR(order.advanceAmount) || 0}</TableCell>
                     <TableCell>
-                      ₹{formatINR(
+                      ₹{formatINR(order.advanceAmount) || 0}
+                    </TableCell>
+                    <TableCell>
+                      ₹
+                      {formatINR(
                         order.toBillQty * order.sellingPrice -
                           (order.advanceAmount || 0),
                         true
@@ -1149,7 +1158,7 @@ const CustomerSelect = () => {
                   <div className="flex gap-10">
                     <div className="flex gap-3">
                       <span className="text-xl font-semibold">
-                        Total Qty: ₹{formatINR(totalQty)}
+                        Total Qty: {formatINR(totalQty)}
                       </span>
                       <span className="text-xl font-semibold">
                         Total GST: ₹{formatINR(totalGst)}
@@ -1202,7 +1211,7 @@ const CustomerSelect = () => {
           {isNextClicked && (
             <div className="mt-5">
               <Textarea
-                label="Invoice Note"
+                label="Comments"
                 value={invoiceNote}
                 onChange={(e) => setInvoiceNote(e.target.value)}
               />
@@ -1340,7 +1349,7 @@ const BatchCode = ({
         locationId: locations[0],
         payload,
       }).unwrap();
-
+      
       setLocalProductData((prev) => {
         const newProductData = prev.filter(
           (_, idx) => idx !== selectedOrder.index

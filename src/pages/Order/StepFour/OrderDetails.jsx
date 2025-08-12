@@ -17,11 +17,9 @@ import {
 } from "react-icons/fi";
 import { Table, TableCell, TableRow } from "../../../components/Table";
 import {
-  useApplyFrameDiscountMutation,
   useGetSavedOrderDetailsQuery,
   useMainApplyDiscountMutation,
   useMainApplyRemoveDiscountMutation,
-  useRemoveFrameDiscountMutation,
   useRemoveOrderMutation,
 } from "../../../api/orderApi";
 import Loader from "../../../components/ui/Loader";
@@ -312,10 +310,17 @@ const OrderDetails = () => {
         delete newResults[orderDetailId];
         return newResults;
       });
+
       setDiscountInputs((prev) => {
         const newInputs = { ...prev };
         delete newInputs[orderDetailId];
         return newInputs;
+      });
+
+      setDiscountTypes((prev) => {
+        const newTypes = { ...prev };
+        delete newTypes[orderDetailId];
+        return newTypes;
       });
     } catch (error) {
       console.error("Remove discount error:", error);
@@ -379,6 +384,7 @@ const OrderDetails = () => {
       Specs,
       Color,
     } = item;
+
     const clean = (val) => {
       if (
         val === null ||
@@ -390,49 +396,55 @@ const OrderDetails = () => {
       }
       return val;
     };
+
+    // Format number to add + sign for positive values
+    const formatPowerValue = (val) => {
+      const num = parseFloat(val);
+      if (isNaN(num)) return val;
+      return num > 0 ? `+${val}` : val;
+    };
+
     // For Frame (typeid = 1)
     if (typeid === 1) {
       const nameLine = ProductName || "";
-      const sizeLine = Size ? `${Size}` : "";
-      const barcodeLine = Barcode || "";
-      // const frameType = "OpticalFrame/Sunglass";
-      const patientLine = PatientName ? `\n${PatientName}` : "";
+      const sizeLine = Size ? `Size: ${Size}` : "";
+      const barcodeLine = Barcode ? `Barcode: ${Barcode}` : "";
+      const patientLine = PatientName ? `Patient Name: ${PatientName}` : "";
       return `${nameLine}\n${sizeLine}\n${barcodeLine}\n${patientLine}`;
     }
 
     // For Accessories (typeid = 2)
     if (typeid === 2) {
       const nameLine = ProductName || "";
-
-      const barcodeLine = Barcode || "";
-      const patientLine = PatientName ? `\n${PatientName}` : "";
-
-      return `${nameLine}\n${Variation}\n${barcodeLine}${patientLine}`;
+      const variationLine = Variation ? `Variation: ${Variation}` : "";
+      const barcodeLine = Barcode ? `Barcode: ${Barcode}` : "";
+      const patientLine = PatientName ? `Patient Name: ${PatientName}` : "";
+      return `${nameLine}\n${variationLine}\n${barcodeLine}\n${patientLine}`;
     }
 
     // For Contact Lens (typeid = 3)
     if (typeid === 3) {
       const nameLine = ProductName || "";
-
       const specs = PowerSpecs
         ? PowerSpecs.split(",")
             .map((s) => {
               const [key, val] = s.split(":");
               const cleanedValue =
                 val && !["null", "undefined"].includes(val.trim())
-                  ? val.trim()
+                  ? formatPowerValue(val.trim())
                   : "";
-              return `${key.trim()}: ${cleanedValue}`;
+              return cleanedValue ? `${key.trim()}: ${cleanedValue}` : "";
             })
+            .filter((s) => s)
             .join(", ")
         : "";
-
-      const barcodeLine = Barcode || "";
-      const patientLine = PatientName ? `\n${PatientName}` : "";
-
-      return `${nameLine}\n${specs}\n${barcodeLine}${patientLine}`;
+      const colorLine = Color ? `Colour: ${Color}` : "";
+      const barcodeLine = Barcode ? `Barcode: ${Barcode}` : "";
+      const patientLine = PatientName ? `Patient Name: ${PatientName}` : "";
+      return `${nameLine}\n${specs}\n${colorLine}\n${barcodeLine}\n${patientLine}`;
     }
 
+    // For Optical Lens (typeid = 0)
     if (typeid === 0) {
       const specsLines = (Specs || [])
         .map((spec) => {
@@ -442,13 +454,21 @@ const OrderDetails = () => {
           const axis = clean(spec.axis);
           const addition = clean(spec.addition);
 
-          return `${side}: SPH ${sph}, CYL ${cyl}, Axis ${axis}, Add ${addition}`;
+          const powerValues = [];
+          if (sph) powerValues.push(`SPH ${formatPowerValue(sph)}`);
+          if (cyl) powerValues.push(`CYL ${formatPowerValue(cyl)}`);
+          if (axis) powerValues.push(`Axis ${formatPowerValue(axis)}`);
+          if (addition) powerValues.push(`Add ${formatPowerValue(addition)}`);
+
+          return powerValues.length ? `${side}: ${powerValues.join(", ")}` : "";
         })
+        .filter((s) => s)
         .join("\n");
 
-      return `${clean(ProductName)}\n${specsLines}\n${clean(Barcode)}${
-        PatientName ? `\n${clean(PatientName)}` : ""
-      }`;
+      const patientLine = PatientName
+        ? `Patient Name: ${clean(PatientName)}`
+        : "";
+      return `${clean(ProductName)}\n${specsLines}\n${patientLine}`;
     }
 
     return "";
