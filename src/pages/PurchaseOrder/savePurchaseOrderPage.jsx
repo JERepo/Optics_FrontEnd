@@ -1,21 +1,34 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     ArrowLeft,
     Check,
     AlertCircle,
-    Trash2
+    Trash2,
+    PenIcon,
+    PenBoxIcon,
+    PenLineIcon
 } from "lucide-react";
 
 import { useSelector } from "react-redux";
 import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
-import { useGetAllVendorMutation } from "../../api/vendorApi";
-import { useSavePurchaseOrderDetailsMutation, useSavePurchaseOrderMutation } from "../../api/purchaseOrderApi";
+import { useGetAllVendorMutation, useGetAllvendorByLocationQuery } from "../../api/vendorApi";
+import {
+    useSavePurchaseOrderDetailsMutation,
+    useSavePurchaseOrderMutation,
+    useGetAllPoDetailsMutation,
+    useUpdatePoBuyingPriceMutation,
+    useUpdatePoQtyMutation,
+    useDeletePoMutation,
+    useUpdatePoMainMutation
+} from "../../api/purchaseOrderApi";
 import { useGetCompanySettingsQuery } from "../../api/companySettingsApi";
 import { useGetCompanyByIdQuery } from "../../api/companiesApi";
 import { useGetOrderDetailsAllMutation } from "../../api/orderApi";
 
 export default function SavePurchaseOrder() {
+    const navigate = useNavigate();
     const [showAlert, setShowAlert] = useState(false);
     const [alertMessage, setAlertMessage] = useState({ type: "", message: "" });
     const [selectedLocation, setSelectedLocation] = useState(null);
@@ -24,10 +37,11 @@ export default function SavePurchaseOrder() {
     const [vendors, setVendors] = useState([]);
     const [selectedVendor, setSelectedVendor] = useState("");
     const [formState, setFormState] = useState({
-        shiptoAddress: "against", // 'new' or 'against'
+        shiptoAddress: "against",           // 'new' or 'against'
         referenceNo: "",
         vendorDetails: null,
-        selectedOption: "" // For step 2 radio buttons
+        selectedOption: "",                 // For step 2 radio buttons
+        remarks: ""
     });
     const [currentStep, setCurrentStep] = useState(1);
     const [selectedOrders, setSelectedOrders] = useState([]);
@@ -35,10 +49,29 @@ export default function SavePurchaseOrder() {
     const [selectAll, setSelectAll] = useState(false);
     const [createdPOMainId, setCreatedPOMainId] = useState(null);
     const { user, hasMultipleLocations } = useSelector((state) => state.auth);
-    const [getAllVendor] = useGetAllVendorMutation();
+    const [poreviewDetails, setPoreviewDetails] = useState([]);
+    const [editPriceModalOpen, setEditPriceModalOpen] = useState(false);
+    const [editQtyModalOpen, setEditQtyModalOpen] = useState(false);
+    const [currentEditingItem, setCurrentEditingItem] = useState(null);
+    const [editedBuyingPrice, setEditedBuyingPrice] = useState('');
+    const [editedPoQty, setEditedPoQty] = useState('');
+    const [qtyError, setQtyError] = useState('');
+    const [showRemoveModal, setShowRemoveModal] = useState(false);
+    const [orderToRemove, setOrderToRemove] = useState(null);
+
+    const { data: vendorData, isLoading } = useGetAllvendorByLocationQuery(
+        { id: selectedLocation },
+        { skip: !selectedLocation }
+    );
+
     const [SavePurchaseOrder] = useSavePurchaseOrderMutation();
     const [SavePurchaseOrderDetails] = useSavePurchaseOrderDetailsMutation();
     const [getOrderDetails] = useGetOrderDetailsAllMutation();
+    const [getAllPoDetails] = useGetAllPoDetailsMutation();
+    const [updatePOPrice] = useUpdatePoBuyingPriceMutation();
+    const [updatePOQty] = useUpdatePoQtyMutation();
+    const [deletePO] = useDeletePoMutation();
+    const [updatePoMain] = useUpdatePoMainMutation();
 
     // User assigned locations
     const hasLocation = allLocations?.data ? allLocations?.data?.filter(loc =>
@@ -55,65 +88,50 @@ export default function SavePurchaseOrder() {
         { skip: !selectedLocation && !hasLocation?.[0]?.Id }
     );
 
-    const fetchVendors = async (locationId) => {
-        if (!locationId) return;
-
-        try {
-            const payload = { company_id: parseInt(locationId) };
-            const response = await getAllVendor(payload).unwrap();
-            if (response?.data?.data) {
-                setVendors(response.data.data);
-                setSelectedVendor("");
-            }
-        } catch (error) {
-            console.error("Error fetching vendors:", error);
-            setAlertMessage({
-                type: "error",
-                message: "Failed to fetch vendors"
-            });
-            setShowAlert(true);
-            setTimeout(() => setShowAlert(false), 3000);
-        }
-    };
-
+    // Auto select location if it has only 1.
     useEffect(() => {
         if (hasLocation?.length === 1) {
             setSelectedLocation(hasLocation[0].Id.toString());
         }
     }, [hasLocation]);
 
-  useEffect(() => {
-    if (companySettingsError) {
-      console.error("Error fetching company settings:", companySettingsError);
-      setAlertMessage({
-        type: "error",
-        message: "Failed to fetch company details",
-      });
-      setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 3000);
-    }
-  }, [companySettingsError]);
+    // Catching error for Company fetch
+    useEffect(() => {
+        if (companySettingsError) {
+            console.error("Error fetching company settings:", companySettingsError);
+            setAlertMessage({
+                type: "error",
+                message: "Failed to fetch company details",
+            });
+            setShowAlert(true);
+            setTimeout(() => setShowAlert(false), 3000);
+        }
+    }, [companySettingsError]);
 
-  useEffect(() => {
-    if (selectedLocation) {
-      fetchVendors(selectedLocation);
-    }
-  }, [selectedLocation]);
+    // Call fetch vendor data
+    useEffect(() => {
+        // console.log("vendorData--------", vendorData);
+        if (vendorData?.data?.data) {
+            setVendors(vendorData?.data?.data);
+        }
+    }, [vendorData]);
 
-  useEffect(() => {
-    if (selectedVendor) {
-      const vendor = vendors.find((v) => v.Id === parseInt(selectedVendor));
-      setFormState((prev) => ({
-        ...prev,
-        vendorDetails: vendor,
-      }));
-    }
-  }, [selectedVendor, vendors]);
+    // Set vendor details as  per selected vendor
+    useEffect(() => {
+        if (selectedVendor) {
+            const vendor = vendors.find((v) => v.Id === parseInt(selectedVendor));
+            setFormState((prev) => ({
+                ...prev,
+                vendorDetails: vendor,
+            }));
+        }
+    }, [selectedVendor, vendors]);
 
 
+    // fetch order details or PO orders as per current form step
     useEffect(() => {
         const fetchOrderDetails = async () => {
-            if (selectedLocation && formState.selectedOption && currentStep === 3) {
+            if (selectedLocation && formState.selectedOption && currentStep === 3) {                        // Step 3 fetch order details
                 try {
                     const payload = {
                         orderMasterId: null,
@@ -141,6 +159,30 @@ export default function SavePurchaseOrder() {
                     setAlertMessage({
                         type: "error",
                         message: "Failed to fetch order details"
+                    });
+                    setShowAlert(true);
+                    setTimeout(() => setShowAlert(false), 3000);
+                }
+            } else if (selectedLocation && formState.vendorId && currentStep === 4) {                       // Step 4 fetch PO order 
+                // Inside step 3 where you make the API call
+                try {
+                    const payload = {
+                        locationId: selectedLocation,
+                        ApplicationUserId: user.Id,
+                        vendorId: selectedVendor,
+                        againstOrder: formState.shiptoAddress === "against" ? 1 : 0
+                    };
+
+                    const response = await getAllPoDetails(payload).unwrap();
+                    console.log("getAllPoDetails response -------------- ", response);
+
+                    setPoreviewDetails(response);
+
+                } catch (error) {
+                    console.error("Error fetching PO details:", error);
+                    setAlertMessage({
+                        type: "error",
+                        message: "Failed to fetch PO details"
                     });
                     setShowAlert(true);
                     setTimeout(() => setShowAlert(false), 3000);
@@ -188,15 +230,15 @@ export default function SavePurchaseOrder() {
                 return;
             }
 
-      if (!selectedVendor) {
-        setAlertMessage({
-          type: "error",
-          message: "Please select a vendor",
-        });
-        setShowAlert(true);
-        setTimeout(() => setShowAlert(false), 3000);
-        return;
-      }
+            if (!selectedVendor) {
+                setAlertMessage({
+                    type: "error",
+                    message: "Please select a vendor",
+                });
+                setShowAlert(true);
+                setTimeout(() => setShowAlert(false), 3000);
+                return;
+            }
 
             if (!formState.shiptoAddress) {
                 setAlertMessage({
@@ -266,20 +308,86 @@ export default function SavePurchaseOrder() {
     };
 
 
-    const handleRemoveOrder = (orderId) => {
-        setSelectedOrders(prev => prev.filter(id => id !== orderId));
+    const handleRemoveOrder = async () => {
+        if (!orderToRemove) {
+            setAlertMessage({
+                type: "error",
+                message: "Something went wrong, could not get the Id."
+            });
+            setShowAlert(true)
+            setTimeout(() => { setShowAlert(false), 3000 });
+        }
+
+        console.log("orderToRemove -----", orderToRemove);
+        try {
+            const payload = {
+                p_id: orderToRemove
+            }
+
+            const response = await deletePO(payload).unwrap();
+            if (response.status === "success") {
+                console.log(response);
+
+                setPoreviewDetails(prev => prev.filter(item => item.poDetailId !== orderToRemove));
+                setShowRemoveModal(false);
+                setOrderToRemove(null);
+                setAlertMessage({
+                    type: "success",
+                    message: "Purchase order deleted successfully"
+                });
+                setShowAlert(true);
+                setTimeout(() => setShowAlert(false), 3000);
+                // Optionally navigate to another page or reset the form
+                // setCurrentStep(2);
+            } else {
+                setAlertMessage({
+                    type: "error",
+                    message: response.message || "Failed to delete purchase order"
+                });
+                setShowAlert(true);
+                setTimeout(() => setShowAlert(false), 3000);
+            }
+
+        } catch (error) {
+            setAlertMessage({
+                type: "error",
+                message: error.message || "Failed to remove PO detail"
+            });
+            setShowAlert(true);
+            setTimeout(() => setShowAlert(false), 3000);
+        }
     };
 
 
     // Handle Save for PO main 
     const handleSubmit = async () => {
         try {
+            // First check if PO details exist
+            const checkPayload = {
+                locationId: selectedLocation,
+                ApplicationUserId: user.Id,
+                vendorId: selectedVendor,
+                againstOrder: formState.shiptoAddress === "against" ? 1 : 0
+            };
+
+            // Check existing PO details
+            const poDetailsResponse = await getAllPoDetails(checkPayload).unwrap();
+
+            console.log("poDetailsResponse ----------", poDetailsResponse);
+            if (poDetailsResponse && poDetailsResponse.length > 0) {
+                const poMainId = poDetailsResponse[0]?.poMainId;
+                setCreatedPOMainId(poMainId);
+                setPoreviewDetails(poDetailsResponse);
+                setCurrentStep(4);
+                return;
+            }
+
             // Prepare payload with data from all steps
             const payload = {
                 companyId: parseInt(selectedLocation),
                 vendorId: parseInt(selectedVendor),
                 poPrefix: companySettingsData?.data?.data?.POPrefix || "",
-                inState: formState?.vendorDetails?.MultiDelivery === 1 ? 0 : 1,
+                inState: formState?.vendorDetails?.StateID === companySettingsData?.data?.data?.State?.Id ? 0 : 1,
                 againstOrder: formState.shiptoAddress === "against" ? 1 : 0,
                 shiptoCompanyId: formState?.vendorDetails?.MultiDelivery === 1 ? parseInt(selectedLocation) : formState?.vendorDetails?.DeliveryLocationId,
                 poReferenceNo: formState.referenceNo || "",
@@ -354,8 +462,9 @@ export default function SavePurchaseOrder() {
                                 : 'ContactLensDetailId']: order.productId,
                     detailId: order.olDetailId || order.cLDetailId || order.frameDetailId || order.accessoryDetailId,
                     orderDetailId: order.orderDetailId,
-                    poQty: order.orderQty - order.billedQty - order.cancelledQty,
-                    poPrice: order.pricing.buyingPrice,
+                    poQty: order.poQty ?? order?.orderQty - order?.billedQty - order?.cancelledQty,
+                    // poPrice: order.pricing.buyingPrice,
+                    poPrice: order.productType == 3 ? order.poPrice ?? order?.priceMaster?.buyingPrice : order.poPrice ?? order?.pricing?.buyingPrice,
                     taxPercentage: order.taxPercentage || 0,
                     Status: 0, // Default status
                     ApplicationUserId: user.Id
@@ -376,6 +485,28 @@ export default function SavePurchaseOrder() {
                 setTimeout(() => setShowAlert(false), 3000);
                 // Optionally navigate to another page or reset the form
                 setCurrentStep(4);
+
+                try {
+                    const payload = {
+                        locationId: selectedLocation,
+                        ApplicationUserId: user.Id,
+                        vendorId: selectedVendor
+                    };
+
+                    const response = await getAllPoDetails(payload).unwrap();
+                    console.log("getAllPoDetails response -------------- ", response);
+
+                    setPoreviewDetails(response);
+
+                } catch (error) {
+                    console.error("Error fetching order details:", error);
+                    setAlertMessage({
+                        type: "error",
+                        message: "Failed to fetch order details"
+                    });
+                    setShowAlert(true);
+                    setTimeout(() => setShowAlert(false), 3000);
+                }
             } else {
                 setAlertMessage({
                     type: "error",
@@ -395,17 +526,214 @@ export default function SavePurchaseOrder() {
         }
     };
 
-    const calculateTotalAmount = () => {
-        return selectedOrders.reduce((total, orderId) => {
-            const order = filteredOrderDetails.find(o => o.id === orderId);
-            if (order) {
-                const quantity = order.orderQty - order.billedQty - order.cancelledQty;
-                const price = order.pricing.buyingPrice;
-                const tax = order.taxPercentage || 0;
-                return total + (price * quantity) + (price * quantity * (tax / 100));
+    // Handle complete PO in step 4
+    const handleCompletePO = async () => {
+        try {
+            const payload = {
+                poId: createdPOMainId,
+                // p_status: 1, // Status 1 for completed
+                remarks: formState.remarks || "",
+                // ApplicationUserId: user.Id
+            };
+
+            const response = await updatePoMain(payload).unwrap();
+
+            if (response.status === "success") {
+                setAlertMessage({
+                    type: "success",
+                    message: "Purchase order completed successfully"
+                });
+                setShowAlert(true);
+                setTimeout(() => setShowAlert(false), 3000);
+                // Optionally navigate to another page
+                navigate('/purchase-orders/create');
+            } else {
+                setAlertMessage({
+                    type: "error",
+                    message: response.message || "Failed to complete purchase order"
+                });
+                setShowAlert(true);
+                setTimeout(() => setShowAlert(false), 3000);
             }
-            return total;
+        } catch (error) {
+            console.error("Error completing purchase order:", error);
+            setAlertMessage({
+                type: "error",
+                message: error.message || "An error occurred while completing purchase order"
+            });
+            setShowAlert(true);
+            setTimeout(() => setShowAlert(false), 3000);
+        }
+    };
+
+    const calculateTotalAmount = () => {
+        return poreviewDetails.reduce((total, order) => {
+            const quantity = order.poQty ?? (order.orderQty - order.billedQty - order.cancelledQty);
+            if (order.productType === 0) { // Optical Lens
+                const bothLens = order?.specs?.powerDetails?.bothLens === 1;
+                const buyingPrice = parseFloat(order?.pricing?.buyingPrice || 0);
+
+                // Tint buying price
+                const tintBuying = parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) || 0;
+
+                // Sum of addon buying prices
+                const addonBuying = Array.isArray(order?.specs?.addOn)
+                    ? order.specs.addOn.reduce(
+                        (sum, add) => sum + (parseFloat(add?.addOnBuyingPrice || 0) || 0),
+                        0
+                    )
+                    : parseFloat(order?.specs?.addOn?.addOnBuyingPrice || 0) || 0;
+
+                // Calculate base
+                let subtotal;
+                if (bothLens) {
+                    subtotal = buyingPrice * quantity + tintBuying + addonBuying;
+                } else {
+                    subtotal = buyingPrice * quantity + tintBuying / 2 + addonBuying / 2;
+                }
+
+                // Add tax
+                return total + (subtotal + subtotal * (parseFloat(order?.taxPercentage) / 100 || 0));
+            } else if ((order.productType === 3)) {
+                const price = parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0
+                const tax = parseFloat(order?.taxPercentage / 100) || 0
+
+                return total + ((price * quantity) + (price * quantity * tax))
+
+            } else {
+                const price = parseFloat(order.pricing?.buyingPrice) || 0;
+                const tax = parseFloat(order?.taxPercentage / 100) || 0;
+                return total + (price * quantity) + (price * quantity * tax);
+            }
         }, 0);
+    };
+
+    const handleEditPriceClick = (item) => {
+        console.log("item ---------------- ", item);
+        setCurrentEditingItem(item);
+        setEditedBuyingPrice(item?.poPrice || (item?.productType == 3 ? item?.priceMaster?.buyingPrice : item.pricing?.buyingPrice) );
+        setEditPriceModalOpen(true);
+    };
+
+    const handleEditQtyClick = (item) => {
+        setCurrentEditingItem(item);
+        setEditedPoQty(item.poQty || item.orderQty - item.billedQty - item.cancelledQty);
+        setEditQtyModalOpen(true);
+    };
+
+    const handlePriceUpdate = async () => {
+        if (!currentEditingItem || !editedBuyingPrice) return;
+
+        try {
+            const payload = {
+                p_id: currentEditingItem.poDetailId,
+                p_buyingPrice: editedBuyingPrice
+            }
+            const response = await updatePOPrice(payload).unwrap();
+
+            if (response.status === "success") {
+                // Update poreviewDetails with the new price
+                setPoreviewDetails(prev => prev.map(item => {
+                    if (item.poDetailId === currentEditingItem.poDetailId) {
+                        return {
+                            ...item,
+                            poPrice: parseFloat(editedBuyingPrice),
+                            // Update pricing/priceMaster based on product type
+                            ...(item.productType === 3
+                                ? { priceMaster: { ...item.priceMaster, buyingPrice: parseFloat(editedBuyingPrice) } }
+                                : { pricing: { ...item.pricing, buyingPrice: parseFloat(editedBuyingPrice) } }
+                            )
+                        };
+                    }
+                    return item;
+                }));
+
+                setAlertMessage({
+                    type: "success",
+                    message: "Buying price updated successfully"
+                });
+                setShowAlert(true);
+                setTimeout(() => setShowAlert(false), 3000);
+            } else {
+                setAlertMessage({
+                    type: "error",
+                    message: response.message || "Failed to update Buying price."
+                });
+                setShowAlert(true);
+            }
+        } catch (error) {
+            console.error("Error updating buying price:", error);
+            setAlertMessage({
+                type: "error",
+                message: error.message || "Failed to update buying price"
+            });
+            setShowAlert(true);
+        }
+
+        setEditPriceModalOpen(false);
+        setCurrentEditingItem(null);
+        setEditedBuyingPrice('');
+    };
+
+    const handleQtyUpdate = async () => {
+        if (!currentEditingItem || !editedPoQty) {
+            setQtyError('Please enter a valid quantity');
+            return;
+        }
+
+        const orderQty = currentEditingItem.orderQty;
+        if (parseInt(editedPoQty) > orderQty) {
+            setQtyError(`Quantity cannot exceed order quantity (${orderQty})`);
+            return;
+        }
+
+        setQtyError('');
+
+        try {
+            const payload = {
+                p_id: currentEditingItem.poDetailId,
+                p_PoQty: editedPoQty
+            }
+            const response = await updatePOQty(payload).unwrap();
+
+            if (response.status === "success") {
+                // Update only the specific item in poreviewDetails
+                setPoreviewDetails(prev => prev.map(item => {
+                    if (item.poDetailId === currentEditingItem.poDetailId) {
+                        return {
+                            ...item,
+                            poQty: parseInt(editedPoQty, 10)
+                        };
+                    }
+                    return item;
+                }));
+
+                setAlertMessage({
+                    type: "success",
+                    message: "PO Qty updated successfully"
+                });
+                setShowAlert(true);
+                setTimeout(() => setShowAlert(false), 3000);
+            } else {
+                setAlertMessage({
+                    type: "error",
+                    message: response.message || "Failed to update PO Qty."
+                });
+                setShowAlert(true);
+            }
+        } catch (error) {
+            console.error("Error updating PO Qty:", error);
+            setAlertMessage({
+                type: "error",
+                message: error.message || "Failed to update PO Qty"
+            });
+            setShowAlert(true);
+        }
+
+        setEditQtyModalOpen(false);
+        setCurrentEditingItem(null);
+        setEditedPoQty('');
+        setQtyError('');
     };
 
     return (
@@ -500,7 +828,7 @@ export default function SavePurchaseOrder() {
                         transition={{ duration: 0.5, delay: 0.2 }}
                     >
                         {/* Location dropdown */}
-                        <div className="flex flex-col lg:flex-row rounded-2xl shadow-xl items-start lg:items-center mb-6 p-4 gap-5">
+                        <div className=" lg:flex-row rounded-2xl shadow-xl items-start lg:items-center mb-6 p-4 gap-5">
                             {(hasLocation && hasLocation.length > 1) && (
                                 <div className="flex items-center space-x-6 mb-6">
                                     <label className="text-sm font-medium text-gray-700">
@@ -576,22 +904,44 @@ export default function SavePurchaseOrder() {
                                 <div className="grid grid-cols-2 gap-8  bg-white text-gray-600">
                                     {/* Ship to Address Section */}
                                     <div className="flex">
+                                        {console.log("vend -------------- ", formState.vendorDetails)}
                                         <p className="font-bold text-gray-500 mb-4">Ship to Address:</p>
-                                        <div className="ml-4 text-gray-500">
-                                            <p>{companiesData?.data?.data?.BillingAddress1 || 'N/A'} {companiesData?.data?.data?.BillingAddress2}</p>
-                                            <p>
-                                                {companiesData?.data?.data?.BillingCity}
-                                                {companiesData?.data?.data?.BillingZipCode &&
-                                                    ` - ${companiesData?.data?.data?.BillingZipCode}`
-                                                }
-                                            </p>
-                                            <p>
-                                                {companiesData?.data?.data?.State?.StateName}
-                                                {companiesData?.data?.data?.Country?.CountryName &&
-                                                    `, ${companiesData?.data?.data?.Country?.CountryName}`
-                                                }
-                                            </p>
-                                        </div>
+                                        {formState.vendorDetails.MultiDelivery === 0 ? (
+                                            <div className="ml-4 text-gray-500">
+                                                <p>{formState.vendorDetails.Address1 || 'N/A'} {formState.vendorDetails.Address2}</p>
+                                                <p>
+                                                    {formState.vendorDetails.City}
+                                                    {formState.vendorDetails.Pin &&
+                                                        ` - ${formState.vendorDetails.Pin}`
+                                                    }
+                                                </p>
+                                                <p>
+                                                    {/* {companiesData?.data?.data?.State?.StateName} */}
+                                                    {companiesData?.data?.data?.Country?.CountryName &&
+                                                        `${companiesData?.data?.data?.Country?.CountryName}`
+                                                    }
+                                                </p>
+                                            </div>
+                                        ) : (
+
+                                            <div className="ml-4 text-gray-500">
+                                                {console.log("companiesData ---------", companiesData?.data?.data)}
+                                                <p>{companiesData?.data?.data?.BillingAddress1 || 'N/A'} {companiesData?.data?.data?.BillingAddress2}</p>
+                                                <p>
+                                                    {companiesData?.data?.data?.BillingCity}
+                                                    {companiesData?.data?.data?.BillingZipCode &&
+                                                        ` - ${companiesData?.data?.data?.BillingZipCode}`
+                                                    }
+                                                </p>
+                                                <p>
+                                                    {companiesData?.data?.data?.State?.StateName}
+                                                    {companiesData?.data?.data?.Country?.CountryName &&
+                                                        `, ${companiesData?.data?.data?.Country?.CountryName}`
+                                                    }
+                                                </p>
+                                            </div>
+                                        )}
+
                                     </div>
 
                                     {/* PO Created Against Section */}
@@ -708,8 +1058,16 @@ export default function SavePurchaseOrder() {
                         transition={{ duration: 0.5, delay: 0.2 }}
                         className="bg-white rounded-2xl shadow-xl p-6"
                     >
-                        <h2 className="text-xl font-bold text-[#000060] mb-6">Step 3: Select Orders</h2>
-
+                        <div className="flex justify-between items-center">
+                            <h2 className="text-xl font-bold text-[#000060] mb-6">Step 3: Select Orders</h2>
+                            <button
+                                onClick={handleBack}
+                                className="px-4 py-2 flex text-[#000060] rounded-lg hover:bg-gray-100 transition-colors gap-2"
+                            >
+                                <ArrowLeft />
+                                Back
+                            </button>
+                        </div>
                         <div className="flex justify-start gap-12 mb-6">
                             {vendors
                                 .filter(vendor => vendor.Id === parseInt(selectedVendor))
@@ -761,6 +1119,7 @@ export default function SavePurchaseOrder() {
                                         <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Total Amount</th>
                                     </tr>
                                 </thead>
+                                {console.log("filteredOrderDetails ------------- ", filteredOrderDetails)}
                                 <tbody className="bg-white divide-y divide-neutral-200">
                                     {filteredOrderDetails.length > 0 ? (
                                         filteredOrderDetails.map((order, index) => (
@@ -785,19 +1144,17 @@ export default function SavePurchaseOrder() {
                                                                 <>
                                                                     <br />
                                                                     R: {order?.specs?.powerDetails?.right?.sphericalPower &&
-                                                                        `SPH ${order?.specs?.powerDetails?.right?.sphericalPower > 0
+                                                                        `SPH: ${order?.specs?.powerDetails?.right?.sphericalPower > 0
                                                                             ? `+${order?.specs?.powerDetails?.right?.sphericalPower}`
                                                                             : order?.specs?.powerDetails?.right?.sphericalPower}`}
                                                                     {order?.specs?.powerDetails?.right?.cylindricalPower &&
-                                                                        ` CYL ${order?.specs?.powerDetails?.right?.cylindricalPower > 0
+                                                                        ` CYL: ${order?.specs?.powerDetails?.right?.cylindricalPower > 0
                                                                             ? `+${order?.specs?.powerDetails?.right?.cylindricalPower}`
                                                                             : order?.specs?.powerDetails?.right?.cylindricalPower}`}
                                                                     {order?.specs?.powerDetails?.right?.axis &&
-                                                                        ` Axis ${order?.specs?.powerDetails?.right?.axis > 0
-                                                                            ? `+${order?.specs?.powerDetails?.right?.axis}`
-                                                                            : order?.specs?.powerDetails?.right?.axis}`}
+                                                                        ` Axis: ${order?.specs?.powerDetails?.right?.axis}`}
                                                                     {order?.specs?.powerDetails?.right?.additional &&
-                                                                        ` Add ${order?.specs?.powerDetails?.right?.additional > 0
+                                                                        ` Add: ${order?.specs?.powerDetails?.right?.additional > 0
                                                                             ? `+${order?.specs?.powerDetails?.right?.additional}`
                                                                             : order?.specs?.powerDetails?.right?.additional}`}
                                                                 </>
@@ -811,19 +1168,17 @@ export default function SavePurchaseOrder() {
                                                                 <>
                                                                     <br />
                                                                     L: {order?.specs?.powerDetails?.left?.sphericalPower &&
-                                                                        `SPH ${order?.specs?.powerDetails?.left?.sphericalPower > 0
+                                                                        `SPH: ${order?.specs?.powerDetails?.left?.sphericalPower > 0
                                                                             ? `+${order?.specs?.powerDetails?.left?.sphericalPower}`
                                                                             : order?.specs?.powerDetails?.left?.sphericalPower}`}
                                                                     {order?.specs?.powerDetails?.left?.cylindricalPower &&
-                                                                        ` CYL ${order?.specs?.powerDetails?.left?.cylindricalPower > 0
+                                                                        ` CYL: ${order?.specs?.powerDetails?.left?.cylindricalPower > 0
                                                                             ? `+${order?.specs?.powerDetails?.left?.cylindricalPower}`
                                                                             : order?.specs?.powerDetails?.left?.cylindricalPower}`}
                                                                     {order?.specs?.powerDetails?.left?.axis &&
-                                                                        ` Axis ${order?.specs?.powerDetails?.left?.axis > 0
-                                                                            ? `+${order?.specs?.powerDetails?.left?.axis}`
-                                                                            : order?.specs?.powerDetails?.left?.axis}`}
+                                                                        ` Axis: ${order?.specs?.powerDetails?.left?.axis}`}
                                                                     {order?.specs?.powerDetails?.left?.additional &&
-                                                                        ` Add ${order?.specs?.powerDetails?.left?.additional > 0
+                                                                        ` Add: ${order?.specs?.powerDetails?.left?.additional > 0
                                                                             ? `+${order?.specs?.powerDetails?.left?.additional}`
                                                                             : order?.specs?.powerDetails?.left?.additional}`}
                                                                 </>
@@ -844,29 +1199,41 @@ export default function SavePurchaseOrder() {
                                                 }
                                                 {formState.selectedOption === 'Accessories' &&
                                                     <td className="px-6 py-4 whitespace-wrap">{order?.productDescName}
-                                                        {order?.variationName && (<><br/>Variation: {order?.variationName}</>)}
-                                                        {order?.barcode && (<><br/>Barcode: {order?.barcode}</>)}
-                                                        {order?.hSN && (<><br/>HSN: {order?.hSN}</>)}
+                                                        {order?.variationName && (<><br />Variation: {order?.variationName}</>)}
+                                                        {order?.barcode && (<><br />Barcode: {order?.barcode}</>)}
+                                                        {order?.hSN && (<><br />HSN: {order?.hSN}</>)}
                                                     </td>
                                                 }
                                                 {formState.selectedOption === 'Contact Lens' &&
                                                     <td className="px-6 py-4 whitespace-wrap">{order?.productDescName}
-                                                        <br></br>{order?.sphericalPower && (`Sph: `+ (order?.sphericalPower >0 ? `+`+order?.sphericalPower : order?.sphericalPower))}
-                                                        {order?.cylindricalPower && (` Cyld: `+ (order?.cylindricalPower > 0 ? `+`+order?.cylindricalPower : order?.cylindricalPower))}
-                                                        {order?.axis && (` Axis: ` + (order?.cylindricalPower>0 ? `+`+order?.cylindricalPower : order?.cylindricalPower))}
-                                                        {order?.additional && (` Add: ` + (order?.additional>0 ? `+`+order?.additional : order?.additional))}
-                                                        {order?.color && (<><br/>Clr: {order?.color>0}</> )}
-                                                        {order?.barcode && (<><br/>Barcode: {order?.barcode}</>)}
-                                                        {order?.hSN && (<><br/>HSN: {order?.hSN}</>)}
+                                                        <br></br>{order?.sphericalPower && (`Sph: ` + (order?.sphericalPower > 0 ? `+` + order?.sphericalPower : order?.sphericalPower))}
+                                                        {order?.cylindricalPower && (` Cyld: ` + (order?.cylindricalPower > 0 ? `+` + order?.cylindricalPower : order?.cylindricalPower))}
+                                                        {order?.axis && (` Axis: ` + (order?.axis))}
+                                                        {order?.additional && (` Add: ` + (order?.additional > 0 ? `+` + order?.additional : order?.additional))}
+                                                        {order?.color && (<><br />Clr: {order?.color > 0}</>)}
+                                                        {order?.barcode && (<><br />Barcode: {order?.barcode}</>)}
+                                                        {order?.hSN && (<><br />HSN: {order?.hSN}</>)}
                                                     </td>
                                                 }
-                                                <td className="px-6 py-4 whitespace-nowrap">{order?.pricing?.buyingPrice}</td>
+                                                {order.productType == 3 ?
+                                                    <td className="px-6 py-4 whitespace-nowrap">{order.poPrice ?? order?.priceMaster?.buyingPrice}</td>
+                                                    :
+                                                    <td className="px-6 py-4 whitespace-nowrap">{order.poPrice ?? order?.pricing?.buyingPrice}</td>
+
+                                                }
                                                 <td className="px-6 py-4 whitespace-nowrap text-center">{order?.orderQty}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-center">{order?.orderQty - order?.billedQty - order?.cancelledQty}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-center">{order?.pricing?.quantity}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-center">{order.poQty ?? order?.orderQty - order?.billedQty - order?.cancelledQty}</td>
+                                                {order.productType == 3 ?
+                                                    // logic for sum of quantities in stock
+                                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                        {order?.stock.reduce((total, item) => total + item.quantity, 0)}
+                                                    </td>
+                                                    :
+                                                    <td className="px-6 py-4 whitespace-nowrap text-center">{order?.pricing?.quantity}</td>
+                                                }
                                                 {/* <td className="px-6 py-4 whitespace-nowrap">{((order?.pricing?.buyingPrice * order?.orderQty) + (order?.pricing?.buyingPrice * order?.orderQty * (order?.taxPercentage / 100))).toFixed(2)}</td> */}
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {formState.selectedOption === "Lens" ? (
+                                                    {order.productType == 0 ? (
                                                         // Optical Lens calculation
                                                         (() => {
                                                             const bothLens = order?.specs?.powerDetails?.bothLens === 1;
@@ -900,12 +1267,19 @@ export default function SavePurchaseOrder() {
 
                                                             return totalWithTax.toFixed(2);
                                                         })()
+                                                    ) : order.productType === 3 ? (
+                                                        (
+                                                            (order?.priceMaster?.buyingPrice * (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty)) +
+                                                            (order?.priceMaster?.buyingPrice *
+                                                                (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty) *
+                                                                (order?.taxPercentage / 100))
+                                                        ).toFixed(2)
                                                     ) : (
                                                         // Default calculation
                                                         (
-                                                            (order?.pricing?.buyingPrice * order?.orderQty) +
+                                                            (order?.pricing?.buyingPrice * (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty)) +
                                                             (order?.pricing?.buyingPrice *
-                                                                order?.orderQty *
+                                                                (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty) *
                                                                 (order?.taxPercentage / 100))
                                                         ).toFixed(2)
                                                     )}
@@ -960,16 +1334,16 @@ export default function SavePurchaseOrder() {
                             <div className="flex gap-2 py-4">
                                 <button
                                     onClick={() => setCurrentStep(2)}
-                                    className="px-4 py-2 bg-[#000060] text-white rounded-lg hover:bg-[#0000a0] transition-colors disabled:opacity-50"
+                                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
                                 >
                                     Add PO
                                 </button>
-                                <button
+                                {/* <button
                                     onClick={handleBack}
                                     className="px-4 bg-[#000060] text-white rounded-lg hover:bg-[#0000a0] transition-colors disabled:opacity-50"
                                 >
                                     Back
-                                </button>
+                                </button> */}
                             </div>
                         </div>
 
@@ -1008,7 +1382,6 @@ export default function SavePurchaseOrder() {
                                         <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">SL No.</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Order No.</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Product Type</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Barcode</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Product Details</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Buying Price</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Order Qty</th>
@@ -1019,44 +1392,191 @@ export default function SavePurchaseOrder() {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {filteredOrderDetails
-                                        .filter(order => selectedOrders.includes(order.orderDetailId))
+                                    {poreviewDetails
+                                        // .filter(order => selectedOrders.includes(order.orderDetailId))
                                         .map((order, index) => (
                                             <tr key={order.id}>
                                                 <td className="px-6 py-4 whitespace-nowrap">{index + 1}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap">{order.orderPrefix}/{order.orderNo}/{order.slNo}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">{formState?.selectedOption}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">{order?.barcode}</td>
-                                                {formState.selectedOption === 'Lens' &&
-                                                    <td className="px-6 py-4 whitespace-wrap">{order?.productDescName}
-                                                        <br></br>Right: {order?.specs?.powerDetails?.right?.sphericalPower || 0.00} Left: {order?.specs?.powerDetails?.left?.sphericalPower || 0.00}
+                                                <td className="px-6 py-4 whitespace-nowrap">{order.productType == 0 && `OL` || order.productType == 1 && `F` || order.productType == 2 && `Acc` || order.productType == 3 && `CL`}</td>
+                                                {order.productType == 0 &&
+                                                    <td className="px-6 py-4 whitespace-wrap min-w-72">{order?.productDescName}
+                                                        {/* R Row */}
+                                                        {(order?.specs?.powerDetails?.right?.sphericalPower ||
+                                                            order?.specs?.powerDetails?.right?.cylindricalPower ||
+                                                            order?.specs?.powerDetails?.right?.axis ||
+                                                            order?.specs?.powerDetails?.right?.additional) && (
+                                                                <>
+                                                                    <br />
+                                                                    R: {order?.specs?.powerDetails?.right?.sphericalPower &&
+                                                                        `SPH: ${order?.specs?.powerDetails?.right?.sphericalPower > 0
+                                                                            ? `+${order?.specs?.powerDetails?.right?.sphericalPower}`
+                                                                            : order?.specs?.powerDetails?.right?.sphericalPower}`}
+                                                                    {order?.specs?.powerDetails?.right?.cylindricalPower &&
+                                                                        ` CYL: ${order?.specs?.powerDetails?.right?.cylindricalPower > 0
+                                                                            ? `+${order?.specs?.powerDetails?.right?.cylindricalPower}`
+                                                                            : order?.specs?.powerDetails?.right?.cylindricalPower}`}
+                                                                    {order?.specs?.powerDetails?.right?.axis &&
+                                                                        ` Axis: ${order?.specs?.powerDetails?.right?.axis}`}
+                                                                    {order?.specs?.powerDetails?.right?.additional &&
+                                                                        ` Add: ${order?.specs?.powerDetails?.right?.additional > 0
+                                                                            ? `+${order?.specs?.powerDetails?.right?.additional}`
+                                                                            : order?.specs?.powerDetails?.right?.additional}`}
+                                                                </>
+                                                            )}
+
+                                                        {/* L Row */}
+                                                        {(order?.specs?.powerDetails?.left?.sphericalPower ||
+                                                            order?.specs?.powerDetails?.left?.cylindricalPower ||
+                                                            order?.specs?.powerDetails?.left?.axis ||
+                                                            order?.specs?.powerDetails?.left?.additional) && (
+                                                                <>
+                                                                    <br />
+                                                                    L: {order?.specs?.powerDetails?.left?.sphericalPower &&
+                                                                        `SPH: ${order?.specs?.powerDetails?.left?.sphericalPower > 0
+                                                                            ? `+${order?.specs?.powerDetails?.left?.sphericalPower}`
+                                                                            : order?.specs?.powerDetails?.left?.sphericalPower}`}
+                                                                    {order?.specs?.powerDetails?.left?.cylindricalPower &&
+                                                                        ` CYL: ${order?.specs?.powerDetails?.left?.cylindricalPower > 0
+                                                                            ? `+${order?.specs?.powerDetails?.left?.cylindricalPower}`
+                                                                            : order?.specs?.powerDetails?.left?.cylindricalPower}`}
+                                                                    {order?.specs?.powerDetails?.left?.axis &&
+                                                                        ` Axis: ${order?.specs?.powerDetails?.left?.axis}`}
+                                                                    {order?.specs?.powerDetails?.left?.additional &&
+                                                                        ` Add: ${order?.specs?.powerDetails?.left?.additional > 0
+                                                                            ? `+${order?.specs?.powerDetails?.left?.additional}`
+                                                                            : order?.specs?.powerDetails?.left?.additional}`}
+                                                                </>
+                                                            )}
+
+                                                        {order?.specs?.addOn?.addOnId && (<><br /> <span className="font-medium">AddOn: {order?.specs?.addOn?.addOnName}</span></>)}
+                                                        {order?.specs?.tint?.tintCode && (<><br /><span className="font-medium">Tint: {order?.specs?.tint?.tintName}</span></>)}
+                                                        {order?.hSN && (<><br /><span className="font-medium">HSN: {order?.hSN}</span></>)}
                                                     </td>
                                                 }
-                                                {formState.selectedOption === 'Frame/Sunglass' &&
+                                                {order.productType == 1 &&
                                                     <td className="px-6 py-4 whitespace-wrap">{order?.productDescName}
-                                                        <br></br>{order?.barcode}
+                                                        <br></br>{order?.size}-{order?.dBL}-{order?.templeLength}
+                                                        <br></br>{order?.category === 0 ? `Sunglass` : `OpticalFrame`}
+                                                        <br></br>{order?.barcode && `Barcode: ` + order?.barcode}
+                                                        <br></br>{order?.hSN && `HSN: ` + order?.hSN}
                                                     </td>
                                                 }
-                                                {formState.selectedOption === 'Accessories' &&
+                                                {order.productType == 2 &&
                                                     <td className="px-6 py-4 whitespace-wrap">{order?.productDescName}
-                                                        <br></br>{order?.variationName}
+                                                        {order?.variationName && (<><br />Variation: {order?.variationName}</>)}
+                                                        {order?.barcode && (<><br />Barcode: {order?.barcode}</>)}
+                                                        {order?.hSN && (<><br />HSN: {order?.hSN}</>)}
                                                     </td>
                                                 }
-                                                {formState.selectedOption === 'Contact Lens' &&
+                                                {order.productType == 3 &&
                                                     <td className="px-6 py-4 whitespace-wrap">{order?.productDescName}
-                                                        <br></br>Sph: {order?.sphericalPower ?? 0}
+                                                        <br></br>{order?.sphericalPower && (`Sph: ` + (order?.sphericalPower > 0 ? `+` + order?.sphericalPower : order?.sphericalPower))}
+                                                        {order?.cylindricalPower && (` Cyld: ` + (order?.cylindricalPower > 0 ? `+` + order?.cylindricalPower : order?.cylindricalPower))}
+                                                        {order?.axis && (` Axis: ` + (order?.axis))}
+                                                        {order?.additional && (` Add: ` + (order?.additional > 0 ? `+` + order?.additional : order?.additional))}
+                                                        {order?.color && (<><br />Clr: {order?.color > 0}</>)}
+                                                        {order?.barcode && (<><br />Barcode: {order?.barcode}</>)}
+                                                        {order?.hSN && (<><br />HSN: {order?.hSN}</>)}
                                                     </td>
                                                 }
-                                                <td className="px-6 py-4 whitespace-nowrap">{order?.pricing?.buyingPrice}</td>
+                                                {order.productType == 3 ?
+                                                    <td className="px-6 py-4 whitespace-nowrap">{order.poPrice ?? order?.priceMaster?.buyingPrice}
+                                                        <button
+                                                            onClick={() => handleEditPriceClick(order)}
+                                                            className="ml-2 text-gray-500 hover:text-[#000060]"
+                                                        >
+                                                            <PenIcon className="w-4 h-4" />
+                                                        </button>
+                                                    </td>
+                                                    :
+                                                    <td className="px-6 py-4 whitespace-nowrap">{order.poPrice ?? order?.pricing?.buyingPrice}
+                                                        <button
+                                                            onClick={() => handleEditPriceClick(order)}
+                                                            className="ml-2 text-gray-500 hover:text-[#000060]"
+                                                        >
+                                                            <PenIcon className="w-4 h-4" />
+                                                        </button>
+                                                    </td>
+
+                                                }
                                                 <td className="px-6 py-4 whitespace-nowrap">{order?.orderQty}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">{order?.orderQty - order?.billedQty - order?.cancelledQty}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">{order?.pricing?.quantity}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap">{order.poQty ?? order?.orderQty - order?.billedQty - order?.cancelledQty}
+                                                    <button
+                                                        onClick={() => handleEditQtyClick(order)}
+                                                        className="ml-2 text-gray-500 hover:text-[#000060]"
+                                                    >
+                                                        <PenIcon className="w-4 h-4" />
+                                                    </button>
+                                                </td>
+                                                {order.productType == 3 ?
+                                                    // logic for sum of quantities in stock
+                                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                        {order?.stock.reduce((total, item) => total + item.quantity, 0)}
+                                                    </td>
+                                                    :
+                                                    <td className="px-6 py-4 whitespace-nowrap text-center">{order?.pricing?.quantity}</td>
+                                                }
+                                                {/* // In the table cell where Total Amount is displayed: */}
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {(order?.pricing?.buyingPrice * (order?.orderQty - order?.billedQty - order?.cancelledQty)).toFixed(2)}
+                                                    {order.productType == 0 ? (
+                                                        // Optical Lens calculation
+                                                        (() => {
+                                                            const bothLens = order?.specs?.powerDetails?.bothLens === 1;
+                                                            const buyingPrice = parseFloat(order?.pricing?.buyingPrice || 0);
+                                                            // Use poQty instead of orderQty for calculation
+                                                            const poQty = parseInt(order.poQty || (order.orderQty - order.billedQty - order.cancelledQty), 10);
+
+                                                            // Tint buying price
+                                                            const tintBuying =
+                                                                parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) || 0;
+
+                                                            // Sum of addon buying prices
+                                                            const addonBuying = Array.isArray(order?.specs?.addOn)
+                                                                ? order.specs.addOn.reduce(
+                                                                    (sum, add) => sum + (parseFloat(add?.addOnBuyingPrice || 0) || 0),
+                                                                    0
+                                                                )
+                                                                : parseFloat(order?.specs?.addOn?.addOnBuyingPrice || 0) || 0;
+
+                                                            // Calculate base
+                                                            let total;
+                                                            if (bothLens) {
+                                                                total = buyingPrice * poQty + tintBuying + addonBuying;
+                                                            } else {
+                                                                total =
+                                                                    buyingPrice * poQty + tintBuying / 2 + addonBuying / 2;
+                                                            }
+
+                                                            // Add tax
+                                                            const totalWithTax =
+                                                                total + total * (parseFloat(order?.taxPercentage) / 100 || 0);
+
+                                                            return totalWithTax.toFixed(2);
+                                                        })()
+                                                    ) : order.productType === 3 ? (
+                                                        (
+                                                            (order?.priceMaster?.buyingPrice * (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty)) +
+                                                            (order?.priceMaster?.buyingPrice *
+                                                                (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty) *
+                                                                (order?.taxPercentage / 100))
+                                                        ).toFixed(2)
+                                                    ) : (
+                                                        // Default calculation
+                                                        (
+                                                            (order?.pricing?.buyingPrice * (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty)) +
+                                                            (order?.pricing?.buyingPrice *
+                                                                (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty) *
+                                                                (order?.taxPercentage / 100))
+                                                        ).toFixed(2)
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <button
-                                                        onClick={() => handleRemoveOrder(order.id)}
+                                                        onClick={() => {
+                                                            setOrderToRemove(order.poDetailId);
+                                                            setShowRemoveModal(true);
+                                                        }}
                                                         className="text-red-600 hover:text-red-800"
                                                     >
                                                         <Trash2 className="h-5 w-5" />
@@ -1069,107 +1589,312 @@ export default function SavePurchaseOrder() {
                         </div>
 
                         {/* Calculation Summary Section */}
-                        {/* <div className="flex ">
+                        <div className="flex mt-10 justify-between px-5 rounded-2xl shadow p-8">
 
-                            <div className="space-y-3">
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Total Quantity:</span>
-                                    <span className="font-medium">
-                                        {filteredOrderDetails
-                                            .filter(order => selectedOrders.includes(order.id))
-                                            .reduce((total, order) => total + (order.orderQty - order.billedQty - order.cancelledQty), 0)}
-                                    </span>
-                                </div>
-
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Total Gross Value:</span>
-                                    <span className="font-medium">
-                                        ₹{filteredOrderDetails
-                                            .filter(order => selectedOrders.includes(order.id))
-                                            .reduce((total, order) => {
-                                                const quantity = order.orderQty - order.billedQty - order.cancelledQty;
-                                                return total + (order.pricing?.buyingPrice * quantity);
-                                            }, 0)
-                                            .toFixed(2)}
-                                    </span>
-                                </div>
-
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Total GST:</span>
-                                    <span className="font-medium">
-                                        ₹{filteredOrderDetails
-                                            .filter(order => selectedOrders.includes(order.id))
-                                            .reduce((total, order) => {
-                                                const quantity = order.orderQty - order.billedQty - order.cancelledQty;
-                                                const taxPercentage = order.taxPercentage || 0;
-                                                return total + (order.pricing?.buyingPrice * quantity * (taxPercentage / 100));
-                                            }, 0)
-                                            .toFixed(2)}
-                                    </span>
-                                </div>
-
-                                <div className="flex justify-between border-t pt-2">
-                                    <span className="text-gray-700 font-bold">Total Net Value:</span>
-                                    <span className="text-[#000060] font-bold">
-                                        ₹{calculateTotalAmount().toFixed(2)}
-                                    </span>
-                                </div>
-                            </div>
-                        </div> */}
-
-                        {/* Remarks Section */}
-                        {/* <div className="bg-gray-50 p-4 rounded-lg">
-                            <h3 className="font-bold text-gray-700 mb-4">Additional Information</h3>
-                            <div className="space-y-4">
-                                <div>
-                                    <label htmlFor="remarks" className="block text-sm font-medium text-gray-700 mb-1">
-                                        Remarks
-                                    </label>
-                                    <textarea
-                                        id="remarks"
-                                        name="remarks"
-                                        rows={3}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060]"
-                                        placeholder="Any additional notes or instructions..."
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="deliveryDate" className="block text-sm font-medium text-gray-700 mb-1">
-                                        Expected Delivery Date
-                                    </label>
-                                    <input
-                                        type="date"
-                                        id="deliveryDate"
-                                        name="deliveryDate"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060]"
-                                    />
-                                </div>
-                            </div>
-                        </div> */}
-
-                        <div className="flex justify-between items-center mt-8">
-                            <button
-                                onClick={handleBack}
-                                className="px-4 py-2 border border-[#000060] text-[#000060] rounded-lg hover:bg-gray-100 transition-colors"
-                            >
-                                Back
-                            </button>
-                            <div className="flex items-center space-x-4">
-                                <span className="text-gray-700 font-bold">
-                                    Total Amount: ₹{calculateTotalAmount().toFixed(2)}
+                            <div className="flex justify-between gap-4">
+                                <span className="text-gray-600 font-bold text-lg">Total Quantity :</span>
+                                <span className="font-bold text-lg">
+                                    {poreviewDetails
+                                        .reduce((total, order) => total + (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty), 0)}
                                 </span>
+                            </div>
+
+                            <div className="flex justify-between gap-4">
+                                <span className="text-gray-600 font-bold text-lg">Total Gross Value :</span>
+                                <span className="font-bold text-lg">
+                                    ₹{
+                                        poreviewDetails
+                                            .reduce((total, order) => {
+                                                const quantity = order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty;
+                                                const price = order.productType === 3
+                                                    ? parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0
+                                                    : parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
+
+                                                // Ensure both price and quantity are valid numbers
+                                                if (price && !isNaN(price) && !isNaN(quantity)) {
+                                                    return total + (price * quantity);
+                                                }
+                                                return total;
+                                            }, 0)
+                                            ?.toFixed?.(2) ?? '0.00'
+                                    }
+                                </span>
+                            </div>
+
+                            <div className="flex justify-between gap-4">
+                                <span className="text-gray-600 font-bold text-lg">Total GST :</span>
+                                <span className="font-bold text-lg">
+                                    ₹{poreviewDetails
+                                        .reduce((total, order) => {
+                                            const quantity = order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty;
+                                            const price = order.productType === 3
+                                                ? parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0
+                                                : parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
+                                            const taxPercentage = parseFloat(order.taxPercentage / 100) || 0;
+                                            if (price && !isNaN(price) && !isNaN(quantity)) {
+                                                return total + (price * quantity * taxPercentage);
+                                            }
+                                            return total;
+                                        }, 0)
+                                        ?.toFixed?.(2) ?? '0.00'}
+                                </span>
+                            </div>
+
+                            <div className="flex justify-between gap-4">
+                                <span className="text-gray-600 font-bold text-lg">Total Net Value :</span>
+                                <span className="font-bold text-lg">
+                                    ₹{calculateTotalAmount().toFixed(2)}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-10 mb-5 w-full">
+                            {/* Remarks Section - takes available space */}
+                            <div className=" flex gap-5 items-center">
+                                <label htmlFor="remarks" className="block text-sm font-medium text-gray-700 whitespace-nowrap">
+                                    Remarks
+                                </label>
+                                <input
+                                    id="remarks"
+                                    name="remarks"
+                                    value={formState.remarks}
+                                    onChange={handleInputChange}
+                                    className="w-4xl px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060]"
+                                    placeholder="Any additional remarks..."
+                                />
+                            </div>
+
+                            {/* Button container - fixed width */}
+                            <div className="flex-shrink-0">
                                 <button
-                                    onClick={handleSubmit}
-                                    className="px-4 py-2 bg-[#000060] text-white rounded-lg hover:bg-[#0000a0] transition-colors disabled:opacity-50"
+                                    onClick={handleCompletePO}
+                                    className="px-6 py-2 bg-[#000060] text-white rounded-lg hover:bg-[#0000a0] transition-colors disabled:opacity-50 whitespace-nowrap"
+                                    disabled={!createdPOMainId || poreviewDetails.length === 0}
                                 >
                                     Complete Purchase Order
                                 </button>
                             </div>
                         </div>
+
+
+
+                        {/* <span className="text-gray-700 font-bold">
+                                    Total Amount: ₹{calculateTotalAmount().toFixed(2)}
+                                </span> */}
+
                     </motion.div>
                 )}
-            </motion.div>
+            </motion.div >
+
+            {editPriceModalOpen && (
+                <AnimatePresence>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                            className="bg-white p-6 rounded-lg shadow-xl w-96"
+                        >
+                            <motion.h3
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 }}
+                                className="text-lg font-bold mb-4"
+                            >
+                                Edit Buying Price
+                            </motion.h3>
+
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2 }}
+                            >
+                                <input
+                                    type="number"
+                                    value={editedBuyingPrice}
+                                    onChange={(e) => setEditedBuyingPrice(e.target.value)}
+                                    className="w-full p-2 border border-gray-300 rounded mb-4 focus:ring-2 focus:ring-[#000060] focus:border-transparent transition-all"
+                                    placeholder="Enter new price"
+                                    autoFocus
+                                />
+                            </motion.div>
+
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.3 }}
+                                className="flex justify-end space-x-2"
+                            >
+                                <button
+                                    onClick={() => setEditPriceModalOpen(false)}
+                                    className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handlePriceUpdate}
+                                    className="px-4 py-2 bg-[#000060] text-white rounded hover:bg-[#0000a0] transition-colors"
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                >
+                                    Update
+                                </button>
+                            </motion.div>
+                        </motion.div>
+                    </motion.div>
+                </AnimatePresence>
+            )
+            }
+
+            {
+                editQtyModalOpen && (
+                    <AnimatePresence>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="fixed inset-0 bg-neutral-200/50 backdrop-blur-xs flex items-center justify-center z-50"
+                        >
+                            <motion.div
+                                initial={{ scale: 0.9, y: 20 }}
+                                animate={{ scale: 1, y: 0 }}
+                                exit={{ scale: 0.9, y: 20 }}
+                                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                                className="bg-white p-6 rounded-lg shadow-xl w-96"
+                            >
+                                <motion.h3
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.1 }}
+                                    className="text-lg font-bold mb-4"
+                                >
+                                    Edit PO Quantity
+                                </motion.h3>
+
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.2 }}
+                                >
+                                    <input
+                                        type="number"
+                                        value={editedPoQty}
+                                        onChange={(e) => {
+                                            setEditedPoQty(e.target.value);
+                                            setQtyError(''); // Clear error when typing
+                                        }}
+                                        className="w-full p-2 border border-gray-300 rounded mb-1 focus:ring-2 focus:ring-[#000060] focus:border-transparent transition-all"
+                                        placeholder="Enter new quantity"
+                                        min="1"
+                                        autoFocus
+                                    />
+                                    {qtyError && (
+                                        <p className="text-red-500 text-sm mb-3">{qtyError}</p>
+                                    )}
+                                    <p className="text-gray-500 text-sm">
+                                        Order Quantity: {currentEditingItem?.orderQty - currentEditingItem?.billedQty - currentEditingItem?.cancelledQty}
+                                    </p>
+                                </motion.div>
+
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.3 }}
+                                    className="flex justify-end space-x-2"
+                                >
+                                    <button
+                                        onClick={() => {
+                                            setEditQtyModalOpen(false);
+                                            setQtyError('');
+                                        }}
+                                        className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleQtyUpdate}
+                                        className="px-4 py-2 bg-[#000060] text-white rounded hover:bg-[#0000a0] transition-colors"
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                    >
+                                        Update
+                                    </button>
+                                </motion.div>
+                            </motion.div>
+                        </motion.div>
+                    </AnimatePresence>
+                )
+            }
+
+            {
+                showRemoveModal && (
+                    <AnimatePresence>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="fixed inset-0 bg-neutral-200/50 backdrop-blur-xs flex items-center justify-center z-50"
+                        >
+                            <motion.div
+                                initial={{ scale: 0.9, y: 20 }}
+                                animate={{ scale: 1, y: 0 }}
+                                exit={{ scale: 0.9, y: 20 }}
+                                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                                className="bg-white p-6 rounded-lg shadow-xl w-96"
+                            >
+                                <motion.h3
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.1 }}
+                                    className="text-lg font-bold mb-4"
+                                >
+                                    Are you sure you want to delete?
+                                </motion.h3>
+
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.3 }}
+                                    className="flex justify-end space-x-2"
+                                >
+                                    <button
+                                        onClick={() => {
+                                            setShowRemoveModal(false);
+                                            setQtyError('');
+                                        }}
+                                        className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleRemoveOrder}
+                                        className="px-4 py-2 bg-[#000060] text-white rounded hover:bg-[#0000a0] transition-colors"
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                    >
+                                        Yes
+                                    </button>
+                                </motion.div>
+                            </motion.div>
+                        </motion.div>
+                    </AnimatePresence>
+                )
+            }
         </>
     );
 };

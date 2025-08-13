@@ -23,6 +23,47 @@ export const purchaseOrderApi = createApi({
             }),
             providesTags: ['PurchaseOrderDetails'],
         }),
+
+        getAllPoDetails: builder.mutation({
+            query: (payload) => ({
+                url: `/api/v1/purchase-order/get-all`,
+                method: 'POST',
+                body: payload
+            }),
+            providesTags: ['PurchaseOrderDetails'],
+        }),
+
+        updatePoBuyingPrice: builder.mutation({
+            query: (payload) => ({
+                url: `/api/v1/purchase-order/update-price`,
+                method: 'PUT',
+                body: payload
+            })
+        }),
+
+        updatePoQty: builder.mutation({
+            query: (payload) => ({
+                url: `/api/v1/purchase-order/update-quantity`,
+                method: 'PUT',
+                body: payload
+            })
+        }),
+
+        deletePo: builder.mutation({
+            query: (payload) => ({
+                url: `/api/v1/purchase-order/delete`,
+                method: 'DELETE',
+                body: payload
+            })
+        }),
+
+        updatePoMain: builder.mutation({
+            query: (payload) => ({
+                url: `/api/v1/purchase-order/update-main`,
+                method: 'PUT',
+                body: payload
+            })
+        }),
     })
 });
 
@@ -31,5 +72,10 @@ export const purchaseOrderApi = createApi({
 
 export const {
     useSavePurchaseOrderMutation,
-    useSavePurchaseOrderDetailsMutation
+    useSavePurchaseOrderDetailsMutation,
+    useGetAllPoDetailsMutation,
+    useUpdatePoBuyingPriceMutation,
+    useUpdatePoQtyMutation,
+    useDeletePoMutation,
+    useUpdatePoMainMutation
 } = purchaseOrderApi;
