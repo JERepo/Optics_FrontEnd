@@ -291,7 +291,7 @@ const OpticalLens = () => {
       productName: null,
       tintvalue: null,
       tintId: null,
-      addOnData: [],
+      AddOnData: [],
     });
   };
   const handleOLensBack = () => {

@@ -21,7 +21,7 @@ import {
 import { MdOutlineAdminPanelSettings } from "react-icons/md";
 
 export const menuItems = [
-  {
+   {
     name: "Product Master",
     icon: IoOptionsSharp,
     module: "Product Master",
@@ -176,6 +176,12 @@ export const menuItems = [
     icon: FiFileText,
     module: "Invoice",
     path: "/invoice",
+  },
+  {
+    name: "Sales Return",
+    icon: FiClipboard,
+    module: "SalesReturn",
+    path: "/sales-return",
   },
   {
     name: "Purchase Order",

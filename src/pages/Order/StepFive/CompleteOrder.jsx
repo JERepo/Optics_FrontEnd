@@ -38,21 +38,21 @@ const calculateGST = (sellingPrice, taxPercentage) => {
   };
 };
 
-  const getShortTypeName = (id) => {
-    if (id === null || id === undefined) return;
+const getShortTypeName = (id) => {
+  if (id === null || id === undefined) return;
 
-    if (id === 1) {
-      return "F/S";
-    } else if (id === 2) {
-      return "ACC";
-    } else if (id === 3) {
-      return "CL";
-    } else if (id === 0) {
-      return "OL";
-    } else {
-      return;
-    }
-  };
+  if (id === 1) {
+    return "F/S";
+  } else if (id === 2) {
+    return "ACC";
+  } else if (id === 3) {
+    return "CL";
+  } else if (id === 0) {
+    return "OL";
+  } else {
+    return;
+  }
+};
 
 const DiscountDisplay = ({ item }) => {
   const discountValue = item.DiscountValue || 0;
@@ -66,92 +66,107 @@ const DiscountDisplay = ({ item }) => {
   );
 };
 
-  const getProductName = (item) => {
-    const {
-      typeid,
-      ProductName,
-      Size,
-      Barcode,
-      PatientName,
-      PowerSpecs,
-      Variation,
-      Specs,
-      Color
-    } = item;
-    const clean = (val) => {
-      if (
-        val === null ||
-        val === undefined ||
-        val === "undefined" ||
-        val === "null"
-      ) {
-        return "";
-      }
-      return val;
-    };
-    // For Frame (typeid = 1)
-    if (typeid === 1) {
-      const nameLine = ProductName || "";
-      const sizeLine = Size ? `${Size}` : "";
-      const barcodeLine = Barcode || "";
-      // const frameType = "OpticalFrame/Sunglass";
-      const patientLine = PatientName ? `\n${PatientName}` : "";
-      return `${nameLine}\n${sizeLine}\n${barcodeLine}\n${patientLine}`;
+const getProductName = (item) => {
+  const {
+    typeid,
+    ProductName,
+    Size,
+    Barcode,
+    PatientName,
+    PowerSpecs,
+    Variation,
+    Specs,
+    Color,
+  } = item;
+
+  const clean = (val) => {
+    if (
+      val === null ||
+      val === undefined ||
+      val === "undefined" ||
+      val === "null"
+    ) {
+      return "";
     }
-
-    // For Accessories (typeid = 2)
-    if (typeid === 2) {
-      const nameLine = ProductName || "";
-
-      const barcodeLine = Barcode || "";
-      const patientLine = PatientName ? `\n${PatientName}` : "";
-
-      return `${nameLine}\n${Variation}\n${barcodeLine}${patientLine}`;
-    }
-
-    // For Contact Lens (typeid = 3)
-    if (typeid === 3) {
-      const nameLine = ProductName || "";
-
-      const specs = PowerSpecs
-        ? PowerSpecs.split(",")
-            .map((s) => {
-              const [key, val] = s.split(":");
-              const cleanedValue =
-                val && !["null", "undefined"].includes(val.trim())
-                  ? val.trim()
-                  : "";
-              return `${key.trim()}: ${cleanedValue}`;
-            })
-            .join(", ")
-        : "";
-
-      const barcodeLine = Barcode || "";
-      const patientLine = PatientName ? `\n${PatientName}` : "";
-
-      return `${nameLine}\n${specs}\n${barcodeLine}${patientLine}`;
-    }
-
-    if (typeid === 0) {
-      const specsLines = (Specs || [])
-        .map((spec) => {
-          const side = clean(spec.side);
-          const sph = clean(spec.sph);
-          const cyl = clean(spec.cyl);
-          const axis = clean(spec.axis);
-          const addition = clean(spec.addition);
-
-          return `${side}: SPH ${sph}, CYL ${cyl}, Axis ${axis}, Add ${addition}`;
-        })
-        .join("\n");
-
-      return `${clean(ProductName)}\n${specsLines}\n${clean(Barcode)}${
-        PatientName ? `\n${clean(PatientName)}` : ""
-      }`;
-    }
-
-    return "";
+    return val;
   };
+
+  // Format number to add + sign for positive values
+  const formatPowerValue = (val) => {
+    const num = parseFloat(val);
+    if (isNaN(num)) return val;
+    return num > 0 ? `+${val}` : val;
+  };
+
+  // For Frame (typeid = 1)
+  if (typeid === 1) {
+    const nameLine = ProductName || "";
+    const sizeLine = Size ? `Size: ${Size}` : "";
+    const barcodeLine = Barcode ? `Barcode: ${Barcode}` : "";
+    const patientLine = PatientName ? `Patient Name: ${PatientName}` : "";
+    return `${nameLine}\n${sizeLine}\n${barcodeLine}\n${patientLine}`;
+  }
+
+  // For Accessories (typeid = 2)
+  if (typeid === 2) {
+    const nameLine = ProductName || "";
+    const variationLine = Variation ? `Variation: ${Variation}` : "";
+    const barcodeLine = Barcode ? `Barcode: ${Barcode}` : "";
+    const patientLine = PatientName ? `Patient Name: ${PatientName}` : "";
+    return `${nameLine}\n${variationLine}\n${barcodeLine}\n${patientLine}`;
+  }
+
+  // For Contact Lens (typeid = 3)
+  if (typeid === 3) {
+    const nameLine = ProductName || "";
+    const specs = PowerSpecs
+      ? PowerSpecs.split(",")
+          .map((s) => {
+            const [key, val] = s.split(":");
+            const cleanedValue =
+              val && !["null", "undefined"].includes(val.trim())
+                ? formatPowerValue(val.trim())
+                : "";
+            return cleanedValue ? `${key.trim()}: ${cleanedValue}` : "";
+          })
+          .filter((s) => s)
+          .join(", ")
+      : "";
+    const colorLine = Color ? `Colour: ${Color}` : "";
+    const barcodeLine = Barcode ? `Barcode: ${Barcode}` : "";
+    const patientLine = PatientName ? `Patient Name: ${PatientName}` : "";
+    return `${nameLine}\n${specs}\n${colorLine}\n${barcodeLine}\n${patientLine}`;
+  }
+
+  // For Optical Lens (typeid = 0)
+  if (typeid === 0) {
+    const specsLines = (Specs || [])
+      .map((spec) => {
+        const side = clean(spec.side);
+        const sph = clean(spec.sph);
+        const cyl = clean(spec.cyl);
+        const axis = clean(spec.axis);
+        const addition = clean(spec.addition);
+
+        const powerValues = [];
+        if (sph) powerValues.push(`SPH ${formatPowerValue(sph)}`);
+        if (cyl) powerValues.push(`CYL ${formatPowerValue(cyl)}`);
+        if (axis) powerValues.push(`Axis ${formatPowerValue(axis)}`);
+        if (addition) powerValues.push(`Add ${formatPowerValue(addition)}`);
+
+        return powerValues.length ? `${side}: ${powerValues.join(", ")}` : "";
+      })
+      .filter((s) => s)
+      .join("\n");
+
+    const patientLine = PatientName
+      ? `Patient Name: ${clean(PatientName)}`
+      : "";
+    return `${clean(ProductName)}\n${specsLines}\n${patientLine}`;
+  }
+
+  return "";
+};
 
 const AdvanceAmountInput = ({
   orderDetailId,
@@ -266,7 +281,7 @@ const CompleteOrder = () => {
     return savedOrders.reduce(
       (acc, item) => {
         const qty = parseInt(item.OrderQty);
-        const total = parseFloat(item.Total);
+        const total = parseFloat(item.Total) + parseFloat(item.FittingPrice);
         const { gstAmount } = calculateGST(
           item.DiscountedSellingPrice,
           item.TaxPercentage
@@ -463,7 +478,7 @@ const CompleteOrder = () => {
                     <TableCell>{item.SlNo}</TableCell>
                     <TableCell>{getShortTypeName(item.typeid)}</TableCell>
                     <TableCell>
-                     <div
+                      <div
                         className="text-sm"
                         style={{
                           whiteSpace: "pre-wrap",

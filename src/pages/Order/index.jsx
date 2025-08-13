@@ -13,11 +13,11 @@ import CompleteOrder from "./StepFive/CompleteOrder";
 import OrderList from "./MainOrder/OrderList";
 import PaymentFlow from "./StepSix/PaymentFlow";
 
-const TotalOrder = () => {
+const TotalSales = () => {
   const [patientId, setPatientId] = useState(null);
   const [customerId, setMainCustomerId] = useState(null);
   const [location, setLocation] = useState(null);
-  const { currentStep, setDraftData, setCustomerId, setCustomerDetails,draftData } =
+  const { currentStep, setDraftData, setCustomerId, setCustomerDetails } =
     useOrder();
 
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
@@ -129,4 +129,4 @@ const TotalOrder = () => {
   return <div>{renderStep()}</div>;
 };
 
-export default TotalOrder;
+export default TotalSales;

@@ -59,6 +59,9 @@ import OrderView from "../pages/Order/MainOrder/OrderView";
 import CustomerSelect from "../pages/Invoice/CustomerSelect";
 import InvoiceList from "../pages/Invoice/InvoiceList";
 import InvoiceView from "../pages/Invoice/InvoiceView";
+import SalesList from "../pages/SalesReturn/MainSalesReturn/SalesList";
+import TotalSales from "../pages/SalesReturn";
+
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
 export const router = createBrowserRouter([
@@ -669,16 +672,24 @@ export const router = createBrowserRouter([
       },
       {
         path: "invoice",
-        element: <InvoiceList />
+        element: <InvoiceList />,
       },
       {
         path: "invoice/view",
-        element: <InvoiceView />
+        element: <InvoiceView />,
       },
       {
         path: "invoice/create",
-        element: <CustomerSelect />
-      }
+        element: <CustomerSelect />,
+      },
+      {
+        path: "sales-return",
+        element: <SalesList />,
+      },
+      {
+        path: "sales-return/create",
+        element: <TotalSales />,
+      },
     ],
   },
   {

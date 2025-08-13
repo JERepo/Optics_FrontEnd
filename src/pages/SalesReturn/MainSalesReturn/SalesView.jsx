@@ -15,7 +15,7 @@ const formatNumber = (num) => {
   return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "0";
 };
 
-const OrderView = () => {
+const SalesView = () => {
   const navigate = useNavigate();
   const { search } = useLocation();
   const params = new URLSearchParams(search);
@@ -26,7 +26,7 @@ const OrderView = () => {
     { skip: !orderId }
   );
   const { data: customerDataById, isLoading: isViewLoading } =
-    useGetOrderViewByIdQuery({ id: orderId });
+    useGetSalesViewByIdQuery({ id: orderId });
 
   const getTypeName = (id) => {
     const types = { 1: "F/S", 2: "ACC", 3: "CL" };
@@ -348,4 +348,4 @@ const Info = ({ label, value }) => (
   </div>
 );
 
-export default OrderView;
+export default SalesView;
