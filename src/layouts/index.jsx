@@ -665,7 +665,11 @@ export const router = createBrowserRouter([
       },
       {
         path: "purchase-order/create",
-        element: <SavePurchaseOrder />,
+        element: (
+          <PermissionRoute module="Purchase Order" action="view">
+            <SavePurchaseOrder />
+          </PermissionRoute>
+        ),
       },
       {
         path: "invoice",

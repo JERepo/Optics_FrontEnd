@@ -57,9 +57,9 @@ export const vendorApi = createApi({
 
 export const {
   useGetAllVendorMutation,
+  useGetAllvendorByLocationQuery,
   useDeActivateMutation,
   useCreateVendorMutation,
   useGetVendorByIdMutation,
-  useUpdateVendorMutation,
-  useGetAllvendorByLocationQuery
+  useUpdateVendorMutation
 } = vendorApi;
