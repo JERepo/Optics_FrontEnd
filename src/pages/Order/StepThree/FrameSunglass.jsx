@@ -445,7 +445,7 @@ const FrameSunglass = () => {
                   <TableCell>
                     {item.Category == "O" ? "Optical Frame" : "Sunglass"}
                   </TableCell>
-                  <TableCell>{item.PO}</TableCell>
+                  <TableCell>{item.PO == 0 ? "No" :"Yes"}</TableCell>
                   <TableCell>{item.MRP}</TableCell>
                   <TableCell>{item.SellingPrice}</TableCell>
                   <TableCell>

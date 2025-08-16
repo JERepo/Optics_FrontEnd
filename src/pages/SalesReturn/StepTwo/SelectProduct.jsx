@@ -4,16 +4,18 @@ import { FiArrowLeft, FiPlus } from "react-icons/fi";
 import Button from "../../../components/ui/Button";
 import Radio from "../../../components/Form/Radio";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router";
 
 const Products = [
   { value: 1, label: "Frame/Sunglass" },
-
+  { value: 2, label: "Optical Lens" },
   { value: 3, label: "Contact Lens" },
   { value: 4, label: "Accessories" },
   { value: 5, label: "Bulk Process" },
 ];
 
 const SelectProduct = () => {
+  const navigate = useNavigate();
   const {
     goToSubSalesStep,
     goToSalesStep,
@@ -21,7 +23,6 @@ const SelectProduct = () => {
     setSelectedSalesProduct,
   } = useOrder();
   const handleAddProduct = () => {
-
     if (selectedSalesProduct?.value === 1) {
       setSelectedSalesProduct(selectedSalesProduct);
       goToSalesStep(3);
@@ -34,6 +35,10 @@ const SelectProduct = () => {
       setSelectedSalesProduct(selectedSalesProduct);
       goToSalesStep(3);
       goToSubSalesStep(3); // Contact Lens
+    } else if (selectedSalesProduct?.value === 2) {
+      setSelectedSalesProduct(selectedSalesProduct);
+      goToSalesStep(3);
+      goToSubSalesStep(4); // Optical Lens
     } else {
       toast.error("Invalid selection type no product available");
       console.warn("Invalid product selection. No matching substep.");
@@ -55,7 +60,22 @@ const SelectProduct = () => {
           >
             Back
           </Button>
-
+          <Button
+            onClick={() => navigate("/sales-return")}
+            
+            variant="outline"
+            className="flex-1 sm:flex-none"
+          >
+            Home
+          </Button>
+          <Button
+            onClick={() => goToSalesStep(4)}
+            // icon={FiPlus}
+            className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700"
+            disabled={!selectedSalesProduct.value}
+          >
+            Return Orders
+          </Button>
           <Button
             onClick={handleAddProduct}
             // icon={FiPlus}

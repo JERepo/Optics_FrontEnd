@@ -1,11 +1,19 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useOrder } from "../../../features/OrderContext";
-import { FiArrowLeft, FiPlus, FiSearch, FiX, FiTrash2, FiEdit } from "react-icons/fi";
+import {
+  FiArrowLeft,
+  FiPlus,
+  FiSearch,
+  FiX,
+  FiTrash2,
+  FiEdit,
+  FiCheck,
+  FiEdit2,
+} from "react-icons/fi";
 import Button from "../../../components/ui/Button";
 import { Table, TableCell, TableRow } from "../../../components/Table";
 import { useGetAllBrandsQuery } from "../../../api/brandsApi";
 import {
-  useGetPatientDetailsByIdQuery,
   useLazyGetByBarCodeQuery,
   useLazyGetByBrandAndModalQuery,
   useSaveFrameMutation,
@@ -14,17 +22,23 @@ import toast from "react-hot-toast";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import { Autocomplete, TextField } from "@mui/material";
 import Radio from "../../../components/Form/Radio";
+import Modal from "../../../components/ui/Modal";
+import Input from "../../../components/Form/Input";
+import { useSaveProductsMutation } from "../../../api/salesReturnApi";
+import { useSelector } from "react-redux";
 
 const FrameSunglass = () => {
   const {
     selectedSalesProduct,
-    customerId,
     prevSalesStep,
     currentSalesStep,
     goToStep,
     customerSalesId,
-    setCustomerSalesId,
+    referenceApplicable,
+    salesDraftData,
+    goToSalesStep,
   } = useOrder();
+  const { user } = useSelector((state) => state.auth);
   const [barcode, setBarcode] = useState("");
   const [searchMode, setSearchMode] = useState(false);
   const [brandInput, setBrandInput] = useState("");
@@ -37,6 +51,9 @@ const FrameSunglass = () => {
   const [warningPayload, setWarningPayload] = useState(null);
   const [singleOrCombine, setSingleOrCombine] = useState(0);
   const [editMode, setEditMode] = useState({}); // { [barcode-index]: { sellingPrice: false, qty: false } }
+  const [openReferenceYes, setOpenReferenceYes] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [isInvoiceSelected, setIsInvoiceSelected] = useState(false);
 
   const { data: allBrands } = useGetAllBrandsQuery();
   const [
@@ -48,6 +65,8 @@ const FrameSunglass = () => {
     { isLoading: isBrandModelLoading, isFetching: isBrandAndModalFetching },
   ] = useLazyGetByBrandAndModalQuery();
   const [saveFrame, { isLoading: isFrameSaving }] = useSaveFrameMutation();
+  const [saveFinalProducts, { isLoading: isFinalProductsSaving }] =
+    useSaveProductsMutation();
 
   useEffect(() => {
     setEditMode((prev) => {
@@ -63,6 +82,7 @@ const FrameSunglass = () => {
   }, [items]);
 
   const handleBarcodeSubmit = async (e) => {
+    setOpenReferenceYes(true);
     e.preventDefault();
     if (!barcode) return;
     const res = await fetchByBarcode({
@@ -190,16 +210,6 @@ const FrameSunglass = () => {
     );
   };
 
-  const handleSellingPriceChange = (barcode, price, index) => {
-    setItems((prev) =>
-      prev.map((i, idx) =>
-        i.Barcode === barcode && idx === index
-          ? { ...i, SellingPrice: Number(price) }
-          : i
-      )
-    );
-  };
-
   const handleDelete = (barcode, index) => {
     setItems((prev) =>
       prev.filter((i, idx) => !(i.Barcode === barcode && idx === index))
@@ -247,32 +257,56 @@ const FrameSunglass = () => {
     }
   };
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    if (items.length <= 0) return toast.error("Please add at least one item");
-    const basePayload = {
-      products: items.map((item) => ({
-        frameDetailId: item.Id,
-        qty: item.Quantity,
-        PatientID: customerSalesId.patientId,
-        locationId: customerSalesId.locationId,
-        bypassWarnings: false,
-      })),
-    };
+  const handleSellingPriceChange = (barcode, price, index) => {
+    const item = items.find((i, idx) => i.Barcode === barcode && idx === index);
+    const newPrice = Number(price);
+
+    if (newPrice > item.MRP) {
+      toast.error("Return Price cannot be greater than MRP!");
+      return;
+    }
+
+    setItems((prev) =>
+      prev.map((i, idx) =>
+        i.Barcode === barcode && idx === index
+          ? { ...i, SellingPrice: newPrice }
+          : i
+      )
+    );
+  };
+
+  const handleSaveData = async () => {
+    if (!Array.isArray(items) || items.length === 0) {
+      console.warn("No details to save");
+      return;
+    }
+
     try {
-      const response = await saveFrame({
-        orderId: customerSalesId.orderId,
-        payload: basePayload,
-      }).unwrap();
-      if (response?.warnings?.length > 0) {
-        setWarningPayload(response.warnings);
-        setShowConfirmModal(true);
-      } else {
-        goToStep(4);
-        toast.success("Frames saved successfully!");
+      for (const detail of items) {
+        const payload = {
+          SRMasterID: salesDraftData.Id ?? null,
+          ProductType: detail.ProductType ?? 1,
+          ContactLensDetailId: detail.CLDetailId ?? null,
+          AccessoryDetailId: detail.AccessoryDetailId ?? null,
+          FrameDetailId: detail.Id ?? null,
+          OpticalLensDetailId: detail.OpticalLensDetailId ?? null,
+          BatchCode: detail.CLBatchCode ?? null,
+          CNQty: detail.Quantity ?? null,
+          SRP: parseFloat(detail.MRP) ?? null,
+          ReturnPrice: parseFloat(detail.SellingPrice) ?? null,
+          ProductTaxPercentage: detail.ProductTaxPercentage ?? 18,
+          FittingReturnPrice: detail.FittingReturnPrice ?? null,
+          FittingTaxPercentage: detail.FittingTaxPercentage ?? null,
+          InvoiceDetailId: detail.InvoiceDetailId ?? null,
+          ApplicationUserId: user.Id,
+        };
+
+        await saveFinalProducts({ payload }).unwrap();
       }
+
+      goToSalesStep(4);
     } catch (error) {
-      toast.error("Cannot save Frames!");
+      console.error("Error saving detail(s):", error);
     }
   };
 
@@ -453,6 +487,7 @@ const FrameSunglass = () => {
             </form>
           )}
         </div>
+
         {items.length > 0 && (
           <div className="p-6">
             <Table
@@ -465,7 +500,7 @@ const FrameSunglass = () => {
                 "Product details",
                 "MRP",
                 "Return Price",
-                "Qty",
+                "return Qty",
                 "Action",
               ]}
               data={items}
@@ -478,8 +513,8 @@ const FrameSunglass = () => {
                   <TableCell>
                     {item.Category === "O" ? "Optical Frame" : "Sunglass"}
                   </TableCell>
-                  <TableCell>{item.PO}</TableCell>
-                  <TableCell>{item.MRP}</TableCell>
+                  <TableCell>{item.PO == 1 ? "Yes" : "No"}</TableCell>
+                  <TableCell>₹{item.MRP}</TableCell>
                   <TableCell>
                     {editMode[`${item.Barcode}-${index}`]?.sellingPrice ? (
                       <div className="flex items-center gap-2">
@@ -493,28 +528,41 @@ const FrameSunglass = () => {
                               index
                             )
                           }
-                          className="w-20 px-2 py-1 border border-gray-300 rounded"
+                          className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                           placeholder="Enter price"
                         />
                         <button
                           onClick={() =>
                             toggleEditMode(item.Barcode, index, "sellingPrice")
                           }
-                          className=""
+                          className="text-neutral-400 transition"
+                          title="Save"
                         >
-                          <FiX />
+                          <FiCheck size={18} />
                         </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span>{item.SellingPrice || "N/A"}</span>
                         <button
                           onClick={() =>
                             toggleEditMode(item.Barcode, index, "sellingPrice")
                           }
-                          className=""
+                          className="text-neutral-400 transition"
+                          title="Cancel"
                         >
-                          <FiEdit />
+                          <FiX size={18} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-700">
+                          ₹{item.SellingPrice || "N/A"}
+                        </span>
+                        <button
+                          onClick={() =>
+                            toggleEditMode(item.Barcode, index, "sellingPrice")
+                          }
+                          className="text-neutral-400 transition"
+                          title="Edit Price"
+                        >
+                          <FiEdit2 size={14} />
                         </button>
                       </div>
                     )}
@@ -528,23 +576,39 @@ const FrameSunglass = () => {
                           onChange={(e) =>
                             handleQtyChange(item.Barcode, e.target.value, index)
                           }
-                          className="w-20 px-2 py-1 border border-gray-300 rounded"
+                          className="w-20 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                          min="1"
                         />
                         <button
-                          onClick={() => toggleEditMode(item.Barcode, index, "qty")}
-                          className=""
+                          onClick={() =>
+                            toggleEditMode(item.Barcode, index, "qty")
+                          }
+                          className="text-neutral-400 transition"
+                          title="Save"
                         >
-                          <FiX />
+                          <FiCheck size={18} />
+                        </button>
+                        <button
+                          onClick={() =>
+                            toggleEditMode(item.Barcode, index, "qty")
+                          }
+                          className="text-neutral-400 transition"
+                          title="Cancel"
+                        >
+                          <FiX size={18} />
                         </button>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <span>{item.Quantity}</span>
+                        <span className="text-gray-700">{item.Quantity}</span>
                         <button
-                          onClick={() => toggleEditMode(item.Barcode, index, "qty")}
-                          className=""
+                          onClick={() =>
+                            toggleEditMode(item.Barcode, index, "qty")
+                          }
+                          className="text-neutral-400 transition"
+                          title="Edit Quantity"
                         >
-                          <FiEdit />
+                          <FiEdit2 size={14} />
                         </button>
                       </div>
                     )}
@@ -563,13 +627,78 @@ const FrameSunglass = () => {
             <div className="flex justify-end mt-6">
               <Button
                 type="submit"
-                isLoading={isFrameSaving}
+                isLoading={isFinalProductsSaving}
                 className="px-6 py-3 bg-green-600 hover:bg-green-700"
-                onClick={handleSave}
+                onClick={handleSaveData}
               >
                 Save & Continue
               </Button>
             </div>
+          </div>
+        )}
+
+        {referenceApplicable === 1 && (
+          <div>
+            <Modal
+              width="max-w-3xl"
+              isOpen={openReferenceYes}
+              onClose={() => setOpenReferenceYes(false)}
+            >
+              <h1 className="text-neutral-700 text-2xl mb-3">Invoice List</h1>
+              {!isInvoiceSelected && (
+                <Table
+                  columns={[
+                    "S.No",
+                    "INVOICE No",
+                    "invoice qty",
+                    "sale return qty",
+                    "pending qty",
+                    "Action",
+                  ]}
+                  data={items}
+                  renderRow={(item, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{index + 1}</TableCell>
+                      <TableCell></TableCell>
+                      <TableCell></TableCell>
+                      <TableCell></TableCell>
+                      <TableCell></TableCell>
+                      <TableCell>
+                        <button
+                          onClick={() => {
+                            setSelectedInvoice(item);
+                            setIsInvoiceSelected(true);
+                          }}
+                        >
+                          Select
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                />
+              )}
+              {isInvoiceSelected && (
+                <div className="flex gap-2 flex-col">
+                  <Input value="1" grayOut={true} label="Pending Qty" />
+                  <Input
+                    value="1"
+                    label="Sales Return Qty"
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (!val || isNaN(Number(val))) {
+                        return;
+                      }
+                    }}
+                  />
+                </div>
+              )}
+
+              {isInvoiceSelected && (
+                <div className="w-full mt-5">
+                  <Button>Save</Button>
+                </div>
+              )}
+            </Modal>
           </div>
         )}
 

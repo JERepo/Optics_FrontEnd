@@ -35,6 +35,7 @@ const PaymentFlow = ({ collectPayment, onClose }) => {
     customerId,
     fullPayments,
     setFullPayments,
+    updatePaymentDetails
   } = useOrder();
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
   console.log("pppppp", paymentDetails);
@@ -246,6 +247,7 @@ const PaymentFlow = ({ collectPayment, onClose }) => {
         payload: finalStructure,
       }).unwrap();
       toast.success("Order created Successfully");
+      updatePaymentDetails([])
       navigate("/order-list");
     } catch (error) {
       console.log("error");

@@ -61,6 +61,7 @@ import InvoiceList from "../pages/Invoice/InvoiceList";
 import InvoiceView from "../pages/Invoice/InvoiceView";
 import SalesList from "../pages/SalesReturn/MainSalesReturn/SalesList";
 import TotalSales from "../pages/SalesReturn";
+import SalesView from "../pages/SalesReturn/MainSalesReturn/SalesView";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -681,6 +682,10 @@ export const router = createBrowserRouter([
       {
         path: "sales-return",
         element: <SalesList />,
+      },
+      {
+        path: "sales-return/view",
+        element: <SalesView />,
       },
       {
         path: "sales-return/create",

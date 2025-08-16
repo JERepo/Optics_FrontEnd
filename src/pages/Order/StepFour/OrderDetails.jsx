@@ -382,7 +382,11 @@ const OrderDetails = () => {
       PowerSpecs,
       Variation,
       Specs,
-      Color,
+      Colour,
+      Category,
+      Tint,
+      AddOns,
+      FittingPrice,
     } = item;
 
     const clean = (val) => {
@@ -390,14 +394,14 @@ const OrderDetails = () => {
         val === null ||
         val === undefined ||
         val === "undefined" ||
-        val === "null"
+        val === "null" ||
+        val === "N/A"
       ) {
         return "";
       }
       return val;
     };
 
-    // Format number to add + sign for positive values
     const formatPowerValue = (val) => {
       const num = parseFloat(val);
       if (isNaN(num)) return val;
@@ -406,25 +410,29 @@ const OrderDetails = () => {
 
     // For Frame (typeid = 1)
     if (typeid === 1) {
-      const nameLine = ProductName || "";
-      const sizeLine = Size ? `Size: ${Size}` : "";
-      const barcodeLine = Barcode ? `Barcode: ${Barcode}` : "";
-      const patientLine = PatientName ? `Patient Name: ${PatientName}` : "";
-      return `${nameLine}\n${sizeLine}\n${barcodeLine}\n${patientLine}`;
+      const lines = [
+        ProductName,
+        Size ? `Size: ${Size}` : "",
+        Category === 0 ? "Category: Optical Frame" : "Category: Sunglasses",
+        Barcode ? `Barcode: ${Barcode}` : "",
+        PatientName ? `Patient Name: ${PatientName}` : "",
+      ];
+      return lines.filter(Boolean).join("\n");
     }
 
     // For Accessories (typeid = 2)
     if (typeid === 2) {
-      const nameLine = ProductName || "";
-      const variationLine = Variation ? `Variation: ${Variation}` : "";
-      const barcodeLine = Barcode ? `Barcode: ${Barcode}` : "";
-      const patientLine = PatientName ? `Patient Name: ${PatientName}` : "";
-      return `${nameLine}\n${variationLine}\n${barcodeLine}\n${patientLine}`;
+      const lines = [
+        ProductName,
+        Variation ? `Variation: ${Variation}` : "",
+        Barcode ? `Barcode: ${Barcode}` : "",
+        PatientName ? `Patient Name: ${PatientName}` : "",
+      ];
+      return lines.filter(Boolean).join("\n");
     }
 
     // For Contact Lens (typeid = 3)
     if (typeid === 3) {
-      const nameLine = ProductName || "";
       const specs = PowerSpecs
         ? PowerSpecs.split(",")
             .map((s) => {
@@ -435,17 +443,25 @@ const OrderDetails = () => {
                   : "";
               return cleanedValue ? `${key.trim()}: ${cleanedValue}` : "";
             })
-            .filter((s) => s)
+            .filter(Boolean)
             .join(", ")
         : "";
-      const colorLine = Color ? `Colour: ${Color}` : "";
-      const barcodeLine = Barcode ? `Barcode: ${Barcode}` : "";
-      const patientLine = PatientName ? `Patient Name: ${PatientName}` : "";
-      return `${nameLine}\n${specs}\n${colorLine}\n${barcodeLine}\n${patientLine}`;
+
+      const lines = [
+        ProductName,
+        specs,
+        clean(Colour) ? `Colour: ${Colour}` : "",
+        Barcode ? `Barcode: ${Barcode}` : "",
+        PatientName ? `Patient Name: ${PatientName}` : "",
+      ];
+      return lines.filter(Boolean).join("\n");
     }
 
     // For Optical Lens (typeid = 0)
     if (typeid === 0) {
+      const tintName = clean(Tint?.name);
+      const addOns = AddOns?.map((a) => clean(a.name)).filter(Boolean);
+
       const specsLines = (Specs || [])
         .map((spec) => {
           const side = clean(spec.side);
@@ -462,13 +478,19 @@ const OrderDetails = () => {
 
           return powerValues.length ? `${side}: ${powerValues.join(", ")}` : "";
         })
-        .filter((s) => s)
+        .filter(Boolean)
         .join("\n");
 
-      const patientLine = PatientName
-        ? `Patient Name: ${clean(PatientName)}`
-        : "";
-      return `${clean(ProductName)}\n${specsLines}\n${patientLine}`;
+      const lines = [
+        clean(ProductName),
+        specsLines,
+        tintName ? `Tint: ${tintName}` : "",
+        addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
+        clean(FittingPrice) ? `Fitting Price: ${FittingPrice}` : "",
+        PatientName ? `Patient Name: ${clean(PatientName)}` : "",
+      ];
+
+      return lines.filter(Boolean).join("\n");
     }
 
     return "";
@@ -489,11 +511,15 @@ const OrderDetails = () => {
           item.TaxPercentage
         );
         const gst = parseFloat(gstAmount);
-
+        const fitting =
+          parseFloat(item.FittingPrice) *
+          (parseFloat(item.FittingGSTPercentage) / 100);
+     
         return {
           totalQty: acc.totalQty + qty,
-          totalGST: acc.totalGST + gst * qty,
-          totalAmount: acc.totalAmount + total,
+          totalGST: acc.totalGST + gst * qty + fitting,
+          totalAmount:
+            acc.totalAmount + total + fitting + parseFloat(item.FittingPrice),
         };
       },
       { totalQty: 0, totalGST: 0, totalAmount: 0 }
@@ -690,7 +716,14 @@ const OrderDetails = () => {
                       <div>₹{formatNumber(result.gstAmount)}</div>
                       <div>({result.taxPercentage}%)</div>
                     </TableCell>
-                    <TableCell>₹{formatNumber(item.Total)}</TableCell>
+                    <TableCell>
+                      ₹
+                      {formatNumber(
+                        item.Total +
+                          parseFloat(item.FittingPrice) *
+                            (parseFloat(item.FittingGSTPercentage) / 100) +parseFloat(item.FittingPrice)
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Button
                         variant="ghost"

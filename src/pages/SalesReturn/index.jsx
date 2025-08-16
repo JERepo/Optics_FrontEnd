@@ -6,11 +6,16 @@ import SalesList from "./MainSalesReturn/SalesList";
 import { useSelector } from "react-redux";
 import { useGetLocationByIdQuery } from "../../api/roleManagementApi";
 import { useEffect, useState } from "react";
+import CompleteSalesReturn from "./StepFour/CompleteSalesReturn";
 
 const TotalSales = () => {
   const [location, setLocation] = useState(null);
-  const { currentSalesStep, setSalesDraftData, setCustomerSalesId } =
-    useOrder();
+  const {
+    currentSalesStep,
+    salesDraftData,
+    setSalesDraftData,
+    setCustomerSalesId,
+  } = useOrder();
 
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
   const { data: locationById } = useGetLocationByIdQuery(
@@ -29,6 +34,8 @@ const TotalSales = () => {
       companyId: companyId,
     }));
   }, [countrId, locationById, companyId]);
+
+
 
   // Location handling
   useEffect(() => {
@@ -54,7 +61,8 @@ const TotalSales = () => {
         return <StepTwoMain />;
       case 3:
         return <StepThreeMain />;
-
+      case 4:
+        return <CompleteSalesReturn />;
       default:
         return <SalesList />;
     }

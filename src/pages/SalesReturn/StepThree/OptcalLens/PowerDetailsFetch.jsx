@@ -404,9 +404,9 @@ const PowerDetailsFetch = ({
     }
     setShowDiaDiffModal(false);
   };
-  
+  console.log("add", lensData);
   const handleSave = async () => {
-    if (lensData.rimType == null && lensData.withFitting === 1) {
+    if (lensData.rimType == null) {
       toast.error("Please select Frame Rim Type!");
       return;
     }
@@ -419,8 +419,8 @@ const PowerDetailsFetch = ({
     };
 
     const olDetailId = [
-      parseInt(formValues[isRSelected ? "R" : ""]?.OpticalLensDetailsId[0]),
-      parseInt(formValues[isLSelected ? "L" : ""]?.OpticalLensDetailsId[0]),
+      parseInt(formValues[isBothSelected ? "R" : ""].OpticalLensDetailsId[0]),
+      parseInt(formValues[isBothSelected ? "L" : ""].OpticalLensDetailsId[0]),
     ];
 
     let actualPrice = parseFloat(totalSellingPrice);
@@ -471,7 +471,6 @@ const PowerDetailsFetch = ({
       index: lensData.indexValues,
       companyId: customerId.companyId,
     };
-    console.log("ppp",payload)
     if (selectedProduct.value === 6) {
       payload.identifier = Identifiers?.identifier || null;
     }

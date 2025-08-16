@@ -20,6 +20,7 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
     customerId: null,
     orderId: null,
     mobileNo: null,
+    customerData :null
   });
   const [draftData, setDraftData] = useState(null);
 
@@ -97,7 +98,6 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
     patientId: null,
     locationId: null,
     customerId: null,
-    orderId: null,
     mobileNo: null,
   });
 
@@ -109,7 +109,7 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
     value: 1,
     label: "Frame/Sunglass",
   });
-
+  const [selectedPatient, setSelectedMainPatient] = useState(null);
   const [referenceApplicable, setReferenceApplicable] = useState(1);
   const goToSalesStep = (step) => {
     if (step >= 1 && step <= TOTAL_SALES_STEPS) {
@@ -146,6 +146,46 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
 
   const updateReferenceApplicable = () => {
     setReferenceApplicable((prev) => (prev === 0 ? 1 : 0));
+  };
+
+  const updateSelectedPatient = (data) =>{
+    setSelectedMainPatient(data)
+  }
+  const calculateGST = (sellingPrice, taxPercentage) => {
+    const price = parseFloat(sellingPrice);
+    const taxRate = parseFloat(taxPercentage) / 100;
+    const gstAmount = price - price / (1 + taxRate);
+    return {
+      gstAmount: isNaN(gstAmount) ? 0 : gstAmount.toFixed(2),
+      taxPercentage: isNaN(taxPercentage)
+        ? 0
+        : parseFloat(taxPercentage).toFixed(2),
+    };
+  };
+  const findGSTPercentage = (item) => {
+    const price = parseFloat(item.returnPrice || 0);
+    console.log("dendjne", item);
+    const gstPercent = (() => {
+      if (!item.TaxDetails || item.TaxDetails.length === 0) {
+        return 0; // no tax data
+      }
+
+      if (item.TaxDetails.length === 1) {
+        // Only one tax slab → use its SalesTaxPerct directly
+        return parseFloat(item.TaxDetails[0].SalesTaxPerct) || 0;
+      }
+
+      // Multiple slabs → find based on range
+      const matchingSlab = item.TaxDetails.find((slab) => {
+        const start = parseFloat(slab.SlabStart);
+        const end = parseFloat(slab.SlabEnd);
+        return price >= start && price <= end;
+      });
+
+      return matchingSlab ? parseFloat(matchingSlab.SalesTaxPerct) || 0 : 0;
+    })();
+    console.log("sending before", price, gstPercent);
+    return calculateGST(price, gstPercent);
   };
 
   return (
@@ -200,7 +240,13 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
         setSubSalesStep,
         referenceApplicable,
         updateReferenceApplicable,
-        customerSalesId, setCustomerSalesId
+        customerSalesId,
+        setCustomerSalesId,
+        findGSTPercentage,
+        calculateGST,
+        selectedPatient,
+        setSelectedMainPatient,
+        updateSelectedPatient
       }}
     >
       {children}

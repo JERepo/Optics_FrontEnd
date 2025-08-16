@@ -2,7 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useOrder } from "../../../features/OrderContext";
 import {
   FiArrowLeft,
+  FiCheck,
   FiEdit,
+  FiEdit2,
   FiPlus,
   FiRefreshCw,
   FiTrash2,
@@ -23,12 +25,12 @@ import Input from "../../../components/Form/Input";
 import { toast } from "react-hot-toast";
 import Radio from "../../../components/Form/Radio";
 
-import {
-  useLazyGetBatchDetailsQuery,
-  useSaveBatchDetailsMutation,
-} from "../../../api/InvoiceApi";
+import { useLazyGetBatchDetailsQuery } from "../../../api/InvoiceApi";
 import { useSelector } from "react-redux";
-import { useGetBatchBarCodeMutation } from "../../../api/salesReturnApi";
+import {
+  useGetBatchBarCodeMutation,
+  useSaveProductsMutation,
+} from "../../../api/salesReturnApi";
 
 // Validation helpers
 const isMultipleOfQuarter = (value) => {
@@ -81,7 +83,6 @@ const DisplayInformation = ({ items, onSave, isContactLensCreating }) => {
 };
 
 const getProductName = (order) => {
-  console.log("orr", order);
   const {
     ProductType,
     productName,
@@ -103,6 +104,9 @@ const getProductName = (order) => {
     CylindricalPower,
     Axis,
     Additional,
+    BrandName,
+    selectBatch,
+    CLBatchBarCode,
   } = order;
 
   const clean = (val) => {
@@ -111,7 +115,8 @@ const getProductName = (order) => {
       val === undefined ||
       val === "undefined" ||
       val === "null" ||
-      val === "N/A"
+      val === "N/A" ||
+      val === 0
     ) {
       return "";
     }
@@ -130,9 +135,12 @@ const getProductName = (order) => {
     // Assuming CL is type 3
     const name = clean(productName || ProductName);
     const hsn = clean(hSN || HSN || "");
+    const brand = clean(BrandName);
     const barcodeVal = clean(barcode || Barcode);
     const expiry = clean(ExpiryDate);
-    const batch = clean(batchCode || BatchCode || CLBatchCode);
+    const batchIsOne = clean(CLBatchCode);
+    const batchIsZero = clean(batchCode || BatchCode);
+    const batchBar = clean(CLBatchBarCode);
 
     let specsObj = {};
     if (typeof specs === "string") {
@@ -167,10 +175,12 @@ const getProductName = (order) => {
 
     return [
       name,
+      brand && `Brand Name : ${brand}`,
       specsList,
       clr && `Color: ${clr}`,
       barcodeVal && `Barcode: ${barcodeVal}`,
-      batch && `Batch Code: ${batch || "-"}`,
+      (batchIsOne || batchIsZero || batchBar) &&
+        `Batch Code: ${batchBar || batchIsOne || batchIsZero || "-"}`,
       expiry && `Expiry : ${expiry.split("-").reverse().join("/")}`,
       hsn && `HSN: ${hsn}`,
     ]
@@ -180,39 +190,36 @@ const getProductName = (order) => {
 
   return "";
 };
-const calculateGST = (sellingPrice, taxPercentage) => {
-  const price = parseFloat(sellingPrice);
-  const taxRate = parseFloat(taxPercentage) / 100;
-  const gstAmount = price - price / (1 + taxRate);
-  return {
-    gstAmount: isNaN(gstAmount) ? 0 : gstAmount.toFixed(2),
-    taxPercentage: isNaN(taxPercentage)
-      ? 0
-      : parseFloat(taxPercentage).toFixed(2),
-  };
-};
+
 const ContactLens = () => {
   const {
     selectedSalesProduct,
     prevSalesStep,
     currentSalesStep,
     customerSalesId,
-    draftData,
+    salesDraftData,
+    salesReturnData,
+    setSalesReturnData,
+    findGSTPercentage,
+    calculateGST,
+    goToSalesStep,
   } = useOrder();
-  const { hasMultipleLocations } = useSelector((state) => state.auth);
+  const { hasMultipleLocations, user } = useSelector((state) => state.auth);
   const [searchFethed, setSearchFetched] = useState(false);
-  const [items, setItems] = useState([]);
+
   const [mainClDetails, setMainClDetails] = useState([]);
   const [showInputRow, setShowInputRow] = useState(true);
   const [productSearch, setProductSearch] = useState(1); // Default to Enter Product Barcode
   const [selectBatch, setSelectBatch] = useState(0);
   const [selectedBatchCode, setSelectedBatchCode] = useState(null);
   const [editingIndex, setEditingIndex] = useState(-1);
+  const [editMode, setEditMode] = useState({});
   const [editReturnQty, setEditReturnQty] = useState("");
   const [editReturnPrice, setEditReturnPrice] = useState(""); // New state for editing price
   const [batchCodeInput, setbatchCodeInput] = useState("");
   const [productCodeInput, setProductCodeInput] = useState("");
-  const [detailId, setDetailId] = useState(null);
+  const [detailId, setDetailId] = useState(false);
+  const [openBatch, setOpenBatch] = useState(false);
   const [lensData, setLensData] = useState({
     orderReference: null,
     brandId: null,
@@ -249,16 +256,92 @@ const ContactLens = () => {
     { skip: !lensData.productId }
   );
 
+  const [getBatches, { data: batchDetails }] = useLazyGetBatchDetailsQuery();
   const [getPowerDetails, { isLoading: isPowerDetailsLoading }] =
     useGetPowerDetailsMutation();
-
-  const [getBatches, { data: batchDetails }] = useLazyGetBatchDetailsQuery();
 
   const [
     getBatchBarCodeDetails,
     { data: batchBarCodeDetails, isLoading: isbatchBarLoading },
   ] = useGetBatchBarCodeMutation();
+  const [saveFinalProducts, { isLoading: isFinalProductsSaving }] =
+    useSaveProductsMutation();
 
+  useEffect(() => {
+    setEditMode((prev) => {
+      const newEditMode = { ...prev };
+      mainClDetails.forEach((_, index) => {
+        if (!newEditMode[index]) {
+          newEditMode[index] = { returnPrice: false, returnQty: false };
+        }
+      });
+      return newEditMode;
+    });
+  }, [mainClDetails]);
+  const toggleEditMode = (index, field) => {
+    setEditMode((prev) => ({
+      ...prev,
+      [index]: {
+        ...prev[index],
+        [field]: !prev[index]?.[field],
+      },
+    }));
+    const item = mainClDetails[index];
+
+    if (field === "returnPrice") {
+      setEditReturnPrice(item.returnPrice || "");
+    } else if (field === "returnQty") {
+      setEditReturnQty(item.returnQty || "");
+    }
+  };
+  const saveEdit = (index, field) => {
+    const parsedQty = parseFloat(editReturnQty);
+    const parsedPrice = parseFloat(editReturnPrice);
+    const item = mainClDetails[index];
+
+    if (field === "returnQty" && parsedQty > item.Quantity) {
+      toast.error("Sales return qty should not be greater than quantity");
+      return;
+    }
+    if (
+      field === "returnPrice" &&
+      parsedPrice > parseFloat(item.SellingPrice)
+    ) {
+      toast.error(
+        "Sales return price should not be greater than selling price"
+      );
+      return;
+    }
+
+    setMainClDetails((prev) =>
+      prev.map((it, i) =>
+        i === index
+          ? {
+              ...it,
+              ...(field === "returnPrice" && { returnPrice: parsedPrice }),
+              ...(field === "returnQty" && { returnQty: parsedQty }),
+            }
+          : it
+      )
+    );
+    setEditMode((prev) => ({
+      ...prev,
+      [index]: {
+        ...prev[index],
+        [field]: false,
+      },
+    }));
+  };
+
+  const cancelEdit = (index, field) => {
+    setEditMode((prev) => ({
+      ...prev,
+      [index]: {
+        ...prev[index],
+        [field]: false,
+      },
+    }));
+  };
   const handleRefresh = () => {
     setLensData({
       orderReference: null,
@@ -268,7 +351,6 @@ const ContactLens = () => {
       color: null,
     });
     setSearchFetched(false);
-    setMainClDetails([]);
     setNewItem({
       CLDetailId: null,
       sphericalPower: null,
@@ -283,6 +365,7 @@ const ContactLens = () => {
     setSelectedBatchCode(null);
     setProductSearch(1); // Reset to Enter Product Barcode
     setDetailId(false);
+    setProductCodeInput("");
   };
 
   const handleRefeshPowerTable = () => {
@@ -332,63 +415,6 @@ const ContactLens = () => {
     setErrors((prev) => ({ ...prev, [name]: message }));
   };
 
-  const isFormValid = () => {
-    const validationErrors = {};
-
-    if (
-      !newItem.sphericalPower ||
-      !isMultipleOfQuarter(newItem.sphericalPower)
-    ) {
-      validationErrors.sphericalPower =
-        "Power should only be in multiples of 0.25";
-    }
-
-    if (
-      newItem.cylindricalPower &&
-      !isMultipleOfQuarter(newItem.cylindricalPower)
-    ) {
-      validationErrors.cylindricalPower =
-        "Power should only be in multiples of 0.25";
-    }
-
-    if (newItem.additional) {
-      const additionalValue = parseFloat(newItem.additional);
-      if (!isMultipleOfQuarter(additionalValue) || additionalValue < 0) {
-        validationErrors.additional =
-          "Additional power must be a positive multiple of 0.25";
-      }
-    }
-
-    if (newItem.axis && !isValidAxis(newItem.axis)) {
-      validationErrors.axis = "Axis is incorrect";
-    }
-
-    setErrors(validationErrors);
-    return Object.keys(validationErrors).length === 0;
-  };
-
-  const handleAdd = () => {
-    if (!isFormValid()) return;
-
-    const updatedItem = { ...newItem };
-
-    const existingIndex = items.findIndex(
-      (item) => item.CLDetailId === newItem.CLDetailId
-    );
-
-    let updatedItems;
-    if (existingIndex >= 0) {
-      updatedItems = [...items];
-      updatedItems[existingIndex] = updatedItem;
-    } else {
-      updatedItems = [...items, updatedItem];
-    }
-
-    setItems(updatedItems);
-    setShowInputRow(false);
-    handleRefeshPowerTable();
-  };
-
   const handleSearch = async () => {
     if (!newItem.sphericalPower) {
       toast.error("Please enter Spherical Power before searching.");
@@ -422,21 +448,34 @@ const ContactLens = () => {
           powerData: data,
         });
         setSearchFetched(true);
-        await getBatches({
-          clBatchId: data.CLDetailId,
-          locationId: hasMultipleLocations[0],
-        }).unwrap();
-        setDetailId(true);
+        if (data.CLBatchCode === 1) {
+          await getBatches({
+            clBatchId: data.CLDetailId,
+            locationId: hasMultipleLocations[0],
+          }).unwrap();
+          setDetailId(true);
+          setOpenBatch(true);
+        } else if (data.CLBatchCode === 0) {
+          const cc = {
+            ...data,
+            returnPrice: parseFloat(data.SellingPrice),
+            returnQty: 1,
+          };
+          setMainClDetails((prev) => [...prev, cc]);
+          handleRefresh();
+        }
       } else {
         setSearchFetched(false);
         toast.error("No matching power found");
         setDetailId(false);
+        setOpenBatch(false);
       }
     } catch (error) {
       console.error("error", error);
       toast.error("No matching power found");
       setSearchFetched(false);
       setDetailId(false);
+      setOpenBatch(false);
     }
   };
 
@@ -452,9 +491,13 @@ const ContactLens = () => {
       if (isAvailable) {
         const newItemCl = {
           ...isAvailable,
-          returnPrice: 1200,
-          returnQty: 2,
+          ...newItem.powerData,
+          selectBatch,
+          returnPrice: parseFloat(isAvailable.SellingPrice),
+          returnQty: parseInt(isAvailable.Quantity),
+          ...(detailId ? batchBarCodeDetails?.data?.data : {}),
         };
+
         setMainClDetails((prev) => [...prev, newItemCl]);
 
         setLensData({
@@ -476,7 +519,7 @@ const ContactLens = () => {
           sellingPrice: null,
           powerData: null,
         });
-        setSelectedBatchCode(null);
+        setSelectedBatchCode("");
         setDetailId(false);
         setProductCodeInput("");
       } else {
@@ -492,13 +535,28 @@ const ContactLens = () => {
       return;
     }
     try {
-      const response = await getBatchBarCodeDetails(productCodeInput).unwrap();
-
-      const batchCodeData = await getBatches({
-        clBatchId: 23588,
-        locationId: hasMultipleLocations[0],
+      const response = await getBatchBarCodeDetails({
+        batchCode: productCodeInput,
+        locationId: parseInt(hasMultipleLocations[0]),
       }).unwrap();
-      setDetailId(true);
+
+      if (response?.data.data.CLBatchCode === 0) {
+        const cc = {
+          ...response?.data.data,
+          returnPrice: parseFloat(response?.data.data.SellingPrice),
+          returnQty: 1,
+        };
+        setMainClDetails((prev) => [...prev, cc]);
+        setProductCodeInput("");
+      } else {
+        const batchCodeData = await getBatches({
+          clBatchId: response?.data.data.CLDetailId,
+          locationId: parseInt(hasMultipleLocations[0]),
+        }).unwrap();
+        if (batchCodeData) {
+          setDetailId(true);
+        }
+      }
     } catch (error) {
       console.log(error);
       toast.error(error?.data.error);
@@ -506,15 +564,22 @@ const ContactLens = () => {
   };
   const handleSaveBatchData = () => {
     let sub;
-    if (!detailId) {
+    if ((!detailId || openBatch) && productSearch == 0) {
       sub = {
         ...newItem.powerData,
         ...selectedBatchCode,
+        MRP: selectedBatchCode.CLMRP,
+
+        returnPrice: parseFloat(selectedBatchCode.SellingPrice),
+        returnQty: 1,
       };
-    } else {
+    } else if (detailId && productSearch == 1) {
       sub = {
         ...batchBarCodeDetails?.data.data,
         ...selectedBatchCode,
+        MRP: selectedBatchCode.CLMRP,
+        returnPrice: parseFloat(batchBarCodeDetails?.data.data.CLMRP),
+        returnQty: 1,
       };
     }
 
@@ -544,42 +609,46 @@ const ContactLens = () => {
     setProductCodeInput("");
   };
 
+  const handleSaveData = async () => {
+    if (!Array.isArray(mainClDetails) || mainClDetails.length === 0) {
+      console.warn("No details to save");
+      return;
+    }
+    try {
+      for (const detail of mainClDetails) {
+        const payload = {
+          SRMasterID: salesDraftData.Id ?? null,
+          ProductType: detail.ProductType ?? 3,
+          ContactLensDetailId: detail.CLDetailId ?? null,
+          AccessoryDetailId: detail.AccessoryDetailId ?? null,
+          FrameDetailId: detail.FrameDetailId ?? null,
+          OpticalLensDetailId: detail.OpticalLensDetailId ?? null,
+          BatchCode: detail.CLBatchCode ?? null,
+          CNQty: detail.returnQty ?? null,
+          SRP: parseFloat(detail.MRP) ?? null,
+          ReturnPrice: detail.returnPrice ?? null,
+          ProductTaxPercentage: Array.isArray(detail.TaxDetails)
+            ? findGSTPercentage(detail).taxPercentage
+            : findGSTPercentage({
+                ...detail,
+                TaxDetails: [{ ...detail.TaxDetails }],
+              }).taxPercentage ?? null,
+          FittingReturnPrice: detail.FittingReturnPrice ?? null,
+          FittingTaxPercentage: detail.FittingTaxPercentage ?? null,
+          InvoiceDetailId: detail.InvoiceDetailId ?? null,
+          ApplicationUserId: user.Id,
+        };
+        await saveFinalProducts({ payload }).unwrap();
+      }
+
+      goToSalesStep(4);
+    } catch (error) {
+      console.error("Error saving detail:", error);
+    }
+  };
+
   const handleDelete = (index) => {
     setMainClDetails((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const startEdit = (index, qty, price) => {
-    setEditingIndex(index);
-    setEditReturnQty(qty);
-    setEditReturnPrice(price); // Initialize price for editing
-  };
-
-  const saveEdit = () => {
-    const parsedQty = parseFloat(editReturnQty);
-    const parsedPrice = parseFloat(editReturnPrice);
-    const item = mainClDetails[editingIndex];
-    if (parsedQty > item.Quantity) {
-      toast.error("Sales return qty should not be greater than quantity");
-      return;
-    }
-    if (parsedPrice > parseFloat(item.SellingPrice)) {
-      toast.error(
-        "Sales return price should not be greater than selling price"
-      );
-      return;
-    }
-    setMainClDetails((prev) =>
-      prev.map((it, i) =>
-        i === editingIndex
-          ? { ...it, returnQty: editReturnQty, returnPrice: editReturnPrice }
-          : it
-      )
-    );
-    setEditingIndex(-1);
-  };
-
-  const cancelEdit = () => {
-    setEditingIndex(-1);
   };
 
   const inputTableColumns = [
@@ -594,10 +663,10 @@ const ContactLens = () => {
     inputTableColumns.push("Avl.Qty", "Order Qty", "Action");
   }
 
-  console.log("new item", newItem);
+  console.log("main", newItem, detailId);
   return (
     <div className="max-w-7xl h-auto">
-      <div className="bg-white rounded-xl shadow-sm">
+      <div className="bg-white rounded-xl shadow-sm p-2">
         <div className="p-6 border-b border-gray-100">
           <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
             <div></div>
@@ -637,54 +706,89 @@ const ContactLens = () => {
                 <TableCell className="whitespace-pre-line">
                   {getProductName(item)}
                 </TableCell>
-                <TableCell>{item.CLMRP}</TableCell>
+                <TableCell>₹{item.MRP}</TableCell>
                 <TableCell>
-                  {editingIndex === index ? (
-                    <Input
-                      value={editReturnPrice}
-                      onChange={(e) => setEditReturnPrice(e.target.value)}
-                      type="number"
-                    />
+                  {editMode[index]?.returnPrice ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={editReturnPrice}
+                        onChange={(e) => setEditReturnPrice(e.target.value)}
+                        className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                        placeholder="Enter price"
+                        min="0"
+                      />
+                      <button
+                        onClick={() => saveEdit(index, "returnPrice")}
+                        className="text-neutral-400 transition"
+                        title="Save"
+                      >
+                        <FiCheck size={18} />
+                      </button>
+                      <button
+                        onClick={() => cancelEdit(index, "returnPrice")}
+                        className="text-neutral-400 transition"
+                        title="Cancel"
+                      >
+                        <FiX size={18} />
+                      </button>
+                    </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <p>{item.returnPrice}</p>
-                      <FiEdit
-                        className="cursor-pointer"
-                        onClick={() =>
-                          startEdit(index, item.returnQty, item.returnPrice)
-                        }
-                      />
+                      <span className="text-gray-700">₹{item.returnPrice}</span>
+                      <button
+                        onClick={() => toggleEditMode(index, "returnPrice")}
+                        className="text-neutral-400 transition"
+                        title="Edit Price"
+                      >
+                        <FiEdit2 size={14} />
+                      </button>
                     </div>
                   )}
                 </TableCell>
-
                 <TableCell>
-                  {calculateGST(parseFloat(item.returnPrice), 18).gstAmount}
+                  {Array.isArray(item.TaxDetails)
+                    ? findGSTPercentage(item).gstAmount
+                    : calculateGST(
+                        parseFloat(item.returnPrice),
+                        parseFloat(item.TaxDetails?.SalesTaxPerct || 0)
+                      ).gstAmount}
                 </TableCell>
                 <TableCell>
-                  {editingIndex === index ? (
+                  {editMode[index]?.returnQty ? (
                     <div className="flex items-center gap-2">
-                      <Input
+                      <input
+                        type="number"
                         value={editReturnQty}
                         onChange={(e) => setEditReturnQty(e.target.value)}
-                        type="number"
+                        className="w-20 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                        min="1"
                       />
-                      <Button size="sm" onClick={saveEdit}>
-                        Save
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={cancelEdit}>
-                        Cancel
-                      </Button>
+                      <button
+                        onClick={() => saveEdit(index, "returnQty")}
+                        className="text-neutral-400 transition"
+                        title="Save"
+                      >
+                        <FiCheck size={18} />
+                      </button>
+                      <button
+                        onClick={() => cancelEdit(index, "returnQty")}
+                        className="text-neutral-400 transition"
+                        title="Cancel"
+                      >
+                        <FiX size={18} />
+                      </button>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <p>{item.returnQty}</p>
-                      <FiEdit
-                        className="cursor-pointer"
-                        onClick={() =>
-                          startEdit(index, item.returnQty, item.returnPrice)
-                        }
-                      />
+                      <span className="text-gray-700">{item.returnQty}</span>
+                      <button
+                        onClick={() => toggleEditMode(index, "returnQty")}
+                        className="text-neutral-400 transition"
+                        title="Edit Quantity"
+                      >
+                        <FiEdit2 size={14} />
+                      </button>
                     </div>
                   )}
                 </TableCell>
@@ -703,6 +807,17 @@ const ContactLens = () => {
               </TableRow>
             )}
           />
+        )}
+        {mainClDetails.length > 0 && (
+          <div className="flex justify-end mt-5">
+            <Button
+              onClick={handleSaveData}
+              isLoading={isFinalProductsSaving}
+              disabled={isFinalProductsSaving}
+            >
+              Save & Next
+            </Button>
+          </div>
         )}
         <div className="p-6">
           <div className="flex items-center gap-4">
@@ -925,39 +1040,6 @@ const ContactLens = () => {
                       />
                     </TableCell>
 
-                    {newItem.CLDetailId && !searchFethed && (
-                      <>
-                        <TableCell>
-                          <Input
-                            name="avlQty"
-                            value={newItem.avlQty}
-                            onChange={handleInputChange}
-                            error={errors.avlQty}
-                            grayOut={searchFethed}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            name="orderQty"
-                            value={newItem.orderQty}
-                            onChange={handleInputChange}
-                            error={errors.orderQty}
-                          />
-                        </TableCell>
-                        <TableCell className="flex gap-2">
-                          <Button size="sm" onClick={handleAdd}>
-                            Save
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={handleRefeshPowerTable}
-                          >
-                            Cancel
-                          </Button>
-                        </TableCell>
-                      </>
-                    )}
                     {!newItem.CLDetailId && (
                       <TableCell className="flex gap-2">
                         <Button
@@ -979,7 +1061,7 @@ const ContactLens = () => {
 
         {productSearch === 1 && (
           <div className="p-6">
-            <div className="w-full flex items-center gap-4">
+            <div className=" flex items-center gap-4">
               <Input
                 value={productCodeInput}
                 onChange={(e) => setProductCodeInput(e.target.value)}
@@ -989,8 +1071,15 @@ const ContactLens = () => {
                     handleGetProductCodeDetails();
                   }
                 }}
+                className="w-1/3"
               />
-              <Button onClick={handleGetProductCodeDetails}>Search</Button>
+              <Button
+                onClick={handleGetProductCodeDetails}
+                isLoading={isbatchBarLoading}
+                disabled={isbatchBarLoading}
+              >
+                Search
+              </Button>
             </div>
           </div>
         )}
@@ -1066,7 +1155,7 @@ const ContactLens = () => {
             )}
 
             {selectedBatchCode && (
-              <Button className="w-[200px]" onClick={handleSaveBatchData}>
+              <Button className="w-[200px] mt-5" onClick={handleSaveBatchData}>
                 Save
               </Button>
             )}

@@ -20,10 +20,13 @@ export const brandsApi = createApi({
       }),
       providesTags: ["Brands"],
       transformResponse: (response) => {
-        const sorted = response?.data?.sort(
-          (a, b) => new Date(b.CreatedDate) - new Date(a.CreatedDate)
+        const sorted = (response?.data || []).sort((a, b) =>
+          (a?.BrandName || "").localeCompare(b?.BrandName || "", "en", {
+            numeric: true,
+            sensitivity: "base",
+          })
         );
-        return sorted || [];
+        return sorted;
       },
     }),
 
