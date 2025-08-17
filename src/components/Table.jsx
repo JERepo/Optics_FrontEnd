@@ -25,7 +25,7 @@ export const Table = ({
         className={`overflow-auto bg-white rounded-lg shadow max-h-[500px] ${className}`} // Added overflow-auto and max-h-[500px]
       >
         <table className="min-w-full divide-y divide-neutral-200 table-fixed">
-          <thead className="bg-neutral-50">
+          <thead className="bg-blue-50">
             <tr>
               {columns.map((column, index) => (
                 <th

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { data, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { Autocomplete, TextField } from "@mui/material";
 import {
     ArrowLeft,
     Check,
@@ -8,9 +9,10 @@ import {
     Trash2,
     PenIcon,
     PenBoxIcon,
-    PenLineIcon
+    PenLineIcon,
+    SearchIcon
 } from "lucide-react";
-
+import { Table, TableRow, TableCell } from "../../components/Table";
 import { useSelector } from "react-redux";
 import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
 import { useGetAllVendorMutation, useGetAllvendorByLocationQuery } from "../../api/vendorApi";
@@ -25,10 +27,12 @@ import {
 } from "../../api/purchaseOrderApi";
 import { useGetCompanySettingsQuery } from "../../api/companySettingsApi";
 import { useGetCompanyByIdQuery } from "../../api/companiesApi";
-import { useGetOrderDetailsAllMutation } from "../../api/orderApi";
+import { useGetOrderDetailsAllMutation, useLazyGetByBarCodeQuery, useLazyGetByBrandAndModalQuery } from "../../api/orderApi";
+import { useGetAllBrandsQuery } from "../../api/brandsApi";
 
 export default function SavePurchaseOrder() {
     const navigate = useNavigate();
+    const [isLoading, setIsLoading] = useState(false);
     const [showAlert, setShowAlert] = useState(false);
     const [alertMessage, setAlertMessage] = useState({ type: "", message: "" });
     const [selectedLocation, setSelectedLocation] = useState(null);
@@ -41,7 +45,9 @@ export default function SavePurchaseOrder() {
         referenceNo: "",
         vendorDetails: null,
         selectedOption: "",                 // For step 2 radio buttons
-        remarks: ""
+        remarks: "",
+        frameEntry: "combined",
+        barcode: ""
     });
     const [currentStep, setCurrentStep] = useState(1);
     const [selectedOrders, setSelectedOrders] = useState([]);
@@ -58,11 +64,57 @@ export default function SavePurchaseOrder() {
     const [qtyError, setQtyError] = useState('');
     const [showRemoveModal, setShowRemoveModal] = useState(false);
     const [orderToRemove, setOrderToRemove] = useState(null);
+    const [scannedItems, setScannedItems] = useState([]);
+    const [showSearchInputs, setShowSearchInputs] = useState(false);
+    const [searchResults, setSearchResults] = useState([]);
+    const [searchTerm2, setSearchTerm2] = useState('');
+    const [brandInput, setBrandInput] = useState(""); // for user typing
+    const [brandId, setBrandId] = useState(null); // selected BrandGroupID
+    const [modelNo, setModelNo] = useState(null);
+    const [selectedRows, setSelectedRows] = useState([]);
 
-    const { data: vendorData, isLoading } = useGetAllvendorByLocationQuery(
+    const { data: vendorData } = useGetAllvendorByLocationQuery(
         { id: selectedLocation },
         { skip: !selectedLocation }
     );
+
+    const [triggerBarcodeQuery, {
+        data: frameData,
+        isFetching: isBarcodeLoading,
+        isError: isBarcodeError,
+        error: barcodeError
+    }] = useLazyGetByBarCodeQuery();
+
+    const [triggerbrandandModelQuery, {
+        data: frameDatabrandandModel,
+        isFetching: isbrandandModelLoading,
+        isError: isbrandandModelError,
+        error: brandandModelError
+    }] = useLazyGetByBrandAndModalQuery();
+
+    console.log("frameDatabrandandModel ----------- ", frameDatabrandandModel);
+
+    const { data: allBrands } = useGetAllBrandsQuery();
+
+    const filteredBrands = allBrands?.filter(
+        (b) =>
+            b.FrameActive === 1 &&
+            b.IsActive === 1 &&
+            b.BrandName.toLowerCase().includes(brandInput.toLowerCase())
+    );
+
+    console.log("brandData ------------- ", filteredBrands);
+
+    const handleCheckboxChange = (item) => {
+        const exists = selectedRows.find((i) => i.Barcode === item.Barcode);
+        if (exists) {
+            // Remove from selectedRows
+            setSelectedRows((prev) => prev.filter((i) => i.Barcode !== item.Barcode));
+        } else {
+            // Add to selectedRows
+            setSelectedRows((prev) => [...prev, item]);
+        }
+    };
 
     const [SavePurchaseOrder] = useSavePurchaseOrderMutation();
     const [SavePurchaseOrderDetails] = useSavePurchaseOrderDetailsMutation();
@@ -110,11 +162,17 @@ export default function SavePurchaseOrder() {
 
     // Call fetch vendor data
     useEffect(() => {
-        // console.log("vendorData--------", vendorData);
         if (vendorData?.data?.data) {
             setVendors(vendorData?.data?.data);
         }
     }, [vendorData]);
+
+    useEffect(() => {
+        if (currentStep === 3 && formState.shiptoAddress === "new") {
+            const barcodeInput = document.getElementById("barcode");
+            barcodeInput?.focus();
+        }
+    }, [currentStep, formState.shiptoAddress]);
 
     // Set vendor details as  per selected vendor
     useEffect(() => {
@@ -192,6 +250,107 @@ export default function SavePurchaseOrder() {
 
         fetchOrderDetails();
     }, [selectedLocation, formState.selectedOption, currentStep]);
+
+    const handleAdd = async () => {
+        if (!formState.barcode || !selectedLocation) {
+            setAlertMessage({
+                type: "error",
+                message: "Please enter a barcode and select a location"
+            });
+            setShowAlert(true);
+            return;
+        }
+
+        try {
+            const result = await triggerBarcodeQuery({
+                barcode: formState.barcode,
+                locationId: selectedLocation
+            }).unwrap();
+
+            // Handle successful response
+            if (result.data) {
+                console.log("Scanned item:", result.data);
+                setScannedItems(prevItems => [
+                    ...prevItems,
+                    {
+                        ...result.data,
+                        quantity: 1, // Default quantity
+                        price: result.data.SellingPrice // Default price
+                    }
+                ]);
+                setAlertMessage({
+                    type: "success",
+                    message: "Item scanned successfully"
+                });
+
+                // Clear the barcode input
+                setFormState(prev => ({
+                    ...prev,
+                    barcode: ""
+                }));
+
+            }
+
+        } catch (error) {
+            console.error("Barcode scan failed:", error);
+            setAlertMessage({
+                type: "error",
+                message: error.data?.message || "Failed to scan barcode"
+            });
+        } finally {
+            setShowAlert(true);
+            setTimeout(() => setShowAlert(false), 3000);
+        }
+    };
+
+    // Example API endpoint (adjust to your actual API structure)
+    const handleSearch = async () => {
+        if (!brandId || !modelNo) {
+            setAlertMessage({
+                type: "error",
+                message: "Please enter both brand and model number"
+            });
+            setShowAlert(true);
+            setTimeout(() => setShowAlert(false), 3000);
+            return;
+        }
+
+        // setIsSearching(true);
+        console.log("modelNo ------", modelNo);
+        try {
+            // Replace this with your actual API call
+            const response = await triggerbrandandModelQuery({
+                brand: brandId,
+                modal: modelNo,
+                locationId: selectedLocation
+            });
+
+            setSearchResults(response.data.data);
+            // setScannedItems(prevItems => [
+            //     ...prevItems,
+            //     {
+            //         ...response.data,
+            //         quantity: 1, // Default quantity
+            //         price: response.data.SellingPrice // Default price
+            //     }
+            // ]);
+            setAlertMessage({
+                type: "success",
+                message: "Search completed successfully"
+            });
+        } catch (error) {
+            console.error("Search failed:", error);
+            setAlertMessage({
+                type: "error",
+                message: error.message || "Failed to search frames"
+            });
+            setSearchResults([]);
+        } finally {
+            // setIsSearching(false);
+            setShowAlert(true);
+            setTimeout(() => setShowAlert(false), 3000);
+        }
+    };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -435,86 +594,141 @@ export default function SavePurchaseOrder() {
                 throw new Error("Purchase order main ID not found");
             }
 
-            if (selectedOrders.length === 0) {
-                setAlertMessage({
-                    type: "error",
-                    message: "Please select at least one order"
-                });
-                setShowAlert(true);
-                setTimeout(() => setShowAlert(false), 3000);
-                return;
-            }
-
-            // Prepare PO details payload
-            const poDetails = filteredOrderDetails
-                .filter(order => selectedOrders.includes(order.orderDetailId))
-                .map(order => ({
-                    poMainId: createdPOMainId,
-                    poslNo: order.slNo,
-                    productType: formState.selectedOption === 'Frame/Sunglass' ? 1
-                        : formState.selectedOption === 'Lens' ? 0
-                            : formState.selectedOption === 'Accessories' ? 2
-                                : formState.selectedOption === 'Contact Lens' ? 3
-                                    : null,
-                    [formState.selectedOption === 'Frame/Sunglass' ? 'FrameDetailId'
-                        : formState.selectedOption === 'Lens' ? 'OpticalLensDetailId'
-                            : formState.selectedOption === 'Accessories' ? 'AccessoryDetailId'
-                                : 'ContactLensDetailId']: order.productId,
-                    detailId: order.olDetailId || order.cLDetailId || order.frameDetailId || order.accessoryDetailId,
-                    orderDetailId: order.orderDetailId,
-                    poQty: order.poQty ?? order?.orderQty - order?.billedQty - order?.cancelledQty,
-                    // poPrice: order.pricing.buyingPrice,
-                    poPrice: order.productType == 3 ? order.poPrice ?? order?.priceMaster?.buyingPrice : order.poPrice ?? order?.pricing?.buyingPrice,
-                    taxPercentage: order.taxPercentage || 0,
-                    Status: 0, // Default status
-                    ApplicationUserId: user.Id
-                }));
-
-            console.log("payload: ", poDetails);
-
-            // Call API to save PO details
-            const response = await SavePurchaseOrderDetails(poDetails).unwrap();
-            if (response.status === "success") {
-                setSavedPODetails(response?.data?.details);
-                setAlertMessage({
-                    type: "success",
-                    message: "Purchase order details saved successfully"
-                });
-                console.log(response.data.details);
-                setShowAlert(true);
-                setTimeout(() => setShowAlert(false), 3000);
-                // Optionally navigate to another page or reset the form
-                setCurrentStep(4);
-
-                try {
-                    const payload = {
-                        locationId: selectedLocation,
-                        ApplicationUserId: user.Id,
-                        vendorId: selectedVendor
-                    };
-
-                    const response = await getAllPoDetails(payload).unwrap();
-                    console.log("getAllPoDetails response -------------- ", response);
-
-                    setPoreviewDetails(response);
-
-                } catch (error) {
-                    console.error("Error fetching order details:", error);
+            // For against orders - use selected orders from the table
+            if (formState.shiptoAddress === "against") {
+                if (selectedOrders.length === 0) {
                     setAlertMessage({
                         type: "error",
-                        message: "Failed to fetch order details"
+                        message: "Please select at least one order"
                     });
                     setShowAlert(true);
                     setTimeout(() => setShowAlert(false), 3000);
+                    return;
                 }
-            } else {
-                setAlertMessage({
-                    type: "error",
-                    message: response.message || "Failed to save purchase order details"
-                });
-                setShowAlert(true);
-                setTimeout(() => setShowAlert(false), 3000);
+
+                // Prepare PO details payload for against orders
+                const poDetails = filteredOrderDetails
+                    .filter(order => selectedOrders.includes(order.orderDetailId))
+                    .map(order => ({
+                        poMainId: createdPOMainId,
+                        poslNo: order.slNo,
+                        productType: formState.selectedOption === 'Frame/Sunglass' ? 1
+                            : formState.selectedOption === 'Lens' ? 0
+                                : formState.selectedOption === 'Accessories' ? 2
+                                    : formState.selectedOption === 'Contact Lens' ? 3
+                                        : null,
+                        [formState.selectedOption === 'Frame/Sunglass' ? 'FrameDetailId'
+                            : formState.selectedOption === 'Lens' ? 'OpticalLensDetailId'
+                                : formState.selectedOption === 'Accessories' ? 'AccessoryDetailId'
+                                    : 'ContactLensDetailId']: order.productId,
+                        detailId: order.olDetailId || order.cLDetailId || order.frameDetailId || order.accessoryDetailId,
+                        orderDetailId: order.orderDetailId,
+                        poQty: order.poQty ?? order?.orderQty - order?.billedQty - order?.cancelledQty,
+                        poPrice: order.productType == 3 ? order.poPrice ?? order?.priceMaster?.buyingPrice
+                            : order.poPrice ?? order?.pricing?.buyingPrice,
+                        taxPercentage: order.taxPercentage || 0,
+                        Status: 0, // Default status
+                        ApplicationUserId: user.Id
+                    }));
+
+                // Call API to save PO details
+                const response = await SavePurchaseOrderDetails(poDetails).unwrap();
+                if (response.status === "success") {
+                    setSavedPODetails(response?.data?.details);
+                    setAlertMessage({
+                        type: "success",
+                        message: "Purchase order details saved successfully"
+                    });
+                    setShowAlert(true);
+                    setTimeout(() => setShowAlert(false), 3000);
+                    setCurrentStep(4);
+                }
             }
+            // For new orders - use the frameData from barcode scanning
+            else if (formState.shiptoAddress === "new") {
+
+                let poDetails;
+                if (!showSearchInputs) {
+                    if (scannedItems.length === 0) {
+                        setAlertMessage({
+                            type: "error",
+                            message: "Please scan at least one item"
+                        });
+                        setShowAlert(true);
+                        setTimeout(() => setShowAlert(false), 3000);
+                        return;
+                    }
+
+                    // Prepare PO details payload for new orders
+                    poDetails = scannedItems.map((item, index) => ({
+                        poMainId: createdPOMainId,
+                        poslNo: index + 1,
+                        productType: formState.selectedOption === 'Frame/Sunglass' ? 1
+                            : formState.selectedOption === 'Lens' ? 0
+                                : formState.selectedOption === 'Accessories' ? 2
+                                    : formState.selectedOption === 'Contact Lens' ? 3
+                                        : null,
+                        FrameDetailId: item.Id,
+                        poQty: item.quantity || 1,
+                        poPrice: item.price || item.SellingPrice,
+                        taxPercentage: 0, // You can add tax percentage if available
+                        Status: 0,
+                        ApplicationUserId: user.Id
+                    }));
+                } else {
+                    if (selectedRows.length === 0) {
+                        setAlertMessage({
+                            type: "error",
+                            message: "Please scan at least one item"
+                        });
+                        setShowAlert(true);
+                        setTimeout(() => setShowAlert(false), 3000);
+                        return;
+                    }
+
+                    // Prepare PO details payload for new orders
+                    poDetails = selectedRows.map((item, index) => ({
+                        poMainId: createdPOMainId,
+                        poslNo: index + 1,
+                        productType: formState.selectedOption === 'Frame/Sunglass' ? 1
+                            : formState.selectedOption === 'Lens' ? 0
+                                : formState.selectedOption === 'Accessories' ? 2
+                                    : formState.selectedOption === 'Contact Lens' ? 3
+                                        : null,
+                        FrameDetailId: item.Id,
+                        poQty: item.quantity || 1,
+                        poPrice: item.price || item.SellingPrice,
+                        taxPercentage: 0, // You can add tax percentage if available
+                        Status: 0,
+                        ApplicationUserId: user.Id
+                    }));
+                }
+
+                // Call API to save PO details
+                const response = await SavePurchaseOrderDetails(poDetails).unwrap();
+                if (response.status === "success") {
+                    setSavedPODetails(response?.data?.details);
+                    setAlertMessage({
+                        type: "success",
+                        message: "Purchase order details saved successfully"
+                    });
+                    setShowAlert(true);
+                    setTimeout(() => setShowAlert(false), 3000);
+                    setCurrentStep(4);
+                }
+            }
+
+            // Refresh PO details after saving
+            const payload = {
+                locationId: selectedLocation,
+                ApplicationUserId: user.Id,
+                vendorId: selectedVendor,
+                againstOrder: formState.shiptoAddress === "against" ? 1 : 0
+            };
+
+            const poDetailsResponse = await getAllPoDetails(payload).unwrap();
+            setPoreviewDetails(poDetailsResponse);
+
         } catch (error) {
             console.error("Error saving purchase order details:", error);
             setAlertMessage({
@@ -611,7 +825,7 @@ export default function SavePurchaseOrder() {
     const handleEditPriceClick = (item) => {
         console.log("item ---------------- ", item);
         setCurrentEditingItem(item);
-        setEditedBuyingPrice(item?.poPrice || (item?.productType == 3 ? item?.priceMaster?.buyingPrice : item.pricing?.buyingPrice) );
+        setEditedBuyingPrice(item?.poPrice || (item?.productType == 3 ? item?.priceMaster?.buyingPrice : item.pricing?.buyingPrice));
         setEditPriceModalOpen(true);
     };
 
@@ -904,7 +1118,7 @@ export default function SavePurchaseOrder() {
                                 <div className="grid grid-cols-2 gap-8  bg-white text-gray-600">
                                     {/* Ship to Address Section */}
                                     <div className="flex">
-                                        {console.log("vend -------------- ", formState.vendorDetails)}
+                                        {/* {console.log("vend -------------- ", formState.vendorDetails)} */}
                                         <p className="font-bold text-gray-500 mb-4">Ship to Address:</p>
                                         {formState.vendorDetails.MultiDelivery === 0 ? (
                                             <div className="ml-4 text-gray-500">
@@ -988,7 +1202,7 @@ export default function SavePurchaseOrder() {
 
                                 <div className="flex justify-end items-center space-x-2 mt-6">
                                     <button
-                                        className="px-4 py-2 bg-[#000060] text-white rounded-lg hover:bg-[#0000a0] transition-colors flex items-center justify-center flex-1 sm:flex-none disabled:opacity-50"
+                                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50 flex items-center justify-center flex-1 sm:flex-none"
                                         onClick={handleSubmit}
                                         disabled={!selectedVendor || !selectedLocation || !formState.shiptoAddress}
                                     >
@@ -1000,8 +1214,8 @@ export default function SavePurchaseOrder() {
                     </motion.div>
                 )}
 
-                {/* Step 2: Options Selection */}
-                {currentStep === 2 && (
+                {/* Step 2: Options Selection for Against Order */}
+                {(currentStep === 2 && formState.shiptoAddress === "against") && (
                     <motion.div
                         initial={{ y: -20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
@@ -1041,7 +1255,7 @@ export default function SavePurchaseOrder() {
                             </button>
                             <button
                                 onClick={handleNext}
-                                className="px-4 py-2 bg-[#000060] text-white rounded-lg hover:bg-[#0000a0] transition-colors disabled:opacity-50"
+                                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
                                 disabled={!formState.selectedOption}
                             >
                                 Next
@@ -1050,8 +1264,58 @@ export default function SavePurchaseOrder() {
                     </motion.div>
                 )}
 
-                {/* Step 3: Order Selection */}
-                {currentStep === 3 && (
+                {/* Step 2: Options Selection for New Order */}
+                {(currentStep === 2 && formState.shiptoAddress === "new") && (
+                    <motion.div
+                        initial={{ y: -20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                        className="bg-white rounded-2xl shadow-xl p-6"
+                    >
+                        <h2 className="text-xl font-bold text-[#000060] mb-6">Step 2</h2>
+
+                        <div className="flex justify-start gap-12">
+                            {['Frame/Sunglass', 'Lens', 'Contact Lens', 'Accessories', 'Bulk Process'].map((option) => (
+                                <label
+                                    key={option}
+                                    htmlFor={`option-${option}`}
+                                    className="flex items-center gap-2 cursor-pointer group"
+                                >
+                                    <input
+                                        id={`option-${option}`}
+                                        name="option"
+                                        type="radio"
+                                        checked={formState.selectedOption === option}
+                                        onChange={() => handleOptionChange(option)}
+                                        className="h-4 w-4 text-[#000060] focus:ring-[#000060] border-gray-300 cursor-pointer"
+                                    />
+                                    <span className="text-sm font-medium text-gray-700 group-hover:text-[#000060] transition-colors">
+                                        {option}
+                                    </span>
+                                </label>
+                            ))}
+                        </div>
+
+                        <div className="flex justify-between items-center mt-8">
+                            <button
+                                onClick={handleBack}
+                                className="px-4 py-2 border border-[#000060] text-[#000060] rounded-lg hover:bg-gray-100 transition-colors"
+                            >
+                                Back
+                            </button>
+                            <button
+                                onClick={handleNext}
+                                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
+                                disabled={!formState.selectedOption}
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* Step 3: Order Selection for Against Order */}
+                {(currentStep === 3 && formState.shiptoAddress === "against") && (
                     <motion.div
                         initial={{ y: -20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
@@ -1313,6 +1577,279 @@ export default function SavePurchaseOrder() {
                                     // onClick={handleNext}
                                     className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
                                     disabled={selectedOrders.length === 0}
+                                >
+                                    Save & Next
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* Step 3: Order Selection for New Order */}
+                {(currentStep === 3 && formState.shiptoAddress === "new") && (
+                    <motion.div
+                        initial={{ y: -20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                        className="bg-white rounded-2xl shadow-xl p-6"
+                    >
+                        <div className="flex justify-between items-center">
+                            <h2 className="text-xl font-bold text-[#000060] mb-6">Step 3: {formState.selectedOption == "Frame/Sunglass" && "Frame/Sunglass"}</h2>
+                            <button
+                                onClick={handleBack}
+                                className="px-4 py-2 flex text-[#000060] rounded-lg hover:bg-gray-100 transition-colors gap-2"
+                            >
+                                <ArrowLeft />
+                                Back
+                            </button>
+                        </div>
+                        <div className=" items-center my-10 w-full gap-6">
+                            <div className="flex justify-start gap-12 mb-6">
+                                <div className="flex space-x-4">
+                                    <label className="flex items-center space-x-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="shiptoAddress"
+                                            value="new"
+                                            checked={formState.frameEntry === "combined"}
+                                            onChange={handleInputChange}
+                                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        />
+                                        <span className="text-gray-700 font-medium">Combined Entry</span>
+                                    </label>
+                                    <label className="flex items-center space-x-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="shiptoAddress"
+                                            value="against"
+                                            checked={formState.frameEntry === "seperate"}
+                                            onChange={handleInputChange}
+                                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        />
+                                        <span className="text-gray-700 font-medium">Seperate Entry</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* Toggle between barcode input and search inputs */}
+                            {!showSearchInputs ? (
+                                <div className="flex-1 flex items-center gap-5">
+                                    <label htmlFor="barcode" className="block text-sm font-medium text-gray-700 whitespace-nowrap">
+                                        Enter Barcode
+                                    </label>
+                                    <div className="relative flex-1">
+                                        <input
+                                            id="barcode"
+                                            name="barcode"
+                                            type="text"
+                                            autoComplete="off"
+                                            autoFocus
+                                            value={formState.barcode}
+                                            onChange={handleInputChange}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleAdd();
+                                                }
+                                            }}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060] pr-10"
+                                            placeholder="Scan or enter barcode..."
+                                            aria-label="Barcode input"
+                                            disabled={isLoading}
+                                        />
+                                        {isLoading && (
+                                            <div className="absolute right-3 top-2.5">
+                                                <svg className="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <button
+                                        onClick={handleAdd}
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 whitespace-nowrap flex items-center"
+                                        disabled={!formState.barcode || isLoading}
+                                    >
+                                        {isLoading ? (
+                                            <>
+                                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                Adding...
+                                            </>
+                                        ) : (
+                                            'Add'
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={() => setShowSearchInputs(true)}
+                                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors whitespace-nowrap flex items-center"
+                                    >
+                                        <SearchIcon className="h-4 w-4 mr-1" />
+                                        Search
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="flex-1 flex items-center gap-5">
+                                    {/* Search Brand */}
+                                    <div className="relative flex-1">
+                                        <Autocomplete
+                                            options={filteredBrands}
+                                            getOptionLabel={(option) => option.BrandName}
+                                            onInputChange={(event, value) => {
+                                                setBrandInput(value);
+                                            }}
+                                            onChange={(event, newValue) => {
+                                                if (newValue) {
+                                                    setBrandInput(newValue.BrandName);
+                                                    setBrandId(newValue.Id);
+                                                }
+                                            }}
+                                            value={
+                                                filteredBrands.find((b) => b.BrandName === brandInput) ||
+                                                null
+                                            }
+                                            isOptionEqualToValue={(option, value) =>
+                                                option.Id === value.Id
+                                            }
+                                            renderInput={(params) => (
+                                                <TextField
+                                                    {...params}
+                                                    label="Search Brand"
+                                                    variant="outlined"
+                                                    fullWidth
+                                                />
+                                            )}
+                                            sx={{ width: 400 }}
+                                        />
+                                    </div>
+
+                                    {/* Search Model */}
+                                    <div className="relative flex-1">
+                                        <input
+                                            id="model"
+                                            name="model"
+                                            type="text"
+                                            autoComplete="off"
+                                            value={modelNo}
+                                            onChange={(e) => setModelNo(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060] pr-10"
+                                            placeholder="Enter model no."
+                                        />
+                                    </div>
+
+                                    {/* Search Button */}
+                                    <button
+                                        onClick={handleSearch}
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap flex items-center"
+                                        disabled={!brandId || !modelNo}
+                                    >
+                                        <>
+                                            <SearchIcon className="h-4 w-4 mr-1" />
+                                            Search
+                                        </>
+                                    </button>
+
+                                    {/* Back to Barcode Button */}
+                                    <button
+                                        onClick={() => setShowSearchInputs(false)}
+                                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors whitespace-nowrap flex items-center"
+                                    >
+                                        Back to Barcode
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Rest of the component remains the same */}
+                        {frameData && (
+                            <Table
+                                columns={["Barcode", "Name", "S/O", "Polarised", "Photochromatic", "Clip No", "MRP", "Buying Price", "PO QTY", "Action"]}
+                                data={[frameData.data]}
+                                renderRow={(frame, index) => (
+                                    <TableRow key={index}>
+                                        <TableCell>{frame.Barcode}</TableCell>
+                                        <TableCell>{frame.Name}{<br />}{frame.Size}</TableCell>
+                                        <TableCell>
+                                            {frame.Category === 0 ? 'Sunglass' : 'Optical Frame'}
+                                        </TableCell>
+                                        <TableCell className="text-center">{frame.PO ? "Yes" : "No"}</TableCell>
+                                        <TableCell className="text-center">{frame.Ph ? "Yes" : "No"}</TableCell>
+                                        <TableCell className="text-center">{frame.Cl}</TableCell>
+                                        <TableCell>₹{frame.MRP}</TableCell>
+                                        <TableCell>₹{" "}
+                                            <input
+                                                type="float"
+                                                min="1"
+                                                defaultValue={frame.SellingPrice}
+                                                className="w-30 px-2 py-1 border rounded"
+                                            /></TableCell>
+                                        <TableCell>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                max={frame.Quantity}
+                                                defaultValue="1"
+                                                className="w-20 px-2 py-1 border rounded"
+                                            />
+                                        </TableCell>
+                                        <TableCell className="px-6 py-4 whitespace-nowrap">
+                                            <button
+                                                className="p-1 text-red-600 hover:text-red-800 "
+                                                aria-label="Delete item"
+                                            >
+                                                <Trash2 className="h-5 w-5" />
+                                            </button>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            />
+                        )}
+                        {console.log("searchResults ------------- ", searchResults)}
+                        {(showSearchInputs && searchResults.length > 0) && (
+                            <Table
+                                columns={["", "Barcode", "Name", "S/O", "Polarised", "Photochromatic", "Clip No", "MRP", "Buying Price"]}
+                                data={searchResults}
+                                renderRow={(frame, index) => (
+                                    <TableRow key={frame.barcode}>
+                                        <TableCell>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedRows.some(
+                                                    (i) => i.Barcode === frame.Barcode
+                                                )}
+                                                onChange={() => handleCheckboxChange(frame)}
+                                            />
+                                        </TableCell>
+                                        <TableCell>{frame.Barcode}</TableCell>
+                                        <TableCell>{frame.Name}{<br />}{frame.Size}</TableCell>
+                                        <TableCell>
+                                            {frame.Category === 0 ? 'Sunglass' : 'Optical Frame'}
+                                        </TableCell>
+                                        <TableCell className="text-center">{frame.PO ? "Yes" : "No"}</TableCell>
+                                        <TableCell className="text-center">{frame.Ph ? "Yes" : "No"}</TableCell>
+                                        <TableCell className="text-center">{frame.Cl}</TableCell>
+                                        <TableCell>₹{frame.MRP}</TableCell>
+                                        <TableCell>{frame.SellingPrice}</TableCell>
+                                    </TableRow>
+                                )}
+                            />
+                        )}
+
+                        <div className="flex justify-between items-center mt-8">
+                            <button
+                                onClick={handleBack}
+                                className="px-4 py-2 border border-[#000060] text-[#000060] rounded-lg hover:bg-gray-100 transition-colors"
+                            >
+                                Back
+                            </button>
+                            <div className="flex items-center space-x-4">
+                                <button
+                                    onClick={handleSubmitPODetails}
+                                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
                                 >
                                     Save & Next
                                 </button>
@@ -1668,7 +2205,7 @@ export default function SavePurchaseOrder() {
                             <div className="flex-shrink-0">
                                 <button
                                     onClick={handleCompletePO}
-                                    className="px-6 py-2 bg-[#000060] text-white rounded-lg hover:bg-[#0000a0] transition-colors disabled:opacity-50 whitespace-nowrap"
+                                    className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50 whitespace-nowrap"
                                     disabled={!createdPOMainId || poreviewDetails.length === 0}
                                 >
                                     Complete Purchase Order
@@ -1742,7 +2279,7 @@ export default function SavePurchaseOrder() {
                                 </button>
                                 <button
                                     onClick={handlePriceUpdate}
-                                    className="px-4 py-2 bg-[#000060] text-white rounded hover:bg-[#0000a0] transition-colors"
+                                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                 >
@@ -1825,7 +2362,7 @@ export default function SavePurchaseOrder() {
                                     </button>
                                     <button
                                         onClick={handleQtyUpdate}
-                                        className="px-4 py-2 bg-[#000060] text-white rounded hover:bg-[#0000a0] transition-colors"
+                                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
                                         whileHover={{ scale: 1.05 }}
                                         whileTap={{ scale: 0.95 }}
                                     >
@@ -1883,7 +2420,7 @@ export default function SavePurchaseOrder() {
                                     </button>
                                     <button
                                         onClick={handleRemoveOrder}
-                                        className="px-4 py-2 bg-[#000060] text-white rounded hover:bg-[#0000a0] transition-colors"
+                                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
                                         whileHover={{ scale: 1.05 }}
                                         whileTap={{ scale: 0.95 }}
                                     >
