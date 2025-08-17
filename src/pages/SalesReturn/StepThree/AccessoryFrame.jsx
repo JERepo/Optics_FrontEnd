@@ -1,6 +1,15 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useOrder } from "../../../features/OrderContext";
-import { FiArrowLeft, FiPlus, FiSearch, FiX, FiTrash2, FiEdit } from "react-icons/fi";
+import {
+  FiArrowLeft,
+  FiPlus,
+  FiSearch,
+  FiX,
+  FiTrash2,
+  FiEdit,
+  FiCheck,
+  FiEdit2,
+} from "react-icons/fi";
 import Button from "../../../components/ui/Button";
 import { Table, TableCell, TableRow } from "../../../components/Table";
 import { useGetAllBrandsQuery } from "../../../api/brandsApi";
@@ -20,6 +29,7 @@ import Select from "../../../components/Form/Select";
 import { useSelector } from "react-redux";
 import { useGetIsdQuery } from "../../../api/customerApi";
 import Radio from "../../../components/Form/Radio";
+import { useSaveProductsMutation } from "../../../api/salesReturnApi";
 
 const AccessoryFrame = () => {
   const {
@@ -28,7 +38,10 @@ const AccessoryFrame = () => {
     prevSalesStep,
     currentSalesStep,
     goToSalesStep,
+    salesDraftData,
   } = useOrder();
+  const { user } = useSelector((state) => state.auth);
+
   const [barcode, setBarcode] = useState("");
   const [searchMode, setSearchMode] = useState(false);
   const [brandInput, setBrandInput] = useState("");
@@ -51,9 +64,10 @@ const AccessoryFrame = () => {
     fetchByBrandProduct,
     { isLoading: isBrandModelLoading, isFetching: isBrandAndModalFetching },
   ] = useLazyGetByBrandAndProductNameQuery();
-  const [saveAccessory, { isLoading: isFrameSaving }] = useSaveAccessoryMutation();
-
-
+  const [saveAccessory, { isLoading: isFrameSaving }] =
+    useSaveAccessoryMutation();
+  const [saveFinalProducts, { isLoading: isFinalProductsSaving }] =
+    useSaveProductsMutation();
 
   useEffect(() => {
     setEditMode((prev) => {
@@ -67,7 +81,7 @@ const AccessoryFrame = () => {
       return newEditMode;
     });
   }, [items]);
-console.log("edit",editMode)
+  console.log("edit", editMode);
   const handleBarcodeSubmit = async (e) => {
     e.preventDefault();
     if (!barcode) return;
@@ -191,6 +205,11 @@ console.log("edit",editMode)
   };
 
   const handleQtyChange = (barcode, qty, index) => {
+    const newQty = qty.trim();
+    if (isNaN(Number(newQty)) || Number(newQty) < 0) {
+      toast.error("Quantity must be a positive number!");
+      return;
+    }
     setItems((prev) =>
       prev.map((i, idx) =>
         i.Barcode === barcode && idx === index
@@ -199,12 +218,19 @@ console.log("edit",editMode)
       )
     );
   };
-
   const handleSellingPriceChange = (barcode, price, index) => {
+    const item = items.find((i, idx) => i.Barcode === barcode && idx === index);
+    const newPrice = Number(price);
+
+    if (newPrice > item.MRP) {
+      toast.error("Return Price cannot be greater than MRP!");
+      return;
+    }
+
     setItems((prev) =>
       prev.map((i, idx) =>
         i.Barcode === barcode && idx === index
-          ? { ...i, SellingPrice: Number(price) }
+          ? { ...i, SellingPrice: newPrice }
           : i
       )
     );
@@ -284,6 +310,40 @@ console.log("edit",editMode)
       }
     } catch (error) {
       toast.error("Cannot save Accessories!");
+    }
+  };
+
+  const handleSaveData = async () => {
+    if (!Array.isArray(items) || items.length === 0) {
+      console.warn("No details to save");
+      return;
+    }
+
+    try {
+      for (const detail of items) {
+        const payload = {
+          SRMasterID: salesDraftData.Id ?? null,
+          ProductType: detail.ProductType ?? 2,
+          ContactLensDetailId: detail.CLDetailId ?? null,
+          AccessoryDetailId: detail.Id ?? null,
+          FrameDetailId: detail.FrameDetailId ?? null,
+          OpticalLensDetailId: detail.OpticalLensDetailId ?? null,
+          BatchCode: detail.CLBatchCode ?? null,
+          CNQty: detail.Quantity ?? null,
+          SRP: parseFloat(detail.MRP) ?? null,
+          ReturnPrice: detail.SellingPrice ?? null,
+          ProductTaxPercentage: detail.ProductTaxPercentage ?? 18,
+          FittingReturnPrice: detail.FittingReturnPrice ?? null,
+          FittingTaxPercentage: detail.FittingTaxPercentage ?? null,
+          InvoiceDetailId: detail.InvoiceDetailId ?? null,
+          ApplicationUserId: user.Id,
+        };
+
+        await saveFinalProducts({ payload }).unwrap();
+      }
+      goToSalesStep(4);
+    } catch (error) {
+      console.error("Error saving detail:", error);
     }
   };
 
@@ -475,7 +535,7 @@ console.log("edit",editMode)
                 "sku code",
                 "MRP",
                 "Selling Price",
-                "Qty",
+                "return Qty",
                 "Action",
               ]}
               data={items}
@@ -486,7 +546,7 @@ console.log("edit",editMode)
                   <TableCell>{item.Name}</TableCell>
                   <TableCell>{item.Variation}</TableCell>
                   <TableCell>{item.SKU}</TableCell>
-                  <TableCell>{item.MRP}</TableCell>
+                  <TableCell>₹{item.MRP}</TableCell>
                   <TableCell>
                     {editMode[`${item.Barcode}-${index}`]?.sellingPrice ? (
                       <div className="flex items-center gap-2">
@@ -500,28 +560,41 @@ console.log("edit",editMode)
                               index
                             )
                           }
-                          className="w-20 px-2 py-1 border border-gray-300 rounded"
+                          className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                           placeholder="Enter price"
                         />
                         <button
                           onClick={() =>
                             toggleEditMode(item.Barcode, index, "sellingPrice")
                           }
-                          className=""
+                          className="text-neutral-400 transition"
+                          title="Save"
                         >
-                          <FiX />
+                          <FiCheck size={18} />
                         </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span>{item.SellingPrice || "N/A"}</span>
                         <button
                           onClick={() =>
                             toggleEditMode(item.Barcode, index, "sellingPrice")
                           }
-                          className=""
+                          className="text-neutral-400 transition"
+                          title="Cancel"
                         >
-                          <FiEdit />
+                          <FiX size={18} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-700">
+                          ₹{item.SellingPrice || "N/A"}
+                        </span>
+                        <button
+                          onClick={() =>
+                            toggleEditMode(item.Barcode, index, "sellingPrice")
+                          }
+                          className="text-neutral-400"
+                          title="Edit Price"
+                        >
+                          <FiEdit2 size={14} />
                         </button>
                       </div>
                     )}
@@ -535,23 +608,39 @@ console.log("edit",editMode)
                           onChange={(e) =>
                             handleQtyChange(item.Barcode, e.target.value, index)
                           }
-                          className="w-20 px-2 py-1 border border-gray-300 rounded"
+                          className="w-20 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                          min="1"
                         />
                         <button
-                          onClick={() => toggleEditMode(item.Barcode, index, "qty")}
-                          className=""
+                          onClick={() =>
+                            toggleEditMode(item.Barcode, index, "qty")
+                          }
+                          className="text-neutral-400"
+                          title="Save"
                         >
-                          <FiX />
+                          <FiCheck size={18} />
+                        </button>
+                        <button
+                          onClick={() =>
+                            toggleEditMode(item.Barcode, index, "qty")
+                          }
+                          className="text-neutral-400"
+                          title="Cancel"
+                        >
+                          <FiX size={18} />
                         </button>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <span>{item.Quantity}</span>
+                        <span className="text-gray-700">{item.Quantity}</span>
                         <button
-                          onClick={() => toggleEditMode(item.Barcode, index, "qty")}
-                          className=""
+                          onClick={() =>
+                            toggleEditMode(item.Barcode, index, "qty")
+                          }
+                          className="text-neutral-400"
+                          title="Edit Quantity"
                         >
-                          <FiEdit />
+                          <FiEdit2 size={14} />
                         </button>
                       </div>
                     )}
@@ -570,9 +659,9 @@ console.log("edit",editMode)
             <div className="flex justify-end mt-6">
               <Button
                 type="submit"
-                isLoading={isFrameSaving}
+                isLoading={isFinalProductsSaving}
                 className="px-6 py-3 bg-green-600 hover:bg-green-700"
-                onClick={handleSave}
+                onClick={handleSaveData}
               >
                 Save & Continue
               </Button>

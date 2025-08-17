@@ -199,6 +199,7 @@ const AddOrder = ({
       patientId: customerWithContact.CustomerContactDetails?.[0].Id,
       locationId: parseInt(location),
       customerId: customerWithContact.Id,
+      customerData: customerWithContact,
     }));
     setCreatingCustomerLoading(false);
   };

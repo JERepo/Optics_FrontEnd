@@ -9,10 +9,7 @@ import {
   useGetInvoiceByIdQuery,
   useGetInvoiceDetailsQuery,
 } from "../../api/InvoiceApi";
-
-const formatNumber = (num) => {
-  return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "0";
-};
+import { formatINR } from "../../utils/formatINR";
 
 const InvoiceView = () => {
   const navigate = useNavigate();
@@ -33,19 +30,16 @@ const InvoiceView = () => {
     return types[id] || "OL";
   };
 
-  const formatValue = (val) =>
-    val !== null && val !== undefined && val !== "" ? val : "N/A";
+
 
   const getProductName = (order) => {
     const {
       ProductType,
-      productName,
-      specs,
-      barcode,
-      hSN,
+
       FittingPrice,
       FittingGSTPercentage,
-      batchCode,
+
+      ProductDetails,
     } = order;
 
     const clean = (val) => {
@@ -70,10 +64,10 @@ const InvoiceView = () => {
     };
 
     if (ProductType === 1) {
-      const name = clean(order.productName);
-      const specDetails = clean(order.specs);
-      const barcodeVal = clean(order.barcode);
-      const hsn = clean(order.hSN);
+      const name = clean(ProductDetails.productName);
+      const specDetails = clean(ProductDetails.specs);
+      const barcodeVal = clean(ProductDetails.barcode);
+      const hsn = clean(ProductDetails.hsncode);
       const cat =
         order.InvoiceMain?.InvoiceType === 0 ? "Optical Frame" : "Sunglass";
 
@@ -92,10 +86,10 @@ const InvoiceView = () => {
     }
 
     if (ProductType === 2) {
-      const name = clean(order.productName);
-      const variation = clean(specs);
-      const barcodeVal = clean(barcode);
-      const hsn = clean(order.hSN);
+      const name = clean(ProductDetails.productName);
+      const variation = clean(ProductDetails.specs);
+      const barcodeVal = clean(ProductDetails.barcode);
+      const hsn = clean(ProductDetails.hsncode);
 
       return [
         [name].filter(Boolean).join(" "),
@@ -108,15 +102,15 @@ const InvoiceView = () => {
     }
 
     if (ProductType === 3) {
-      const name = clean(order.productName);
-      const hsn = clean(order.hSN);
-      const barcodeVal = clean(order.barcode);
-      const batchCode = clean(order.BatchCode);
+      const name = clean(order.ProductDetails.productName);
+      const hsn = clean(order.ProductDetails.hSN);
+      const barcodeVal = clean(order.ProductDetails.barcode);
+      const batchCode = clean(order.ProductDetails.BatchCode);
 
       // parse specs string into object
       const specsObj = {};
-      if (typeof order.specs === "string") {
-        order.specs.split(",").forEach((pair) => {
+      if (typeof order.ProductDetails.specs === "string") {
+        order.ProductDetails.specs.split(",").forEach((pair) => {
           let [key, value] = pair.split(":").map((s) => s.trim());
           if (value === "null") value = null;
           specsObj[key] = value;
@@ -151,10 +145,13 @@ const InvoiceView = () => {
     }
 
     if (ProductType === 0) {
-      const olLine = [productName].map(clean).filter(Boolean).join(" ");
+      const olLine = [order.ProductDetails.productName]
+        .map(clean)
+        .filter(Boolean)
+        .join(" ");
 
-      const right = specs?.power?.find((p) => p.side === "R") || {};
-      const left = specs?.power?.find((p) => p.side === "L") || {};
+      const right = ProductDetails.Specs?.find((p) => p.side === "R") || {};
+      const left = ProductDetails.Specs?.find((p) => p.side === "L") || {};
 
       const rightParts = [
         cleanPower(right.sph) && `SPH: ${cleanPower(right.sph)}`,
@@ -174,11 +171,16 @@ const InvoiceView = () => {
         .join("\n");
 
       const addOnLine =
-        clean(specs?.addOns?.[0]?.addOnName) &&
-        `Addon: ${clean(specs?.addOns?.[0]?.addOnName)}`;
-      const tintLine = clean(specs?.tint) && `Tint: ${clean(specs?.tint)}`;
-      const barcodeLine = clean(barcode) && `Barcode: ${clean(barcode)}`;
-      const hsnLine = clean(hSN) && `HSN: ${clean(hSN)}`;
+        clean(ProductDetails?.AddOns?.[0]?.addOnName) &&
+        `Addon: ${clean(ProductDetails?.AddOns?.[0]?.addOnName)}`;
+      const tintLine =
+        clean(ProductDetails?.Tint) && `Tint: ${clean(ProductDetails?.Tint)}`;
+      const barcodeLine =
+        clean(ProductDetails.barcode) &&
+        `Barcode: ${clean(ProductDetails.barcode)}`;
+      const hsnLine =
+        clean(ProductDetails.hsncode) &&
+        `HSN: ${clean(ProductDetails.hsncode)}`;
 
       let fittingLine = "";
       const fitPrice = parseFloat(FittingPrice);
@@ -188,7 +190,15 @@ const InvoiceView = () => {
         fittingLine = `Fitting Price: ₹${totalFitting}`;
       }
 
-      return [olLine, powerLine, addOnLine, tintLine, hsnLine, fittingLine]
+      return [
+        olLine,
+        powerLine,
+        addOnLine,
+        barcodeLine,
+        tintLine,
+        hsnLine,
+        fittingLine,
+      ]
         .filter(Boolean)
         .join("\n");
     }
@@ -216,8 +226,10 @@ const InvoiceView = () => {
     const invoicePrice = parseFloat(item.InvoicePrice || 0);
     const qty = parseFloat(item.InvoiceQty || 0);
     const fittingPrice = parseFloat(item.FittingPrice || 0);
+    const fittingGST = parseFloat(item.FittingGSTPercentage || 0)
+    const totalFittinPrice = calculateGST(fittingPrice,fittingGST).gstAmount
 
-    return sum + (invoicePrice * qty + fittingPrice);
+    return sum + ((invoicePrice * qty) + parseFloat(totalFittinPrice));
   }, 0);
 
   const gstAmount = invoiceDetailsById?.reduce((sum, item) => {
@@ -251,7 +263,7 @@ const InvoiceView = () => {
     <div className="max-w-7xl">
       <div className="bg-white rounded-sm shadow-sm overflow-hidden p-6">
         <div className="flex justify-between items-center mb-3">
-          <div></div>
+          <div className="text-neutral-800 text-2xl font-semibold">Invoice Details</div>
           <div>
             <Button variant="outline" onClick={() => navigate("/invoice")}>
               Back
@@ -322,14 +334,14 @@ const InvoiceView = () => {
                     {getProductName(invoice)}
                   </div>
                 </TableCell>
-                <TableCell>₹{formatNumber(parseFloat(invoice.SRP))}</TableCell>
+                <TableCell>₹{formatINR(parseFloat(invoice.SRP))}</TableCell>
                 <TableCell>
-                  ₹{formatNumber(parseFloat(invoice.InvoicePrice))}
+                  ₹{formatINR(parseFloat(invoice.InvoicePrice))}
                 </TableCell>
                 <TableCell>{invoice.InvoiceQty}</TableCell>
                 <TableCell>
                   ₹
-                  {formatNumber(
+                  {formatINR(
                     parseFloat(invoice.InvoiceQty) *
                       parseFloat(invoice.InvoicePrice)
                   )}
@@ -349,15 +361,15 @@ const InvoiceView = () => {
                   Total Qty
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
-                  {formatNumber(totalQty) || "0"}
+                  {totalQty || "0"}
                 </span>
               </div>
               <div className="flex flex-col">
                 <span className="text-neutral-700 font-semibold text-lg">
-                  GST Amount
+                 Total GST
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
-                  ₹{formatNumber(gstAmount?.toFixed(2)) || "0"}
+                  ₹{formatINR(gstAmount) || "0"}
                 </span>
               </div>
               <div className="flex flex-col">
@@ -365,7 +377,7 @@ const InvoiceView = () => {
                   Total Amount
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
-                  ₹{formatNumber(grandTotal?.toFixed(2)) || "0"}
+                  ₹{formatINR(grandTotal) || "0"}
                 </span>
               </div>
             </div>

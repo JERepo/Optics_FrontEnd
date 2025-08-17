@@ -84,7 +84,7 @@ const ContactLens = () => {
   } = useOrder();
 
   const [openChange, setOpenChange] = useState(false);
-  const [searchFethed,setSearchFetched] = useState(false)
+  const [searchFethed, setSearchFetched] = useState(false);
   const [openAdd, setOpenAdd] = useState(false);
   const [items, setItems] = useState([]);
   const [showInputRow, setShowInputRow] = useState(true);
@@ -141,7 +141,7 @@ const ContactLens = () => {
       productId: null,
       color: null,
     });
-     setSearchFetched(false)
+    setSearchFetched(false);
   };
 
   const handleRefeshPowerTable = () => {
@@ -156,7 +156,7 @@ const ContactLens = () => {
       sellingPrice: "",
     });
     setErrors({});
-    setSearchFetched(false)
+    setSearchFetched(false);
   };
 
   const handleInputChangeTop = (e) => {
@@ -294,14 +294,14 @@ const ContactLens = () => {
           orderQty: data.DefaultOrderQty,
           sellingPrice: data.SellingPrice,
         });
-        setSearchFetched(true)
+        setSearchFetched(true);
       } else {
         toast.error("No matching power found");
       }
     } catch (error) {
       console.error("error", error);
       toast.error("No matching power found");
-      setSearchFetched(false)
+      setSearchFetched(false);
     }
   };
 
@@ -319,7 +319,7 @@ const ContactLens = () => {
       toast.error("Please add at least one item before saving");
       return;
     }
-    console.log("selected items",items)
+    console.log("selected items", items);
     const payload = {
       lenses: items.map((item) => ({
         CLDetailId: item.CLDetailId,
@@ -507,6 +507,7 @@ const ContactLens = () => {
                       ...prev,
                       productId: newValue?.Id || null,
                     }));
+                    setShowInputRow(true);
                   }}
                   loading={isProductsLoading}
                   renderInput={(params) => (

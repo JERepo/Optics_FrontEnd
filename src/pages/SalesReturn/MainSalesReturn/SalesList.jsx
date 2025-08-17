@@ -5,10 +5,15 @@ import { FiEye, FiPlus, FiSearch } from "react-icons/fi";
 import Button from "../../../components/ui/Button";
 import { useOrder } from "../../../features/OrderContext";
 import { Table, TableCell, TableRow } from "../../../components/Table";
-import { useGetAllOrdersQuery } from "../../../api/orderApi";
 
 import Loader from "../../../components/ui/Loader";
 import { useSelector } from "react-redux";
+import { useGetAllSalesReturnQuery } from "../../../api/salesReturnApi";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { enGB } from "date-fns/locale";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { TextField } from "@mui/material";
 
 const SalesList = () => {
   const navigate = useNavigate();
@@ -17,14 +22,32 @@ const SalesList = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [fromDate, setFromDate] = useState(null);
+  const [toDate, setToDate] = useState(null);
 
-  const { data: allOrders, isLoading: isAllOrdersLoading } =
-    useGetAllOrdersQuery();
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [fromDate, toDate, searchQuery]);
+
+  const { data: allSalesReturn, isLoading: isAllOrdersLoading } =
+    useGetAllSalesReturnQuery();
 
   const Sales = useMemo(() => {
-    if (!allOrders?.data?.data) return [];
+    if (!allSalesReturn?.data) return [];
 
-    let filtered = allOrders.data.data;
+    let filtered = allSalesReturn.data;
+
+    if (fromDate) {
+      filtered = filtered.filter(
+        (order) => new Date(order.CreatedOn) >= fromDate
+      );
+    }
+
+    if (toDate) {
+      filtered = filtered.filter(
+        (order) => new Date(order.CreatedOn) <= toDate
+      );
+    }
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -50,45 +73,31 @@ const SalesList = () => {
       });
     }
 
-    return filtered.map((order) => ({
-      id: order.Id,
-      order: order,
-      orderNo: order.OrderNo,
-      OrderPrefix: order.OrderPrefix,
-      orderDate: new Intl.DateTimeFormat("en-GB", {
+    return filtered.map((s) => ({
+      id: s.Id,
+      saleRtnNo: `${s.CNPrefix}/${s.CNNo}`,
+      date: new Intl.DateTimeFormat("en-GB", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
-      }).format(new Date(order.OrderPlacedDate)),
+      }).format(new Date(s.CNDate)),
 
-      customerName: order.CustomerMaster?.CustomerName,
-      patientName: order.CustomerContactDetail?.CustomerName,
-      mobileNo: order.CustomerContactDetail?.MobNumber,
-      orderValue: order.TotalValue,
-      totalQty: order.TotalQty,
-      Status: order.Status,
+      patientName: s.CustomerContactDetail?.CustomerName,
+      customerName: s.CustomerMaster.CustomerName,
+      patientMobile: s.CustomerContactDetail.MobNumber,
+      totalQty: s.CNQty,
+      totalPrice: s.CNTotal,
     }));
     // .filter((order) => order.CompanyId == hasMultipleLocations[0]);
-  }, [allOrders,  searchQuery]);
+  }, [allSalesReturn, fromDate, toDate, searchQuery]);
 
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedOrders = Sales.slice(startIndex, startIndex + pageSize);
   const totalPages = Math.ceil(Sales.length / pageSize);
-
-  const totalOrders = allOrders?.data?.data?.length || 0;
-  const filteredOrders = Sales.length;
   const today = new Date();
 
- 
-
-  const getOrderStatus = (status) => {
-    const types = {
-      1: "Confirmed",
-      2: "Partially Invoiced",
-      3: "Invoiced",
-      4: "Cancelled",
-    };
-    return types[status] || "Draft";
+  const handleViewSalesReturn = (id) => {
+    navigate(`/sales-return/view?salesId=${id}`);
   };
 
   if (isAllOrdersLoading) {
@@ -110,7 +119,73 @@ const SalesList = () => {
             </p>
           </div>
         </div>
-
+        <div className="px-6 py-5 border-b border-gray-100">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">Filters</h2>
+          <LocalizationProvider
+            dateAdapter={AdapterDateFns}
+            adapterLocale={enGB}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <DatePicker
+                label="From Date"
+                value={fromDate}
+                onChange={setFromDate}
+                maxDate={today}
+                inputFormat="dd/MM/yyyy"
+                renderInput={(params) => (
+                  <TextField
+                    inputProps={{
+                      ...params.inputProps,
+                      placeholder: "dd/MM/yyyy",
+                    }}
+                    size="small"
+                    fullWidth
+                    variant="outlined"
+                  />
+                )}
+              />
+              <DatePicker
+                label="To Date"
+                value={toDate}
+                onChange={setToDate}
+                minDate={fromDate}
+                maxDate={today}
+                inputFormat="dd/MM/yyyy"
+                renderInput={(params) => (
+                  <TextField
+                    inputProps={{
+                      ...params.inputProps,
+                      placeholder: "dd/MM/yyyy",
+                    }}
+                    placeholder="dd/MM/yyyy"
+                    size="small"
+                    fullWidth
+                    variant="outlined"
+                  />
+                )}
+              />
+              <div className="grid grid-cols-2 gap-3 items-center">
+                <Button
+                  icon={FiSearch}
+                  className="bg-blue-600 hover:bg-blue-700 h-10 w-full md:w-auto justify-center"
+                  onClick={() => {}}
+                >
+                  Apply Filters
+                </Button>
+                <Button
+                  onClick={() => {
+                    setFromDate(null);
+                    setToDate(null);
+                    setSearchQuery("");
+                  }}
+                  variant="outline"
+                >
+                  Clear Filters
+                </Button>
+              </div>
+            </div>
+          </LocalizationProvider>
+        </div>
         {/* Table */}
         <div className="px-6 py-5">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
@@ -139,37 +214,39 @@ const SalesList = () => {
                   navigate("/sales-return/create");
                 }}
               >
-               Add
+                Add
               </Button>
             </div>
           </div>
 
           <Table
+            expand={true}
             columns={[
               "S.No",
-              "Sale Rtn no",
-              "sale rtn date",
+              "Sales Rtn no",
+              "sales rtn date",
+              "patient name",
               "customer name",
               "mobile no",
-              "total qty",
-              "total price",
+              "total return qty",
+              "total return price",
               "action",
             ]}
-            data={[]}
-            renderRow={(order, index) => (
-              <TableRow key={order.id}>
+            data={paginatedOrders}
+            renderRow={(s, index) => (
+              <TableRow key={s.id}>
                 <TableCell>{startIndex + index + 1}</TableCell>
-                <TableCell>{`${order.OrderPrefix}/${order.orderNo} `}</TableCell>
-                <TableCell>{order.orderDate}</TableCell>
-                <TableCell>{order.patientName}</TableCell>
-                <TableCell>{order.customerName}</TableCell>
-                <TableCell>{order.mobileNo}</TableCell>
-                <TableCell>{order.totalQty}</TableCell>
-                <TableCell>{order.orderValue}</TableCell>
-                <TableCell>{getOrderStatus(order.Status)}</TableCell>
+                <TableCell>{s.saleRtnNo}</TableCell>
+                <TableCell>{s.date}</TableCell>
+                <TableCell>{s.patientName}</TableCell>
+                <TableCell>{s.customerName}</TableCell>
+                <TableCell>{s.patientMobile}</TableCell>
+                <TableCell>{s.totalQty}</TableCell>
+                <TableCell>₹{s.totalPrice}</TableCell>
+
                 <TableCell>
                   <button
-                    // onClick={() => handleViewOrder(order.order)}
+                    onClick={() => handleViewSalesReturn(s.id)}
                     className="flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
                     <FiEye className="mr-1.5" />
@@ -189,7 +266,7 @@ const SalesList = () => {
             onPageChange={setCurrentPage}
             pageSize={pageSize}
             onPageSizeChange={setPageSize}
-            totalItems={filteredOrders}
+            totalItems={paginatedOrders}
           />
         </div>
       </div>

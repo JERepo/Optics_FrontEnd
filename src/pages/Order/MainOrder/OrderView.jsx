@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router";
 import {
   useGetOrderViewByIdQuery,
@@ -10,14 +10,12 @@ import { FiTrash2 } from "react-icons/fi";
 import { format } from "date-fns";
 import Button from "../../../components/ui/Button";
 import Loader from "../../../components/ui/Loader";
-
-const formatNumber = (num) => {
-  return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "0";
-};
+import { formatINR } from "../../../utils/formatINR";
 
 const OrderView = () => {
   const navigate = useNavigate();
   const { search } = useLocation();
+  const { calculateGST } = useOrder();
   const params = new URLSearchParams(search);
   const orderId = params.get("orderId");
 
@@ -36,19 +34,6 @@ const OrderView = () => {
   const formatValue = (val) =>
     val !== null && val !== undefined && val !== "" ? val : "N/A";
 
-  const columns = [
-    "S.No",
-    "Type",
-    "Product name",
-    "Quantity",
-    "Rate",
-    "Discount",
-    "GST",
-    "Total",
-    "Advance amount",
-    "Balance amount",
-  ];
-
   const getProductName = (item) => {
     const {
       typeid,
@@ -59,6 +44,11 @@ const OrderView = () => {
       PowerSpecs,
       Variation,
       Specs,
+      Colour,
+      Category,
+      Tint,
+      AddOns,
+      FittingPrice,
     } = item;
 
     const clean = (val) => {
@@ -67,102 +57,136 @@ const OrderView = () => {
         val === undefined ||
         val === "undefined" ||
         val === "null" ||
-        (typeof val === "string" && val.trim() === "")
+        val === "N/A"
       ) {
         return "";
       }
-      return String(val).trim();
+      return val;
     };
 
-    const cleanPower = (val) => {
-      const cleaned = clean(val);
-      if (!cleaned) return "";
-      const num = parseFloat(cleaned);
-      if (isNaN(num)) return "";
-      return num >= 0 ? `+${num.toFixed(2)}` : `${num.toFixed(2)}`;
+    const formatPowerValue = (val) => {
+      const num = parseFloat(val);
+      if (isNaN(num)) return val;
+      return num > 0 ? `+${val}` : val;
     };
 
-    const lines = [];
-
-    // Frame (typeid = 1)
+    // For Frame (typeid = 1)
     if (typeid === 1) {
-      if (clean(ProductName)) lines.push(clean(ProductName));
-      if (clean(Size)) lines.push(clean(Size));
-      if (clean(Barcode)) lines.push(clean(Barcode));
-      if (clean(PatientName)) lines.push(clean(PatientName));
-      return lines.join("\n");
+      const lines = [
+        ProductName,
+        Size ? `Size: ${Size}` : "",
+        Category === 0 ? "Category: Optical Frame" : "Category: Sunglasses",
+        Barcode ? `Barcode: ${Barcode}` : "",
+        PatientName ? `Patient Name: ${PatientName}` : "",
+      ];
+      return lines.filter(Boolean).join("\n");
     }
 
-    // Accessories (typeid = 2)
+    // For Accessories (typeid = 2)
     if (typeid === 2) {
-      if (clean(ProductName)) lines.push(clean(ProductName));
-      if (clean(Variation)) lines.push(clean(Variation));
-      if (clean(Barcode)) lines.push(clean(Barcode));
-      if (clean(PatientName)) lines.push(clean(PatientName));
-      return lines.join("\n");
+      const lines = [
+        ProductName,
+        Variation ? `Variation: ${Variation}` : "",
+        Barcode ? `Barcode: ${Barcode}` : "",
+        PatientName ? `Patient Name: ${PatientName}` : "",
+      ];
+      return lines.filter(Boolean).join("\n");
     }
 
-    // Contact Lens (typeid = 3)
+    // For Contact Lens (typeid = 3)
     if (typeid === 3) {
-      if (clean(ProductName)) lines.push(clean(ProductName));
-      if (PowerSpecs) {
-        const specs = PowerSpecs.split(",")
-          .map((s) => {
-            const [key, val] = s.split(":");
-            const power = cleanPower(val);
-            return power ? `${key.trim()}: ${power}` : "";
-          })
-          .filter(Boolean)
-          .join(" "); // space-separated
-        if (specs) lines.push(specs);
-      }
-      if (clean(Barcode)) lines.push(clean(Barcode));
-      if (clean(PatientName)) lines.push(clean(PatientName));
-      return lines.join("\n");
+      const specs = PowerSpecs
+        ? PowerSpecs.split(",")
+            .map((s) => {
+              const [key, val] = s.split(":");
+              const cleanedValue =
+                val && !["null", "undefined"].includes(val.trim())
+                  ? formatPowerValue(val.trim())
+                  : "";
+              return cleanedValue ? `${key.trim()}: ${cleanedValue}` : "";
+            })
+            .filter(Boolean)
+            .join(", ")
+        : "";
+
+      const lines = [
+        ProductName,
+        specs,
+        clean(Colour) ? `Colour: ${Colour}` : "",
+        Barcode ? `Barcode: ${Barcode}` : "",
+        PatientName ? `Patient Name: ${PatientName}` : "",
+      ];
+      return lines.filter(Boolean).join("\n");
     }
 
-    // Lenses or other (typeid = 0)
+    // For Optical Lens (typeid = 0)
     if (typeid === 0) {
-      if (clean(ProductName)) lines.push(clean(ProductName));
-      if (Array.isArray(Specs) && Specs.length > 0) {
-        const specsLines = Specs.map((spec) => {
-          const side = clean(spec.side); // Keep L: or R:
-          const sph = cleanPower(spec.sph);
-          const cyl = cleanPower(spec.cyl);
+      const tintName = clean(Tint?.name);
+      const addOns = AddOns?.map((a) => clean(a.name)).filter(Boolean);
+
+      const specsLines = (Specs || [])
+        .map((spec) => {
+          const side = clean(spec.side);
+          const sph = clean(spec.sph);
+          const cyl = clean(spec.cyl);
           const axis = clean(spec.axis);
-          const addition = cleanPower(spec.addition);
+          const addition = clean(spec.addition);
 
-          const parts = [];
-          if (side) parts.push(side); // Now keeps L: or R:
-          if (sph) parts.push(`SPH: ${sph}`);
-          if (cyl) parts.push(`CYL: ${cyl}`);
-          if (axis) parts.push(`Axis: ${axis}`);
-          if (addition) parts.push(`Add: ${addition}`);
+          const powerValues = [];
+          if (sph) powerValues.push(`SPH ${formatPowerValue(sph)}`);
+          if (cyl) powerValues.push(`CYL ${formatPowerValue(cyl)}`);
+          if (axis) powerValues.push(`Axis ${formatPowerValue(axis)}`);
+          if (addition) powerValues.push(`Add ${formatPowerValue(addition)}`);
 
-          return parts.join(" "); // space-separated
-        }).filter(Boolean);
+          return powerValues.length ? `${side}: ${powerValues.join(", ")}` : "";
+        })
+        .filter(Boolean)
+        .join("\n");
 
-        if (specsLines.length) lines.push(specsLines.join("\n"));
-      }
-      if (clean(Barcode)) lines.push(clean(Barcode));
-      if (clean(PatientName)) lines.push(clean(PatientName));
-      return lines.join("\n");
+      const lines = [
+        clean(ProductName),
+        specsLines,
+        tintName ? `Tint: ${tintName}` : "",
+        addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
+        clean(FittingPrice) ? `Fitting Price: ${FittingPrice}` : "",
+        PatientName ? `Patient Name: ${clean(PatientName)}` : "",
+      ];
+
+      return lines.filter(Boolean).join("\n");
     }
 
     return "";
   };
 
-  // Calculate summary values
   const totalQty = orderDetails?.reduce(
     (sum, item) => sum + (parseInt(item.OrderQty) || 0),
     0
   );
+
+  const totalGST = orderDetails?.reduce((sum, item) => {
+    const gstInfo = calculateGST(
+      parseFloat(item.DiscountedSellingPrice * item.OrderQty),
+      item.TaxPercentage
+    );
+
+    const fittingPrice = parseFloat(item.FittingPrice || 0);
+    const fittingGst = parseFloat(item.FittingGSTPercentage || 0);
+    const totalFitting = fittingPrice * (fittingGst / 100);
+
+    return sum + totalFitting + (parseFloat(gstInfo.gstAmount) || 0);
+  }, 0);
+
   const grandTotal = orderDetails?.reduce((sum, item) => {
     const price = parseFloat(item.Total || 0);
     const fittingPrice = parseFloat(item.FittingPrice || 0);
+    const fittingGst = parseFloat(item.FittingGSTPercentage || 0);
+    const totalFitting = fittingPrice * (fittingGst / 100);
 
-    return sum + (price + fittingPrice);
+    const fittingPlusPrice = totalFitting + price + fittingPrice;
+
+    return sum + (fittingPlusPrice || 0);
   }, 0);
+
   const advanceAmount = orderDetails?.reduce(
     (sum, item) => sum + (parseFloat(item.AdvanceAmount) || 0),
     0
@@ -179,6 +203,23 @@ const OrderView = () => {
     return types[status] || "Draft";
   };
 
+  const columns = [
+    "S.No",
+    "Type",
+    "Product name",
+    "Quantity",
+    "Rate",
+    "Discount",
+    "GST",
+  ];
+
+  if (
+    Number(customerDataById?.data?.data?.CustomerMaster?.CreditBilling) === 0
+  ) {
+    columns.push("Advance Amount", "Balance Amount");
+  }
+
+  columns.push("Total");
   if (isViewLoading || isLoading) {
     return (
       <div>
@@ -187,12 +228,13 @@ const OrderView = () => {
     );
   }
 
-  console.log("ss", customerDataById?.data);
   return (
     <div className="max-w-7xl">
       <div className="bg-white rounded-sm shadow-sm overflow-hidden p-6">
         <div className="flex justify-between items-center mb-3">
-          <div></div>
+          <div className="text-neutral-800 text-2xl font-semibold">
+            Order Details
+          </div>
           <div>
             <Button variant="outline" onClick={() => navigate("/order-list")}>
               Back
@@ -229,10 +271,12 @@ const OrderView = () => {
             label="Customer No"
             value={customerDataById?.data.data?.CustomerMaster?.MobNumber}
           />
-          <Info
-            label="Customer Address"
-            value={`${customerDataById?.data.data?.CustomerMaster?.BillAddress1} ${customerDataById?.data.data?.CustomerMaster?.BillAddress2} ${customerDataById?.data.data?.CustomerMaster?.BillCity}`}
-          />
+          {customerDataById?.data.data?.CustomerMaster?.BillAddress1 && (
+            <Info
+              label="Customer Address"
+              value={`${customerDataById?.data.data?.CustomerMaster?.BillAddress1} ${customerDataById?.data.data?.CustomerMaster?.BillAddress2} ${customerDataById?.data.data?.CustomerMaster?.BillCity}`}
+            />
+          )}
           <Info
             label="Sales Person"
             value={customerDataById?.data.data?.SalesPerson?.PersonName}
@@ -266,26 +310,57 @@ const OrderView = () => {
                   </div>
                 </TableCell>
                 <TableCell>{formatValue(order?.OrderQty)}</TableCell>
-                <TableCell>{formatValue(order?.Rate)}</TableCell>
+                <TableCell>₹{formatINR(order?.Rate)}</TableCell>
                 <TableCell>
+                  ₹
                   {order?.DiscountValue
                     ? `${order.DiscountValue}(${order.DiscountPercentage}%)`
                     : 0}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center">
-                    <div>₹{formatNumber(order.DiscountedSellingPrice)}</div>
-                    <div>({order.taxPercentage}%)</div>
+                    <div>
+                      ₹
+                      {formatINR(
+                        parseFloat(
+                          calculateGST(
+                            parseFloat(order.DiscountedSellingPrice) *
+                              parseFloat(order.OrderQty),
+                            parseFloat(order.TaxPercentage)
+                          ).gstAmount
+                        ) +
+                          parseFloat(order.FittingPrice || 200) *
+                            (parseFloat(order.FittingGSTPercentage || 0) / 100)
+                      )}
+                    </div>
+                    <div>({order.TaxPercentage}%)</div>
                   </div>
                 </TableCell>
+                {customerDataById?.data?.data?.CustomerMaster?.CreditBilling ===
+                  0 && (
+                  <>
+                    <TableCell>₹{formatINR(order?.AdvanceAmount)}</TableCell>
+                    <TableCell>
+                      ₹
+                      {formatINR(
+                        order?.DiscountedSellingPrice * order.OrderQty +
+                          parseFloat(order.FittingPrice || 0) *
+                            (parseFloat(order.FittingGSTPercentage || 0) /
+                              100) +
+                          parseFloat(order.FittingPrice || 0) -
+                          (order.AdvanceAmount || 0)
+                      )}
+                    </TableCell>
+                  </>
+                )}
+
                 <TableCell>
-                  {formatValue(order?.DiscountedSellingPrice * order.OrderQty)}
-                </TableCell>
-                <TableCell>{formatValue(order?.AdvanceAmount)}</TableCell>
-                <TableCell>
-                  {formatValue(
-                    order?.DiscountedSellingPrice * order.OrderQty -
-                      order.AdvanceAmount
+                  ₹
+                  {formatINR(
+                    order?.DiscountedSellingPrice * order.OrderQty +
+                      parseFloat(order.FittingPrice || 0) *
+                        (parseFloat(order.FittingGSTPercentage || 0) / 100) +
+                      parseFloat(order.FittingPrice || 0)
                   )}
                 </TableCell>
               </TableRow>
@@ -297,38 +372,64 @@ const OrderView = () => {
         {/* Summary Section */}
         {orderDetails && (
           <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="flex gap-30 justify-end">
               <div className="flex flex-col">
                 <span className="text-neutral-700 font-semibold text-lg">
                   Total Qty
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
-                  {formatNumber(totalQty) || "0"}
+                  {totalQty || "0"}
                 </span>
               </div>
               <div className="flex flex-col">
                 <span className="text-neutral-700 font-semibold text-lg">
-                  Grand Total
+                  Total GST
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
-                  ₹{formatNumber(Number(grandTotal?.toFixed(2))) || "0"}
+                  ₹{formatINR(totalGST) || "0"}
                 </span>
               </div>
               <div className="flex flex-col">
                 <span className="text-neutral-700 font-semibold text-lg">
-                  Advance Amount
+                  Total Basic Value
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
-                  ₹{formatNumber(Number(advanceAmount?.toFixed(2))) || "0"}
+                  ₹
+                  {formatINR(parseFloat(grandTotal) - parseFloat(totalGST)) ||
+                    "0"}
                 </span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-neutral-700 font-semibold text-lg">
-                  Balance Amount
-                </span>
-                <span className="text-neutral-600 text-xl font-medium">
-                  ₹{formatNumber(Number(balanceAmount?.toFixed(2))) || "0"}
-                </span>
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col">
+                  <span className="text-neutral-700 font-semibold text-lg">
+                    Total Amount
+                  </span>
+                  <span className="text-neutral-600 text-xl font-medium">
+                    ₹{formatINR(Number(grandTotal)) || "0"}
+                  </span>
+                </div>
+                {customerDataById?.data.data?.CustomerMaster?.CreditBilling ===
+                  0 && (
+                  <div className="flex flex-col">
+                    <span className="text-neutral-700 font-semibold text-lg">
+                      Total Advance Amount
+                    </span>
+                    <span className="text-neutral-600 text-xl font-medium">
+                      ₹{formatINR(Number(advanceAmount?.toFixed(2))) || "0"}
+                    </span>
+                  </div>
+                )}
+                {customerDataById?.data.data?.CustomerMaster?.CreditBilling ===
+                  0 && (
+                  <div className="flex flex-col">
+                    <span className="text-neutral-700 font-semibold text-lg">
+                      Total Balance Amount
+                    </span>
+                    <span className="text-neutral-600 text-xl font-medium">
+                      ₹{formatINR(Number(balanceAmount?.toFixed(2))) || "0"}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

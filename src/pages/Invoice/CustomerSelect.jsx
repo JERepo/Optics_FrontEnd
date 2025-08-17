@@ -21,7 +21,15 @@ import Button from "../../components/ui/Button";
 import { Table, TableCell, TableRow } from "../../components/Table";
 import Modal from "../../components/ui/Modal";
 import { useGetLocationByIdQuery } from "../../api/roleManagementApi";
-import { FiEdit, FiPlus, FiRefreshCw, FiTrash2 } from "react-icons/fi";
+import {
+  FiCheck,
+  FiEdit,
+  FiEdit2,
+  FiPlus,
+  FiRefreshCw,
+  FiTrash2,
+  FiX,
+} from "react-icons/fi";
 import { formatINR } from "../../utils/formatINR";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router";
@@ -236,12 +244,16 @@ const CustomerSelect = () => {
   const [isBatchCodeOpen, setIsBatchCodeOpen] = useState(false);
   const [localProductData, setLocalProductData] = useState([]);
   const [editingOrderId, setEditingOrderId] = useState(null);
+  const [editMode, setEditMode] = useState({}); // { [index]: { sellingPrice: false, toBillQty: false } }
+  const [editValues, setEditValues] = useState({});
   const [editingField, setEditingField] = useState(null);
   const [editValue, setEditValue] = useState("");
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [selectedOrderForBatch, setSelectedOrderForBatch] = useState(null);
   const [collectPayment, setCollectPayment] = useState(false);
   const [invoiceNote, setInvoiceNote] = useState("");
+  const [totalBatchData, setTotalBatchData] = useState(null);
+  const [loadingIndex, setLoadingIndex] = useState(null);
 
   const { data: contactResp, isLoading: isPatientLoading } =
     useGetPatientsQuery({
@@ -331,7 +343,6 @@ const CustomerSelect = () => {
   const masterIds = [
     ...new Set(allMaster?.data?.orders?.map((o) => o.OrderMasterId) || []),
   ];
-  console.log("master id", masterIds);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -351,11 +362,52 @@ const CustomerSelect = () => {
     fetchProducts();
   }, [allMaster]);
 
+  useEffect(() => {
+    setEditMode((prev) => {
+      const newEditMode = { ...prev };
+      localProductData.forEach((_, index) => {
+        if (!newEditMode[index]) {
+          newEditMode[index] = { sellingPrice: false, toBillQty: false };
+        }
+      });
+      return newEditMode;
+    });
+    setEditValues((prev) => {
+      const newEditValues = { ...prev };
+      localProductData.forEach((order, index) => {
+        if (!newEditValues[index]) {
+          newEditValues[index] = {
+            sellingPrice: order.sellingPrice.toString(),
+            toBillQty: order.toBillQty.toString(),
+          };
+        }
+      });
+      return newEditValues;
+    });
+  }, [localProductData]);
+
   const allowedStatusesByType = {
     0: [0, 1, 2, 6], // OL
     1: [0, 1, 2], // Frame
     2: [0, 1, 2], // Accessory
     3: [0, 1, 2], // CL
+  };
+
+  const handleGetBatches = async (order, index) => {
+    setLoadingIndex(index);
+    try {
+      const res = await getBatches({
+        clBatchId: order.cLDetailId,
+        locationId: hasMultipleLocations[0],
+      }).unwrap();
+
+      setTotalBatchData(res?.data);
+      setIsBatchCodeOpen(true);
+      setSelectedOrderForBatch({ ...order, index });
+    } catch (error) {
+      setTotalBatchData(null);
+      toast.error(error?.data?.error || "Something went wrong");
+    }
   };
 
   const filteredProducts = localProductData?.filter((order) => {
@@ -369,6 +421,15 @@ const CustomerSelect = () => {
     return isAllowedStatus && hasStockInLocation;
   });
 
+  const toggleEditMode = (index, field) => {
+    setEditMode((prev) => ({
+      ...prev,
+      [index]: {
+        ...prev[index],
+        [field]: !prev[index]?.[field],
+      },
+    }));
+  };
   const handleSelectAndNext = () => {
     setCustomerId({
       companyId: selectedPatient?.CustomerMaster?.CompanyID,
@@ -377,66 +438,43 @@ const CustomerSelect = () => {
     });
     setIsNextClicked(true);
   };
-  const handleEditStart = (order, field, index) => {
-    setEditingOrderId(index);
-    setEditingField(field);
-    setEditValue(
-      field === "sellingPrice"
-        ? order.sellingPrice.toString()
-        : order.toBillQty.toString()
-    );
-  };
 
-  const handleEditChange = (e) => {
-    const value = e.target.value;
-    setEditValue(value);
-    if (value === "") {
+  const saveEdit = (index, field) => {
+    const value = editValues[index]?.[field]?.trim();
+    const order = localProductData[index];
+    const numericValue = parseFloat(value);
+
+    if (value === "" || isNaN(numericValue)) {
       toast.error(
         `${
-          editingField === "sellingPrice" ? "Selling Price" : "To Bill Qty"
-        } cannot be empty`
+          field === "sellingPrice" ? "Selling Price" : "To Bill Qty"
+        } must be a valid number`
       );
       return;
     }
-    if (isNaN(value) || Number(value) < 0) {
-      toast.error(
-        editingField === "sellingPrice"
-          ? "Selling Price must be a non-negative number"
-          : "To Bill Qty must be a non-negative number"
-      );
-    }
-  };
-
-  const handleEditSave = (order, index) => {
-    const value = editValue.trim();
-    if (value === "" || isNaN(value)) {
-      toast.error(
-        editingField === "sellingPrice"
-          ? "Selling Price must be a valid number"
-          : "To Bill Qty must be a valid number"
-      );
-      return;
-    }
-
-    const numericValue = parseFloat(value);
     if (numericValue < 0) {
       toast.error(
-        editingField === "sellingPrice"
-          ? "Selling Price cannot be negative"
-          : "To Bill Qty cannot be negative"
+        `${
+          field === "sellingPrice" ? "Selling Price" : "To Bill Qty"
+        } cannot be negative`
       );
       return;
     }
-
-    if (editingField === "toBillQty") {
+    if (
+      field === "sellingPrice" &&
+      order.advanceAmount > 0 &&
+      numericValue < order.advanceAmount
+    ) {
+      toast.error("Selling Price cannot be less than advance amount");
+      return;
+    }
+    if (field === "toBillQty") {
       const maxToBillQty =
         order.orderQty - order.billedQty - order.cancelledQty;
       if (numericValue > maxToBillQty) {
         toast.error(`To Bill Qty cannot exceed ${maxToBillQty}`);
         return;
       }
-
-      // Check against batch data for contact lenses (productType === 3)
       if (order.productType === 3 && order.batchData?.length) {
         const totalBatchQty = order.batchData.reduce(
           (sum, item) => sum + Number(item.availableQty),
@@ -456,20 +494,39 @@ const CustomerSelect = () => {
         idx === index
           ? {
               ...item,
-              [editingField]: numericValue,
+              [field]: numericValue,
               totalValue:
-                (editingField === "sellingPrice"
-                  ? numericValue
-                  : item.sellingPrice) *
-                (editingField === "toBillQty" ? numericValue : item.toBillQty),
+                (field === "sellingPrice" ? numericValue : item.sellingPrice) *
+                (field === "toBillQty" ? numericValue : item.toBillQty),
             }
           : item
       )
     );
+    setEditMode((prev) => ({
+      ...prev,
+      [index]: {
+        ...prev[index],
+        [field]: false,
+      },
+    }));
+  };
 
-    setEditingOrderId(null);
-    setEditingField(null);
-    setEditValue("");
+  const cancelEdit = (index, field) => {
+    setEditMode((prev) => ({
+      ...prev,
+      [index]: {
+        ...prev[index],
+        [field]: false,
+      },
+    }));
+    // Reset edit value to original
+    setEditValues((prev) => ({
+      ...prev,
+      [index]: {
+        ...prev[index],
+        [field]: localProductData[index][field].toString(),
+      },
+    }));
   };
 
   const getAvalQty = (order) => {
@@ -502,6 +559,10 @@ const CustomerSelect = () => {
   };
 
   const handleKeyPress = (e, order, index) => {
+    console.log("order", order);
+    // if(order.advanceAmount === null || order.advanceAmount === 0){
+
+    // }
     if (e.key === "Enter") {
       handleEditSave(order, index);
     }
@@ -734,6 +795,7 @@ const CustomerSelect = () => {
       toast.success(response?.message);
       setFullPayments([]);
       updatePaymentDetails(null);
+      navigate("/invoice");
     } catch (error) {
       console.error(error);
       const errors = error?.data.errors;
@@ -929,7 +991,6 @@ const CustomerSelect = () => {
                     const allSelected =
                       localProductData?.length > 0 &&
                       selectedProducts.length === localProductData.length;
-
                     return (
                       <div className="flex items-center gap-1">
                         {column}
@@ -942,7 +1003,17 @@ const CustomerSelect = () => {
                       </div>
                     );
                   }
-                  return column;
+                  return (
+                    <span
+                      className={
+                        column === "Selling Price" || column === "To Bill Qty"
+                          ? "min-w-[150px] inline-block"
+                          : ""
+                      }
+                    >
+                      {column}
+                    </span>
+                  );
                 }}
                 renderRow={(order, index) => (
                   <TableRow key={index} className="text-[13px]">
@@ -973,65 +1044,113 @@ const CustomerSelect = () => {
                         ? order.mrp
                         : formatINR(getPricing(order))}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {editingOrderId === index &&
-                        editingField === "sellingPrice" ? (
+                    <TableCell className="min-w-[150px]">
+                      {editMode[index]?.sellingPrice ? (
+                        <div className="flex items-center gap-2">
                           <input
                             type="number"
                             min="0"
                             step="0.01"
-                            value={editValue}
-                            onChange={handleEditChange}
-                            onBlur={() => handleEditSave(order, index)}
-                            onKeyPress={(e) => handleKeyPress(e, order, index)}
-                            className="w-20 p-1 border rounded"
+                            value={editValues[index]?.sellingPrice || ""}
+                            onChange={(e) =>
+                              setEditValues((prev) => ({
+                                ...prev,
+                                [index]: {
+                                  ...prev[index],
+                                  sellingPrice: e.target.value,
+                                },
+                              }))
+                            }
+                            onKeyPress={(e) => handleKeyPress(e, index)}
+                            className="w-20 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                             autoFocus
                           />
-                        ) : (
-                          <>
-                            <span>₹{formatINR(order.sellingPrice) || 0}</span>
-                            {companySettings?.data?.data?.EditInvoicePrice ===
-                              1 && (
-                              <FiEdit
-                                className="cursor-pointer text-gray-600"
-                                onClick={() =>
-                                  handleEditStart(order, "sellingPrice", index)
-                                }
-                              />
-                            )}
-                          </>
-                        )}
-                      </div>
+                          <button
+                            onClick={() => saveEdit(index, "sellingPrice")}
+                            className="text-neutral-400 transition"
+                            title="Save"
+                          >
+                            <FiCheck size={18} />
+                          </button>
+                          <button
+                            onClick={() => cancelEdit(index, "sellingPrice")}
+                            className="text-neutral-400 transition"
+                            title="Cancel"
+                          >
+                            <FiX size={18} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-700">
+                            ₹{formatINR(order.sellingPrice) || 0}
+                          </span>
+                          {companySettings?.data?.data?.EditInvoicePrice ===
+                            1 && (
+                            <button
+                              onClick={() =>
+                                toggleEditMode(index, "sellingPrice")
+                              }
+                              className="text-neutral-400 hover:text-neutral-600 transition"
+                              title="Edit Price"
+                            >
+                              <FiEdit2 size={14} />
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell>{order.orderQty}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {editingOrderId === index &&
-                        editingField === "toBillQty" ? (
+                    <TableCell className="min-w-[150px]">
+                      {editMode[index]?.toBillQty ? (
+                        <div className="flex items-center gap-2">
                           <input
                             type="number"
                             min="0"
                             step="1"
-                            value={editValue}
-                            onChange={handleEditChange}
-                            onBlur={() => handleEditSave(order, index)}
-                            onKeyPress={(e) => handleKeyPress(e, order, index)}
-                            className="w-20 p-1 border rounded"
+                            value={editValues[index]?.toBillQty || ""}
+                            onChange={(e) =>
+                              setEditValues((prev) => ({
+                                ...prev,
+                                [index]: {
+                                  ...prev[index],
+                                  toBillQty: e.target.value,
+                                },
+                              }))
+                            }
+                            onKeyPress={(e) => handleKeyPress(e, index)}
+                            className="w-20 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                             autoFocus
                           />
-                        ) : (
-                          <>
-                            <span>{order.toBillQty}</span>
-                            <FiEdit
-                              className="cursor-pointer text-gray-600"
-                              onClick={() =>
-                                handleEditStart(order, "toBillQty", index)
-                              }
-                            />
-                          </>
-                        )}
-                      </div>
+                          <button
+                            onClick={() => saveEdit(index, "toBillQty")}
+                            className="text-neutral-400 transition"
+                            title="Save"
+                          >
+                            <FiCheck size={18} />
+                          </button>
+                          <button
+                            onClick={() => cancelEdit(index, "toBillQty")}
+                            className="text-neutral-400 transition"
+                            title="Cancel"
+                          >
+                            <FiX size={18} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-700">
+                            {order.toBillQty}
+                          </span>
+                          <button
+                            onClick={() => toggleEditMode(index, "toBillQty")}
+                            className="text-neutral-400 hover:text-neutral-600 transition"
+                            title="Edit Quantity"
+                          >
+                            <FiEdit2 size={14} />
+                          </button>
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell>{getAvalQty(order)}</TableCell>
                     <TableCell>
@@ -1054,27 +1173,17 @@ const CustomerSelect = () => {
                         !order.batchData?.length &&
                         selectedProducts.includes(index) && (
                           <button
-                            onClick={() => {
-                              setIsBatchCodeOpen(true);
-                              setSelectedOrderForBatch({ ...order, index });
-                              getBatches({
-                                clBatchId: order.cLDetailId,
-                                locationId: hasMultipleLocations[0],
-                              });
-                            }}
-                            className="
-                            bg-black hover:bg-primary-600 
-                            text-white 
-                            py-2 px-4 
-                            rounded 
-                            transition-colors duration-200 
-                            flex items-center gap-2
-                            shadow-sm hover:shadow-md
-                            text-sm font-medium
-                          "
+                            onClick={() => handleGetBatches(order, index)}
+                            className="bg-black hover:bg-primary-600 text-white py-2 px-4 rounded transition-colors duration-200 flex items-center gap-2 shadow-sm hover:shadow-md text-sm font-medium"
                           >
-                            <FiPlus className="text-base" />
-                            Batch Code
+                            {isBatchesFetching && index === loadingIndex ? (
+                              "Loading..."
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <FiPlus className="text-base" />
+                                Batch Code
+                              </div>
+                            )}
                           </button>
                         )}
                     </TableCell>
@@ -1137,7 +1246,7 @@ const CustomerSelect = () => {
                             <Button
                               variant="ghost"
                               onClick={() => handleDeletePayment(index)}
-                              className="text-red-500 hover:text-red-700"
+                              className="text-neutral-400"
                               icon={FiTrash2}
                             />
                           </TableCell>
@@ -1224,7 +1333,7 @@ const CustomerSelect = () => {
               setIsBatchCodeOpen(false);
               setSelectedOrderForBatch(null);
             }}
-            batchDetails={batchDetails}
+            batchDetails={totalBatchData}
             selectedOrder={selectedOrderForBatch}
             locations={hasMultipleLocations}
             setLocalProductData={setLocalProductData}
@@ -1276,7 +1385,7 @@ const BatchCode = ({
       batchData: existingData,
     } = batchData;
 
-    const matchedBatch = batchDetails?.data?.batches?.find(
+    const matchedBatch = batchData?.batches?.find(
       (item) => item.CLBatchBarCode === barcode
     );
 
@@ -1349,7 +1458,7 @@ const BatchCode = ({
         locationId: locations[0],
         payload,
       }).unwrap();
-      
+
       setLocalProductData((prev) => {
         const newProductData = prev.filter(
           (_, idx) => idx !== selectedOrder.index
@@ -1434,11 +1543,11 @@ const BatchCode = ({
         <div className="w-1/2">
           <Autocomplete
             value={
-              batchDetails?.data?.batches?.find(
+              batchDetails?.batches?.find(
                 (item) => item.CLBatchBarCode === batchData.barcode
               ) || null
             }
-            options={batchDetails?.data?.batches || []}
+            options={batchDetails?.batches || []}
             getOptionLabel={(option) => option.CLBatchBarCode || ""}
             onChange={(_, newValue) =>
               setBatchData((prev) => ({
@@ -1473,13 +1582,13 @@ const BatchCode = ({
                 </div>
                 <div>
                   <span className="font-semibold">MRP:</span> ₹
-                  {batchDetails?.data?.batches?.find(
+                  {batchData?.batches?.find(
                     (b) => b.CLBatchBarCode === batchData.barcode
                   )?.CLMRP || "N/A"}
                 </div>
                 <div>
                   <span className="font-semibold">Selling Price:</span> ₹
-                  {batchDetails?.data?.batches?.find(
+                  {batchData?.batches?.find(
                     (b) => b.CLBatchBarCode === batchData.barcode
                   )?.SellingPrice || "N/A"}
                 </div>

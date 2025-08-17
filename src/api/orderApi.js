@@ -367,6 +367,7 @@ export const orderApi = createApi({
         method: "PUT",
         body: payload,
       }),
+      invalidatesTags :["Order"]
     }),
 
     // MAIN PAGE AND VIEW PAGE
@@ -374,6 +375,7 @@ export const orderApi = createApi({
       query: () => ({
         url: `/api/v1/order/all`,
       }),
+      providesTags: ["Order"],
     }),
     getIdentifier: builder.query({
       query: () => ({
