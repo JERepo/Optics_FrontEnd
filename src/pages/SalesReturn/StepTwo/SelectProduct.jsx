@@ -74,7 +74,7 @@ const SelectProduct = () => {
             className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700"
             disabled={!selectedSalesProduct.value}
           >
-            Return Orders
+            Orders
           </Button>
           <Button
             onClick={handleAddProduct}

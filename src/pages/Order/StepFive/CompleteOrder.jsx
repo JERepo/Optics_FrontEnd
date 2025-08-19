@@ -69,7 +69,7 @@ const DiscountDisplay = ({ item }) => {
 const getProductName = (item) => {
   const {
     typeid,
-    ProductName,  
+    ProductName,
     Size,
     Barcode,
     PatientName,
@@ -305,7 +305,18 @@ const CompleteOrder = () => {
 
   const handleBack = () => goToStep(currentStep - 1);
   const handleAddProduct = () => goToStep(2);
-  console.log("ccc", customerId.customerData);
+
+  const getTotal = (item) => {
+    if (item.typeid === 0) {
+      const sum =
+        item.Total +
+        parseFloat(item.FittingPrice) *
+          (parseFloat(item.FittingGSTPercentage) / 100) +
+        parseFloat(item.FittingPrice);
+      return sum;
+    }
+    return item.Total;
+  };
   const calculateTotals = () => {
     if (!savedOrders || savedOrders.length === 0) {
       return { totalQty: 0, totalGST: 0, totalAmount: 0 };
@@ -323,10 +334,16 @@ const CompleteOrder = () => {
         const fitting =
           parseFloat(item.FittingPrice) *
           (parseFloat(item.FittingGSTPercentage) / 100);
+
         return {
           totalQty: acc.totalQty + qty,
-          totalGST: acc.totalGST + gst * qty + fitting,
-          totalAmount: acc.totalAmount + total + fitting + parseFloat(item.FittingPrice),
+          totalGST: acc.totalGST + gst * qty + (item.typeid == 0 ? fitting : 0),
+          totalAmount:
+            acc.totalAmount +
+            total +
+            (item.typeid == 0 ? fitting : 0) +
+            (item.typeid == 0 ? parseFloat(item.FittingPrice) : 0) -
+            item.AdvanceAmount,
         };
       },
       { totalQty: 0, totalGST: 0, totalAmount: 0 }
@@ -339,9 +356,16 @@ const CompleteOrder = () => {
 
     if (savedOrders?.length) {
       savedOrders.forEach((item) => {
+        const fitting =
+          parseFloat(item.FittingPrice) *
+          (parseFloat(item.FittingGSTPercentage) / 100);
         const adv = parseFloat(advancedAmounts[item.OrderDetailId]) || 0;
         totalAdv += adv;
-        balance += parseFloat(item.Total) - adv;
+        balance +=
+          parseFloat(item.Total) +
+          (item.typeid == 0 ? fitting : 0) +
+          parseFloat(item.typeid == 0 ? item.FittingPrice : 0) -
+          adv;
       });
     }
 
@@ -536,14 +560,7 @@ const CompleteOrder = () => {
                       <div>₹{formatNumber(gstAmount)}</div>
                       <div className="text-xs">({taxPercentage}%)</div>
                     </TableCell>
-                    <TableCell className="text-right font-medium">
-                      ₹
-                      {formatNumber(
-                        item.Total +
-                          parseFloat(item.FittingPrice) *
-                            (parseFloat(item.FittingGSTPercentage) / 100)
-                      )}
-                    </TableCell>
+                    <TableCell>₹{formatNumber(getTotal(item))}</TableCell>
                     <TableCell>
                       {customerId.customerData.CreditBilling === 0 ? (
                         <AdvanceAmountInput

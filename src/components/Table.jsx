@@ -22,7 +22,7 @@ export const Table = ({
   return (
     <div className="space-y-4">
       <div
-        className={`overflow-auto bg-white rounded-lg shadow max-h-[500px] ${className}`} // Added overflow-auto and max-h-[500px]
+        className={`overflow-auto bg-white rounded-lg shadow max-h-[700px] ${className}`} // Added overflow-auto and max-h-[500px]
       >
         <table className="min-w-full divide-y divide-neutral-200 table-fixed">
           <thead className="bg-blue-50">

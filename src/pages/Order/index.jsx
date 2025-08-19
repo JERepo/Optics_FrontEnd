@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 
 import AddOrder from "./StepOne/AddOrder";
-import { useGetOrderDetailsQuery, useGetOrderQuery } from "../../api/orderApi";
+import { useGetOrderDetailsQuery } from "../../api/orderApi";
 import { useSelector } from "react-redux";
 import { useGetLocationByIdQuery } from "../../api/roleManagementApi";
 import { useGetCompanyIdQuery, useGetIsdQuery } from "../../api/customerApi";
@@ -22,11 +22,11 @@ const TotalSales = () => {
 
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
 
-  const { data: getOrderData, isLoading: isGetOrderDataLoading } =
-    useGetOrderQuery(
-      { id: patientId, customerId },
-      { skip: !patientId && !customerId }
-    );
+  // const { data: getOrderData, isLoading: isGetOrderDataLoading } =
+  //   useGetOrderQuery(
+  //     { id: patientId, customerId },
+  //     { skip: !patientId && !customerId }
+  //   );
 
   const { data: locationById } = useGetLocationByIdQuery(
     { id: location },
@@ -95,8 +95,7 @@ const TotalSales = () => {
 
   const commonProps = {
     handleGetPatient,
-    getOrderData,
-    isGetOrderDataLoading,
+
     location,
     setLocation,
     locationById,

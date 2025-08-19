@@ -367,7 +367,7 @@ export const orderApi = createApi({
         method: "PUT",
         body: payload,
       }),
-      invalidatesTags :["Order"]
+     
     }),
 
     // MAIN PAGE AND VIEW PAGE

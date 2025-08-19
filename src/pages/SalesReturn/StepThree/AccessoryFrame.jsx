@@ -29,7 +29,11 @@ import Select from "../../../components/Form/Select";
 import { useSelector } from "react-redux";
 import { useGetIsdQuery } from "../../../api/customerApi";
 import Radio from "../../../components/Form/Radio";
-import { useSaveProductsMutation } from "../../../api/salesReturnApi";
+import {
+  useLazyGetInvoiceDetailsQuery,
+  useSaveProductsMutation,
+} from "../../../api/salesReturnApi";
+import { formatINR } from "../../../utils/formatINR";
 
 const AccessoryFrame = () => {
   const {
@@ -39,6 +43,8 @@ const AccessoryFrame = () => {
     currentSalesStep,
     goToSalesStep,
     salesDraftData,
+    referenceApplicable,
+    calculateGST,
   } = useOrder();
   const { user } = useSelector((state) => state.auth);
 
@@ -54,11 +60,19 @@ const AccessoryFrame = () => {
   const [warningPayload, setWarningPayload] = useState(null);
   const [singleOrCombine, setSingleOrCombine] = useState(0); // 0 = Combine, 1 = Separate
   const [editMode, setEditMode] = useState({}); // { [barcode-index]: { sellingPrice: false, qty: false } }
+  const [openReferenceYes, setOpenReferenceYes] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [isInvoiceSelected, setIsInvoiceSelected] = useState(false);
+  const [selectedInvoiceReturnQty, setSelectedInvoiceReturnQty] = useState(0);
 
   const { data: allBrands } = useGetAllBrandsQuery();
   const [
     fetchByBarcode,
-    { isLoading: isBarcodeLoading, isFetching: isBarCodeFetching },
+    {
+      data: barCodeData,
+      isLoading: isBarcodeLoading,
+      isFetching: isBarCodeFetching,
+    },
   ] = useLazyFetchBarcodeForAccessoryQuery();
   const [
     fetchByBrandProduct,
@@ -68,6 +82,10 @@ const AccessoryFrame = () => {
     useSaveAccessoryMutation();
   const [saveFinalProducts, { isLoading: isFinalProductsSaving }] =
     useSaveProductsMutation();
+  const [
+    getInvoiceDetails,
+    { data: InvoiceDetails, isLoading: isInvoiceLoading },
+  ] = useLazyGetInvoiceDetailsQuery();
 
   useEffect(() => {
     setEditMode((prev) => {
@@ -81,37 +99,47 @@ const AccessoryFrame = () => {
       return newEditMode;
     });
   }, [items]);
-  console.log("edit", editMode);
   const handleBarcodeSubmit = async (e) => {
     e.preventDefault();
     if (!barcode) return;
-
-    const res = await fetchByBarcode({
-      barcode,
-      locationId: customerSalesId.locationId,
-    });
-    const data = res?.data?.data;
-
-    if (data) {
-      setItems((prev) => {
-        if (singleOrCombine === 1) {
-          return [{ ...data, Quantity: 1 }, ...prev];
-        } else {
-          const index = prev.findIndex((i) => i.Barcode === data.Barcode);
-          if (index !== -1) {
-            return prev.map((item, idx) =>
-              idx === index
-                ? { ...item, Quantity: Number(item.Quantity) + 1 }
-                : item
-            );
-          } else {
-            return [{ ...data, Quantity: 1 }, ...prev];
-          }
-        }
+    try {
+      const res = await fetchByBarcode({
+        barcode,
+        locationId: customerSalesId.locationId,
       });
-    } else {
-      toast.error(`Barcode doesn't exist!`);
+      const data = res?.data?.data;
+      if (data) {
+        if (referenceApplicable === 0) {
+          setItems((prev) => {
+            if (singleOrCombine === 1) {
+              return [{ ...data, Quantity: 1 }, ...prev];
+            } else {
+              const index = prev.findIndex((i) => i.Barcode === data.Barcode);
+              if (index !== -1) {
+                return prev.map((item, idx) =>
+                  idx === index
+                    ? { ...item, Quantity: Number(item.Quantity) + 1 }
+                    : item
+                );
+              } else {
+                return [{ ...data, Quantity: 1 }, ...prev];
+              }
+            }
+          });
+        } else {
+          await getInvoiceDetails({
+            productType: 1,
+            detailId: data.Id,
+            batchCode: null,
+            patientId: customerSalesId.patientId,
+          }).unwrap();
+          setOpenReferenceYes(true);
+        }
+      }
+    } catch (error) {
+      toast.error(error?.data.message);
     }
+
     setBarcode("");
   };
 
@@ -131,18 +159,28 @@ const AccessoryFrame = () => {
 
       const data = res?.data?.data;
 
-      if (data && data.length > 0) {
-        setSearchResults(data);
-        setBrandInput("");
-        setBrandId(null);
-        setModelNo("");
-        setSearchMode(false);
+      if (referenceApplicable === 0) {
+        if (data && data.length > 0) {
+          setSearchResults(data);
+          setBrandInput("");
+          setBrandId(null);
+          setModelNo("");
+          setSearchMode(false);
+        } else {
+          toast.error(res?.data?.message || "No matching models found");
+          setBrandInput("");
+          setBrandId(null);
+          setModelNo("");
+          setSearchMode(false);
+        }
       } else {
-        toast.error(res?.data?.message || "No matching models found");
-        setBrandInput("");
-        setBrandId(null);
-        setModelNo("");
-        setSearchMode(false);
+        await getInvoiceDetails({
+          productType: 1,
+          detailId: data.Id,
+          batchCode: null,
+          patientId: customerSalesId.patientId,
+        }).unwrap();
+        setOpenReferenceYes(true);
       }
     } catch (err) {
       const msg = err?.data?.message || err?.error || "Failed to fetch models";
@@ -156,6 +194,7 @@ const AccessoryFrame = () => {
 
   const handleRefresh = () => {
     setSearchMode(false);
+    setItems([]);
     setBarcode("");
     setBrandInput("");
     setBrandId(null);
@@ -236,18 +275,44 @@ const AccessoryFrame = () => {
     );
   };
 
-  const handleDelete = (barcode, index) => {
-    setItems((prev) =>
-      prev.filter((i, idx) => !(i.Barcode === barcode && idx === index))
-    );
-    setSelectedRows((prev) => prev.filter((i) => i.Barcode !== barcode));
-    setEditMode((prev) => {
-      const newEditMode = { ...prev };
-      delete newEditMode[`${barcode}-${index}`];
-      return newEditMode;
-    });
+  const handleDelete = (id, index) => {
+    if (referenceApplicable === 1) {
+      setItems((prev) => prev.filter((item, i) => i !== index));
+    } else {
+      setItems((prev) =>
+        prev.filter((i, idx) => !(i.Barcode === id && idx === index))
+      );
+      setSelectedRows((prev) => prev.filter((i) => i.Barcode !== id));
+      setEditMode((prev) => {
+        const newEditMode = { ...prev };
+        delete newEditMode[`${id}-${index}`];
+        return newEditMode;
+      });
+    }
   };
+  const handleReturnPriceChange = (id, price, index) => {
+    const item = items.find((i, idx) => i.Id === id && idx === index);
+    const newPrice = Number(price);
 
+    // Validate that Return Price does not exceed Invoice Price (ActualSellingPrice)
+    if (newPrice > item.ActualSellingPrice) {
+      toast.error("Return Price cannot be greater than Invoice Price!");
+      return;
+    }
+
+    // Update ReturnPricePerUnit and TotalAmount
+    setItems((prev) =>
+      prev.map((i, idx) =>
+        i.Id === id && idx === index
+          ? {
+              ...i,
+              ReturnPricePerUnit: newPrice,
+              TotalAmount: newPrice * parseInt(i.ReturnQty || 0),
+            }
+          : i
+      )
+    );
+  };
   const toggleEditMode = (barcode, index, field) => {
     setEditMode((prev) => ({
       ...prev,
@@ -283,40 +348,53 @@ const AccessoryFrame = () => {
     }
   };
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    if (items.length <= 0) return toast.error("Please add at least one item");
-    const basePayload = {
-      products: items.map((item) => ({
-        otherProductDetailId: item.Id,
-        qty: item.Quantity,
-        PatientID: customerSalesId.patientId,
-        locationId: customerSalesId.locationId,
-        bypassWarnings: false,
-      })),
+  const handleAddData = () => {
+    if (!selectedInvoiceReturnQty || isNaN(selectedInvoiceReturnQty)) {
+      toast.error("Please enter a valid Return Qty");
+      return;
+    }
+
+    if (
+      selectedInvoice?.InvoiceQty - parseInt(selectedInvoice?.ReturnQty) <
+      selectedInvoiceReturnQty
+    ) {
+      toast.error("Sales Return Quantity cannot exceed Pending Quantity!");
+      return;
+    }
+
+    // Check if item already exists in items array
+    const itemExists = items.some((item) => item.Id === selectedInvoice?.Id);
+
+    if (itemExists) {
+      toast.error("This invoice item has already been added!");
+      return;
+    }
+
+    const newItem = {
+      ...barCodeData?.data,
+      Acc: barCodeData?.data.Id,
+      ...selectedInvoice,
+      ReturnQty: selectedInvoiceReturnQty,
+      ReturnPricePerUnit: selectedInvoice.ActualSellingPrice,
+      GSTPercentage: 18,
+      TotalAmount:
+        parseFloat(selectedInvoice.ActualSellingPrice) *
+        selectedInvoiceReturnQty,
     };
 
-    try {
-      const response = await saveAccessory({
-        orderId: customerSalesId.orderId,
-        payload: basePayload,
-      }).unwrap();
-      if (response?.warnings?.length > 0) {
-        setWarningPayload(response.warnings);
-        setShowConfirmModal(true);
-      } else {
-        goToSalesStep(4);
-        toast.success("Accessories saved successfully!");
-      }
-    } catch (error) {
-      toast.error("Cannot save Accessories!");
-    }
+    setItems((prev) => [...prev, newItem]);
+    setOpenReferenceYes(false);
+    setIsInvoiceSelected(false);
+    setSelectedInvoiceReturnQty(0);
+    setSelectedInvoice(null);
   };
 
   const handleSaveData = async () => {
-    if (!Array.isArray(items) || items.length === 0) {
-      console.warn("No details to save");
-      return;
+    if (referenceApplicable === 0) {
+      if (!Array.isArray(items) || items.length === 0) {
+        console.warn("No details to save");
+        return;
+      }
     }
 
     try {
@@ -325,25 +403,35 @@ const AccessoryFrame = () => {
           SRMasterID: salesDraftData.Id ?? null,
           ProductType: detail.ProductType ?? 2,
           ContactLensDetailId: detail.CLDetailId ?? null,
-          AccessoryDetailId: detail.Id ?? null,
-          FrameDetailId: detail.FrameDetailId ?? null,
+          AccessoryDetailId: detail.AccessoryDetailId ?? null,
+          FrameDetailId: detail.Acc ?? detail.Id ?? null,
           OpticalLensDetailId: detail.OpticalLensDetailId ?? null,
           BatchCode: detail.CLBatchCode ?? null,
-          CNQty: detail.Quantity ?? null,
-          SRP: parseFloat(detail.MRP) ?? null,
-          ReturnPrice: detail.SellingPrice ?? null,
+          CNQty:
+            referenceApplicable === 1
+              ? detail.ReturnQty ?? null
+              : detail.Quantity ?? null,
+          SRP:
+            referenceApplicable === 0
+              ? parseFloat(detail.MRP) ?? null
+              : parseFloat(detail.SRP) ?? null,
+          ReturnPrice:
+            referenceApplicable === 0
+              ? parseFloat(detail.SellingPrice) ?? null
+              : parseFloat(detail.ReturnPricePerUnit) ?? null,
           ProductTaxPercentage: detail.ProductTaxPercentage ?? 18,
           FittingReturnPrice: detail.FittingReturnPrice ?? null,
           FittingTaxPercentage: detail.FittingTaxPercentage ?? null,
-          InvoiceDetailId: detail.InvoiceDetailId ?? null,
+          InvoiceDetailId: referenceApplicable === 1 ? detail.Id ?? null : null,
           ApplicationUserId: user.Id,
         };
 
         await saveFinalProducts({ payload }).unwrap();
       }
+
       goToSalesStep(4);
     } catch (error) {
-      console.error("Error saving detail:", error);
+      console.error("Error saving detail(s):", error);
     }
   };
 
@@ -524,48 +612,225 @@ const AccessoryFrame = () => {
             </form>
           )}
         </div>
-        {items.length > 0 && (
+        {referenceApplicable === 0 && (
+          <>
+            {items.length > 0 && (
+              <div className="p-6">
+                <Table
+                  columns={[
+                    "S.No",
+                    "Barcode",
+                    "Name",
+                    "Variation",
+                    "sku code",
+                    "MRP",
+                    "Selling Price",
+                    "return Qty",
+                    "Action",
+                  ]}
+                  data={items}
+                  renderRow={(item, index) => (
+                    <TableRow key={`${item.Barcode}-${index}`}>
+                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>{item.Barcode}</TableCell>
+                      <TableCell>{item.Name}</TableCell>
+                      <TableCell>{item.Variation}</TableCell>
+                      <TableCell>{item.SKU}</TableCell>
+                      <TableCell>₹{item.MRP}</TableCell>
+                      <TableCell>
+                        {editMode[`${item.Barcode}-${index}`]?.sellingPrice ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              value={item.SellingPrice || ""}
+                              onChange={(e) =>
+                                handleSellingPriceChange(
+                                  item.Barcode,
+                                  e.target.value,
+                                  index
+                                )
+                              }
+                              className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                              placeholder="Enter price"
+                            />
+                            <button
+                              onClick={() =>
+                                toggleEditMode(
+                                  item.Barcode,
+                                  index,
+                                  "sellingPrice"
+                                )
+                              }
+                              className="text-neutral-400 transition"
+                              title="Save"
+                            >
+                              <FiCheck size={18} />
+                            </button>
+                            <button
+                              onClick={() =>
+                                toggleEditMode(
+                                  item.Barcode,
+                                  index,
+                                  "sellingPrice"
+                                )
+                              }
+                              className="text-neutral-400 transition"
+                              title="Cancel"
+                            >
+                              <FiX size={18} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-700">
+                              ₹{item.SellingPrice || "N/A"}
+                            </span>
+                            <button
+                              onClick={() =>
+                                toggleEditMode(
+                                  item.Barcode,
+                                  index,
+                                  "sellingPrice"
+                                )
+                              }
+                              className="text-neutral-400"
+                              title="Edit Price"
+                            >
+                              <FiEdit2 size={14} />
+                            </button>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editMode[`${item.Barcode}-${index}`]?.qty ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              value={item.Quantity}
+                              onChange={(e) =>
+                                handleQtyChange(
+                                  item.Barcode,
+                                  e.target.value,
+                                  index
+                                )
+                              }
+                              className="w-20 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                              min="1"
+                            />
+                            <button
+                              onClick={() =>
+                                toggleEditMode(item.Barcode, index, "qty")
+                              }
+                              className="text-neutral-400"
+                              title="Save"
+                            >
+                              <FiCheck size={18} />
+                            </button>
+                            <button
+                              onClick={() =>
+                                toggleEditMode(item.Barcode, index, "qty")
+                              }
+                              className="text-neutral-400"
+                              title="Cancel"
+                            >
+                              <FiX size={18} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-700">
+                              {item.Quantity}
+                            </span>
+                            <button
+                              onClick={() =>
+                                toggleEditMode(item.Barcode, index, "qty")
+                              }
+                              className="text-neutral-400"
+                              title="Edit Quantity"
+                            >
+                              <FiEdit2 size={14} />
+                            </button>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <button
+                          onClick={() => handleDelete(item.Barcode, index)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <FiTrash2 />
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                />
+                <div className="flex justify-end mt-6">
+                  <Button
+                    type="submit"
+                    isLoading={isFinalProductsSaving}
+                    className="px-6 py-3 bg-green-600 hover:bg-green-700"
+                    onClick={handleSaveData}
+                  >
+                    Save & Continue
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+        {referenceApplicable === 1 && items.length > 0 && (
           <div className="p-6">
             <Table
+              expand={true}
               columns={[
                 "S.No",
-                "Barcode",
-                "Name",
-                "Variation",
-                "sku code",
-                "MRP",
-                "Selling Price",
-                "return Qty",
+                "Invoice No",
+                "Type",
+                "Product Details",
+                "SRP",
+                "Return Price",
+                "GST Amt",
+                "Qty",
+                "Total Amount",
                 "Action",
               ]}
               data={items}
               renderRow={(item, index) => (
-                <TableRow key={`${item.Barcode}-${index}`}>
-                  <TableCell>{index + 1}</TableCell>
-                  <TableCell>{item.Barcode}</TableCell>
-                  <TableCell>{item.Name}</TableCell>
-                  <TableCell>{item.Variation}</TableCell>
-                  <TableCell>{item.SKU}</TableCell>
-                  <TableCell>₹{item.MRP}</TableCell>
+                <TableRow
+                  key={
+                    item.SalesReturnDetailId ||
+                    `${item.InvoiceMain?.InvoiceNo}/${item.InvoiceSlNo}/${index}`
+                  }
+                >
+                  <TableCell className="text-center">{index + 1}</TableCell>
                   <TableCell>
-                    {editMode[`${item.Barcode}-${index}`]?.sellingPrice ? (
+                    {item["InvoiceMain.InvoicePrefix"]}/
+                    {item["InvoiceMain.InvoiceNo"]}/{item.InvoiceSlNo}
+                  </TableCell>
+                  <TableCell className="text-center">Frame</TableCell>
+                  <TableCell></TableCell>
+                  <TableCell className="text-right">
+                    ₹{formatINR(parseFloat(item.SRP || 0))}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {editMode[`${item.Id}-${index}`]?.returnPrice ? (
                       <div className="flex items-center gap-2">
                         <input
                           type="number"
-                          value={item.SellingPrice || ""}
+                          value={item.ReturnPricePerUnit || ""}
                           onChange={(e) =>
-                            handleSellingPriceChange(
-                              item.Barcode,
+                            handleReturnPriceChange(
+                              item.Id,
                               e.target.value,
                               index
                             )
                           }
                           className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                          placeholder="Enter price"
+                          placeholder="Enter return price"
                         />
                         <button
                           onClick={() =>
-                            toggleEditMode(item.Barcode, index, "sellingPrice")
+                            toggleEditMode(item.Id, index, "returnPrice")
                           }
                           className="text-neutral-400 transition"
                           title="Save"
@@ -574,7 +839,7 @@ const AccessoryFrame = () => {
                         </button>
                         <button
                           onClick={() =>
-                            toggleEditMode(item.Barcode, index, "sellingPrice")
+                            toggleEditMode(item.Id, index, "returnPrice")
                           }
                           className="text-neutral-400 transition"
                           title="Cancel"
@@ -585,73 +850,44 @@ const AccessoryFrame = () => {
                     ) : (
                       <div className="flex items-center gap-2">
                         <span className="text-gray-700">
-                          ₹{item.SellingPrice || "N/A"}
+                          ₹{formatINR(parseFloat(item.ReturnPricePerUnit || 0))}
                         </span>
                         <button
                           onClick={() =>
-                            toggleEditMode(item.Barcode, index, "sellingPrice")
+                            toggleEditMode(item.Id, index, "returnPrice")
                           }
-                          className="text-neutral-400"
-                          title="Edit Price"
+                          className="text-neutral-400 transition"
+                          title="Edit Return Price"
                         >
                           <FiEdit2 size={14} />
                         </button>
                       </div>
                     )}
                   </TableCell>
-                  <TableCell>
-                    {editMode[`${item.Barcode}-${index}`]?.qty ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          value={item.Quantity}
-                          onChange={(e) =>
-                            handleQtyChange(item.Barcode, e.target.value, index)
-                          }
-                          className="w-20 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                          min="1"
-                        />
-                        <button
-                          onClick={() =>
-                            toggleEditMode(item.Barcode, index, "qty")
-                          }
-                          className="text-neutral-400"
-                          title="Save"
-                        >
-                          <FiCheck size={18} />
-                        </button>
-                        <button
-                          onClick={() =>
-                            toggleEditMode(item.Barcode, index, "qty")
-                          }
-                          className="text-neutral-400"
-                          title="Cancel"
-                        >
-                          <FiX size={18} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-700">{item.Quantity}</span>
-                        <button
-                          onClick={() =>
-                            toggleEditMode(item.Barcode, index, "qty")
-                          }
-                          className="text-neutral-400"
-                          title="Edit Quantity"
-                        >
-                          <FiEdit2 size={14} />
-                        </button>
-                      </div>
+                  <TableCell className="text-right">
+                    ₹
+                    {formatINR(
+                      calculateGST(
+                        parseFloat(item.ReturnPricePerUnit || 0) *
+                          parseInt(item.ReturnQty || 0),
+                        parseFloat(item.GSTPercentage || 0)
+                      ).gstAmount
                     )}
                   </TableCell>
+                  <TableCell className="text-center">
+                    {item.ReturnQty || 0}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    ₹{formatINR(parseFloat(item.TotalAmount || 0))}
+                  </TableCell>
                   <TableCell>
-                    <button
-                      onClick={() => handleDelete(item.Barcode, index)}
-                      className="text-red-500 hover:text-red-700"
+                    <Button
+                      className="px-3 py-1"
+                      onClick={() => handleDelete(null, index)}
+                      icon={FiTrash2}
                     >
-                      <FiTrash2 />
-                    </button>
+                      Delete
+                    </Button>
                   </TableCell>
                 </TableRow>
               )}
@@ -666,6 +902,98 @@ const AccessoryFrame = () => {
                 Save & Continue
               </Button>
             </div>
+          </div>
+        )}
+        {referenceApplicable === 1 && (
+          <div>
+            <Modal
+              width="max-w-4xl"
+              isOpen={openReferenceYes}
+              onClose={() => {
+                setOpenReferenceYes(false);
+                setIsInvoiceSelected(false);
+              }}
+            >
+              <h1 className="text-neutral-700 text-2xl mb-3">Invoice List</h1>
+              {!isInvoiceSelected && (
+                <Table
+                  columns={[
+                    "S.No",
+                    "INVOICE No",
+                    "invoice value",
+                    "invoice qty",
+                    "sale return qty",
+                    "pending qty",
+                    "Action",
+                  ]}
+                  data={InvoiceDetails?.data}
+                  renderRow={(item, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>
+                        {item["InvoiceMain.InvoicePrefix"]}/
+                        {item["InvoiceMain.InvoiceNo"]}/{item.InvoiceSlNo}
+                      </TableCell>
+                      <TableCell>
+                        ₹
+                        {formatINR(
+                          parseFloat(item.ActualSellingPrice) * item.InvoiceQty
+                        )}
+                      </TableCell>
+                      <TableCell>{item.InvoiceQty}</TableCell>
+
+                      <TableCell>{item.ReturnQty}</TableCell>
+                      <TableCell>
+                        {item.InvoiceQty - parseInt(item.ReturnQty)}
+                      </TableCell>
+                      <TableCell>
+                        <button
+                          onClick={() => {
+                            setSelectedInvoice(item);
+                            setIsInvoiceSelected(true);
+                            setSelectedInvoiceReturnQty(
+                              item.InvoiceQty - parseInt(item.ReturnQty)
+                            );
+                          }}
+                        >
+                          Select
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                />
+              )}
+              {isInvoiceSelected && (
+                <div className="flex gap-2 ">
+                  <Input
+                    value={
+                      selectedInvoice?.InvoiceQty -
+                      parseInt(selectedInvoice?.ReturnQty)
+                    }
+                    grayOut={true}
+                    label="Pending Qty"
+                  />
+                  <Input
+                    value={selectedInvoiceReturnQty}
+                    label="Sales Return Qty"
+                    onChange={(e) =>
+                      setSelectedInvoiceReturnQty(e.target.value)
+                    }
+                  />
+                </div>
+              )}
+
+              {isInvoiceSelected && (
+                <div className="w-full mt-5">
+                  <Button
+                    className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    onClick={handleAddData}
+                  >
+                    Save
+                  </Button>
+                </div>
+              )}
+            </Modal>
           </div>
         )}
         {!searchMode && searchResults.length > 0 && (

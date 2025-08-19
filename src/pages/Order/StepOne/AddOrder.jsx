@@ -13,22 +13,18 @@ import Select from "../../../components/Form/Select";
 import {
   useGetAllCompanyLocationsQuery,
   useGetAllCustomersQuery,
-  useGetCompanyIdQuery,
   useGetCountriesQuery,
-  useGetIsdQuery,
 } from "../../../api/customerApi";
 import { useGetAllSalesPersonsQuery } from "../../../api/salesPersonApi";
 import Input from "../../../components/Form/Input";
 import Modal from "../../../components/ui/Modal";
 import { useSelector } from "react-redux";
-import { useGetLocationByIdQuery } from "../../../api/roleManagementApi";
 import Customer from "../../customers/Customer";
 import toast from "react-hot-toast";
 import {
   useCreateNewCustomerMutation,
   useCreateSalesOrderMutation,
   useGetCustomerContactDetailsQuery,
-  useGetOrderQuery,
 } from "../../../api/orderApi";
 import Button from "../../../components/ui/Button";
 import { useOrder } from "../../../features/OrderContext";
@@ -36,11 +32,10 @@ import Checkbox from "../../../components/Form/Checkbox";
 
 const AddOrder = ({
   handleGetPatient,
-  getOrderData,
-  isGetOrderDataLoading,
+
   location,
   locationById,
-  companyType,
+
   countryIsd,
   companySettings,
   CustomerPoolID,
@@ -169,7 +164,7 @@ const AddOrder = ({
       setSelectedCustomer(tempCustomer);
       setTempCustomer(null);
     }
-  }, [getOrderData, tempCustomer]);
+  }, [tempCustomer]);
 
   const handleCustomerSelect = (customerWithContact) => {
     const patient = customerWithContact.CustomerContactDetails?.[0];

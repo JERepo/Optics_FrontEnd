@@ -1,7 +1,6 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router";
 import { Table, TableCell, TableRow } from "../../components/Table";
-import { FiTrash2 } from "react-icons/fi";
 import { format } from "date-fns";
 import Button from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
@@ -29,8 +28,6 @@ const InvoiceView = () => {
     const types = { 1: "F/S", 2: "ACC", 3: "CL" };
     return types[id] || "OL";
   };
-
-
 
   const getProductName = (order) => {
     const {
@@ -103,24 +100,15 @@ const InvoiceView = () => {
 
     if (ProductType === 3) {
       const name = clean(order.ProductDetails.productName);
-      const hsn = clean(order.ProductDetails.hSN);
+      const hsn = clean(order.ProductDetails.hsncode);
       const barcodeVal = clean(order.ProductDetails.barcode);
       const batchCode = clean(order.ProductDetails.BatchCode);
-
-      // parse specs string into object
-      const specsObj = {};
-      if (typeof order.ProductDetails.specs === "string") {
-        order.ProductDetails.specs.split(",").forEach((pair) => {
-          let [key, value] = pair.split(":").map((s) => s.trim());
-          if (value === "null") value = null;
-          specsObj[key] = value;
-        });
-      }
-
-      const sph = cleanPower(specsObj.Sph);
-      const cyld = cleanPower(specsObj.Cyld);
-      const axis = clean(specsObj.Axis);
-      const addl = cleanPower(specsObj.Add);
+      const color = clean(order.ProductDetails.colour)
+      
+      const sph = cleanPower(ProductDetails.PowerSpecs.Sph);
+      const cyld = cleanPower(ProductDetails.PowerSpecs.Cyld);
+      const axis = clean(ProductDetails.PowerSpecs.Axis);
+      const addl = cleanPower(ProductDetails.PowerSpecs.Add);
       const clr = clean(order.colour);
 
       const specsList = [
@@ -135,7 +123,7 @@ const InvoiceView = () => {
       return [
         name,
         specsList,
-        clr && `Color: ${clr}`,
+        color && `Color: ${color}`,
         barcodeVal && `Barcode: ${barcodeVal}`,
         batchCode && `Batch Code: ${batchCode || "-"}`,
         hsn && `HSN: ${hsn}`,
@@ -226,19 +214,28 @@ const InvoiceView = () => {
     const invoicePrice = parseFloat(item.InvoicePrice || 0);
     const qty = parseFloat(item.InvoiceQty || 0);
     const fittingPrice = parseFloat(item.FittingPrice || 0);
-    const fittingGST = parseFloat(item.FittingGSTPercentage || 0)
-    const totalFittinPrice = calculateGST(fittingPrice,fittingGST).gstAmount
 
-    return sum + ((invoicePrice * qty) + parseFloat(totalFittinPrice));
+    return (
+      sum +
+      (invoicePrice * qty +
+        (item.ProductType == 0 ? parseFloat(fittingPrice) : 0))
+    );
   }, 0);
 
   const gstAmount = invoiceDetailsById?.reduce((sum, item) => {
     const price = parseFloat(item.InvoicePrice) || 0;
     const qty = parseInt(item.InvoiceQty) || 0;
     const taxPercent = parseFloat(item.TaxPercent) || 0;
+    const fittingPrice = parseFloat(item.FittingPrice || 0);
+    const fittingGST = parseFloat(item.FittingGSTPercentage || 0);
+    const totalFittinPrice = fittingPrice * (fittingGST / 100);
 
     const { gstAmount } = calculateGST(price * qty, taxPercent);
-    return sum + parseFloat(gstAmount) || 0;
+    return (
+      sum +
+        parseFloat(gstAmount) +
+        (item.ProductType == 0 ? totalFittinPrice : 0) || 0
+    );
   }, 0);
 
   const getOrderStatus = (status) => {
@@ -263,7 +260,9 @@ const InvoiceView = () => {
     <div className="max-w-7xl">
       <div className="bg-white rounded-sm shadow-sm overflow-hidden p-6">
         <div className="flex justify-between items-center mb-3">
-          <div className="text-neutral-800 text-2xl font-semibold">Invoice Details</div>
+          <div className="text-neutral-800 text-2xl font-semibold">
+            Invoice Details
+          </div>
           <div>
             <Button variant="outline" onClick={() => navigate("/invoice")}>
               Back
@@ -343,7 +342,10 @@ const InvoiceView = () => {
                   ₹
                   {formatINR(
                     parseFloat(invoice.InvoiceQty) *
-                      parseFloat(invoice.InvoicePrice)
+                      parseFloat(invoice.InvoicePrice) +
+                      (invoice.ProductType === 0
+                        ? parseFloat(invoice.FittingPrice)
+                        : 0)
                   )}
                 </TableCell>
               </TableRow>
@@ -366,7 +368,7 @@ const InvoiceView = () => {
               </div>
               <div className="flex flex-col">
                 <span className="text-neutral-700 font-semibold text-lg">
-                 Total GST
+                  Total GST
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
                   ₹{formatINR(gstAmount) || "0"}

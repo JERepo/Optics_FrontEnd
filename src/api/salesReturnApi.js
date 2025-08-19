@@ -4,6 +4,7 @@ import { customBaseQuery } from "./customBaseQuery";
 export const salesReturnApi = createApi({
   reducerPath: "salesReturnApi",
   baseQuery: customBaseQuery,
+  tagTypes: ["SalesReturn"],
   endpoints: (builder) => ({
     getBatchBarCode: builder.mutation({
       query: ({ batchCode, locationId }) => ({
@@ -45,11 +46,13 @@ export const salesReturnApi = createApi({
         method: "POST",
         body: payload,
       }),
+      invalidatesTags: ["SalesReturn"],
     }),
     getSavedSalesReturn: builder.query({
       query: ({ id }) => ({
         url: `/api/v1/sales-Return/getsalesdetails/${id}`,
       }),
+      providesTags: ["SalesReturn"],
     }),
     completeSaleRetun: builder.mutation({
       query: ({ id, payload }) => ({
@@ -57,6 +60,7 @@ export const salesReturnApi = createApi({
         method: "PUT",
         body: payload,
       }),
+      invalidatesTags : ["SalesReturn"],
     }),
     getAllSalesReturn: builder.query({
       query: () => ({
@@ -78,6 +82,11 @@ export const salesReturnApi = createApi({
         url: `/api/v1/sales-Return/getbyPatient/${id}`,
       }),
     }),
+    getInvoiceDetails: builder.query({
+      query: ({ productType, detailId, batchCode, patientId }) => ({
+        url: `/api/v1/sales-Return/invoicedetails?productType=${productType}&DetailId=${detailId}&batchCode=${batchCode}&PatientID=${patientId}`,
+      }),
+    }),
   }),
 });
 
@@ -93,5 +102,6 @@ export const {
   useGetAllSalesReturnQuery,
   useGetSalesReturnByIdQuery,
   useGetMainSalesByIdQuery,
-  useGetDraftDataByIdQuery
+  useGetDraftDataByIdQuery,
+  useLazyGetInvoiceDetailsQuery
 } = salesReturnApi;

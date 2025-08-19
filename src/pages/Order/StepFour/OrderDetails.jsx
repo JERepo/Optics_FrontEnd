@@ -495,7 +495,18 @@ const OrderDetails = () => {
 
     return "";
   };
-
+  const getTotal = (item) => {
+    if (item.typeid === 0) {
+      const sum =
+        item.Total +
+        parseFloat(item.FittingPrice) *
+          (parseFloat(item.FittingGSTPercentage) / 100) +
+        parseFloat(item.FittingPrice);
+      return sum;
+    }
+    return item.Total;
+  };
+  
   // Calculate totals for summary row
   const calculateTotals = () => {
     if (!savedOrders || savedOrders?.length === 0) {
@@ -514,12 +525,16 @@ const OrderDetails = () => {
         const fitting =
           parseFloat(item.FittingPrice) *
           (parseFloat(item.FittingGSTPercentage) / 100);
-     
+
         return {
           totalQty: acc.totalQty + qty,
-          totalGST: acc.totalGST + gst * qty + fitting,
+          totalGST: acc.totalGST + gst * qty + (item.typeid == 0 ? fitting : 0),
           totalAmount:
-            acc.totalAmount + total + fitting + parseFloat(item.FittingPrice),
+            acc.totalAmount + total + (item.typeid == 0
+              ? fitting
+              : 0) + (item.typeid == 0
+              ? parseFloat(item.FittingPrice)
+              : 0),
         };
       },
       { totalQty: 0, totalGST: 0, totalAmount: 0 }
@@ -716,14 +731,7 @@ const OrderDetails = () => {
                       <div>₹{formatNumber(result.gstAmount)}</div>
                       <div>({result.taxPercentage}%)</div>
                     </TableCell>
-                    <TableCell>
-                      ₹
-                      {formatNumber(
-                        item.Total +
-                          parseFloat(item.FittingPrice) *
-                            (parseFloat(item.FittingGSTPercentage) / 100) +parseFloat(item.FittingPrice)
-                      )}
-                    </TableCell>
+                    <TableCell>₹{formatNumber(getTotal(item))}</TableCell>
                     <TableCell>
                       <Button
                         variant="ghost"

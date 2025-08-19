@@ -9,6 +9,8 @@ import Button from "../../../components/ui/Button";
 import Textarea from "../../../components/Form/Textarea";
 import { useNavigate } from "react-router";
 import { FiTrash2 } from "react-icons/fi";
+import { formatINR } from "../../../utils/formatINR";
+import toast from "react-hot-toast";
 
 const getProductName = (order) => {
   const {
@@ -191,6 +193,8 @@ const CompleteSalesReturn = () => {
   const [comment, setComment] = useState("");
   const navigate = useNavigate();
   const [itemsToDelete, setItemsToDelete] = useState([]);
+  const [deletingId, setDeletingId] = useState(null);
+
   const {
     selectedPatient,
     findGSTPercentage,
@@ -242,9 +246,16 @@ const CompleteSalesReturn = () => {
     totalReturnValue: totals ? totals.totalReturnValue.toFixed(2) : "0.00",
   };
 
-  const handleDelete = (id) => {
-    if (id && !itemsToDelete.includes(id)) {
-      setItemsToDelete((prev) => [...prev, id]);
+  const handleDelete = async (id) => {
+    try {
+      setDeletingId(id); 
+      const payload = { delete: [id] };
+      await completeSales({ id: salesDraftData.Id, payload }).unwrap();
+      setDeletingId(null); 
+      toast.success("Deleted successfully")
+    } catch (error) {
+      console.error("Delete failed:", error);
+      setDeletingId(null);
     }
   };
 
@@ -261,6 +272,7 @@ const CompleteSalesReturn = () => {
         CNQty: totals.totalQty,
         CNGST: parseFloat(totals.totalGST),
         CNTotal: parseFloat(totals.totalReturnValue),
+        creditBilling: "No",
       };
 
       await completeSales({ id: salesDraftData.Id, payload }).unwrap();
@@ -271,7 +283,6 @@ const CompleteSalesReturn = () => {
       console.error("Failed to complete sales return:", error);
     }
   };
-
   return (
     <div className="max-w-7xl">
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -282,10 +293,10 @@ const CompleteSalesReturn = () => {
               Sales Return Details
             </h2>
             <div className="flex items-center gap-4">
-            <Button onClick={() => goToSalesStep(2)}>Add</Button>
-            <Button variant="outline" onClick={() => prevSalesStep()}>
-              Back
-            </Button>
+              <Button onClick={() => goToSalesStep(2)}>Add Product</Button>
+              <Button variant="outline" onClick={() => prevSalesStep()}>
+                Back
+              </Button>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -311,7 +322,7 @@ const CompleteSalesReturn = () => {
         </div>
 
         {/* Products Table */}
-        <div className="overflow-x-auto">
+        <div className="">
           <Table
             expand={true}
             columns={[
@@ -337,12 +348,12 @@ const CompleteSalesReturn = () => {
                 colourCode: item.ProductDetails?.colour,
                 size: item.ProductDetails?.Size,
                 hSN: item.ProductDetails?.hsncode,
-                specs: item.ProductDetails?.PowerSpecs
+                specs: item.ProductDetails?.Specs
                   ? {
-                      sphericalPower: item.ProductDetails.PowerSpecs.Sph,
-                      cylindricalPower: item.ProductDetails.PowerSpecs.Cyl,
-                      axis: item.ProductDetails.PowerSpecs.Axis,
-                      additional: item.ProductDetails.PowerSpecs.Add,
+                      sphericalPower: item.ProductDetails.Specs?.Sph,
+                      cylindricalPower: item.ProductDetails.Specs?.Cyl,
+                      axis: item.ProductDetails.Specs?.Axis,
+                      additional: item.ProductDetails.Specs?.Add,
                     }
                   : {},
                 fittingPrice: item.FittingCharges,
@@ -352,7 +363,7 @@ const CompleteSalesReturn = () => {
               return (
                 <TableRow key={item.SalesReturnDetailId || index}>
                   <TableCell className="text-center">{index + 1}</TableCell>
-                  <TableCell>{item.InvoiceNo ?? ""}</TableCell>
+                  <TableCell>{}</TableCell>
                   <TableCell className="text-center">
                     {getShortTypeName(item.ProductType)}
                   </TableCell>
@@ -385,6 +396,9 @@ const CompleteSalesReturn = () => {
                   </TableCell>
                   <TableCell>
                     <Button
+                      isLoading={deletingId === item.id}
+                      disabled={deletingId === item.id}
+                      color="white"
                       className="px-3 py-1"
                       onClick={() => handleDelete(item.id)}
                       icon={FiTrash2}
@@ -403,34 +417,22 @@ const CompleteSalesReturn = () => {
           />
         </div>
 
-        {/* Totals Section */}
-        <div className="p-4 border-t border-gray-200 bg-gray-50">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="flex flex-col items-center p-3 bg-white rounded-lg shadow-xs">
-              <span className="text-sm text-gray-500">Total Quantity</span>
-              <span className="text-lg font-semibold">
-                {formattedTotals.totalQty}
-              </span>
-            </div>
-            <div className="flex flex-col items-center p-3 bg-white rounded-lg shadow-xs">
-              <span className="text-sm text-gray-500">Total GST</span>
-              <span className="text-lg font-semibold">
-                ₹{formattedTotals.totalGST}
-              </span>
-            </div>
-            <div className="flex flex-col items-center p-3 bg-white rounded-lg shadow-xs">
-              <span className="text-sm text-gray-500">Basic Value</span>
-              <span className="text-lg font-semibold">
-                ₹{formattedTotals.totalBasicValue}
-              </span>
-            </div>
-            <div className="flex flex-col items-center p-3 bg-white rounded-lg shadow-xs">
-              <span className="text-sm text-gray-500">Total Return Value</span>
-              <span className="text-lg font-semibold">
-                ₹{formattedTotals.totalReturnValue}
-              </span>
-            </div>
+        <div className="flex gap-10 justify-end mt-5 p-6">
+          <div className="flex gap-3">
+            <span className="text-xl font-semibold items-center">
+              Total Qty: {formattedTotals.totalQty}
+            </span>
+            <span className="text-xl font-semibold items-center">
+              Total GST: ₹{formattedTotals.totalGST}
+            </span>
           </div>
+
+          <span className="text-xl font-semibold items-center">
+            Basic Value: ₹{formatINR(formattedTotals.totalBasicValue)}
+          </span>
+          <span className="text-xl font-semibold items-center">
+            Total Return Value: ₹{formatINR(formattedTotals.totalReturnValue)}
+          </span>
         </div>
 
         <Textarea

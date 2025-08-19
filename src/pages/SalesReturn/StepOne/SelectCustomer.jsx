@@ -73,6 +73,10 @@ const SelectCustomer = () => {
 
       if (existingDraft) {
         setSalesDraftData(existingDraft);
+        setCustomerSalesId((prev) => ({
+          ...prev,
+          customerData: selectedPatient,
+        }));
         goToSalesStep(4);
         return;
       }
@@ -90,6 +94,10 @@ const SelectCustomer = () => {
       }).unwrap();
 
       setSalesDraftData(response?.data?.data);
+      setCustomerSalesId((prev) => ({
+        ...prev,
+        customerData: selectedPatient,
+      }));
       goToSalesStep(2);
       toast.success("Sales Return is created");
     } catch (error) {
