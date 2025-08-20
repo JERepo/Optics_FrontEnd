@@ -16,8 +16,8 @@ export const Table = ({
   onPageSizeChange = () => {},
   totalItems = 0,
   freeze = false,
-  expand=false,
-  name
+  expand = false,
+  name,
 }) => {
   return (
     <div className="space-y-4">

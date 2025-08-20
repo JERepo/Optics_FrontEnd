@@ -19,6 +19,7 @@ import { useGetCountriesQuery, useGetIsdQuery } from "../../../api/customerApi";
 import Input from "../../../components/Form/Input";
 import Select from "../../../components/Form/Select";
 import { useSelector } from "react-redux";
+import { isValidNumericInput } from "../../../utils/isValidNumericInput";
 
 const FrameSunglass = () => {
   const {
@@ -99,7 +100,7 @@ const FrameSunglass = () => {
               : i
           );
         }
-        return [{ ...data, Quantity: 1 },...prev];
+        return [{ ...data, Quantity: 1 }, ...prev];
       });
     } else {
       toast.error(`Barcode doesn't exist!`);
@@ -198,12 +199,13 @@ const FrameSunglass = () => {
     setItems((prev) => prev.filter((i) => i.Barcode !== barcode));
     setSelectedRows((prev) => prev.filter((i) => i.Barcode !== barcode));
   };
-
+  console.log("war", warningPayload);
   const handleConfirmBypassWarnings = async () => {
     if (!warningPayload) return;
     const warnedIds = warningPayload.map((w) => w.frameDetailId);
+    const finalItems = items.filter((item) => !warnedIds.includes(item.Id));
     const newPayload = {
-      products: items.map((item) => ({
+      products: finalItems.map((item) => ({
         frameDetailId: item.Id,
         qty: item.Quantity,
         PatientID: customerId.patientId,
@@ -216,7 +218,7 @@ const FrameSunglass = () => {
         orderId: customerId.orderId,
         payload: newPayload,
       }).unwrap();
-      toast.success("Frames saved with warnings bypassed.");
+      toast.success("Frames successfully saved");
       setShowConfirmModal(false);
       goToStep(4);
     } catch (err) {
@@ -445,16 +447,18 @@ const FrameSunglass = () => {
                   <TableCell>
                     {item.Category == "O" ? "Optical Frame" : "Sunglass"}
                   </TableCell>
-                  <TableCell>{item.PO == 0 ? "No" :"Yes"}</TableCell>
+                  <TableCell>{item.PO == 0 ? "No" : "Yes"}</TableCell>
                   <TableCell>{item.MRP}</TableCell>
                   <TableCell>{item.SellingPrice}</TableCell>
                   <TableCell>
                     <input
                       type="number"
                       value={item.Quantity}
-                      onChange={(e) =>
-                        handleQtyChange(item.Barcode, e.target.value)
-                      }
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (!isValidNumericInput(val)) return;
+                        handleQtyChange(item.Barcode, e.target.value);
+                      }}
                       className="w-20 px-2 py-1 border border-gray-300 rounded"
                     />
                   </TableCell>
@@ -542,8 +546,6 @@ const FrameSunglass = () => {
             />
           </div>
         )}
-
-        
       </div>
       <ConfirmationModal
         isOpen={showConfirmModal}

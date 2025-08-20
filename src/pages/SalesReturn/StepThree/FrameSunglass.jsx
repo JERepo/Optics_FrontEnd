@@ -138,7 +138,7 @@ const FrameSunglass = () => {
         }
       }
     } catch (error) {
-      toast.error(error?.data.message);
+      toast.error("No eligible Invoice exists for the given product");
     }
 
     setBarcode("");
@@ -180,7 +180,7 @@ const FrameSunglass = () => {
         setOpenReferenceYes(true);
       }
     } catch (err) {
-      const msg = err?.data?.message || err?.error || "Failed to fetch models";
+      const msg = err?.data?.message || err?.error || "No eligible Invoice exists for the given product";
       toast.error(msg);
       setBrandInput("");
       setBrandId(null);
@@ -381,7 +381,6 @@ const FrameSunglass = () => {
     setSelectedInvoiceReturnQty(0);
     setSelectedInvoice(null);
   };
-  console.log(items)
   const handleSaveData = async () => {
     if (referenceApplicable === 0) {
       if (!Array.isArray(items) || items.length === 0) {
@@ -480,6 +479,7 @@ const FrameSunglass = () => {
                   >
                     Enter Barcode
                   </label>
+                  {referenceApplicable === 0 && 
                   <div className="flex items-center gap-5">
                     <Radio
                       value="0"
@@ -494,6 +494,7 @@ const FrameSunglass = () => {
                       label="Separate Entry"
                     />
                   </div>
+}
                 </div>
                 <div className="flex gap-2">
                   <div className="relative flex items-center">
@@ -788,7 +789,7 @@ const FrameSunglass = () => {
                 "SRP",
                 "Return Price",
                 "GST Amt",
-                "Qty",
+                "return Qty",
                 "Total Amount",
                 "Action",
               ]}
@@ -805,7 +806,7 @@ const FrameSunglass = () => {
                     {item["InvoiceMain.InvoicePrefix"]}/
                     {item["InvoiceMain.InvoiceNo"]}/{item.InvoiceSlNo}
                   </TableCell>
-                  <TableCell className="text-center">Frame</TableCell>
+                  <TableCell className="text-center">F/S</TableCell>
                   <TableCell></TableCell>
                   <TableCell className="text-right">
                     ₹{formatINR(parseFloat(item.SRP || 0))}
@@ -884,7 +885,7 @@ const FrameSunglass = () => {
                       onClick={() => handleDelete(null, index)}
                       icon={FiTrash2}
                     >
-                      Delete
+                      
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -921,7 +922,7 @@ const FrameSunglass = () => {
                     "invoice value",
                     "invoice qty",
                     "sale return qty",
-                    "pending qty",
+                    "pending return qty",
                     "Action",
                   ]}
                   data={InvoiceDetails?.data}

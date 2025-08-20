@@ -52,21 +52,14 @@ const SelectProduct = () => {
         <h1 className="text-2xl font-semibold text-gray-800">Select Product</h1>
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <Button
-            onClick={() => goToSalesStep(1)}
-            icon={FiArrowLeft}
-            variant="outline"
-            className="flex-1 sm:flex-none"
-          >
-            Back
-          </Button>
+         
           <Button
             onClick={() => navigate("/sales-return")}
             
             variant="outline"
             className="flex-1 sm:flex-none"
           >
-            Home
+            CN Main Page
           </Button>
           <Button
             onClick={() => goToSalesStep(4)}
@@ -74,7 +67,7 @@ const SelectProduct = () => {
             className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700"
             disabled={!selectedSalesProduct.value}
           >
-            Orders
+            CN Details
           </Button>
           <Button
             onClick={handleAddProduct}

@@ -403,7 +403,12 @@ const CustomerSelect = () => {
       setSelectedProducts([]);
       setIsBatchCodeOpen(false);
       setSelectedOrderForBatch(null);
-      await refetch();
+      const payload = {
+        masterId: masterIds,
+        productType: null,
+        locationId: parseInt(hasMultipleLocations[0]),
+      };
+      await getProductDetails({ payload }).unwrap();
     } catch (error) {
       console.error("Error during refresh:", error);
       toast.error("Failed to refresh data");
@@ -531,7 +536,11 @@ const CustomerSelect = () => {
   };
 
   const getAvalQty = (order) => {
-    if (order.productType === 0) {
+    if (
+      order.productType === 0 ||
+      order.productType === 1 ||
+      order.productType === 2
+    ) {
       return order.pricing?.quantity || 0;
     } else if (order.productType === 3) {
       return order.availableQty || 0;
@@ -548,7 +557,7 @@ const CustomerSelect = () => {
     ) {
       return order.pricing?.mrp || 0;
     } else if (order.productType === 3) {
-      if (order.cLBatchCode === 1) {
+      if (order.cLBatchCode === 0) {
         return order.priceMaster?.mrp || 0;
       }
       return order.pricing?.mrp || 0;
@@ -583,7 +592,7 @@ const CustomerSelect = () => {
     });
     if (
       selectedPatient.CustomerMaster.CreditBilling === 1 &&
-      parseFloat(selectedPatient.CustomerMaster.CreditLimit) <= 200000
+      parseFloat(selectedPatient.CustomerMaster.CreditLimit) <= 0
     ) {
       setShowConfirmModal(true);
     } else {
@@ -874,7 +883,7 @@ const CustomerSelect = () => {
       locationId: parseInt(hasMultipleLocations[0]),
       customerId: selectedPatient.CustomerMaster?.Id,
       patientId: selectedPatient?.Id,
-      invoiceByMethod: 0,
+      invoiceByMethod: 1,
       invoiceName: parseInt(billInTheName),
       invoiceRemarks: invoiceNote,
       totalQty: totalQty,
@@ -1400,12 +1409,12 @@ const CustomerSelect = () => {
                       </div>
                       <div className="mt-5">
                         {selectedPatient?.CustomerMaster?.CreditBilling === 0 &&
-                          totalBalance > 0 && (
+                          parseFloat(totalBalance.toFixed(2)) > 0 && (
                             <Button onClick={handleCollectPayment}>
                               Collect Payment
                             </Button>
                           )}
-                        {(totalBalance === 0 ||
+                        {(parseFloat(totalBalance.toFixed(2)) === 0 ||
                           selectedPatient?.CustomerMaster?.CreditBilling ===
                             1) && (
                           <Button

@@ -290,6 +290,7 @@ const OrderView = () => {
         {/* Product Table */}
         <div className="mt-10">
           <Table
+          freeze={true}
             expand={true}
             name="Product name"
             columns={columns}
@@ -318,7 +319,7 @@ const OrderView = () => {
                     : 0}
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center">
+                  <div className="flex  flex-col">
                     <div>
                       ₹
                       {formatINR(

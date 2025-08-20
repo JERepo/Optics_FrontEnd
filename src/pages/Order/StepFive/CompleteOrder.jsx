@@ -308,14 +308,17 @@ const CompleteOrder = () => {
 
   const getTotal = (item) => {
     if (item.typeid === 0) {
+      const fittingPrice = parseFloat(item.FittingPrice) || 0;
+      const fittingGSTPercentage = parseFloat(item.FittingGSTPercentage) || 0;
+
       const sum =
-        item.Total +
-        parseFloat(item.FittingPrice) *
-          (parseFloat(item.FittingGSTPercentage) / 100) +
-        parseFloat(item.FittingPrice);
+        (parseFloat(item.Total) || 0) +
+        fittingPrice +
+        fittingPrice * (fittingGSTPercentage / 100);
       return sum;
     }
-    return item.Total;
+
+    return parseFloat(item.Total) || 0;
   };
   const calculateTotals = () => {
     if (!savedOrders || savedOrders.length === 0) {
@@ -324,26 +327,31 @@ const CompleteOrder = () => {
 
     return savedOrders.reduce(
       (acc, item) => {
-        const qty = parseInt(item.OrderQty);
-        const total = parseFloat(item.Total);
+        const qty = parseInt(item.OrderQty) || 0;
+        const total = parseFloat(item.Total) || 0;
+
+        // GST
         const { gstAmount } = calculateGST(
-          item.DiscountedSellingPrice,
-          item.TaxPercentage
+          item.DiscountedSellingPrice || 0,
+          item.TaxPercentage || 0
         );
-        const gst = parseFloat(gstAmount);
-        const fitting =
-          parseFloat(item.FittingPrice) *
-          (parseFloat(item.FittingGSTPercentage) / 100);
+        const gst = parseFloat(gstAmount) || 0;
+
+        // Fitting values (safe defaults)
+        const fittingPrice = parseFloat(item.FittingPrice) || 0;
+        const fittingGSTPercentage = parseFloat(item.FittingGSTPercentage) || 0;
+
+        // Fitting GST amount
+        const fittingGST = fittingPrice * (fittingGSTPercentage / 100);
 
         return {
           totalQty: acc.totalQty + qty,
-          totalGST: acc.totalGST + gst * qty + (item.typeid == 0 ? fitting : 0),
+          totalGST:
+            acc.totalGST + gst * qty + (item.typeid == 0 ? fittingGST : 0),
           totalAmount:
             acc.totalAmount +
             total +
-            (item.typeid == 0 ? fitting : 0) +
-            (item.typeid == 0 ? parseFloat(item.FittingPrice) : 0) -
-            item.AdvanceAmount,
+            (item.typeid == 0 ? fittingGST + fittingPrice : 0),
         };
       },
       { totalQty: 0, totalGST: 0, totalAmount: 0 }
@@ -356,16 +364,16 @@ const CompleteOrder = () => {
 
     if (savedOrders?.length) {
       savedOrders.forEach((item) => {
-        const fitting =
-          parseFloat(item.FittingPrice) *
-          (parseFloat(item.FittingGSTPercentage) / 100);
+        const fittingPrice = parseFloat(item.FittingPrice) || 0;
+        const fittingGSTPercentage = parseFloat(item.FittingGSTPercentage) || 0;
         const adv = parseFloat(advancedAmounts[item.OrderDetailId]) || 0;
+        const total = parseFloat(item.Total) || 0;
+
+        const fitting = fittingPrice * (fittingGSTPercentage / 100);
+
         totalAdv += adv;
         balance +=
-          parseFloat(item.Total) +
-          (item.typeid == 0 ? fitting : 0) +
-          parseFloat(item.typeid == 0 ? item.FittingPrice : 0) -
-          adv;
+          total + (item.typeid == 0 ? fitting + fittingPrice : 0) - adv;
       });
     }
 
@@ -398,7 +406,7 @@ const CompleteOrder = () => {
       };
       await updateFinalOrder({ orderId: customerId.orderId, payload }).unwrap();
 
-      toast.success("Successfully updated the products");
+      toast.success("Order successfully saved");
 
       navigate("/order-list");
     } catch (error) {
@@ -410,7 +418,7 @@ const CompleteOrder = () => {
   };
 
   const handleCompleteOrder = () => {
-    if (totalAdvance === 0) {
+    if (totalAdvance === 0 && customerId.customerData.CreditBilling === 0) {
       setShowConfirmModal(true);
     } else {
       const payload = {
@@ -424,7 +432,7 @@ const CompleteOrder = () => {
       goToStep(6);
     }
   };
-
+  console.log(savedOrders);
   if (savedOrdersLoading) return <Loader />;
 
   return (
@@ -514,6 +522,7 @@ const CompleteOrder = () => {
           {/* Order Items Table */}
           <div className="overflow-x-auto px-4">
             <Table
+              freeze={true}
               columns={[
                 "S.NO",
                 "Type",
@@ -565,7 +574,15 @@ const CompleteOrder = () => {
                       {customerId.customerData.CreditBilling === 0 ? (
                         <AdvanceAmountInput
                           orderDetailId={item.OrderDetailId}
-                          totalAmount={parseFloat(item.Total)}
+                          totalAmount={parseFloat(
+                            item.Total +
+                              (item.FittingPrice
+                                ? parseFloat(item.FittingPrice) +
+                                  parseFloat(item.FittingPrice) *
+                                    (parseFloat(item.FittingGSTPercentage) /
+                                      100)
+                                : 0)
+                          )}
                           advancedAmounts={advancedAmounts}
                           setAdvancedAmounts={setAdvancedAmounts}
                         />

@@ -62,39 +62,37 @@ const PaymentFlow = ({ collectPayment, onClose }) => {
   });
   const [errors, setErrors] = useState({});
 
-  const updatedDetails = useMemo(() => {
-    const total = paymentDetails?.TotalValue || 0;
-    const advance = paymentDetails?.totalAdvance || 0;
+const updatedDetails = useMemo(() => {
+  const total = paymentDetails?.TotalValue || 0;
+  const advance = paymentDetails?.totalAdvance || 0;
 
-    const totalPaid =
-      fullPayments?.length > 0
-        ? fullPaymentDetails?.reduce((sum, payment) => {
-            const amt = parseFloat(payment.Amount);
-            return sum + (isNaN(amt) ? 0 : amt);
-          }, 0)
-        : 0;
+  const totalPaid =
+    fullPayments?.length > 0
+      ? fullPaymentDetails?.reduce((sum, payment) => {
+          const amt = parseFloat(payment.Amount);
+          return sum + (isNaN(amt) ? 0 : amt);
+        }, 0)
+      : 0;
 
-    const remainingToPay = Math.max(advance - totalPaid, 0);
+  // Round to 2 decimal places to avoid floating-point precision issues
+  const remainingToPay = Number(Math.max(advance - totalPaid, 0).toFixed(2));
 
-    if (collectPayment) {
-      // After payment is made
-      return {
-        TotalAmount: total,
-
-        AdvanceAmount: paymentDetails.advance,
-        BalanceAmount: advance,
-        RemainingToPay: remainingToPay,
-      };
-    } else {
-      // Before any payment
-      return {
-        TotalAmount: total,
-        AdvanceAmount: advance,
-        BalanceAmount: total - advance,
-        RemainingToPay: remainingToPay,
-      };
-    }
-  }, [paymentDetails, fullPaymentDetails, fullPayments]);
+  if (collectPayment) {
+    return {
+      TotalAmount: total,
+      AdvanceAmount: paymentDetails.advance,
+      BalanceAmount: advance,
+      RemainingToPay: remainingToPay,
+    };
+  } else {
+    return {
+      TotalAmount: total,
+      AdvanceAmount: advance,
+      BalanceAmount: total - advance,
+      RemainingToPay: remainingToPay,
+    };
+  }
+}, [paymentDetails, fullPaymentDetails, fullPayments]);
 
   useEffect(() => {
     if (updatedDetails?.RemainingToPay <= 0 && collectPayment) {

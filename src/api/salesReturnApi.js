@@ -60,7 +60,7 @@ export const salesReturnApi = createApi({
         method: "PUT",
         body: payload,
       }),
-      invalidatesTags : ["SalesReturn"],
+      invalidatesTags: ["SalesReturn"],
     }),
     getAllSalesReturn: builder.query({
       query: () => ({
@@ -87,6 +87,11 @@ export const salesReturnApi = createApi({
         url: `/api/v1/sales-Return/invoicedetails?productType=${productType}&DetailId=${detailId}&batchCode=${batchCode}&PatientID=${patientId}`,
       }),
     }),
+    getBatchesForCL: builder.query({
+      query: ({ detailId, locationId }) => ({
+        url: `/api/v1/contact-lens/batchcode/${detailId}?locationid=${locationId}`,
+      }),
+    }),
   }),
 });
 
@@ -103,5 +108,6 @@ export const {
   useGetSalesReturnByIdQuery,
   useGetMainSalesByIdQuery,
   useGetDraftDataByIdQuery,
-  useLazyGetInvoiceDetailsQuery
+  useLazyGetInvoiceDetailsQuery,
+  useLazyGetBatchesForCLQuery
 } = salesReturnApi;

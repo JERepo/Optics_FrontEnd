@@ -222,7 +222,7 @@ const AccessoryFrame = () => {
         orderId: customerId.orderId,
         payload: newPayload,
       }).unwrap();
-      toast.success("Frames saved with warnings bypassed.");
+      toast.success("Accessories successfully saved");
       setShowConfirmModal(false);
       goToStep(4);
     } catch (err) {
@@ -254,7 +254,7 @@ const AccessoryFrame = () => {
         setShowConfirmModal(true);
       } else {
         goToStep(4);
-        toast.success("Frames saved successfully!");
+        toast.success("Accessories successfully saved");
       }
     } catch (error) {
       toast.error("Cannot save Frames!");
