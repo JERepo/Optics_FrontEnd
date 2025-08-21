@@ -108,7 +108,7 @@ const SalesList = () => {
     );
   }
   return (
-    <div className="max-w-7xl">
+    <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {/* Header */}
         <div className="px-6 py-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

@@ -14,8 +14,6 @@ import Button from "../../../components/ui/Button";
 import { Table, TableCell, TableRow } from "../../../components/Table";
 import { useGetAllBrandsQuery } from "../../../api/brandsApi";
 import {
-  useCreateNewCustomerMutation,
-  useGetPatientDetailsByIdQuery,
   useLazyFetchBarcodeForAccessoryQuery,
   useLazyGetByBrandAndProductNameQuery,
   useSaveAccessoryMutation,
@@ -27,13 +25,70 @@ import Modal from "../../../components/ui/Modal";
 import Input from "../../../components/Form/Input";
 import Select from "../../../components/Form/Select";
 import { useSelector } from "react-redux";
-import { useGetIsdQuery } from "../../../api/customerApi";
 import Radio from "../../../components/Form/Radio";
 import {
   useLazyGetInvoiceDetailsQuery,
   useSaveProductsMutation,
 } from "../../../api/salesReturnApi";
 import { formatINR } from "../../../utils/formatINR";
+
+const getProductDetailsText = (order) => {
+  const {
+    productName,
+    BrandName,
+
+    HSN,
+    hSN,
+    barcode,
+    color,
+    Barcode,
+    ProductType,
+    Colour,
+    brandName,
+    size,
+    category,
+  } = order;
+
+  const clean = (val) => {
+    if (
+      val === null ||
+      val === undefined ||
+      val === "undefined" ||
+      val === "null" ||
+      val === "N/A" ||
+      val === "" ||
+      val === 0
+    ) {
+      return "";
+    }
+    return String(val).trim();
+  };
+
+  const brand = clean(brandName || BrandName);
+  const name = clean(productName);
+  const hsn = clean(HSN || hSN);
+  const barcodeVal = clean(Barcode || barcode);
+  const clr = clean(Colour || color);
+  const sizeVal = clean(size);
+
+  // map category
+  const getCategoryName = (cat) => {
+    if (cat === 0 || cat === "0") return "Optical Frame";
+    if (cat === 1 || cat === "1") return "Sunglass";
+    return "";
+  };
+
+  return [
+    brand && name ? `Brand: ${brand} - ${name}` : brand || name,
+    hsn && `HSN: ${hsn}`,
+    sizeVal && `Size: ${sizeVal}`,
+    getCategoryName(category) && `Category: ${getCategoryName(category)}`,
+    clr && `Color: ${clr}`,
+    barcodeVal && `Barcode: ${barcodeVal}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+};
 
 const AccessoryFrame = () => {
   const {
@@ -127,13 +182,18 @@ const AccessoryFrame = () => {
             }
           });
         } else {
-          await getInvoiceDetails({
-            productType: 1,
-            detailId: data.Id,
-            batchCode: null,
-            patientId: customerSalesId.patientId,
-          }).unwrap();
-          setOpenReferenceYes(true);
+          try {
+            await getInvoiceDetails({
+              productType: 2,
+              detailId: data.Id,
+              batchCode: null,
+              patientId: customerSalesId.patientId,
+              locationId: customerSalesId.locationId,
+            }).unwrap();
+            setOpenReferenceYes(true);
+          } catch (error) {
+            toast.error("No eligible Invoice exists for the given product");
+          }
         }
       }
     } catch (error) {
@@ -174,13 +234,18 @@ const AccessoryFrame = () => {
           setSearchMode(false);
         }
       } else {
-        await getInvoiceDetails({
-          productType: 1,
-          detailId: data.Id,
-          batchCode: null,
-          patientId: customerSalesId.patientId,
-        }).unwrap();
-        setOpenReferenceYes(true);
+        try {
+          await getInvoiceDetails({
+            productType: 2,
+            detailId: data.Id,
+            batchCode: null,
+            patientId: customerSalesId.patientId,
+            locationId: customerSalesId.locationId,
+          }).unwrap();
+          setOpenReferenceYes(true);
+        } catch (error) {
+          toast.error("No eligible Invoice exists for the given product");
+        }
       }
     } catch (err) {
       const msg = err?.data?.message || err?.error || "Failed to fetch models";
@@ -313,15 +378,41 @@ const AccessoryFrame = () => {
       )
     );
   };
-  const toggleEditMode = (barcode, index, field) => {
-    setEditMode((prev) => ({
+const toggleEditMode = (id, index, field) => {
+  setEditMode((prev) => {
+    const key = `${id}-${index}`;
+    const currentMode = prev[key]?.[field];
+
+    if (currentMode && field === "sellingPrice" && referenceApplicable === 0) {
+      // Revert to original price or MRP if canceling
+      setItems((prevItems) =>
+        prevItems.map((i, idx) =>
+          i.Barcode === id && idx === index
+            ? { ...i, SellingPrice: prev[key].originalPrice || i.MRP }
+            : i
+        )
+      );
+    } else if (currentMode && field === "returnPrice" && referenceApplicable === 1) {
+      // Revert to original price or ActualSellingPrice if canceling
+      setItems((prevItems) =>
+        prevItems.map((i, idx) =>
+          i.Id === id && idx === index
+            ? { ...i, ReturnPricePerUnit: prev[key].originalPrice || i.ActualSellingPrice }
+            : i
+        )
+      );
+    }
+
+    return {
       ...prev,
-      [`${barcode}-${index}`]: {
-        ...prev[`${barcode}-${index}`],
-        [field]: !prev[`${barcode}-${index}`]?.[field],
+      [key]: {
+        ...prev[key],
+        [field]: !currentMode,
+        originalPrice: prev[key]?.originalPrice, // Preserve original price
       },
-    }));
-  };
+    };
+  });
+};
 
   const handleConfirmBypassWarnings = async () => {
     if (!warningPayload) return;
@@ -443,7 +534,7 @@ const AccessoryFrame = () => {
   );
 
   return (
-    <div className="max-w-7xl h-auto">
+    <div className="max-w-8xl h-auto">
       <div className="bg-white rounded-xl shadow-sm">
         <div className="p-6 border-b border-gray-100">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -487,20 +578,22 @@ const AccessoryFrame = () => {
                   >
                     Enter Barcode
                   </label>
-                  <div className="flex items-center gap-5">
-                    <Radio
-                      value="0"
-                      onChange={() => setSingleOrCombine(0)}
-                      checked={singleOrCombine === 0}
-                      label="Combine Entry"
-                    />
-                    <Radio
-                      value="1"
-                      onChange={() => setSingleOrCombine(1)}
-                      checked={singleOrCombine === 1}
-                      label="Separate Entry"
-                    />
-                  </div>
+                  {referenceApplicable === 0 && (
+                    <div className="flex items-center gap-5">
+                      <Radio
+                        value="0"
+                        onChange={() => setSingleOrCombine(0)}
+                        checked={singleOrCombine === 0}
+                        label="Combine Entry"
+                      />
+                      <Radio
+                        value="1"
+                        onChange={() => setSingleOrCombine(1)}
+                        checked={singleOrCombine === 1}
+                        label="Separate Entry"
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <div className="relative flex items-center">
@@ -807,8 +900,10 @@ const AccessoryFrame = () => {
                     {item["InvoiceMain.InvoicePrefix"]}/
                     {item["InvoiceMain.InvoiceNo"]}/{item.InvoiceSlNo}
                   </TableCell>
-                  <TableCell className="text-center">Frame</TableCell>
-                  <TableCell></TableCell>
+                  <TableCell className="text-center">ACC</TableCell>
+                  <TableCell className="whitespace-pre-line">
+                    {getProductDetailsText(item.ProductDetails[0])}
+                  </TableCell>
                   <TableCell className="text-right">
                     ₹{formatINR(parseFloat(item.SRP || 0))}
                   </TableCell>

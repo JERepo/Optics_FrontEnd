@@ -15,32 +15,22 @@ import toast from "react-hot-toast";
 const getProductName = (order) => {
   const {
     productType,
-    brandName,
-    focality,
-    familyName,
-    designName,
-    index,
-    coatingName,
-    treatmentName,
-    specs,
-    hSN,
-    category,
-    barcode,
+    ProductType,
+    productDetails,
     fittingPrice,
     fittingGSTPercentage,
     batchCode,
     expiry,
-    modelNo,
-    colourCode,
-    size,
-    dBL,
-    templeLength,
-    productName,
-    batchBarCode,
   } = order;
 
+  const detail = Array.isArray(productDetails)
+    ? productDetails[0]
+    : productDetails;
+
+  if (!detail) return "";
+
   const clean = (val) =>
-    val == null || val === "undefined" || val === "null"
+    val == null || val === "undefined" || val === "null" || val === ""
       ? ""
       : String(val).trim();
 
@@ -55,99 +45,85 @@ const getProductName = (order) => {
 
   // Frames (ProductType 1)
   if (productType === 1) {
-    const line1 = joinNonEmpty([
-      clean(brandName),
-      clean(modelNo),
-      clean(colourCode),
-    ]);
-    const line2 = joinNonEmpty(
-      [clean(size), clean(dBL), clean(templeLength)],
-      "-"
-    );
-    const cat = category === 1 ? "Optical Frame" : "Sunglass";
+    const line1 = clean(detail.productName);
+    const line2 = clean(detail.Size?.Size);
+    const cat = "Optical Frame";
 
     return joinNonEmpty(
       [
         line1,
-        line2,
-        cat,
-        clean(barcode) && `Barcode: ${clean(barcode)}`,
-        clean(hSN) && `HSN: ${clean(hSN)}`,
+        line2 && `Size: ${line2}`,
+        cat && `Category: ${cat}`,
+        clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+        clean(detail.hsncode) && `HSN: ${clean(detail.hsncode)}`,
       ],
       "\n"
     );
   }
 
-  // Sunglasses / Variation items (ProductType 2)
+  // Accessories / Variation (ProductType 2)
   if (productType === 2) {
     return joinNonEmpty(
       [
-        joinNonEmpty([clean(brandName), clean(productName)]),
-        clean(specs?.variation) && `Variation: ${clean(specs?.variation)}`,
-        clean(specs?.barcode) && `Barcode: ${clean(specs?.barcode)}`,
-        clean(hSN) && `HSN: ${clean(hSN)}`,
+        clean(detail.productName),
+        clean(detail.Variation) && `Variation: ${clean(detail.Variation)}`,
+        clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+        clean(detail.hsncode) && `HSN: ${clean(detail.hsncode)}`,
       ],
       "\n"
     );
   }
 
-  // Contact lenses (ProductType 3)
+  // Contact Lens (ProductType 3)
   if (productType === 3) {
     const specsList = joinNonEmpty(
       [
-        cleanPower(specs?.sphericalPower) &&
-          `SPH: ${cleanPower(specs?.sphericalPower)}`,
-        cleanPower(specs?.cylindricalPower) &&
-          `CYL: ${cleanPower(specs?.cylindricalPower)}`,
-        clean(specs?.axis) && `Axis: ${clean(specs?.axis)}`,
-        cleanPower(specs?.additional) &&
-          `Add: ${cleanPower(specs?.additional)}`,
+        cleanPower(detail.specs?.sphericalPower) &&
+          `SPH: ${cleanPower(detail.specs?.sphericalPower)}`,
+        cleanPower(detail.specs?.cylindricalPower) &&
+          `CYL: ${cleanPower(detail.specs?.cylindricalPower)}`,
+        clean(detail.specs?.axis) && `Axis: ${clean(detail.specs?.axis)}`,
+        cleanPower(detail.specs?.additional) &&
+          `Add: ${cleanPower(detail.specs?.additional)}`,
       ],
       ", "
     );
 
     return joinNonEmpty(
       [
-        joinNonEmpty([clean(brandName), clean(productName)]),
+        joinNonEmpty([clean(detail.brandName), clean(detail.productName)]),
         specsList,
-        clean(specs?.color) && `Color: ${clean(specs?.color)}`,
-        clean(batchBarCode || barcode) &&
-          `Barcode: ${clean(batchBarCode || barcode)}`,
+        clean(detail.specs?.color) && `Color: ${clean(detail.specs?.color)}`,
+        clean(detail.specs?.barcode || detail.barcode) &&
+          `Barcode: ${clean(detail.specs?.barcode || detail.barcode)}`,
         (batchCode || expiry) &&
           `Batch Code: ${batchCode || "-"} | Expiry: ${
             expiry ? expiry.split("-").reverse().join("/") : "-"
           }`,
-        clean(hSN) && `HSN: ${clean(hSN)}`,
+        clean(detail.hSN || detail.hsncode) &&
+          `HSN: ${clean(detail.hSN || detail.hsncode)}`,
       ],
       "\n"
     );
   }
 
-  // Ophthalmic lenses (ProductType 0)
+  // Ophthalmic Lenses (ProductType 0)
   if (productType === 0) {
-    const olLine = joinNonEmpty([
-      clean(brandName),
-      clean(focality),
-      clean(familyName),
-      clean(designName),
-      index ? `1.${index}` : "",
-      clean(coatingName),
-      clean(treatmentName),
-    ]);
+    const olLine = clean(detail.productName);
 
     const formatPower = (eye) =>
       joinNonEmpty(
         [
-          cleanPower(eye?.sphericalPower) &&
-            `SPH: ${cleanPower(eye?.sphericalPower)}`,
-          cleanPower(eye?.addition) && `Add: ${cleanPower(eye?.addition)}`,
-          clean(eye?.diameter) && `Dia: ${clean(eye?.diameter)}`,
+          cleanPower(eye?.Spherical) && `SPH: ${cleanPower(eye?.Spherical)}`,
+          cleanPower(eye?.Add) && `Add: ${cleanPower(eye?.Add)}`,
+          clean(eye?.Diameter) && `Dia: ${clean(eye?.Diameter)}`,
         ],
         ", "
       );
 
-    const rightParts = formatPower(specs?.powerDetails?.right || {});
-    const leftParts = formatPower(specs?.powerDetails?.left || {});
+    const rightParts = formatPower(detail.Specs || {});
+    const leftParts = ""; // no separate left/right in this response
+
     const powerLine = joinNonEmpty(
       [rightParts && `R: ${rightParts}`, leftParts && `L: ${leftParts}`],
       "\n"
@@ -166,11 +142,9 @@ const getProductName = (order) => {
       [
         olLine,
         powerLine,
-        clean(specs?.addOn?.addOnName) &&
-          `Addon: ${clean(specs?.addOn?.addOnName)}`,
-        clean(specs?.tint?.tintName) && `Tint: ${clean(specs?.tint?.tintName)}`,
-        clean(barcode) && `Barcode: ${clean(barcode)}`,
-        clean(hSN) && `HSN: ${clean(hSN)}`,
+        clean(detail.colour) && `Color: ${detail.colour}`,
+        clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+        clean(detail.hsncode) && `HSN: ${clean(detail.hsncode)}`,
         fittingLine,
       ],
       "\n"
@@ -197,19 +171,18 @@ const CompleteSalesReturn = () => {
 
   const {
     selectedPatient,
-    findGSTPercentage,
     calculateGST,
     salesDraftData,
     prevSalesStep,
     goToSalesStep,
+    customerSalesId,
   } = useOrder();
 
   const {
     data: finalProducts,
     isLoading: isProductsLoading,
-    refetch,
   } = useGetSavedSalesReturnQuery(
-    { id: salesDraftData?.Id },
+    { id: salesDraftData?.Id, locationId: customerSalesId.locationId },
     { skip: !selectedPatient }
   );
   const [completeSales, { isLoading: isCompleteSalesLoading }] =
@@ -248,11 +221,11 @@ const CompleteSalesReturn = () => {
 
   const handleDelete = async (id) => {
     try {
-      setDeletingId(id); 
+      setDeletingId(id);
       const payload = { delete: [id] };
       await completeSales({ id: salesDraftData.Id, payload }).unwrap();
-      setDeletingId(null); 
-      toast.success("Deleted successfully")
+      setDeletingId(null);
+      toast.success("Deleted successfully");
     } catch (error) {
       console.error("Delete failed:", error);
       setDeletingId(null);
@@ -284,7 +257,7 @@ const CompleteSalesReturn = () => {
     }
   };
   return (
-    <div className="max-w-7xl">
+    <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {/* Customer Info Header */}
         <div className="p-6 border-b border-gray-200 bg-gray-50">
@@ -343,21 +316,11 @@ const CompleteSalesReturn = () => {
             renderRow={(item, index) => {
               const mappedOrder = {
                 productType: item.ProductType,
-                productName: item.ProductDetails?.productName,
-                barcode: item.ProductDetails?.barcode,
-                colourCode: item.ProductDetails?.colour,
-                size: item.ProductDetails?.Size,
-                hSN: item.ProductDetails?.hsncode,
-                specs: item.ProductDetails?.Specs
-                  ? {
-                      sphericalPower: item.ProductDetails.Specs?.Sph,
-                      cylindricalPower: item.ProductDetails.Specs?.Cyl,
-                      axis: item.ProductDetails.Specs?.Axis,
-                      additional: item.ProductDetails.Specs?.Add,
-                    }
-                  : {},
+                productDetails: item.ProductDetails,
                 fittingPrice: item.FittingCharges,
                 fittingGSTPercentage: item.GSTPercentage,
+                batchCode: item.BatchCode,
+                expiry: item.ExpiryDate,
               };
 
               return (
@@ -372,18 +335,18 @@ const CompleteSalesReturn = () => {
                       {getProductName(mappedOrder)}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell >
                     ₹{parseFloat(item.SRP || 0)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell >
                     ₹{parseFloat(item.ReturnPricePerUnit || 0)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell >
                     ₹
                     {
                       calculateGST(
-                        parseFloat(item.ReturnPricePerUnit || 0) *
-                          parseInt(item.ReturnQty || 0),
+                        ((item.ReturnPricePerUnit) *
+                          (item.ReturnQty)),
                         parseFloat(item.GSTPercentage || 0)
                       ).gstAmount
                     }
@@ -391,7 +354,7 @@ const CompleteSalesReturn = () => {
                   <TableCell className="text-center">
                     {item.ReturnQty || 0}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell >
                     ₹{parseFloat(item.TotalAmount || 0)}
                   </TableCell>
                   <TableCell>
@@ -402,9 +365,7 @@ const CompleteSalesReturn = () => {
                       className="px-3 py-1"
                       onClick={() => handleDelete(item.id)}
                       icon={FiTrash2}
-                    >
-                      Delete
-                    </Button>
+                    ></Button>
                   </TableCell>
                 </TableRow>
               );

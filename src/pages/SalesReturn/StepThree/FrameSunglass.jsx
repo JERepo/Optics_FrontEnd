@@ -31,6 +31,64 @@ import {
 import { useSelector } from "react-redux";
 import { formatINR } from "../../../utils/formatINR";
 
+const getProductDetailsText = (order) => {
+  const {
+    productName,
+    BrandName,
+
+    HSN,
+    hSN,
+    barcode,
+    color,
+    Barcode,
+    ProductType,
+    Colour,
+    brandName,
+    size,
+    category,
+  } = order;
+
+  const clean = (val) => {
+    if (
+      val === null ||
+      val === undefined ||
+      val === "undefined" ||
+      val === "null" ||
+      val === "N/A" ||
+      val === "" ||
+      val === 0
+    ) {
+      return "";
+    }
+    return String(val).trim();
+  };
+
+  const brand = clean(brandName || BrandName);
+  const name = clean(productName);
+  const hsn = clean(HSN || hSN);
+  const barcodeVal = clean(Barcode || barcode);
+  const clr = clean(Colour || color);
+  const sizeVal = clean(size);
+
+  // map category
+  const getCategoryName = (cat) => {
+    if (cat === 0 || cat === "0") return "Optical Frame";
+    if (cat === 1 || cat === "1") return "Sunglass";
+    return "";
+  };
+
+  return [
+    brand && name ? `Brand: ${brand} - ${name}` : brand || name,
+    hsn && `HSN: ${hsn}`,
+    sizeVal && `Size: ${sizeVal}`,
+    getCategoryName(category) && `Category: ${getCategoryName(category)}`,
+    clr && `Color: ${clr}`,
+    barcodeVal && `Barcode: ${barcodeVal}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+};
+
 const FrameSunglass = () => {
   const {
     selectedSalesProduct,
@@ -133,6 +191,7 @@ const FrameSunglass = () => {
             detailId: data.Id,
             batchCode: null,
             patientId: customerSalesId.patientId,
+            locationId: customerSalesId.locationId,
           }).unwrap();
           setOpenReferenceYes(true);
         }
@@ -155,7 +214,7 @@ const FrameSunglass = () => {
         locationId: customerSalesId.locationId,
       }).unwrap();
 
-      const data = res?.data?.data;
+      const data = res?.data;
       if (referenceApplicable === 0) {
         if (data && data.length > 0) {
           setSearchResults(data);
@@ -176,11 +235,15 @@ const FrameSunglass = () => {
           detailId: data.Id,
           batchCode: null,
           patientId: customerSalesId.patientId,
+          locationId: customerSalesId.locationId,
         }).unwrap();
         setOpenReferenceYes(true);
       }
     } catch (err) {
-      const msg = err?.data?.message || err?.error || "No eligible Invoice exists for the given product";
+      const msg =
+        err?.data?.message ||
+        err?.error ||
+        "No eligible Invoice exists for the given product";
       toast.error(msg);
       setBrandInput("");
       setBrandId(null);
@@ -288,14 +351,51 @@ const FrameSunglass = () => {
       )
     );
   };
-  const toggleEditMode = (barcode, index, field) => {
-    setEditMode((prev) => ({
-      ...prev,
-      [`${barcode}-${index}`]: {
-        ...prev[`${barcode}-${index}`],
-        [field]: !prev[`${barcode}-${index}`]?.[field],
-      },
-    }));
+  const toggleEditMode = (id, index, field) => {
+    setEditMode((prev) => {
+      const key = `${id}-${index}`;
+      const currentMode = prev[key]?.[field];
+
+      if (
+        currentMode &&
+        field === "sellingPrice" &&
+        referenceApplicable === 0
+      ) {
+        setItems((prevItems) =>
+          prevItems.map((i, idx) =>
+            i.Barcode === id && idx === index
+              ? { ...i, SellingPrice: prev[key].originalPrice || i.MRP } // Revert to original or MRP
+              : i
+          )
+        );
+      } else if (
+        currentMode &&
+        field === "returnPrice" &&
+        referenceApplicable === 1
+      ) {
+        // Revert to original price if canceling
+        setItems((prevItems) =>
+          prevItems.map((i, idx) =>
+            i.Id === id && idx === index
+              ? {
+                  ...i,
+                  ReturnPricePerUnit:
+                    prev[key].originalPrice || i.ActualSellingPrice,
+                } // Revert to original or ActualSellingPrice
+              : i
+          )
+        );
+      }
+
+      return {
+        ...prev,
+        [key]: {
+          ...prev[key],
+          [field]: !currentMode,
+          originalPrice: prev[key]?.originalPrice, // Preserve original price
+        },
+      };
+    });
   };
 
   const handleConfirmBypassWarnings = async () => {
@@ -435,7 +535,7 @@ const FrameSunglass = () => {
   );
 
   return (
-    <div className="max-w-7xl h-auto">
+    <div className="max-w-8xl h-auto">
       <div className="bg-white rounded-xl shadow-sm">
         <div className="p-6 border-b border-gray-100">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -479,22 +579,22 @@ const FrameSunglass = () => {
                   >
                     Enter Barcode
                   </label>
-                  {referenceApplicable === 0 && 
-                  <div className="flex items-center gap-5">
-                    <Radio
-                      value="0"
-                      onChange={() => setSingleOrCombine(0)}
-                      checked={singleOrCombine === 0}
-                      label="Combine Entry"
-                    />
-                    <Radio
-                      value="1"
-                      onChange={() => setSingleOrCombine(1)}
-                      checked={singleOrCombine === 1}
-                      label="Separate Entry"
-                    />
-                  </div>
-}
+                  {referenceApplicable === 0 && (
+                    <div className="flex items-center gap-5">
+                      <Radio
+                        value="0"
+                        onChange={() => setSingleOrCombine(0)}
+                        checked={singleOrCombine === 0}
+                        label="Combine Entry"
+                      />
+                      <Radio
+                        value="1"
+                        onChange={() => setSingleOrCombine(1)}
+                        checked={singleOrCombine === 1}
+                        label="Separate Entry"
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <div className="relative flex items-center">
@@ -807,7 +907,9 @@ const FrameSunglass = () => {
                     {item["InvoiceMain.InvoiceNo"]}/{item.InvoiceSlNo}
                   </TableCell>
                   <TableCell className="text-center">F/S</TableCell>
-                  <TableCell></TableCell>
+                  <TableCell className="whitespace-pre-line">
+                    {getProductDetailsText(item.ProductDetails[0])}
+                  </TableCell>
                   <TableCell className="text-right">
                     ₹{formatINR(parseFloat(item.SRP || 0))}
                   </TableCell>
@@ -884,9 +986,7 @@ const FrameSunglass = () => {
                       className="px-3 py-1"
                       onClick={() => handleDelete(null, index)}
                       icon={FiTrash2}
-                    >
-                      
-                    </Button>
+                    ></Button>
                   </TableCell>
                 </TableRow>
               )}

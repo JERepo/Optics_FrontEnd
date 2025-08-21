@@ -207,7 +207,7 @@ const OrderView = () => {
     "S.No",
     "Type",
     "Product name",
-    "Quantity",
+    "Qty",
     "Rate",
     "Discount",
     "GST",
@@ -229,7 +229,7 @@ const OrderView = () => {
   }
 
   return (
-    <div className="max-w-7xl">
+    <div className="max-w-8xl">
       <div className="bg-white rounded-sm shadow-sm overflow-hidden p-6">
         <div className="flex justify-between items-center mb-3">
           <div className="text-neutral-800 text-2xl font-semibold">
@@ -301,11 +301,7 @@ const OrderView = () => {
                 <TableCell>{getTypeName(order?.typeid)}</TableCell>
                 <TableCell className="">
                   <div
-                    className="text-sm"
-                    style={{
-                      whiteSpace: "pre-wrap",
-                      wordWrap: "break-word",
-                    }}
+                   className="whitespace-pre-wrap"
                   >
                     {getProductName(order)}
                   </div>
@@ -329,9 +325,7 @@ const OrderView = () => {
                               parseFloat(order.OrderQty),
                             parseFloat(order.TaxPercentage)
                           ).gstAmount
-                        ) +
-                          parseFloat(order.FittingPrice || 200) *
-                            (parseFloat(order.FittingGSTPercentage || 0) / 100)
+                        ) 
                       )}
                     </div>
                     <div>({order.TaxPercentage}%)</div>

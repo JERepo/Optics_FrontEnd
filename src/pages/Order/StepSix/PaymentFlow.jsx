@@ -38,7 +38,7 @@ const PaymentFlow = ({ collectPayment, onClose }) => {
     setPaymentDetails,
     updatePaymentDetails,
     updateFullPayments,
-    resetOrderContext
+    resetOrderContext,
   } = useOrder();
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
 
@@ -62,37 +62,37 @@ const PaymentFlow = ({ collectPayment, onClose }) => {
   });
   const [errors, setErrors] = useState({});
 
-const updatedDetails = useMemo(() => {
-  const total = paymentDetails?.TotalValue || 0;
-  const advance = paymentDetails?.totalAdvance || 0;
+  const updatedDetails = useMemo(() => {
+    const total = paymentDetails?.TotalValue || 0;
+    const advance = paymentDetails?.totalAdvance || 0;
 
-  const totalPaid =
-    fullPayments?.length > 0
-      ? fullPaymentDetails?.reduce((sum, payment) => {
-          const amt = parseFloat(payment.Amount);
-          return sum + (isNaN(amt) ? 0 : amt);
-        }, 0)
-      : 0;
+    const totalPaid =
+      fullPayments?.length > 0
+        ? fullPaymentDetails?.reduce((sum, payment) => {
+            const amt = parseFloat(payment.Amount);
+            return sum + (isNaN(amt) ? 0 : amt);
+          }, 0)
+        : 0;
 
-  // Round to 2 decimal places to avoid floating-point precision issues
-  const remainingToPay = Number(Math.max(advance - totalPaid, 0).toFixed(2));
+    // Round to 2 decimal places to avoid floating-point precision issues
+    const remainingToPay = Number(Math.max(advance - totalPaid, 0).toFixed(2));
 
-  if (collectPayment) {
-    return {
-      TotalAmount: total,
-      AdvanceAmount: paymentDetails.advance,
-      BalanceAmount: advance,
-      RemainingToPay: remainingToPay,
-    };
-  } else {
-    return {
-      TotalAmount: total,
-      AdvanceAmount: advance,
-      BalanceAmount: total - advance,
-      RemainingToPay: remainingToPay,
-    };
-  }
-}, [paymentDetails, fullPaymentDetails, fullPayments]);
+    if (collectPayment) {
+      return {
+        TotalAmount: total,
+        AdvanceAmount: paymentDetails.advance,
+        BalanceAmount: advance,
+        RemainingToPay: remainingToPay,
+      };
+    } else {
+      return {
+        TotalAmount: total,
+        AdvanceAmount: advance,
+        BalanceAmount: total - advance,
+        RemainingToPay: remainingToPay,
+      };
+    }
+  }, [paymentDetails, fullPaymentDetails, fullPayments]);
 
   useEffect(() => {
     if (updatedDetails?.RemainingToPay <= 0 && collectPayment) {
@@ -213,7 +213,7 @@ const updatedDetails = useMemo(() => {
 
     return payments;
   };
-
+ 
   const handleSave = async () => {
     if (updatedDetails.RemainingToPay > 0) {
       toast.error("Please cover the remaining balance before saving.");
@@ -238,7 +238,7 @@ const updatedDetails = useMemo(() => {
           Amount: Number(value),
         })
       ),
-
+      detailidwithoutadvance: paymentDetails?.withOutAdvance,
       payments: preparePaymentsStructure(),
     };
 
@@ -248,7 +248,7 @@ const updatedDetails = useMemo(() => {
         payload: finalStructure,
       }).unwrap();
       toast.success("Order created Successfully");
-      resetOrderContext()
+      resetOrderContext();
       updatePaymentDetails([]);
       setFullPaymentDetails([]);
       updateFullPayments([]);
@@ -355,7 +355,7 @@ const updatedDetails = useMemo(() => {
 
   return (
     <div className="">
-      <div className="max-w-7xl">
+      <div className="max-w-8xl">
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
           <div className="p-6">
             {/* Header */}

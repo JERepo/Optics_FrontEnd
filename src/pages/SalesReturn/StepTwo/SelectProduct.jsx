@@ -49,7 +49,7 @@ const SelectProduct = () => {
     <div className="max-w-6xl p-6 bg-white rounded-lg shadow-sm">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <h1 className="text-2xl font-semibold text-gray-800">Select Product</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">Step 2: Select Product</h1>
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
          

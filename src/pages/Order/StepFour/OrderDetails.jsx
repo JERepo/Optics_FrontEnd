@@ -586,7 +586,7 @@ const OrderDetails = () => {
     }
   };
   return (
-    <div className="max-w-7xl">
+    <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-md overflow-hidden">
         {/* Header Section */}
         <div className="p-4">
@@ -674,7 +674,7 @@ const OrderDetails = () => {
             </div>
           </div>
           {/* Order Items Table */}
-          <div className="overflow-x-auto px-4">
+         
             <Table
             freeze={true}
               columns={[
@@ -710,11 +710,8 @@ const OrderDetails = () => {
                     <TableCell>{getShortTypeName(item.typeid)}</TableCell>
                     <TableCell>
                       <div
-                        className="text-sm"
-                        style={{
-                          whiteSpace: "pre-wrap",
-                          wordWrap: "break-word",
-                        }}
+                        className="whitespace-pre-wrap"
+                        
                       >
                         {getProductName(item)}
                       </div>
@@ -784,7 +781,7 @@ const OrderDetails = () => {
               }
               pagination={false}
             />
-          </div>
+         
 
           {/* Order Summary */}
           {savedOrders?.length > 0 && (

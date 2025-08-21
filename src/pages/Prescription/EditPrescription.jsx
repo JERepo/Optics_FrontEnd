@@ -388,9 +388,9 @@ const EditPrescription = () => {
   return (
     <>
       {!openPrescription ? (
-        <div className="max-w-6xl p-6 bg-white rounded-lg shadow-md pb-6">
+        <div className="max-w-8xl p-6 bg-white rounded-lg shadow-md pb-6">
           <div className="mb-6">
-            <span className="text-lg font-semibold text-blue-600">
+            <span className="text-lg font-semibold text-neutral-700">
               Step 1: Select Customer
             </span>
           </div>
@@ -411,7 +411,7 @@ const EditPrescription = () => {
                 onChange={(e) => setInput(e.target.value)}
                 className="w-full pl-10 pr-24 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <button className="cursor-pointer absolute right-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors">
+              <button className="cursor-pointer absolute right-2 bg-neutral-300 text-neutral-700 px-4 py-1.5 rounded-md text-sm font-medium transition-colors">
                 Search
               </button>
             </div>
@@ -419,24 +419,24 @@ const EditPrescription = () => {
             <div className="flex gap-2 sm:gap-3">
               <button
                 onClick={() => navigate(-1)}
-                className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm"
+                className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-neutral-700 hover:bg-gray-50 text-sm"
               >
                 <FiArrowLeft />
                 <span>Back</span>
               </button>
               <button
                 onClick={handleRefresh}
-                className=" flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+                className=" flex items-center gap-2 px-3 py-2 bg-neutral-300 text-neutral-700 rounded-lg text-sm"
               >
                 <FiRefreshCw />
-                <span className="text-neutral-50">Refresh</span>
+                <span className="text-neutral-700">Refresh</span>
               </button>
               <button
                 onClick={handleOpenNewCustomer}
-                className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm"
+                className="flex items-center gap-2 px-3 py-2 bg-neutral-300 text-neutral-700 rounded-lg text-sm"
               >
-                <FiUserPlus />
-                <span className="text-neutral-50">New Customer</span>
+                <FiUserPlus  />
+                <span className="text-neutral-700">New Customer</span>
               </button>
             </div>
           </div>

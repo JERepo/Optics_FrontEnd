@@ -67,7 +67,7 @@ const getProductName = (order) => {
     batchCode,
     expiry,
   } = order;
-
+  console.log("order", order);
   const clean = (val) => {
     if (
       val === null ||
@@ -104,8 +104,8 @@ const getProductName = (order) => {
 
     return [
       line1,
-      line2,
-      cat,
+      line2 && `Size: ${line2}`,
+      cat && `Category: ${cat}`,
       barcode && `Barcode: ${barcode}`,
       hsn && `HSN: ${hsn}`,
     ]
@@ -134,7 +134,8 @@ const getProductName = (order) => {
     const name = clean(order.productName);
     const brand = clean(order.brandName);
     const hsn = clean(order.hSN);
-    const barcode = clean(order.batchBarCode || order.barcode);
+    const barcode = clean(order.barcode);
+    const batchCode = clean(order.batchData[0]?.batchCode);
 
     const sph = cleanPower(specs?.sphericalPower);
     const cyld = cleanPower(specs?.cylindricalPower);
@@ -236,6 +237,8 @@ const CustomerSelect = () => {
     setCustomerId,
     fullPayments,
     setFullPayments,
+    setFullPaymentDetails,
+    updateFullPayments,
   } = useOrder();
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -344,6 +347,10 @@ const CustomerSelect = () => {
       setLocalProductData(updatedProductData);
     }
   }, [productData]);
+
+  useEffect(() => {
+    updateFullPayments([]);
+  }, []);
 
   // Fetch products when master IDs change
   const masterIds = [
@@ -560,7 +567,12 @@ const CustomerSelect = () => {
       if (order.cLBatchCode === 0) {
         return order.priceMaster?.mrp || 0;
       }
-      return order.pricing?.mrp || 0;
+
+      const mrp = order.stock?.reduce(
+        (sum, item) => sum + parseFloat(item.mrp || 0),
+        0
+      );
+      return mrp;
     } else {
       return 0;
     }
@@ -847,7 +859,11 @@ const CustomerSelect = () => {
       handleGenerateInvoice();
     }
   };
+  const sameIdentifiersAvail = localProductData
+    .filter((item) => selectedProducts.includes(item.orderDetailId))
+    .filter((item) => item.identifier !== null);
 
+  console.log("identifiers", sameIdentifiersAvail);
   const handleGenerateInvoice = async () => {
     if (!validateBatchCodes()) {
       toast.error(
@@ -859,6 +875,46 @@ const CustomerSelect = () => {
       toast.error("Stock entry does not exist. Please do GRN first");
       return;
     }
+
+    // Validate identifiers across all products, not just selected
+    const identifiers = localProductData
+      .map((x) => x.identifier)
+      .filter(Boolean);
+
+    for (const id of identifiers) {
+      const groupItems = localProductData.filter((x) => x.identifier === id);
+      const selectedGroupItems = groupItems.filter((x) =>
+        selectedProducts.includes(x.orderDetailId)
+      );
+
+      if (
+        selectedGroupItems.length > 0 &&
+        selectedGroupItems.length < groupItems.length
+      ) {
+        // Find first missing item’s row number (index + 1)
+        const missingItem = groupItems.find(
+          (x) => !selectedProducts.includes(x.orderDetailId)
+        );
+        const missingIndex =
+          filteredProducts.findIndex(
+            (x) => x.orderDetailId === missingItem.orderDetailId
+          ) + 1;
+
+        if (groupItems.some((x) => x.productType === 1)) {
+          // Frame + Lens case
+          toast.error(
+            `Frame in Item No ${missingIndex} should also be invoiced along with the lens`
+          );
+        } else {
+          // Optical Lens split case
+          toast.error(
+            `Both the lens should be invoiced together (missing Item No ${missingIndex})`
+          );
+        }
+        return;
+      }
+    }
+
     const filteredSelected = localProductData.filter((item) =>
       selectedProducts.includes(item.orderDetailId)
     );
@@ -911,10 +967,9 @@ const CustomerSelect = () => {
       }
     }
   };
-  console.log("filtered data after batch", filteredProducts);
-  console.log("local data after batch", localProductData);
+
   return (
-    <div className="max-w-7xl">
+    <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-sm">
         <div className="p-6 border-b border-gray-100">
           {!isNextClicked && (
@@ -1109,38 +1164,28 @@ const CustomerSelect = () => {
                       </div>
                     );
                   }
-                  return (
-                    <span
-                      className={
-                        column === "Selling Price" || column === "To Bill Qty"
-                          ? "min-w-[150px] inline-block"
-                          : ""
-                      }
-                    >
-                      {column}
-                    </span>
-                  );
+                  return <>{column}</>;
                 }}
                 renderRow={(order, index) => (
-                  <TableRow key={index} className="text-[13px]">
+                  <TableRow key={index}>
                     <TableCell>
                       <input
                         type="checkbox"
                         checked={selectedProducts.includes(order.orderDetailId)} // Use orderDetailId instead of index
                         onChange={() => handleProductSelection(order)} // Remove unused index parameter
                         className="h-5 w-5"
+                        disabled={
+                          (selectedProducts.includes(order.orderDetailId) &&
+                            order.batchData.length > 0) ||
+                          fullPayments?.length > 0
+                        }
                       />
                     </TableCell>
                     <TableCell>{index + 1}</TableCell>
                     <TableCell>{`${order.orderPrefix}/${order.orderNo}/${order.slNo}`}</TableCell>
                     <TableCell>{getShortTypeName(order.productType)}</TableCell>
                     <TableCell>
-                      <div
-                        style={{
-                          whiteSpace: "pre-wrap",
-                          wordWrap: "break-word",
-                        }}
-                      >
+                      <div className="whitespace-pre-wrap">
                         {getProductName(order)}
                       </div>
                     </TableCell>
@@ -1218,51 +1263,15 @@ const CustomerSelect = () => {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell>{order.orderQty}</TableCell>
-                    <TableCell className="min-w-[150px]">
-                      {editMode[index]?.toBillQty ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            min="0"
-                            step="1"
-                            value={editValues[index]?.toBillQty || ""}
-                            onChange={(e) =>
-                              setEditValues((prev) => ({
-                                ...prev,
-                                [index]: {
-                                  ...prev[index],
-                                  toBillQty: e.target.value,
-                                },
-                              }))
-                            }
-                            className="w-20 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                            autoFocus
-                          />
-                          <button
-                            onClick={() => saveEdit(index, "toBillQty")}
-                            className="text-neutral-400 transition"
-                            title="Save"
-                          >
-                            <FiCheck size={18} />
-                          </button>
-                          <button
-                            onClick={() => cancelEdit(index, "toBillQty")}
-                            className="text-neutral-400 transition"
-                            title="Cancel"
-                          >
-                            <FiX size={18} />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-700">
-                            {order.toBillQty}
-                          </span>
-                        </div>
-                      )}
+                    <TableCell className="text-center">
+                      {order.orderQty}
                     </TableCell>
-                    <TableCell>{getAvalQty(order)}</TableCell>
+                    <TableCell className="text-center">
+                      {order.toBillQty}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {getAvalQty(order)}
+                    </TableCell>
                     <TableCell>
                       {formatINR(
                         order.toBillQty * order.sellingPrice +
@@ -1316,7 +1325,7 @@ const CustomerSelect = () => {
                 }`}
               />
               {/* Payment Entries */}
-              {fullPayments.length > 0 && !collectPayment && (
+              {fullPayments?.length > 0 && !collectPayment && (
                 <div className="mt-8">
                   <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
                     Payment Entries

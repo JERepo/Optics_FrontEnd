@@ -49,8 +49,8 @@ export const salesReturnApi = createApi({
       invalidatesTags: ["SalesReturn"],
     }),
     getSavedSalesReturn: builder.query({
-      query: ({ id }) => ({
-        url: `/api/v1/sales-Return/getsalesdetails/${id}`,
+      query: ({ id, locationId }) => ({
+        url: `/api/v1/sales-Return/getsalesdetails/${id}?locationid=${locationId}`,
       }),
       providesTags: ["SalesReturn"],
     }),
@@ -83,13 +83,24 @@ export const salesReturnApi = createApi({
       }),
     }),
     getInvoiceDetails: builder.query({
-      query: ({ productType, detailId, batchCode, patientId }) => ({
-        url: `/api/v1/sales-Return/invoicedetails?productType=${productType}&DetailId=${detailId}&batchCode=${batchCode}&PatientID=${patientId}`,
+      query: ({ productType, detailId, batchCode, patientId, locationId }) => ({
+        url: `/api/v1/sales-Return/invoicedetails?productType=${productType}&DetailId=${detailId}&batchCode=${batchCode}&PatientID=${patientId}&locationId=${locationId}`,
       }),
     }),
     getBatchesForCL: builder.query({
       query: ({ detailId, locationId }) => ({
         url: `/api/v1/contact-lens/batchcode/${detailId}?locationid=${locationId}`,
+      }),
+    }),
+    // OPTICAL LENS
+    getOlInvoiceDetails: builder.query({
+      query: ({ id, locationId }) => ({
+        url: `/api/v1/sales-Return/Olinvoicedetails?PatientID=${id}&locationId=${locationId}`,
+      }),
+    }),
+    getDraftDetails: builder.query({
+      query: ({ userId, companyId, patientId, reference }) => ({
+        url: `/api/v1/sales-Return/getsalesreturn?ApplicationUserId=${userId}&CompanyId=${companyId}&PatientId=${patientId}&ReferenceApplicable=${reference}`,
       }),
     }),
   }),
@@ -109,5 +120,7 @@ export const {
   useGetMainSalesByIdQuery,
   useGetDraftDataByIdQuery,
   useLazyGetInvoiceDetailsQuery,
-  useLazyGetBatchesForCLQuery
+  useLazyGetBatchesForCLQuery,
+  useGetOlInvoiceDetailsQuery,
+  useLazyGetDraftDetailsQuery
 } = salesReturnApi;

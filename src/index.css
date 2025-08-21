@@ -30,7 +30,21 @@
 a {
   text-decoration: none;
 }
+.MuiInputBase-input {
+  color: #000 !important;  /* force black text */
+}
 
+/* Placeholder text color */
+.MuiInputBase-input::placeholder {
+  color: #666 !important;  /* make placeholder readable */
+  opacity: 1; /* required in some browsers */
+}
+
+/* Disabled input text color */
+.MuiInputBase-input.Mui-disabled {
+  -webkit-text-fill-color: #777 !important; /* Safari fix */
+  color: #777 !important;
+}
 body {
   font-family: var(--font-sans);
   background-color: var(--color-neutral-50);

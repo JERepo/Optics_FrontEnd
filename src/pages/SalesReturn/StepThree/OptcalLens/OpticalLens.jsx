@@ -26,7 +26,9 @@ import { useGetAllBrandsQuery } from "../../../../api/brandsApi";
 import Loader from "../../../../components/ui/Loader";
 import { Table, TableCell, TableRow } from "../../../../components/Table";
 import {
+  useGetOlInvoiceDetailsQuery,
   useGetPriceByCoatingComboIdQuery,
+  useLazyGetInvoiceDetailsQuery,
   useSaveProductsMutation,
 } from "../../../../api/salesReturnApi";
 import { useSelector } from "react-redux";
@@ -35,13 +37,83 @@ import toast from "react-hot-toast";
 const Input = lazy(() => import("../../../../components/Form/Input"));
 const Radio = lazy(() => import("../../../../components/Form/Radio"));
 const Checkbox = lazy(() => import("../../../../components/Form/Checkbox"));
+const Textarea = lazy(() => import("../../../../components/Form/Textarea"));
 const Button = lazy(() => import("../../../../components/ui/Button"));
-
+import { isValidNumericInput } from "../../../../utils/isValidNumericInput";
+import { formatINR } from "../../../../utils/formatINR";
 const productTypes = [
   { value: 0, lable: "Stock" },
   { value: 1, lable: "Rx" },
 ];
+const getProductNameYes = (item) => {
+  const product = item?.ProductDetails?.[0];
+  if (!product) return "";
 
+  const {
+    brandName,
+    productName,
+    barcode,
+    fittingPrice,
+    fittingGSTPercentage,
+    hSN,
+    specs,
+  } = product;
+
+  const clean = (val) => {
+    if (
+      val === null ||
+      val === undefined ||
+      val === "undefined" ||
+      val === "null" ||
+      val === "N/A"
+    ) {
+      return "";
+    }
+    return val;
+  };
+
+  const formatPowerValue = (val) => {
+    const num = parseFloat(val);
+    if (isNaN(num)) return val;
+    return num > 0 ? `+${val}` : val;
+  };
+
+  const tintName = clean(specs?.tint.tintName);
+  const addOns = specs?.addOn?.addOnName;
+
+  const specsLines = (specs.PowerDetails || [])
+    .map((spec) => {
+      const side = clean(spec.side);
+      const sph = clean(spec.sph);
+      const cyl = clean(spec.cyl);
+      const axis = clean(spec.axis);
+      const addition = clean(spec.addition);
+
+      const powerValues = [];
+      if (sph) powerValues.push(`SPH ${formatPowerValue(sph)}`);
+      if (cyl) powerValues.push(`CYL ${formatPowerValue(cyl)}`);
+      if (axis) powerValues.push(`Axis ${formatPowerValue(axis)}`);
+      if (addition) powerValues.push(`Add ${formatPowerValue(addition)}`);
+
+      return powerValues.length ? `${side}: ${powerValues.join(", ")}` : "";
+    })
+    .filter(Boolean)
+    .join("\n");
+
+  const lines = [
+    `${clean(brandName)} ${clean(productName)}`,
+    specsLines,
+    clean(barcode) && `Barcode: ${barcode}`,
+
+    tintName ? `Tint: ${tintName}` : "",
+
+    addOns?.length > 0 ? `AddOn: ${addOns}` : "",
+    clean(hSN) && `HSN: ${hSN}`,
+    clean(fittingPrice) ? `Fitting Price: ${fittingPrice}` : "",
+  ];
+
+  return lines.filter(Boolean).join("\n");
+};
 const getProductName = (order) => {
   console.log("orr", order);
   const { ProductType, productName, ProductName, tintName, AddOnData } = order;
@@ -86,6 +158,8 @@ const OpticalLens = () => {
     salesDraftData,
     findGSTPercentage,
     goToSalesStep,
+    referenceApplicable,
+    calculateGST,
   } = useOrder();
 
   const { user } = useSelector((state) => state.auth);
@@ -94,6 +168,9 @@ const OpticalLens = () => {
   const [editMode, setEditMode] = useState({}); // { [index]: { returnPrice: false, returnQty: false } }
   const [editReturnPrice, setEditReturnPrice] = useState("");
   const [editReturnQty, setEditReturnQty] = useState("");
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [editReturnFittingPrice, setEditReturnFittingprice] = useState(0);
+  const [returnPriceError, setReturnPriceError] = useState(null);
 
   const [lensData, setLensData] = useState({
     orderReference: null,
@@ -229,6 +306,16 @@ const OpticalLens = () => {
 
   const [saveFinalProducts, { isLoading: isFinalProductsSaving }] =
     useSaveProductsMutation();
+  const { data: InvoiceDetailsDrop, isLoading: isInvoiceDetailsLoading } =
+    useGetOlInvoiceDetailsQuery({
+      id: customerSalesId.patientId,
+      locationId: customerSalesId.locationId,
+    });
+  const [
+    getInvoiceDetails,
+    { data: InvoiceDetails, isLoading: isInvoiceLoading },
+  ] = useLazyGetInvoiceDetailsQuery();
+
   // Update productName based on dropdown selections
   useEffect(() => {
     const brand =
@@ -294,14 +381,15 @@ const OpticalLens = () => {
   useEffect(() => {
     setEditMode((prev) => {
       const newEditMode = { ...prev };
-      mainOLDetails.forEach((_, index) => {
-        if (!newEditMode[index]) {
-          newEditMode[index] = { returnPrice: false, returnQty: false };
+      mainOLDetails.forEach((item, index) => {
+        const key = referenceApplicable === 1 ? `${item.Id}-${index}` : index;
+        if (!newEditMode[key]) {
+          newEditMode[key] = { returnPrice: false, returnQty: false };
         }
       });
       return newEditMode;
     });
-  }, [mainOLDetails]);
+  }, [mainOLDetails, referenceApplicable]);
   const handleRefresh = () => {
     setLensData({
       orderReference: null,
@@ -345,25 +433,27 @@ const OpticalLens = () => {
       return newEditMode;
     });
   };
-  const toggleEditMode = (index, field) => {
+  const toggleEditMode = (id, index, field) => {
+    const key = referenceApplicable === 1 ? `${id}-${index}` : index;
     setEditMode((prev) => ({
       ...prev,
-      [index]: {
-        ...prev[index],
-        [field]: !prev[index]?.[field],
+      [key]: {
+        ...prev[key],
+        [field]: !prev[key]?.[field],
       },
     }));
     const item = mainOLDetails[index];
-    if (!editMode[index]?.[field]) {
+    if (!editMode[key]?.[field]) {
       if (field === "returnPrice") {
-        setEditReturnPrice(item.returnPrice || "");
+        setEditReturnPrice(item.returnPrice || item.ReturnPricePerUnit || "");
       } else if (field === "returnQty") {
-        setEditReturnQty(item.returnQty || "");
+        setEditReturnQty(item.returnQty || item.ReturnQty || "");
       }
     }
   };
 
-  const saveEdit = (index, field) => {
+  const saveEdit = (id, index, field) => {
+    const key = referenceApplicable === 1 ? `${id}-${index}` : index;
     const parsedQty = parseFloat(editReturnQty);
     const parsedPrice = parseFloat(editReturnPrice);
     const item = mainOLDetails[index];
@@ -375,7 +465,7 @@ const OpticalLens = () => {
       }
     }
     if (field === "returnPrice") {
-      if (parsedPrice > parseFloat(item.CLMRP)) {
+      if (parsedPrice > parseFloat(item.CLMRP || item.SRP)) {
         toast.error("Return price cannot be greater than selling price");
         return;
       }
@@ -390,33 +480,41 @@ const OpticalLens = () => {
         i === index
           ? {
               ...it,
-              ...(field === "returnPrice" && { returnPrice: parsedPrice }),
-              ...(field === "returnQty" && { returnQty: parsedQty }),
+              ...(field === "returnPrice" && {
+                [referenceApplicable === 1
+                  ? "ReturnPricePerUnit"
+                  : "returnPrice"]: parsedPrice,
+              }),
+              ...(field === "returnQty" && {
+                [referenceApplicable === 1 ? "ReturnQty" : "returnQty"]:
+                  parsedQty,
+              }),
             }
           : it
       )
     );
     setEditMode((prev) => ({
       ...prev,
-      [index]: {
-        ...prev[index],
+      [key]: {
+        ...prev[key],
         [field]: false,
       },
     }));
   };
 
-  const cancelEdit = (index, field) => {
+  const cancelEdit = (id, index, field) => {
+    const key = referenceApplicable === 1 ? `${id}-${index}` : index;
     setEditMode((prev) => ({
       ...prev,
-      [index]: {
-        ...prev[index],
+      [key]: {
+        ...prev[key],
         [field]: false,
       },
     }));
   };
   const handleAddToTable = () => {
-    if (!lensData.productName) {
-      alert("Please select all required fields before adding.");
+    if (!lensData.productName || !lensData.tintId) {
+      toast.error("Please select all required fields before adding.");
       return;
     }
 
@@ -462,6 +560,83 @@ const OpticalLens = () => {
       returnQty: 1,
     });
   };
+  const handleDeleteYes = (id, index) => {
+    if (referenceApplicable === 1) {
+      setMainOLDetails((prev) => prev.filter((item, i) => i !== index));
+    } else {
+      setMainOLDetails((prev) =>
+        prev.filter((i, idx) => !(i.Barcode === id && idx === index))
+      );
+      setEditMode((prev) => {
+        const newEditMode = { ...prev };
+        delete newEditMode[`${id}-${index}`];
+        return newEditMode;
+      });
+    }
+  };
+  const handleAddInvoice = () => {
+    if (!selectedInvoice) {
+      toast.error("Please select an invoice before adding.");
+      return;
+    }
+
+    const newItem = {
+      ...selectedInvoice,
+      ReturnPricePerUnit: editReturnFittingPrice || 555,
+      ReturnQty: 1,
+    };
+    console.log("new ", newItem);
+    setMainOLDetails((prev) => [...prev, newItem]);
+
+    setSelectedInvoice(null);
+    setEditReturnFittingprice(0);
+  };
+
+  useEffect(() => {
+    setEditReturnFittingprice(
+      parseFloat(selectedInvoice?.ProductDetails[0]?.fittingPrice)
+    );
+  }, [selectedInvoice]);
+  const getProductDisplayName = (product) => {
+    const { brandName, productName, hSN, barcode, fittingPrice, specs } =
+      product;
+
+    // Extract power details (right + left)
+    const rightPower = specs?.powerDetails?.right
+      ? `Right(Sph: ${specs.powerDetails.right.sphericalPower}, Add: ${
+          specs.powerDetails.right.addition
+        }, Axis: ${specs.powerDetails.right.axis ?? "-"}, Dia: ${
+          specs.powerDetails.right.diameter
+        })`
+      : "";
+
+    const leftPower = specs?.powerDetails?.left
+      ? `Left(Sph: ${specs.powerDetails.left.sphericalPower}, Add: ${
+          specs.powerDetails.left.addition
+        }, Axis: ${specs.powerDetails.left.axis ?? "-"}, Dia: ${
+          specs.powerDetails.left.diameter
+        })`
+      : "";
+
+    const tint = specs?.tint?.tintName ? `Tint: ${specs.tint.tintName}` : "";
+    const addOn = specs?.addOn?.addOnName
+      ? `AddOn: ${specs.addOn.addOnName}`
+      : "";
+
+    return [
+      brandName,
+      productName,
+      rightPower,
+      leftPower,
+      tint,
+      addOn,
+      hSN ? `HSN: ${hSN}` : "",
+      barcode ? `Barcode: ${barcode}` : "",
+      fittingPrice ? `Fitting Price: ${fittingPrice}` : "",
+    ]
+      .filter(Boolean) // remove empty
+      .join(" | "); // separator
+  };
 
   const handleSaveData = async () => {
     if (!Array.isArray(mainOLDetails) || mainOLDetails.length === 0) {
@@ -476,15 +651,18 @@ const OpticalLens = () => {
           ContactLensDetailId: detail.CLDetailId ?? null,
           AccessoryDetailId: detail.AccessoryDetailId ?? null,
           FrameDetailId: detail.FrameDetailId ?? null,
-          OpticalLensDetailId: detail.OpticalLensDetailId ?? null,
+          OpticalLensDetailId: detail.OrderDetailId ?? null,
           BatchCode: detail.CLBatchCode ?? null,
-          CNQty: detail.returnQty ?? null,
-          SRP: parseFloat(detail.returnPrice) ?? null,
-          ReturnPrice: detail.returnPrice ?? null,
+          CNQty: referenceApplicable === 0 ?detail.returnQty : detail.ReturnQty ?? null,
+          SRP: referenceApplicable === 0 ?parseFloat(detail.returnPrice):parseFloat(detail.SRP) ?? null,
+          ReturnPrice:
+            referenceApplicable === 0
+              ? detail.returnPrice
+              : detail.ReturnPricePerUnit ?? null,
           ProductTaxPercentage: findGSTPercentage(detail).taxPercentage ?? null,
-          FittingReturnPrice: detail.FittingReturnPrice ?? null,
-          FittingTaxPercentage: detail.FittingTaxPercentage ?? null,
-          InvoiceDetailId: detail.InvoiceDetailId ?? null,
+          FittingReturnPrice:referenceApplicable === 0? detail.FittingReturnPrice:detail.ProductDetails[0]?.fittingPrice ?? null,
+          FittingTaxPercentage:referenceApplicable === 0? detail.FittingTaxPercentage:detail.ProductDetails[0]?.fittingGSTPercentage ?? null,
+          InvoiceDetailId: detail.Id ?? null,
           ApplicationUserId: user.Id,
         };
         await saveFinalProducts({ payload }).unwrap();
@@ -496,9 +674,8 @@ const OpticalLens = () => {
     }
   };
 
-  console.log("main", mainOLDetails);
   return (
-    <div className="max-w-7xl">
+    <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-sm">
         <div className="p-6 border-b border-gray-100">
           <div>
@@ -526,7 +703,7 @@ const OpticalLens = () => {
               </Button>
             </div>
           </div>
-          {mainOLDetails.length > 0 && (
+          {mainOLDetails.length > 0 && referenceApplicable === 0 && (
             <Table
               columns={[
                 "S.No",
@@ -543,7 +720,7 @@ const OpticalLens = () => {
               data={mainOLDetails}
               name="Product details"
               renderHeader={(column) => (
-                <span
+                <div
                   className={
                     column === "Return price" || column === "Return Qty"
                       ? "min-w-[100px] inline-block"
@@ -551,17 +728,14 @@ const OpticalLens = () => {
                   }
                 >
                   {column}
-                </span>
+                </div>
               )}
               renderRow={(item, index) => (
                 <TableRow key={index}>
                   <TableCell>{index + 1}</TableCell>
                   <TableCell></TableCell>
                   <TableCell>OL</TableCell>
-                  <TableCell
-                    columnName="Product Details"
-                    className="whitespace-pre-line"
-                  >
+                  <TableCell className="whitespace-pre-line">
                     {getProductName(item)}
                   </TableCell>
                   <TableCell>₹{item.CLMRP}</TableCell>
@@ -577,14 +751,14 @@ const OpticalLens = () => {
                           min="0"
                         />
                         <button
-                          onClick={() => saveEdit(index, "returnPrice")}
+                          onClick={() => saveEdit(null, index, "returnPrice")}
                           className="text-neutral-400 transition"
                           title="Save"
                         >
                           <FiCheck size={18} />
                         </button>
                         <button
-                          onClick={() => cancelEdit(index, "returnPrice")}
+                          onClick={() => cancelEdit(null, index, "returnPrice")}
                           className="text-neutral-400 transition"
                           title="Cancel"
                         >
@@ -597,7 +771,9 @@ const OpticalLens = () => {
                           ₹{item.returnPrice}
                         </span>
                         <button
-                          onClick={() => toggleEditMode(index, "returnPrice")}
+                          onClick={() =>
+                            toggleEditMode(null, index, "returnPrice")
+                          }
                           className="text-neutral-400 hover:text-neutral-600 transition"
                           title="Edit Price"
                         >
@@ -618,14 +794,14 @@ const OpticalLens = () => {
                           min="1"
                         />
                         <button
-                          onClick={() => saveEdit(index, "returnQty")}
+                          onClick={() => saveEdit(null, index, "returnQty")}
                           className="text-neutral-400 transition"
                           title="Save"
                         >
                           <FiCheck size={18} />
                         </button>
                         <button
-                          onClick={() => cancelEdit(index, "returnQty")}
+                          onClick={() => cancelEdit(null, index, "returnQty")}
                           className="text-neutral-400 transition"
                           title="Cancel"
                         >
@@ -636,7 +812,9 @@ const OpticalLens = () => {
                       <div className="flex items-center gap-2">
                         <span className="text-gray-700">{item.returnQty}</span>
                         <button
-                          onClick={() => toggleEditMode(index, "returnQty")}
+                          onClick={() =>
+                            toggleEditMode(null, index, "returnQty")
+                          }
                           className="text-neutral-400 hover:text-neutral-600 transition"
                           title="Edit Quantity"
                         >
@@ -664,7 +842,8 @@ const OpticalLens = () => {
               )}
             />
           )}
-          {mainOLDetails.length > 0 && (
+
+          {mainOLDetails.length > 0 && referenceApplicable === 0 && (
             <div className="flex justify-end mt-5">
               <Button
                 onClick={handleSaveData}
@@ -675,330 +854,547 @@ const OpticalLens = () => {
               </Button>
             </div>
           )}
-          <div className="mt-4">
-            <div className="flex items-center gap-4 mt-4">
+          {referenceApplicable === 1 && mainOLDetails.length > 0 && (
+            <div className="">
+              <Table
+                expand={true}
+                columns={[
+                  "S.No",
+                  "Invoice No",
+                  "Type",
+                  "Product Details",
+                  "SRP",
+                  "Return Price",
+                  "GST Amt",
+                  "return Qty",
+                  "Total Amount",
+                  "Action",
+                ]}
+                data={mainOLDetails}
+                renderRow={(item, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="text-center">{index + 1}</TableCell>
+                    <TableCell>
+                      {item["InvoiceMain.InvoicePrefix"]}/
+                      {item["InvoiceMain.InvoiceNo"]}/{item.InvoiceSlNo}
+                    </TableCell>
+                    <TableCell className="text-center">OL</TableCell>
+                    <TableCell className="whitespace-pre-line">
+                      {getProductNameYes(item)}
+                    </TableCell>
+                    <TableCell>
+                      ₹{formatINR(parseFloat(item.SRP || 0))}
+                    </TableCell>
+                    <TableCell>
+                      {editMode[`${item.Id}-${index}`]?.returnPrice ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            value={editReturnPrice}
+                            onChange={(e) => setEditReturnPrice(e.target.value)}
+                            className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                            placeholder="Enter return price"
+                            min="0"
+                          />
+                          <button
+                            onClick={() =>
+                              saveEdit(item.Id, index, "returnPrice")
+                            }
+                            className="text-neutral-400 transition"
+                            title="Save"
+                          >
+                            <FiCheck size={18} />
+                          </button>
+                          <button
+                            onClick={() =>
+                              cancelEdit(item.Id, index, "returnPrice")
+                            }
+                            className="text-neutral-400 transition"
+                            title="Cancel"
+                          >
+                            <FiX size={18} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-700">
+                            ₹
+                            {formatINR(
+                              parseFloat(item.ReturnPricePerUnit || 0)
+                            )}
+                          </span>
+                          <button
+                            onClick={() =>
+                              toggleEditMode(item.Id, index, "returnPrice")
+                            }
+                            className="text-neutral-400 hover:text-neutral-600 transition"
+                            title="Edit Return Price"
+                          >
+                            <FiEdit2 size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      ₹
+                      {formatINR(
+                        calculateGST(
+                          parseFloat(item.ReturnPricePerUnit || 0) *
+                            parseInt(item.ReturnQty || 0),
+                          parseFloat(item.GSTPercentage || 0)
+                        ).gstAmount
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {item.ReturnQty || 0}
+                    </TableCell>
+                    <TableCell>
+                      ₹{formatINR(parseFloat(item.TotalAmount || 0))}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        className="px-3 py-1"
+                        onClick={() => handleDeleteYes(null, index)}
+                        icon={FiTrash2}
+                      ></Button>
+                    </TableCell>
+                  </TableRow>
+                )}
+              />
+              <div className="flex justify-end mt-6">
+                <Button
+                  type="submit"
+                  isLoading={isFinalProductsSaving}
+                  className="px-6 py-3 bg-green-600 hover:bg-green-700"
+                  onClick={handleSaveData}
+                >
+                  Save & Continue
+                </Button>
+              </div>
+            </div>
+          )}
+          {referenceApplicable === 0 && (
+            <div className="mt-4">
+              <div className="flex items-center gap-4 mt-4">
+                <div className="space-y-1 w-1/3">
+                  <label className="text-sm font-medium text-gray-700">
+                    Brand
+                  </label>
+                  <Autocomplete
+                    options={deduplicateOptions(
+                      allBrandsData?.filter(
+                        (b) => b.IsActive === 1 && b.OpticalLensActive === 1
+                      ) || [],
+                      "Id"
+                    )}
+                    getOptionLabel={(option) => option.BrandName || ""}
+                    value={
+                      allBrandsData?.find(
+                        (brand) => brand.Id === lensData.brandId
+                      ) || null
+                    }
+                    onChange={(_, newValue) =>
+                      setLensData((prev) => ({
+                        ...prev,
+                        brandId: newValue?.Id || null,
+                      }))
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        placeholder="Select brand"
+                        size="small"
+                      />
+                    )}
+                    loading={isLoadingAllBrands}
+                    fullWidth
+                    disabled={lensData.productType !== null}
+                  />
+                </div>
+
+                {lensData.brandId && (
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-gray-700">
+                      Product Type
+                    </span>
+                    {productTypes.map((type) => (
+                      <Radio
+                        key={type.value}
+                        label={type.lable}
+                        value={type.value}
+                        checked={lensData.productType === type.value}
+                        onChange={(e) =>
+                          setLensData({
+                            ...lensData,
+                            productType: parseInt(e.target.value),
+                          })
+                        }
+                        disabled={
+                          !!(
+                            lensData.focality ||
+                            lensData.family ||
+                            lensData.design ||
+                            lensData.indexValues
+                          )
+                        }
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 mt-4">
+                {lensData.brandId && lensData.productType !== null && (
+                  <AutocompleteField
+                    label="Focality"
+                    options={deduplicateOptions(
+                      focalityData?.data?.filter((b) => b.IsActive === 1) || [],
+                      "OpticalLensFocality.Id"
+                    )}
+                    valueField="OpticalLensFocality.Id"
+                    labelField="OpticalLensFocality.Focality"
+                    value={lensData.focality}
+                    onChange={(val) =>
+                      setLensData((prev) => ({ ...prev, focality: val }))
+                    }
+                    loading={isLoadingFocality}
+                    disabled={!!(lensData.family || lensData.design)}
+                  />
+                )}
+
+                {lensData.focality && (
+                  <AutocompleteField
+                    label="Product Family"
+                    options={deduplicateOptions(
+                      familyData?.data?.filter((b) => b.IsActive === 1) || [],
+                      "OpticalLensProductFamily.Id"
+                    )}
+                    valueField="OpticalLensProductFamily.Id"
+                    labelField="OpticalLensProductFamily.FamilyName"
+                    value={lensData.family}
+                    onChange={(val) =>
+                      setLensData((prev) => ({ ...prev, family: val }))
+                    }
+                    loading={isLoadingFamily}
+                    disabled={!!lensData.design}
+                  />
+                )}
+
+                {lensData.family && (
+                  <AutocompleteField
+                    label="Product Design"
+                    options={deduplicateOptions(
+                      productDesignData?.data?.filter(
+                        (b) => b.IsActive === 1
+                      ) || [],
+                      "OpticalLensProductDesign.Id"
+                    )}
+                    valueField="OpticalLensProductDesign.Id"
+                    labelField="OpticalLensProductDesign.DesignName"
+                    value={lensData.design}
+                    onChange={(val) =>
+                      setLensData((prev) => ({ ...prev, design: val }))
+                    }
+                    loading={isLoadingProductDesign}
+                    disabled={!!lensData.masterId}
+                  />
+                )}
+
+                {lensData.design && (
+                  <AutocompleteField
+                    label="Index Values"
+                    options={deduplicateOptions(
+                      indexValuesData?.data?.filter((b) => b.IsActive === 1) ||
+                        [],
+                      "OpticalLensIndex.Id"
+                    )}
+                    valueField="OpticalLensIndex.Id"
+                    labelField="OpticalLensIndex.Index"
+                    value={lensData.indexValues}
+                    onChange={(val, item) =>
+                      setLensData((prev) => ({
+                        ...prev,
+                        indexValues: val,
+                        masterId: item?.MasterId || null,
+                      }))
+                    }
+                    loading={isLoadingIndexValues}
+                    disabled={!!lensData.masterId}
+                  />
+                )}
+
+                {lensData.masterId && (
+                  <AutocompleteField
+                    label="Coating"
+                    options={deduplicateOptions(
+                      coatingsData?.data?.filter((b) => b.IsActive === 1) || [],
+                      "OpticalLensCoating.Id"
+                    )}
+                    valueField="OpticalLensCoating.Id"
+                    labelField="OpticalLensCoating.CoatingName"
+                    value={lensData.coatingId}
+                    onChange={(val, item) => {
+                      if (!item) {
+                        setLensData((prev) => ({
+                          ...prev,
+                          coatingId: null,
+                        }));
+                        return;
+                      }
+                      setLensData((prev) => ({
+                        ...prev,
+                        coatingId: item.OpticalLensCoating?.Id || null,
+                      }));
+                    }}
+                    loading={isLoadingCoatings}
+                    disabled={!!lensData.treatmentId}
+                  />
+                )}
+
+                {lensData.coatingId && (
+                  <AutocompleteField
+                    label="Treatment"
+                    options={deduplicateOptions(
+                      treatmentsData?.data?.filter((b) => b.IsActive === 1) ||
+                        [],
+                      "OpticalLensTreatment.Id"
+                    )}
+                    valueField="OpticalLensTreatment.Id"
+                    labelField="OpticalLensTreatment.TreatmentName"
+                    value={lensData.treatmentId}
+                    onChange={(val, item) => {
+                      if (!item) {
+                        setLensData((prev) => ({
+                          ...prev,
+                          coatingComboId: null,
+                          treatmentId: null,
+                        }));
+                        return;
+                      }
+                      setLensData((prev) => ({
+                        ...prev,
+                        coatingComboId: item.CoatingComboId,
+                        treatmentId: item.OpticalLensTreatment?.Id,
+                      }));
+                    }}
+                    loading={isLoadingTreatments}
+                  />
+                )}
+              </div>
+
+              {lensData.treatmentId && (
+                <div className="mt-3">
+                  <Input
+                    label="Product Name"
+                    value={lensData.productName || ""}
+                    onChange={(e) =>
+                      setLensData({ ...lensData, productName: e.target.value })
+                    }
+                    placeholder="Enter product name"
+                    className="w-full"
+                    disabled
+                  />
+                </div>
+              )}
+
+              <div className="tint-data flex gap-5 items-center">
+                {tintData?.data.showTint && lensData.treatmentId && (
+                  <div className="flex items-center gap-3 w-1/2">
+                    <Checkbox
+                      label="Tint"
+                      checked={lensData.tintvalue === 1}
+                      value={lensData.tintvalue}
+                      onChange={() =>
+                        setLensData((prev) => ({
+                          ...prev,
+                          tintvalue: prev.tintvalue === 1 ? 0 : 1,
+                        }))
+                      }
+                    />
+                    {lensData.tintvalue === 1 && (
+                      <div className="w-full">
+                        <Autocomplete
+                          options={deduplicateOptions(
+                            tintData?.data.tints || [],
+                            "Id"
+                          )}
+                          getOptionLabel={(option) => option.Name || ""}
+                          value={
+                            tintData?.data.tints.find(
+                              (tint) => tint.Id === lensData.tintId
+                            ) || null
+                          }
+                          onChange={(_, newValue) =>
+                            setLensData((prev) => ({
+                              ...prev,
+                              tintId: newValue?.Id || null,
+                              tintPrice: newValue?.price.substring(1) || null,
+                              tintName: newValue.Name || null,
+                            }))
+                          }
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              placeholder="Select Tint"
+                              size="small"
+                              disabled={!!lensData.treatmentId}
+                            />
+                          )}
+                          isOptionEqualToValue={(option, value) =>
+                            option.Id === value.Id
+                          }
+                          loading={isTIntDataLoading}
+                          fullWidth
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+                {addOnData?.data && lensData.treatmentId && (
+                  <div>
+                    {addOnData?.data?.map((add) => (
+                      <Checkbox
+                        key={add.Id}
+                        label={add.Name}
+                        value={add.Id}
+                        checked={lensData.AddOnData?.some(
+                          (item) => item.Id === add.Id
+                        )}
+                        onChange={() => {
+                          setLensData((prev) => {
+                            const exists = prev.AddOnData?.some(
+                              (item) => item.Id === add.Id
+                            );
+                            const updatedAddOns = exists
+                              ? prev.AddOnData.filter(
+                                  (item) => item.Id !== add.Id
+                                )
+                              : [
+                                  ...prev.AddOnData,
+                                  {
+                                    Id: add.Id,
+                                    price: add.price,
+                                    name: add.Name,
+                                  },
+                                ];
+
+                            return {
+                              ...prev,
+                              AddOnData: updatedAddOns,
+                            };
+                          });
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {lensData.treatmentId && (
+                <Button
+                  onClick={handleAddToTable}
+                  icon={FiPlus}
+                  className="bg-green-600 hover:bg-green-700 mt-5"
+                >
+                  Add
+                </Button>
+              )}
+            </div>
+          )}
+          {referenceApplicable === 1 && (
+            <div>
               <div className="space-y-1 w-1/3">
                 <label className="text-sm font-medium text-gray-700">
-                  Brand
+                  Select Invoice No
                 </label>
                 <Autocomplete
-                  options={deduplicateOptions(
-                    allBrandsData?.filter(
-                      (b) => b.IsActive === 1 && b.OpticalLensActive === 1
-                    ) || [],
-                    "Id"
-                  )}
-                  getOptionLabel={(option) => option.BrandName || ""}
+                  options={InvoiceDetailsDrop?.data || []}
+                  getOptionLabel={(option) => {
+                    const prefix = option["InvoiceMain.InvoicePrefix"];
+                    const InvoiceNo = option["InvoiceMain.InvoiceNo"];
+                    const slNo = option.InvoiceSlNo;
+                    return `${prefix}/${InvoiceNo}/${slNo}`;
+                  }}
                   value={
-                    allBrandsData?.find(
-                      (brand) => brand.Id === lensData.brandId
+                    InvoiceDetailsDrop?.data?.find(
+                      (invoice) => invoice.Id === selectedInvoice?.Id
                     ) || null
                   }
-                  onChange={(_, newValue) =>
-                    setLensData((prev) => ({
-                      ...prev,
-                      brandId: newValue?.Id || null,
-                    }))
-                  }
+                  onChange={(_, newValue) => setSelectedInvoice(newValue)}
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      placeholder="Select brand"
+                      placeholder="Select Invoice No"
                       size="small"
                     />
                   )}
-                  loading={isLoadingAllBrands}
+                  loading={isInvoiceDetailsLoading}
                   fullWidth
                   disabled={lensData.productType !== null}
                 />
               </div>
-
-              {lensData.brandId && (
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-gray-700">
-                    Product Type
-                  </span>
-                  {productTypes.map((type) => (
-                    <Radio
-                      key={type.value}
-                      label={type.lable}
-                      value={type.value}
-                      checked={lensData.productType === type.value}
-                      onChange={(e) =>
-                        setLensData({
-                          ...lensData,
-                          productType: parseInt(e.target.value),
-                        })
-                      }
-                      disabled={
-                        !!(
-                          lensData.focality ||
-                          lensData.family ||
-                          lensData.design ||
-                          lensData.indexValues
-                        )
-                      }
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-3 gap-4 mt-4">
-              {lensData.brandId && lensData.productType !== null && (
-                <AutocompleteField
-                  label="Focality"
-                  options={deduplicateOptions(
-                    focalityData?.data?.filter((b) => b.IsActive === 1) || [],
-                    "OpticalLensFocality.Id"
-                  )}
-                  valueField="OpticalLensFocality.Id"
-                  labelField="OpticalLensFocality.Focality"
-                  value={lensData.focality}
-                  onChange={(val) =>
-                    setLensData((prev) => ({ ...prev, focality: val }))
-                  }
-                  loading={isLoadingFocality}
-                  disabled={!!(lensData.family || lensData.design)}
-                />
-              )}
-
-              {lensData.focality && (
-                <AutocompleteField
-                  label="Product Family"
-                  options={deduplicateOptions(
-                    familyData?.data?.filter((b) => b.IsActive === 1) || [],
-                    "OpticalLensProductFamily.Id"
-                  )}
-                  valueField="OpticalLensProductFamily.Id"
-                  labelField="OpticalLensProductFamily.FamilyName"
-                  value={lensData.family}
-                  onChange={(val) =>
-                    setLensData((prev) => ({ ...prev, family: val }))
-                  }
-                  loading={isLoadingFamily}
-                  disabled={!!lensData.design}
-                />
-              )}
-
-              {lensData.family && (
-                <AutocompleteField
-                  label="Product Design"
-                  options={deduplicateOptions(
-                    productDesignData?.data?.filter((b) => b.IsActive === 1) ||
-                      [],
-                    "OpticalLensProductDesign.Id"
-                  )}
-                  valueField="OpticalLensProductDesign.Id"
-                  labelField="OpticalLensProductDesign.DesignName"
-                  value={lensData.design}
-                  onChange={(val) =>
-                    setLensData((prev) => ({ ...prev, design: val }))
-                  }
-                  loading={isLoadingProductDesign}
-                  disabled={!!lensData.masterId}
-                />
-              )}
-
-              {lensData.design && (
-                <AutocompleteField
-                  label="Index Values"
-                  options={deduplicateOptions(
-                    indexValuesData?.data?.filter((b) => b.IsActive === 1) ||
-                      [],
-                    "OpticalLensIndex.Id"
-                  )}
-                  valueField="OpticalLensIndex.Id"
-                  labelField="OpticalLensIndex.Index"
-                  value={lensData.indexValues}
-                  onChange={(val, item) =>
-                    setLensData((prev) => ({
-                      ...prev,
-                      indexValues: val,
-                      masterId: item?.MasterId || null,
-                    }))
-                  }
-                  loading={isLoadingIndexValues}
-                  disabled={!!lensData.masterId}
-                />
-              )}
-
-              {lensData.masterId && (
-                <AutocompleteField
-                  label="Coating"
-                  options={deduplicateOptions(
-                    coatingsData?.data?.filter((b) => b.IsActive === 1) || [],
-                    "OpticalLensCoating.Id"
-                  )}
-                  valueField="OpticalLensCoating.Id"
-                  labelField="OpticalLensCoating.CoatingName"
-                  value={lensData.coatingId}
-                  onChange={(val, item) => {
-                    if (!item) {
-                      setLensData((prev) => ({
-                        ...prev,
-                        coatingId: null,
-                      }));
-                      return;
-                    }
-                    setLensData((prev) => ({
-                      ...prev,
-                      coatingId: item.OpticalLensCoating?.Id || null,
-                    }));
-                  }}
-                  loading={isLoadingCoatings}
-                  disabled={!!lensData.treatmentId}
-                />
-              )}
-
-              {lensData.coatingId && (
-                <AutocompleteField
-                  label="Treatment"
-                  options={deduplicateOptions(
-                    treatmentsData?.data?.filter((b) => b.IsActive === 1) || [],
-                    "OpticalLensTreatment.Id"
-                  )}
-                  valueField="OpticalLensTreatment.Id"
-                  labelField="OpticalLensTreatment.TreatmentName"
-                  value={lensData.treatmentId}
-                  onChange={(val, item) => {
-                    if (!item) {
-                      setLensData((prev) => ({
-                        ...prev,
-                        coatingComboId: null,
-                        treatmentId: null,
-                      }));
-                      return;
-                    }
-                    setLensData((prev) => ({
-                      ...prev,
-                      coatingComboId: item.CoatingComboId,
-                      treatmentId: item.OpticalLensTreatment?.Id,
-                    }));
-                  }}
-                  loading={isLoadingTreatments}
-                />
-              )}
-            </div>
-
-            {lensData.treatmentId && (
-              <div className="mt-3">
-                <Input
-                  label="Product Name"
-                  value={lensData.productName || ""}
-                  onChange={(e) =>
-                    setLensData({ ...lensData, productName: e.target.value })
-                  }
-                  placeholder="Enter product name"
-                  className="w-full"
-                  disabled
-                />
-              </div>
-            )}
-
-            <div className="tint-data flex gap-5 items-center">
-              {tintData?.data.showTint && lensData.treatmentId && (
-                <div className="flex items-center gap-3 w-1/2">
-                  <Checkbox
-                    label="Tint"
-                    checked={lensData.tintvalue === 1}
-                    value={lensData.tintvalue}
-                    onChange={() =>
-                      setLensData((prev) => ({
-                        ...prev,
-                        tintvalue: prev.tintvalue === 1 ? 0 : 1,
-                      }))
-                    }
-                  />
-                  {lensData.tintvalue === 1 && (
-                    <div className="w-full">
-                      <Autocomplete
-                        options={deduplicateOptions(
-                          tintData?.data.tints || [],
-                          "Id"
-                        )}
-                        getOptionLabel={(option) => option.Name || ""}
-                        value={
-                          tintData?.data.tints.find(
-                            (tint) => tint.Id === lensData.tintId
-                          ) || null
-                        }
-                        onChange={(_, newValue) =>
-                          setLensData((prev) => ({
-                            ...prev,
-                            tintId: newValue?.Id || null,
-                            tintPrice: newValue?.price.substring(1) || null,
-                            tintName: newValue.Name || null,
-                          }))
-                        }
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            placeholder="Select Tint"
-                            size="small"
-                            disabled={!!lensData.treatmentId}
-                          />
-                        )}
-                        isOptionEqualToValue={(option, value) =>
-                          option.Id === value.Id
-                        }
-                        loading={isTIntDataLoading}
-                        fullWidth
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-              {addOnData?.data && lensData.treatmentId && (
+              {selectedInvoice && (
                 <div>
-                  {addOnData?.data?.map((add) => (
-                    <Checkbox
-                      key={add.Id}
-                      label={add.Name}
-                      value={add.Id}
-                      checked={lensData.AddOnData?.some(
-                        (item) => item.Id === add.Id
+                  <div className="grid grid-cols-3 gap-5">
+                    <Textarea
+                      label="Product Name"
+                      value={getProductDisplayName(
+                        selectedInvoice?.ProductDetails[0] ?? []
                       )}
-                      onChange={() => {
-                        setLensData((prev) => {
-                          const exists = prev.AddOnData?.some(
-                            (item) => item.Id === add.Id
-                          );
-                          const updatedAddOns = exists
-                            ? prev.AddOnData.filter(
-                                (item) => item.Id !== add.Id
-                              )
-                            : [
-                                ...prev.AddOnData,
-                                {
-                                  Id: add.Id,
-                                  price: add.price,
-                                  name: add.Name,
-                                },
-                              ];
-
-                          return {
-                            ...prev,
-                            AddOnData: updatedAddOns,
-                          };
-                        });
+                      className="col-span-3"
+                    />
+                    <Input
+                      label="Supplier Order No"
+                      value=""
+                      className="col-span-3"
+                    />
+                    <Input
+                      label="Billed Qty"
+                      value={selectedInvoice?.InvoiceQty}
+                      grayOut={true}
+                    />
+                    <Input
+                      label="Total Product Price"
+                      value={
+                        parseInt(selectedInvoice?.InvoiceQty) *
+                        parseFloat(selectedInvoice?.ActualSellingPrice)
+                      }
+                      grayOut={true}
+                    />
+                    <Input
+                      label="Total Fitting Price"
+                      value={selectedInvoice?.ProductDetails[0]?.fittingPrice}
+                      grayOut={true}
+                    />
+                    <Input
+                      label="Return Qty"
+                      value={selectedInvoice?.InvoiceQty}
+                      grayOut={true}
+                    />
+                    <Input
+                      label="Return Product Price"
+                      value={
+                        parseInt(selectedInvoice?.InvoiceQty) *
+                        parseFloat(selectedInvoice?.ActualSellingPrice)
+                      }
+                      grayOut={true}
+                    />
+                    <Input
+                      label="Return Fitting Price"
+                      value={editReturnFittingPrice}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (!isValidNumericInput(val)) return;
+                        setEditReturnFittingprice(val);
                       }}
                     />
-                  ))}
+                  </div>
+
+                  <Button onClick={handleAddInvoice}>Add</Button>
                 </div>
               )}
             </div>
-
-            {lensData.treatmentId && (
-              <Button
-                onClick={handleAddToTable}
-                icon={FiPlus}
-                className="bg-green-600 hover:bg-green-700 mt-5"
-              >
-                Add
-              </Button>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </div>

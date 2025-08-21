@@ -391,8 +391,18 @@ const CompleteOrder = () => {
       TotalValue: totalAmount,
     };
     if (totalAdvance > 0) {
-      // const AdvanceAmount =
-      updatePaymentDetails({ ...payload, totalAdvance, advancedAmounts });
+      const getOrdersWithoutAdvance = (savedOrders, advancedAmounts) => {
+        return savedOrders
+          ?.filter((order) => !advancedAmounts[order.OrderDetailId])
+          .map((order) => ({ detailid: order.OrderDetailId }));
+      };
+      updatePaymentDetails({
+        ...payload,
+        totalAdvance,
+        advancedAmounts,
+        withOutAdvance: getOrdersWithoutAdvance(savedOrders, advancedAmounts),
+      });
+
       goToStep(6);
       return;
     }
@@ -417,9 +427,37 @@ const CompleteOrder = () => {
     }
   };
 
-  const handleCompleteOrder = () => {
+  const handleCompleteOrder = async () => {
     if (totalAdvance === 0 && customerId.customerData.CreditBilling === 0) {
       setShowConfirmModal(true);
+    } else if (
+      totalAdvance === 0 &&
+      customerId.customerData.CreditBilling === 1
+    ) {
+      try {
+        setIsSubmitting(true);
+        const payload = {
+          CompanyId: customerId.companyId,
+          TotalQty: totalQty,
+          TotalGSTValue: totalGST,
+          TotalValue: totalAmount,
+        };
+        await updateFinalOrder({
+          orderId: customerId.orderId,
+          payload,
+        }).unwrap();
+
+        toast.success("Order successfully saved");
+
+        navigate("/order-list");
+      } catch (error) {
+        toast.error(
+          "Please try again after some time or try re-load the page!"
+        );
+      } finally {
+        setIsSubmitting(false);
+        setShowConfirmModal(false);
+      }
     } else {
       const payload = {
         CompanyId: customerId.companyId,
@@ -427,8 +465,17 @@ const CompleteOrder = () => {
         TotalGSTValue: totalGST,
         TotalValue: totalAmount,
       };
-
-      updatePaymentDetails({ ...payload, totalAdvance, advancedAmounts });
+      const getOrdersWithoutAdvance = (savedOrders, advancedAmounts) => {
+        return savedOrders
+          ?.filter((order) => !advancedAmounts[order.OrderDetailId])
+          .map((order) => ({ detailid: order.OrderDetailId }));
+      };
+      updatePaymentDetails({
+        ...payload,
+        totalAdvance,
+        advancedAmounts,
+        withOutAdvance: getOrdersWithoutAdvance(savedOrders, advancedAmounts),
+      });
       goToStep(6);
     }
   };
@@ -436,7 +483,7 @@ const CompleteOrder = () => {
   if (savedOrdersLoading) return <Loader />;
 
   return (
-    <div className="max-w-7xl">
+    <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-md overflow-hidden">
         {/* Header Section */}
         <div className="p-6">
@@ -520,7 +567,7 @@ const CompleteOrder = () => {
           </div>
 
           {/* Order Items Table */}
-          <div className="overflow-x-auto px-4">
+          <div className="">
             <Table
               freeze={true}
               columns={[
@@ -547,11 +594,8 @@ const CompleteOrder = () => {
                     <TableCell>{getShortTypeName(item.typeid)}</TableCell>
                     <TableCell>
                       <div
-                        className="text-sm"
-                        style={{
-                          whiteSpace: "pre-wrap",
-                          wordWrap: "break-word",
-                        }}
+                        className="whitespace-pre-wrap"
+                        
                       >
                         {getProductName(item)}
                       </div>
@@ -623,6 +667,8 @@ const CompleteOrder = () => {
               {/* Action Button */}
               <div className="flex justify-end mt-6">
                 <Button
+                  isLoading={isFinalOrderLoading}
+                  disabled={isFinalOrderLoading}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 text-lg"
                   onClick={handleCompleteOrder}
                 >

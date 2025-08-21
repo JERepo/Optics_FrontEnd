@@ -155,6 +155,83 @@ const getProductName = (order) => {
 
   return "";
 };
+const getProductNameYes = (order) => {
+  const {
+    productName,
+    BrandName,
+    specs = {},
+    HSN,
+    hSN,
+    barcode,
+    color,
+    Barcode,
+    ProductType,
+    Colour,
+    brandName,
+  } = order;
+
+  const clean = (val) => {
+    if (
+      val === null ||
+      val === undefined ||
+      val === "undefined" ||
+      val === "null" ||
+      val === "N/A" ||
+      val === 0
+    ) {
+      return "";
+    }
+    return String(val).trim();
+  };
+
+  const cleanPower = (val) => {
+    const cleaned = clean(val);
+    if (!cleaned) return "";
+    const num = parseFloat(cleaned);
+    if (isNaN(num)) return "";
+    return num >= 0 ? `+${num.toFixed(2)}` : `${num.toFixed(2)}`;
+  };
+
+  const name = clean(productName);
+  const hsn = clean(HSN || hSN);
+  const brand = clean(brandName);
+  const barcodeVal = clean(Barcode || barcode);
+  const clr = clean(Colour || color);
+
+  // Ensure specs is an object, handle cases where it might be a string
+  let specsObj = {};
+
+  specsObj = {
+    Sph: specs.SphericalPower || specs.sphericalPower,
+    Cyld: specs.CylindricalPower || specs.cylindricalPower,
+    Axis: specs.Axis || specs.axis,
+    Add: specs.Additional || specs.additional,
+  };
+
+  const sph = cleanPower(specsObj.Sph);
+  const cyld = cleanPower(specsObj.Cyld);
+  const axis = clean(specsObj.Axis);
+  const addl = cleanPower(specsObj.Add);
+
+  const specsList = [
+    sph && `SPH: ${sph}`,
+    cyld && `CYL: ${cyld}`,
+    axis && `Axis: ${axis}`,
+    addl && `Add: ${addl}`,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  return [
+    brand && `${brand} ${name}`,
+    specsList,
+    clr && `Color: ${clr}`,
+    barcodeVal && `Barcode: ${barcodeVal}`,
+    hsn && `HSN: ${hsn}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+};
 
 const ContactLens = () => {
   const {
@@ -167,6 +244,8 @@ const ContactLens = () => {
     goToSalesStep,
     referenceApplicable,
     selectedPatient,
+    currentSalesStep,
+    selectedSalesProduct
   } = useOrder();
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
   const [searchFethed, setSearchFetched] = useState(false);
@@ -187,6 +266,7 @@ const ContactLens = () => {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [isInvoiceSelected, setIsInvoiceSelected] = useState(false);
   const [selectedInvoiceReturnQty, setSelectedInvoiceReturnQty] = useState(0);
+  const [detaildAccId, setDetailAccId] = useState(null);
   const [lensData, setLensData] = useState({
     orderReference: null,
     brandId: null,
@@ -261,9 +341,15 @@ const ContactLens = () => {
     const item = mainClDetails[index];
 
     if (field === "returnPrice") {
-      setEditReturnPrice(item.returnPrice || "");
+      setEditReturnPrice(
+        referenceApplicable === 1
+          ? item.ReturnPricePerUnit || ""
+          : item.returnPrice || ""
+      );
     } else if (field === "returnQty") {
-      setEditReturnQty(item.returnQty || "");
+      setEditReturnQty(
+        referenceApplicable === 1 ? item.ReturnQty || "" : item.returnQty || ""
+      );
     }
   };
   const saveEdit = (index, field) => {
@@ -271,30 +357,57 @@ const ContactLens = () => {
     const parsedPrice = parseFloat(editReturnPrice);
     const item = mainClDetails[index];
 
-    if (field === "returnQty" && parsedQty > item.Quantity) {
-      toast.error("Sales return qty should not be greater than quantity");
-      return;
-    }
-    if (
-      field === "returnPrice" &&
-      parsedPrice > parseFloat(item.SellingPrice)
-    ) {
+    const sellingPrice =
+      referenceApplicable === 1
+        ? parseFloat(item.ActualSellingPrice)
+        : parseFloat(item.SellingPrice);
+
+    if (field === "returnPrice" && parsedPrice > sellingPrice) {
       toast.error(
         "Sales return price should not be greater than selling price"
       );
       return;
     }
 
+    if (field === "returnQty") {
+      const maxQty =
+        referenceApplicable === 1
+          ? item.InvoiceQty - parseInt(item.ReturnQty || 0)
+          : item.Quantity;
+      if (parsedQty > maxQty) {
+        toast.error(
+          "Sales return qty should not be greater than " +
+            (referenceApplicable === 1 ? "pending quantity" : "quantity")
+        );
+        return;
+      }
+    }
+
     setMainClDetails((prev) =>
-      prev.map((it, i) =>
-        i === index
-          ? {
-              ...it,
-              ...(field === "returnPrice" && { returnPrice: parsedPrice }),
-              ...(field === "returnQty" && { returnQty: parsedQty }),
+      prev.map((it, i) => {
+        if (i === index) {
+          let updatedItem = { ...it };
+          if (field === "returnPrice") {
+            if (referenceApplicable === 1) {
+              updatedItem.ReturnPricePerUnit = parsedPrice;
+              updatedItem.TotalAmount =
+                parsedPrice * (updatedItem.ReturnQty || 0);
+            } else {
+              updatedItem.returnPrice = parsedPrice;
             }
-          : it
-      )
+          } else if (field === "returnQty") {
+            if (referenceApplicable === 1) {
+              updatedItem.ReturnQty = parsedQty;
+              updatedItem.TotalAmount =
+                (updatedItem.ReturnPricePerUnit || 0) * parsedQty;
+            } else {
+              updatedItem.returnQty = parsedQty;
+            }
+          }
+          return updatedItem;
+        }
+        return it;
+      })
     );
     setEditMode((prev) => ({
       ...prev,
@@ -421,7 +534,7 @@ const ContactLens = () => {
         setSearchFetched(true);
         if (data.CLBatchCode === 1 && referenceApplicable === 0) {
           await getCLBatches({
-            clBatchId: data.CLDetailId,
+            detailId: data.CLDetailId,
             locationId: parseInt(hasMultipleLocations[0]),
           }).unwrap();
           setDetailId(true);
@@ -439,6 +552,7 @@ const ContactLens = () => {
             detailId: data.CLDetailId,
             locationId: parseInt(hasMultipleLocations[0]),
           }).unwrap();
+          setDetailAccId(data.CLDetailId);
           setDetailId(true);
           setOpenBatch(true);
         } else if (data.CLBatchCode === 0 && referenceApplicable === 1) {
@@ -448,7 +562,9 @@ const ContactLens = () => {
               detailId: data.CLDetailId,
               batchCode: null,
               patientId: customerSalesId.patientId,
+              locationId: customerSalesId.locationId,
             }).unwrap();
+            setDetailAccId(data.CLDetailId);
             setOpenReferenceYes(true);
           } catch (error) {
             toast.error("No eligible Invoice exists for the given product");
@@ -467,21 +583,10 @@ const ContactLens = () => {
     }
   };
 
-  const handleDeleteYes = (id, index) => {
-    if (referenceApplicable === 1) {
-      setMainClDetails((prev) => prev.filter((item, i) => i !== index));
-    } else {
-      setMainClDetails((prev) =>
-        prev.filter((i, idx) => !(i.Barcode === id && idx === index))
-      );
-      setEditMode((prev) => {
-        const newEditMode = { ...prev };
-        delete newEditMode[`${id}-${index}`];
-        return newEditMode;
-      });
-    }
+  const handleDeleteYes = (index) => {
+    console.log("yes");
+    setMainClDetails((prev) => prev.filter((item, i) => i !== index));
   };
-  console.log("batch bar", batchBarCodeDetails?.data.data);
   const handleGetBatchBarCodeDetails = async () => {
     if (!batchCodeInput) {
       return;
@@ -491,12 +596,13 @@ const ContactLens = () => {
       const isAvailable = batches?.find(
         (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
       );
+      console.log("isavaila", isAvailable);
       if (isAvailable && referenceApplicable === 0) {
         const newItemCl = {
           ...isAvailable,
           selectBatch,
-          returnPrice: parseFloat(isAvailable.SellingPrice),
-          returnQty: parseInt(isAvailable.Quantity),
+          returnPrice: parseFloat(newItem.sellingPrice),
+          returnQty: newItem.orderQty,
           ...(detailId ? batchBarCodeDetails?.data?.data : {}),
         };
 
@@ -533,7 +639,13 @@ const ContactLens = () => {
               : newItem.CLDetailId,
           batchCode: isAvailable.CLBatchBarCode,
           patientId: customerSalesId.patientId,
+          locationId: customerSalesId.locationId,
         }).unwrap();
+        const id =
+          selectBatch === 1
+            ? batchBarCodeDetails?.data.data.CLDetailId
+            : newItem.CLDetailId;
+        setDetailAccId(id);
         setOpenReferenceYes(true);
         setbatchCodeInput("");
       } else {
@@ -582,7 +694,9 @@ const ContactLens = () => {
           detailId: response?.data.data.CLDetailId,
           batchCode: null,
           patientId: customerSalesId.patientId,
+          locationId: customerSalesId.locationId,
         }).unwrap();
+        setDetailAccId(response?.data.data.CLDetailId);
         setOpenReferenceYes(true);
       } else if (
         referenceApplicable === 1 &&
@@ -605,6 +719,7 @@ const ContactLens = () => {
   };
   const handleSaveBatchData = async () => {
     if (referenceApplicable === 0) {
+      console.log("inside save",batchBarCodeDetails?.data.data.SellingPrice)
       let sub;
       if ((!detailId || openBatch) && productSearch == 0) {
         sub = {
@@ -612,7 +727,7 @@ const ContactLens = () => {
           ...selectedBatchCode,
           MRP: selectedBatchCode.CLMRP,
 
-          returnPrice: parseFloat(selectedBatchCode.SellingPrice),
+          returnPrice: parseFloat(batchBarCodeDetails?.data.data.SellingPrice),
           returnQty: 1,
         };
       } else if (detailId && productSearch == 1) {
@@ -620,12 +735,13 @@ const ContactLens = () => {
           ...batchBarCodeDetails?.data.data,
           ...selectedBatchCode,
           MRP: selectedBatchCode.CLMRP,
-          returnPrice: parseFloat(batchBarCodeDetails?.data.data.CLMRP),
+          returnPrice: parseFloat(batchBarCodeDetails?.data.data.SellingPrice),
           returnQty: 1,
         };
       }
 
       setMainClDetails((prev) => [...prev, sub]);
+      handleRefresh();
     } else if (referenceApplicable === 1) {
       try {
         await getInvoiceDetails({
@@ -636,10 +752,16 @@ const ContactLens = () => {
               : newItem.CLDetailId,
           batchCode: selectedBatchCode.CLBatchCode || null,
           patientId: customerSalesId.patientId,
+          locationId: customerSalesId.locationId,
         }).unwrap();
+        const id =
+          productSearch === 1
+            ? batchBarCodeDetails?.data.data.CLDetailId
+            : newItem.CLDetailId;
+        setDetailAccId(id);
         setOpenReferenceYes(true);
       } catch (error) {
-        toast.error(error?.data.error);
+        toast.error("No eligible Invoice exists for the given product");
       }
     }
   };
@@ -669,7 +791,7 @@ const ContactLens = () => {
 
     const newItemCL = {
       ...newItem,
-      AccId: newItem?.CLDetailId,
+      AccId: detaildAccId,
       ...selectedInvoice,
       ReturnQty: selectedInvoiceReturnQty,
       ReturnPricePerUnit: selectedInvoice.ActualSellingPrice,
@@ -680,6 +802,7 @@ const ContactLens = () => {
     };
 
     setMainClDetails((prev) => [...prev, newItemCL]);
+    setDetailAccId(null)
     setOpenReferenceYes(false);
     setIsInvoiceSelected(false);
     setSelectedInvoiceReturnQty(0);
@@ -707,7 +830,9 @@ const ContactLens = () => {
     setSelectedBatchCode(null);
     setDetailId(false);
     setProductCodeInput("");
+    handleRefresh();
   };
+  console.log("mainCl", mainClDetails);
   const handleSaveData = async () => {
     if (!Array.isArray(mainClDetails) || mainClDetails.length === 0) {
       console.warn("No details to save");
@@ -718,14 +843,23 @@ const ContactLens = () => {
         const payload = {
           SRMasterID: salesDraftData.Id ?? null,
           ProductType: detail.ProductType ?? 3,
-          ContactLensDetailId: detail.CLDetailId ?? null,
+          ContactLensDetailId: detail.CLDetailId ?? detail.AccId ?? null,
           AccessoryDetailId: detail.AccessoryDetailId ?? null,
           FrameDetailId: detail.FrameDetailId ?? null,
           OpticalLensDetailId: detail.OpticalLensDetailId ?? null,
           BatchCode: detail.CLBatchCode ?? null,
-          CNQty: detail.returnQty ?? null,
-          SRP: parseFloat(detail.MRP) ?? null,
-          ReturnPrice: detail.returnPrice ?? null,
+          CNQty:
+            referenceApplicable === 0
+              ? detail.returnQty
+              : detail.ReturnQty ?? null,
+          SRP:
+            referenceApplicable === 0
+              ? parseFloat(detail.MRP)
+              : parseFloat(detail.SRP) ?? null,
+          ReturnPrice:
+            referenceApplicable === 0
+              ? detail.returnPrice
+              : parseFloat(detail.ReturnPricePerUnit) ?? null,
           ProductTaxPercentage: Array.isArray(detail.TaxDetails)
             ? findGSTPercentage(detail).taxPercentage
             : findGSTPercentage({
@@ -734,7 +868,7 @@ const ContactLens = () => {
               }).taxPercentage ?? null,
           FittingReturnPrice: detail.FittingReturnPrice ?? null,
           FittingTaxPercentage: detail.FittingTaxPercentage ?? null,
-          InvoiceDetailId: detail.InvoiceDetailId ?? null,
+          InvoiceDetailId: detail.Id ?? null,
           ApplicationUserId: user.Id,
         };
         await saveFinalProducts({ payload }).unwrap();
@@ -763,11 +897,19 @@ const ContactLens = () => {
   }
 
   return (
-    <div className="max-w-7xl h-auto">
+    <div className="max-w-8xl h-auto">
       <div className="bg-white rounded-xl shadow-sm p-2">
         <div className="p-6 border-b border-gray-100">
           <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-            <div></div>
+            <div>
+                <div>
+              <div className="flex items-center gap-4 mb-4"></div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Step {currentSalesStep}: {selectedSalesProduct.label}
+              </h1>
+             
+            </div>
+            </div>
             <div className="flex gap-3">
               <Button
                 onClick={() => prevSalesStep()}
@@ -938,7 +1080,7 @@ const ContactLens = () => {
                 "SRP",
                 "Return Price",
                 "GST Amt",
-                "return Qty",
+                "Return Qty",
                 "Total Amount",
                 "Action",
               ]}
@@ -946,7 +1088,7 @@ const ContactLens = () => {
               renderRow={(item, index) => (
                 <TableRow
                   key={
-                    item.SalesReturnDetailId ||
+                    item.InvoiceDetailId ||
                     `${item.InvoiceMain?.InvoiceNo}/${item.InvoiceSlNo}/${index}`
                   }
                 >
@@ -956,32 +1098,32 @@ const ContactLens = () => {
                     {item["InvoiceMain.InvoiceNo"]}/{item.InvoiceSlNo}
                   </TableCell>
                   <TableCell className="text-center">CL</TableCell>
-                  <TableCell></TableCell>
+                  <TableCell className="whitespace-pre-line">
+                    {getProductNameYes(item.ProductDetails[0])}
+                  </TableCell>
                   <TableCell className="text-right">
                     ₹{formatINR(parseFloat(item.SRP || 0))}
                   </TableCell>
                   <TableCell className="text-right">
-                    {editMode[`${item.Id}-${index}`]?.returnPrice ? (
+                    {editMode[index]?.returnPrice ? (
                       <div className="flex items-center gap-2">
                         <input
                           type="number"
-                          value={item.ReturnPricePerUnit || ""}
+                          value={editReturnPrice}
+                          onChange={(e) => setEditReturnPrice(e.target.value)}
                           className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                           placeholder="Enter return price"
+                          min="0"
                         />
                         <button
-                          onClick={() =>
-                            toggleEditMode(item.Id, index, "returnPrice")
-                          }
+                          onClick={() => saveEdit(index, "returnPrice")}
                           className="text-neutral-400 transition"
                           title="Save"
                         >
                           <FiCheck size={18} />
                         </button>
                         <button
-                          onClick={() =>
-                            toggleEditMode(item.Id, index, "returnPrice")
-                          }
+                          onClick={() => cancelEdit(index, "returnPrice")}
                           className="text-neutral-400 transition"
                           title="Cancel"
                         >
@@ -994,9 +1136,7 @@ const ContactLens = () => {
                           ₹{formatINR(parseFloat(item.ReturnPricePerUnit || 0))}
                         </span>
                         <button
-                          onClick={() =>
-                            toggleEditMode(item.Id, index, "returnPrice")
-                          }
+                          onClick={() => toggleEditMode(index, "returnPrice")}
                           className="text-neutral-400 transition"
                           title="Edit Return Price"
                         >
@@ -1024,7 +1164,7 @@ const ContactLens = () => {
                   <TableCell>
                     <Button
                       className="px-3 py-1"
-                      onClick={() => handleDeleteYes(null, index)}
+                      onClick={() => handleDeleteYes(index)}
                       icon={FiTrash2}
                     ></Button>
                   </TableCell>
@@ -1419,8 +1559,8 @@ const ContactLens = () => {
             </div>
 
             {CLBatches && selectBatch === 0 && (
-              <div className="w-1/3 mt-5">
-                <div className="space-y-2">
+              <div className=" mt-5 flex items-center gap-4">
+                <div className="space-y-2 w-1/3">
                   <label className="block text-sm font-medium text-gray-700">
                     Select by BatchCode
                   </label>
@@ -1448,6 +1588,14 @@ const ContactLens = () => {
                     }
                   />
                 </div>
+                {selectedBatchCode && (
+                  <Button
+                    className="w-[150px] mt-8"
+                    onClick={handleSaveBatchData}
+                  >
+                    {referenceApplicable === 1 ? "Search Invoice" : "Save"}
+                  </Button>
+                )}
               </div>
             )}
             {selectBatch === 1 && (
@@ -1464,12 +1612,6 @@ const ContactLens = () => {
                 />
                 <Button onClick={handleGetBatchBarCodeDetails}>Search</Button>
               </div>
-            )}
-
-            {selectedBatchCode && (
-              <Button className="w-[200px] mt-5" onClick={handleSaveBatchData}>
-                {referenceApplicable === 1 ? "Search Invoice" : "Save"}
-              </Button>
             )}
           </div>
         )}

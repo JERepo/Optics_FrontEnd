@@ -147,7 +147,7 @@ const SalesView = () => {
   }
 
   return (
-    <div className="max-w-7xl">
+    <div className="max-w-8xl">
       <div className="bg-white rounded-sm shadow-sm overflow-hidden p-6">
         <div className="flex justify-between items-center mb-3">
           <div></div>
