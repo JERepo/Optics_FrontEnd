@@ -6,14 +6,17 @@ export const contactLensApi = createApi({
     baseQuery: customBaseQuery,
     endpoints: (builder) => ({
         getContactLensDetails: builder.mutation({
-            query: (barcode) => ({
+            query: ({ barcode, locationId }) => ({
                 url: '/api/v1/contact-lens-details/fetch',
                 method: 'POST',
-                body: { Barcode: barcode },
+                body: {
+                    Barcode: barcode,
+                    locationId: locationId,
+                },
             }),
         }),
         saveContactLensDetails: builder.mutation({
-            query: ({batchData, applicationUserId}) => ({
+            query: ({ batchData, applicationUserId }) => ({
                 url: `/api/v1/contact-lens-details/save?ApplicationUserId=${applicationUserId}`,
                 method: 'POST',
                 body: batchData,
@@ -23,7 +26,7 @@ export const contactLensApi = createApi({
 });
 
 
-export const { 
-  useGetContactLensDetailsMutation, 
-  useSaveContactLensDetailsMutation 
+export const {
+    useGetContactLensDetailsMutation,
+    useSaveContactLensDetailsMutation
 } = contactLensApi;

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { data, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Autocomplete, TextField } from "@mui/material";
+import { toast } from "react-hot-toast";
 import {
     ArrowLeft,
     Check,
@@ -10,9 +11,13 @@ import {
     PenIcon,
     PenBoxIcon,
     PenLineIcon,
-    SearchIcon
+    SearchIcon,
+    RefreshCcw,
+    HardDriveDownload
 } from "lucide-react";
 import { Table, TableRow, TableCell } from "../../components/Table";
+import Input from "../../components/Form/Input";
+import Button from "../../components/ui/Button";
 import { useSelector } from "react-redux";
 import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
 import { useGetAllVendorMutation, useGetAllvendorByLocationQuery } from "../../api/vendorApi";
@@ -23,11 +28,31 @@ import {
     useUpdatePoBuyingPriceMutation,
     useUpdatePoQtyMutation,
     useDeletePoMutation,
-    useUpdatePoMainMutation
+    useUpdatePoMainMutation,
+    useLazyGetOlByBarcodeQuery,
+    useGetOlByDetailIdMutation,
+    useGetAllPoDetailsForNewOrderMutation
 } from "../../api/purchaseOrderApi";
 import { useGetCompanySettingsQuery } from "../../api/companySettingsApi";
 import { useGetCompanyByIdQuery } from "../../api/companiesApi";
-import { useGetOrderDetailsAllMutation, useLazyGetByBarCodeQuery, useLazyGetByBrandAndModalQuery } from "../../api/orderApi";
+import {
+    useGetOrderDetailsAllMutation,
+    useLazyGetByBarCodeQuery,
+    useLazyGetByBrandAndModalQuery,
+    useLazyFetchBarcodeForAccessoryQuery,
+    useLazyGetByBrandAndProductNameQuery,
+    useGetModalitiesQuery,
+    useGetProductNamesByModalityQuery,
+    useGetPowerDetailsMutation,
+    useGetFocalityQuery,
+    useGetFamilyQuery,
+    useGetProductDesignQuery,
+    useGetIndexValuesQuery,
+    useGetCoatingsQuery,
+    useGetTreatmentsQuery,
+    useGetDIaDetailsMutation
+} from "../../api/orderApi";
+import { useGetContactLensDetailsMutation } from "../../api/clBatchDetailsApi";
 import { useGetAllBrandsQuery } from "../../api/brandsApi";
 
 export default function SavePurchaseOrder() {
@@ -46,8 +71,9 @@ export default function SavePurchaseOrder() {
         vendorDetails: null,
         selectedOption: "",                 // For step 2 radio buttons
         remarks: "",
-        frameEntry: "combined",
-        barcode: ""
+        EntryType: "combined",
+        barcode: "",
+        productType: "Stocks"
     });
     const [currentStep, setCurrentStep] = useState(1);
     const [selectedOrders, setSelectedOrders] = useState([]);
@@ -71,7 +97,44 @@ export default function SavePurchaseOrder() {
     const [brandInput, setBrandInput] = useState(""); // for user typing
     const [brandId, setBrandId] = useState(null); // selected BrandGroupID
     const [modelNo, setModelNo] = useState(null);
+    const [productName, setProductName] = useState("");
+    const [modalityInput, setModalityInput] = useState("");
+    const [modalityId, setModalityId] = useState(null);
+    const [productInput, setProductInput] = useState("");
+    const [productId, setProductId] = useState(null);
+    const [filteredBrands, setFilteredBrands] = useState([]);
+    const [newItem, setNewItem] = useState({
+        barcode: null,
+        CLDetailId: null,
+        OpticalLensDetailId: null,
+        sphericalPower: null,
+        cylindricalPower: null,
+        diameter: null,
+        axis: null,
+        additional: null,
+        avlQty: null,
+        orderQty: null,
+        quantity: null,
+        buyingPrice: null,
+    });
+    const [searchFethed, setSearchFetched] = useState(false);
+    const [errors, setErrors] = useState({});
     const [selectedRows, setSelectedRows] = useState([]);
+    const [clSearchedItems, setClSearchedItems] = useState([]);
+    const [olPowerDia, setOlPowerDia] = useState([]);
+    const [olItemsStack, setOlItemStack] = useState({
+        productType: "Stocks",
+        focality: null,
+        family: null,
+        design: null,
+        index: null,
+        coating: null,
+        treatment: null,
+        productName: null,
+        masterId: null,
+        coatingCombo: null,
+        olDetailId: null
+    })
 
     const { data: vendorData } = useGetAllvendorByLocationQuery(
         { id: selectedLocation },
@@ -92,18 +155,163 @@ export default function SavePurchaseOrder() {
         error: brandandModelError
     }] = useLazyGetByBrandAndModalQuery();
 
-    console.log("frameDatabrandandModel ----------- ", frameDatabrandandModel);
+    const [triggerSearchAccessoryByBarcode, {
+        data: AccessoriesData,
+        isFetching: isAccessorryFetching,
+        isLoading: isAccessorryLoading
+    }] = useLazyFetchBarcodeForAccessoryQuery();
 
-    const { data: allBrands } = useGetAllBrandsQuery();
+    const [triggerSearchByBrandProduct, {
+        isLoading: isBrandModelLoading,
+        isFetching: isBrandAndModalFetching
+    }] = useLazyGetByBrandAndProductNameQuery();
 
-    const filteredBrands = allBrands?.filter(
-        (b) =>
-            b.FrameActive === 1 &&
-            b.IsActive === 1 &&
-            b.BrandName.toLowerCase().includes(brandInput.toLowerCase())
+    const [triggerSearchCLByBarcode, {
+        data: CLData,
+        isFetching: isCLFetching,
+        isLoading: isCLLoading
+    }] = useGetContactLensDetailsMutation();
+
+
+    const [triggerSearchOLByBarcode, {
+        data: OLData,
+        isFetching: isOLFetching,
+        isLoading: isOLLoading
+    }] = useLazyGetOlByBarcodeQuery();
+
+    const { data: focalityData, isLoading: isLoadingFocality } = useGetFocalityQuery(
+        {
+            brandId: brandId,
+            productType: olItemsStack.productType === "Stocks" ? 0 : 1,
+        },
+        {
+            skip: !(brandId && formState.productType !== null),
+        }
     );
 
-    console.log("brandData ------------- ", filteredBrands);
+    const { data: familyData, isLoading: isLoadingFamily } = useGetFamilyQuery(
+        {
+            brandId: brandId,
+            productType: olItemsStack.productType,
+            focalityId: olItemsStack.focality,
+        },
+        {
+            skip: !(
+                brandId &&
+                olItemsStack.productType !== null &&
+                olItemsStack.focality
+            ),
+        }
+    );
+
+    const { data: productDesignData, isLoading: isLoadingProductDesign } =
+        useGetProductDesignQuery(
+            {
+                brandId: brandId,
+                productType: olItemsStack.productType,
+                focalityId: olItemsStack.focality,
+                familyId: olItemsStack.family,
+            },
+            {
+                skip: !(
+                    brandId &&
+                    olItemsStack.productType !== null &&
+                    olItemsStack.focality &&
+                    olItemsStack.family
+                ),
+            }
+        );
+
+    const { data: indexValuesData, isLoading: isLoadingIndexValues } =
+        useGetIndexValuesQuery(
+            {
+                brandId: brandId,
+                productType: olItemsStack.productType,
+                focalityId: olItemsStack.focality,
+                familyId: olItemsStack.family,
+                designId: olItemsStack.design,
+            },
+            {
+                skip: !(
+                    brandId &&
+                    olItemsStack.productType !== null &&
+                    olItemsStack.focality &&
+                    olItemsStack.family &&
+                    olItemsStack.design
+                ),
+            }
+        );
+
+    const { data: coatingsData, isLoading: isLoadingCoatings } =
+        useGetCoatingsQuery(
+            { masterId: olItemsStack.masterId },
+            { skip: !olItemsStack.masterId }
+        );
+
+    const { data: treatmentsData, isLoading: isLoadingTreatments } =
+        useGetTreatmentsQuery(
+            {
+                masterId: olItemsStack.masterId,
+                coatingId: olItemsStack.coating,
+            },
+            {
+                skip: !olItemsStack.masterId,
+            }
+        );
+
+    const { data: modalities, isLoading: modalitiesLoading } = useGetModalitiesQuery();
+
+    const { data: productData, isLoading: isProductsLoading } = useGetProductNamesByModalityQuery(
+        { brandId: brandId, modalityId: modalityId },
+        { skip: !brandId || !modalityId }
+    );
+
+    const [getPowerDetails, { isLoading: isPowerDetailsLoading }] = useGetPowerDetailsMutation();
+
+    const { data: allBrands } = useGetAllBrandsQuery();
+    // Filter brand based on the selected option type : Dont dare to change anything 😠
+    useEffect(() => {
+        if (allBrands) {
+            if (formState.selectedOption === "Frame/Sunglass") {
+                const frameBrands = allBrands?.filter(
+                    (b) =>
+                        b.FrameActive === 1 &&
+                        b.IsActive === 1 &&
+                        b.BrandName.toLowerCase().includes(brandInput.toLowerCase())
+                );
+                setFilteredBrands(frameBrands);
+            }
+            if (formState.selectedOption === "Accessories") {
+                const accessoriesBrands = allBrands?.filter(
+                    (b) =>
+                        b.OthersProductsActive === 1 &&
+                        b.IsActive === 1 &&
+                        b.BrandName.toLowerCase().includes(brandInput.toLowerCase())
+                );
+                setFilteredBrands(accessoriesBrands);
+            }
+            if (formState.selectedOption === "Contact Lens") {
+                const contactLensBrands = allBrands?.filter(
+                    (b) =>
+                        b.ContactLensActive === 1 &&
+                        b.IsActive === 1 &&
+                        b.BrandName.toLowerCase().includes(brandInput.toLowerCase())
+                );
+                setFilteredBrands(contactLensBrands);
+            }
+            if (formState.selectedOption === "Lens") {
+                const OlBrands = allBrands?.filter(
+                    (b) =>
+                        b.OpticalLensActive === 1 &&
+                        b.IsActive === 1 &&
+                        b.BrandName.toLowerCase().includes(brandInput.toLowerCase())
+                );
+                setFilteredBrands(OlBrands);
+            }
+        }
+    }, [formState.selectedOption]);
+
+    // console.log("brandData ------------- ", filteredBrands);
 
     const handleCheckboxChange = (item) => {
         const exists = selectedRows.find((i) => i.Barcode === item.Barcode);
@@ -124,6 +332,9 @@ export default function SavePurchaseOrder() {
     const [updatePOQty] = useUpdatePoQtyMutation();
     const [deletePO] = useDeletePoMutation();
     const [updatePoMain] = useUpdatePoMainMutation();
+    const [getDia, { isLoading: isGetDiameterLoading }] = useGetDIaDetailsMutation();
+    const [getOlDetails, { isLoading: isGetOlDetails }] = useGetOlByDetailIdMutation();
+    const [getAllPoDetailsForNewOrder] = useGetAllPoDetailsForNewOrderMutation();
 
     // User assigned locations
     const hasLocation = allLocations?.data ? allLocations?.data?.filter(loc =>
@@ -184,6 +395,70 @@ export default function SavePurchaseOrder() {
             }));
         }
     }, [selectedVendor, vendors]);
+
+
+    // Update productName based on dropdown selections
+    useEffect(() => {
+        const brand =
+            allBrands?.find((b) => b.Id === brandId)?.BrandName || "";
+        const focality =
+            focalityData?.data?.find(
+                (f) => f.OpticalLensFocality.Id === olItemsStack.focality
+            )?.OpticalLensFocality.Focality || "";
+        const family =
+            familyData?.data?.find(
+                (f) => f.OpticalLensProductFamily.Id === olItemsStack.family
+            )?.OpticalLensProductFamily.FamilyName || "";
+        const design =
+            productDesignData?.data?.find(
+                (d) => d.OpticalLensProductDesign.Id === olItemsStack.design
+            )?.OpticalLensProductDesign.DesignName || "";
+        const indexValue =
+            indexValuesData?.data?.find(
+                (i) => i.OpticalLensIndex.Id === olItemsStack.index
+            )?.OpticalLensIndex.Index || "";
+        const coating =
+            coatingsData?.data?.find(
+                (c) => c.OpticalLensCoating.Id === olItemsStack.coating
+            )?.OpticalLensCoating.CoatingName || "";
+        const treatment =
+            treatmentsData?.data?.find(
+                (t) => t.OpticalLensTreatment.Id === olItemsStack.treatment
+            )?.OpticalLensTreatment.TreatmentName || "";
+
+        // Combine all dropdown names (except product type) into productName
+        const productNameParts = [
+            brand,
+            focality,
+            family,
+            design,
+            indexValue,
+            coating,
+            treatment,
+        ].filter((part) => part); // Remove empty strings
+
+        const newProductName = productNameParts.join(" ") || null;
+
+        setOlItemStack((prev) => ({
+            ...prev,
+            productName: newProductName,
+        }));
+    }, [
+        olItemsStack.brandId,
+        olItemsStack.focality,
+        olItemsStack.family,
+        olItemsStack.design,
+        olItemsStack.index,
+        olItemsStack.coating,
+        olItemsStack.treatment,
+        allBrands,
+        focalityData,
+        familyData,
+        productDesignData,
+        indexValuesData,
+        coatingsData,
+        treatmentsData,
+    ]);
 
 
     // fetch order details or PO orders as per current form step
@@ -251,7 +526,33 @@ export default function SavePurchaseOrder() {
         fetchOrderDetails();
     }, [selectedLocation, formState.selectedOption, currentStep]);
 
-    const handleAdd = async () => {
+
+    // Handle refreshing the form state in step 3
+    const handleRefreshForm = () => {
+        setBrandId("");
+        setOlItemStack({
+            productType: "Stocks",
+            focality: null,
+            family: null,
+            design: null,
+            index: null,
+            coating: null,
+            treatment: null,
+            productName: null,
+            masterId: null,
+            coatingCombo: null,
+            olDetailId: null
+        });
+        setNewItem({
+            sphericalPower: null,
+            cylindricalPower: null,
+            diameter: null
+        })
+    };
+
+
+    // Handle search and add frame by barcode
+    const handleSearchByBarcode = async (type) => {
         if (!formState.barcode || !selectedLocation) {
             setAlertMessage({
                 type: "error",
@@ -261,23 +562,82 @@ export default function SavePurchaseOrder() {
             return;
         }
 
+        let typeFunction = null;
+        switch (type) {
+            case 1:
+                typeFunction = triggerBarcodeQuery;
+                break;
+            case 2:
+                typeFunction = triggerSearchOLByBarcode;
+                break;
+            case 3:
+                typeFunction = triggerSearchAccessoryByBarcode;
+                break;
+            case 4:
+                typeFunction = triggerSearchCLByBarcode;
+                break;
+            default:
+                typeFunction = null;
+        }
+
         try {
-            const result = await triggerBarcodeQuery({
+
+            const result = await typeFunction({
                 barcode: formState.barcode,
                 locationId: selectedLocation
             }).unwrap();
 
             // Handle successful response
             if (result.data) {
-                console.log("Scanned item:", result.data);
-                setScannedItems(prevItems => [
-                    ...prevItems,
-                    {
+                console.log("Scanned cl item:", result.data.data);
+
+                let newItem = {};
+                if (formState.selectedOption === "Contact Lens") {
+                    newItem = {
+                        ...result.data.data,
+                        quantity: 1, // Default quantity
+                        price: result?.data?.data?.BuyingPrice, // Default price
+                        cLDetailId: result?.data?.data?.CLDetailId
+                    };
+                } else {
+                    newItem = {
                         ...result.data,
                         quantity: 1, // Default quantity
-                        price: result.data.SellingPrice // Default price
+                        price: result?.data?.data?.BuyingPrice, // Default price
+                        cLDetailId: result?.data?.data?.CLDetailId
+                    };
+                }
+
+                console.log("new Item ---- ", newItem);
+
+
+                if (formState.EntryType === "combined") {
+                    // Check if item with same barcode already exists
+                    const existingItemIndex = scannedItems.findIndex(
+                        item => item.Barcode === newItem.Barcode
+                    );
+
+                    console.log("existingItemIndex --- ", existingItemIndex);
+
+                    if (existingItemIndex >= 0) {
+                        // Increment quantity for existing item
+                        setScannedItems(prevItems =>
+                            prevItems.map((item, index) =>
+                                index === existingItemIndex
+                                    ? { ...item, quantity: item.quantity + 1 }
+                                    : item
+                            )
+                        );
+                    } else {
+                        // Add new item
+                        setScannedItems(prevItems => [...prevItems, newItem]);
                     }
-                ]);
+                } else {
+                    // Always add as new item (even if same barcode exists)
+                    setScannedItems(prevItems => [...prevItems, newItem]);
+                }
+                console.log("scannedItems ---- ", scannedItems);
+
                 setAlertMessage({
                     type: "success",
                     message: "Item scanned successfully"
@@ -303,54 +663,362 @@ export default function SavePurchaseOrder() {
         }
     };
 
-    // Example API endpoint (adjust to your actual API structure)
-    const handleSearch = async () => {
-        if (!brandId || !modelNo) {
+    // Handle search and add frame by brand and model no.
+    const handleDetailSearch = async (type) => {
+        // Validate inputs
+        if (!brandId || (type === 1 && !modelNo) || (type === 2 && !productName)) {
             setAlertMessage({
                 type: "error",
-                message: "Please enter both brand and model number"
+                message: type === 1
+                    ? "Please enter both brand and model number"
+                    : "Please enter both brand and product name"
             });
             setShowAlert(true);
             setTimeout(() => setShowAlert(false), 3000);
             return;
         }
 
-        // setIsSearching(true);
-        console.log("modelNo ------", modelNo);
-        try {
-            // Replace this with your actual API call
-            const response = await triggerbrandandModelQuery({
-                brand: brandId,
-                modal: modelNo,
-                locationId: selectedLocation
-            });
+        console.log("modelNo ---- ", modelNo);
 
-            setSearchResults(response.data.data);
-            // setScannedItems(prevItems => [
-            //     ...prevItems,
-            //     {
-            //         ...response.data,
-            //         quantity: 1, // Default quantity
-            //         price: response.data.SellingPrice // Default price
-            //     }
-            // ]);
-            setAlertMessage({
-                type: "success",
-                message: "Search completed successfully"
-            });
+        let functionType = null;
+        let field = null;
+        let requestData = {
+            brand: brandId,
+            locationId: selectedLocation
+        };
+
+        if (type === 1) {
+            functionType = triggerbrandandModelQuery;
+            requestData.modal = modelNo;
+        } else if (type === 2) {
+            functionType = triggerSearchByBrandProduct;
+            requestData.product = productName;
+        }
+
+        console.log("Search parameters:", requestData);
+
+        try {
+            const response = await functionType(requestData);
+
+            console.log("response --- ", response);
+
+            if (response.status == "fulfilled") {
+
+                const newItems = response?.data?.data;
+
+
+                if (formState.EntryType === "combined") {
+                    // For combined entry, we'll merge items with the same barcode
+                    setSearchResults(prevResults => {
+                        const mergedResults = [...prevResults];
+
+                        newItems.forEach(newItem => {
+                            const existingIndex = mergedResults.findIndex(
+                                item => item.Barcode === newItem.Barcode
+                            );
+
+                            if (existingIndex >= 0) {
+                                // Update existing item (you might want to merge other properties too)
+                                mergedResults[existingIndex] = {
+                                    ...mergedResults[existingIndex],
+                                    // You can add merging logic for other properties if needed
+                                };
+                            } else {
+                                mergedResults.push(newItem);
+                            }
+                        });
+
+                        return mergedResults;
+                    });
+                } else {
+                    // For separate entry, just add all new items
+                    setSearchResults(newItems);
+                }
+
+                setAlertMessage({
+                    type: "success",
+                    message: "Search completed successfully"
+                });
+            } else {
+                setAlertMessage({
+                    type: "Warning",
+                    message: "No matching data found!"
+                });
+            }
+
+
         } catch (error) {
             console.error("Search failed:", error);
             setAlertMessage({
                 type: "error",
-                message: error.message || "Failed to search frames"
+                message: error.message || "Failed to search items"
             });
             setSearchResults([]);
         } finally {
-            // setIsSearching(false);
             setShowAlert(true);
             setTimeout(() => setShowAlert(false), 3000);
         }
     };
+
+    const handleSearch = async () => {
+        // Enhanced validation
+        if (!newItem.sphericalPower || isNaN(parseFloat(newItem.sphericalPower))) {
+            toast.error("Please enter valid Spherical Power before searching.");
+            return;
+        }
+
+        // Validate numeric fields
+        const spherical = parseFloat(newItem.sphericalPower);
+        const cylindrical = newItem.cylindricalPower ? parseFloat(newItem.cylindricalPower) : null;
+        const axis = newItem.axis ? parseInt(newItem.axis) : null;
+        const additional = newItem.additional ? parseInt(newItem.additional) : null;
+
+        if (isNaN(spherical)) {
+            toast.error("Invalid Spherical Power value");
+            return;
+        }
+
+        const payload = {
+            CLMainId: productId,
+            Spherical: spherical,
+            Cylindrical: cylindrical,
+            Axis: axis,
+            Additional: additional,
+            Colour: null,
+            locationId: selectedLocation,
+        };
+
+        try {
+            const response = await getPowerDetails({ payload }).unwrap();
+
+            if (!response?.data?.data) {
+                toast.error("No matching power found");
+                setSearchFetched(false);
+                return;
+            }
+
+            const data = response.data.data;
+            toast.success(response?.data.message || "Power details found");
+
+            // Create updated item with response data
+            const updatedItem = {
+                ...newItem,
+                barcode: data.Barcode,
+                CLDetailId: data.CLDetailId,
+                sphericalPower: data.SphericalPower,
+                cylindricalPower: data.CylindricalPower,
+                axis: data.Axis,
+                additional: data.Additional,
+                avlQty: parseInt(data.AvlQty) || 0,
+                orderQty: data.DefaultOrderQty || 1,
+                quantity: data.quantity || 1,
+                buyingPrice: data?.BuyingPrice || 0,
+            };
+
+            console.log("updatedItem ------------ ", updatedItem);
+
+            if (formState.EntryType === "combined") {
+                const existingItemIndex = selectedRows.findIndex(
+                    item => item.barcode === updatedItem.barcode
+                );
+
+                console.log("existingItemIndex --- ", existingItemIndex);
+
+                if (existingItemIndex >= 0) {
+                    // Increment quantity for existing item
+                    setSelectedRows(updatedItem =>
+                        updatedItem.map((item, index) =>
+                            index === existingItemIndex
+                                ? { ...item, quantity: item.quantity + 1 }
+                                : item
+                        )
+                    );
+                } else {
+                    // Add new item
+                    setSelectedRows(prevItems => [...prevItems, updatedItem]);
+                }
+            } else {
+                setSelectedRows(prevItems => [...prevItems, updatedItem]);
+            }
+
+            console.log("selectedRows ---------------- ", selectedRows);
+
+            // Update items array more efficiently
+            // setSelectedRows(prevItems => {
+            //     const existingIndex = prevItems.findIndex(
+            //         item => item.CLDetailId === data.CLDetailId
+            //     );
+
+            //     return existingIndex >= 0
+            //         ? prevItems.map((item, index) =>
+            //             index === existingIndex ? updatedItem : item)
+            //         : [...prevItems, updatedItem];
+            // });
+
+            setSearchFetched(true);
+
+        } catch (error) {
+            console.error("Search error:", error);
+            toast.error(error.message || "Failed to search power details");
+            setSearchFetched(false);
+        }
+    };
+
+    const handleOlSearch = async () => {
+        // Enhanced validation
+        if (!olItemsStack.olDetailId || !selectedLocation) {
+            toast.error("Mandatory field is required. Try again!");
+            return;
+        }
+        // getOlDetails
+
+        const payload = {
+            olDetailId: parseInt(olItemsStack.olDetailId),
+            locationId: selectedLocation,
+        };
+
+        try {
+            const response = await getOlDetails(payload).unwrap();
+
+            console.log(response);
+
+            if (!response?.data) {
+                toast.error("No record found");
+                setSearchFetched(false);
+                return;
+            }
+
+            const data = response?.data?.[0];
+            toast.success(response?.message || "Optical lens details found");
+
+            console.log("data ----- ", data);
+
+            // Create updated item with response data
+            const updatedItem = {
+                ...newItem,
+                OpticalLensDetailId: data.OpticalLensDetailId,
+                barcode: data.Barcode,
+                sphericalPower: data?.Spherical,
+                cylindricalPower: data?.Cylinder,
+                diameter: data.Diameter,
+                quantity: data.quantity || 1,
+                buyingPrice: data?.BuyingPrice || 0,
+            };
+
+
+            console.log("updatedItem ------------ ", updatedItem);
+
+
+
+            const existingItemIndex = selectedRows.findIndex(
+                item => item.barcode === updatedItem.barcode
+            );
+
+            console.log("existingItemIndex --- ", existingItemIndex);
+
+            if (existingItemIndex >= 0) {
+                // Increment quantity for existing item
+                setSelectedRows(updatedItem =>
+                    updatedItem.map((item, index) =>
+                        index === existingItemIndex
+                            ? { ...item, quantity: item.quantity + 1 }
+                            : item
+                    )
+                );
+            } else {
+                // Add new item
+                setSelectedRows(prevItems => [...prevItems, updatedItem]);
+            }
+
+            console.log("selectedRows ---------------- ", selectedRows);
+
+            // Update items array more efficiently
+            // setSelectedRows(prevItems => {
+            //     const existingIndex = prevItems.findIndex(
+            //         item => item.CLDetailId === data.CLDetailId
+            //     );
+
+            //     return existingIndex >= 0
+            //         ? prevItems.map((item, index) =>
+            //             index === existingIndex ? updatedItem : item)
+            //         : [...prevItems, updatedItem];
+            // });
+
+            setSearchFetched(true);
+
+        } catch (error) {
+            console.error("Search error:", error);
+            toast.error(error.message || "Failed to search power details");
+            setSearchFetched(false);
+        }
+    };
+
+    const handleSearchDia = async () => {
+        if (!newItem.sphericalPower || !olItemsStack.masterId || !olItemsStack.coatingCombo) {
+            setAlertMessage({
+                type: "error",
+                message: "Please enter all the required fields."
+            });
+            setShowAlert(true);
+            setTimeout(() => setShowAlert(false), 3000);
+            return;
+        }
+
+        try {
+
+            const payload = {
+                RSPH: parseInt(newItem.sphericalPower),
+                RCYLD: parseInt(newItem.cylindricalPower), // Handle empty cylindrical
+                OpticalLensMasterId: olItemsStack.masterId,
+                CoatingComboId: olItemsStack.coatingCombo,
+                selectedTypeRight: 1,
+                selectedTypeLeft: 0
+            }
+
+            const response = await getDia({ payload }).unwrap();
+
+            console.log("Diameter response ------------ ", response);
+
+            if (!response?.data?.diameters?.length > 0) {
+                toast.error("No match found.");
+                setSearchFetched(false);
+                return;
+            }
+
+            if (response?.data?.details[0]) {
+                setOlItemStack((prev) => ({ ...prev, olDetailId: response?.data?.details[0]?.OpticalLensDetailsId }));
+                setOlPowerDia(response?.data?.diameters);
+            }
+
+            toast.success(response?.data.message || "Diameter details found");
+
+        } catch (error) {
+            console.error("Search error:", error);
+            toast.error(error.message || "Failed to search power details");
+            setSearchFetched(false);
+        }
+    }
+
+
+
+    const handleRefresh = () => {
+        setNewItem({
+            barcode: null,
+            CLDetailId: null,
+            sphericalPower: null,
+            cylindricalPower: null,
+            diameter: null,
+            axis: null,
+            additional: null,
+            avlQty: null,
+            orderQty: null,
+            buyingPrice: null,
+        });
+        setOlPowerDia([]);
+        setSearchFetched(false);
+        setErrors({});
+    }
+
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -358,6 +1026,40 @@ export default function SavePurchaseOrder() {
             ...prev,
             [name]: value
         }));
+    };
+
+    const handleOlItemStackChange = (e) => {
+        const { name, value } = e.target;
+        setOlItemStack(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handlePowerSearchInputChange = (e) => {
+        const { name, value } = e.target;
+        setNewItem((prev) => ({ ...prev, [name]: value }));
+
+        let message = "";
+
+        if (["sphericalPower", "cylindricalPower", "additional"].includes(name)) {
+            if (value && !isMultipleOfQuarter(value)) {
+                message = "Power should only be in multiples of 0.25";
+            }
+        }
+
+        if (name === "axis" && value && !isValidAxis(value)) {
+            message = "Axis is incorrect";
+        }
+
+        if (name === "additional") {
+            const additionalValue = parseFloat(value);
+            if (value && (!isMultipleOfQuarter(value) || additionalValue < 0)) {
+                message = "Additional power must be a positive multiple of 0.25";
+            }
+        }
+
+        setErrors((prev) => ({ ...prev, [name]: message }));
     };
 
     const handleVendorChange = (vendorId) => {
@@ -374,6 +1076,24 @@ export default function SavePurchaseOrder() {
             ...prev,
             selectedOption: option
         }));
+    };
+
+    // Handle update of values such as price and qty in step 3.     fieldType: 1 [Price]    &&   fieldType: 2 [Qty]
+    // Replace your current updateScannedItemPrice function with this:
+    const updateScannedItemPrice = (itemId, newPrice) => {
+        setScannedItems(prevItems =>
+            prevItems.map(item =>
+                item.Id === itemId ? { ...item, price: parseFloat(newPrice) } : item
+            )
+        );
+    };
+
+    const updateScannedItemQuantity = (itemId, newQuantity) => {
+        setScannedItems(prevItems =>
+            prevItems.map(item =>
+                item.Id === itemId ? { ...item, quantity: parseInt(newQuantity) } : item
+            )
+        );
     };
 
     const handleNext = () => {
@@ -523,18 +1243,27 @@ export default function SavePurchaseOrder() {
         try {
             // First check if PO details exist
             const checkPayload = {
-                locationId: selectedLocation,
-                ApplicationUserId: user.Id,
-                vendorId: selectedVendor,
-                againstOrder: formState.shiptoAddress === "against" ? 1 : 0
+                locationId: parseInt(selectedLocation),
+                ApplicationUserId: parseInt(user.Id),
+                vendorId: parseInt(selectedVendor),
+                againstOrder: formState.shiptoAddress === "against" ? "1" : "0"
             };
 
-            // Check existing PO details
-            const poDetailsResponse = await getAllPoDetails(checkPayload).unwrap();
+            let poDetailsResponse;
 
-            console.log("poDetailsResponse ----------", poDetailsResponse);
+            if (formState.shiptoAddress === "against") {
+                poDetailsResponse = await getAllPoDetails(checkPayload).unwrap();
+            } else {
+                const response = await getAllPoDetailsForNewOrder(checkPayload).unwrap();
+                poDetailsResponse = response?.data;
+                console.log("poDetailsResponse ---------------- ", poDetailsResponse);
+            }
+            // Check existing PO details
+
+            // console.log("poDetailsResponse ----------", poDetailsResponse);
             if (poDetailsResponse && poDetailsResponse.length > 0) {
-                const poMainId = poDetailsResponse[0]?.poMainId;
+                const poMainId = poDetailsResponse[0]?.POMainId;
+                console.log("poMainId ------------ ", poMainId);
                 setCreatedPOMainId(poMainId);
                 setPoreviewDetails(poDetailsResponse);
                 setCurrentStep(4);
@@ -606,6 +1335,8 @@ export default function SavePurchaseOrder() {
                     return;
                 }
 
+                console.log("selectedOrders ------ ", selectedOrders);
+
                 // Prepare PO details payload for against orders
                 const poDetails = filteredOrderDetails
                     .filter(order => selectedOrders.includes(order.orderDetailId))
@@ -659,22 +1390,74 @@ export default function SavePurchaseOrder() {
                         return;
                     }
 
+                    console.log("scannedItems in po details ", scannedItems);
+
                     // Prepare PO details payload for new orders
-                    poDetails = scannedItems.map((item, index) => ({
-                        poMainId: createdPOMainId,
-                        poslNo: index + 1,
-                        productType: formState.selectedOption === 'Frame/Sunglass' ? 1
-                            : formState.selectedOption === 'Lens' ? 0
-                                : formState.selectedOption === 'Accessories' ? 2
-                                    : formState.selectedOption === 'Contact Lens' ? 3
-                                        : null,
-                        FrameDetailId: item.Id,
-                        poQty: item.quantity || 1,
-                        poPrice: item.price || item.SellingPrice,
-                        taxPercentage: 0, // You can add tax percentage if available
-                        Status: 0,
-                        ApplicationUserId: user.Id
-                    }));
+                    if (formState.selectedOption === "Frame/Sunglass") {
+                        poDetails = scannedItems.map((item, index) => ({
+                            poMainId: createdPOMainId,
+                            poslNo: index + 1,
+                            productType: formState.selectedOption === 'Frame/Sunglass' ? 1
+                                : formState.selectedOption === 'Lens' ? 0
+                                    : formState.selectedOption === 'Accessories' ? 2
+                                        : formState.selectedOption === 'Contact Lens' ? 3
+                                            : null,
+                            detailId: item.Id,
+                            poQty: item.quantity || 1,
+                            poPrice: item.price || item.BuyingPrice,
+                            taxPercentage: 0,
+                            Status: 0,
+                            ApplicationUserId: user.Id
+                        }));
+                    } else if (formState.selectedOption == "Accessories") {
+                        poDetails = scannedItems.map((item, index) => ({
+                            poMainId: createdPOMainId,
+                            poslNo: index + 1,
+                            productType: formState.selectedOption === 'Frame/Sunglass' ? 1
+                                : formState.selectedOption === 'Lens' ? 0
+                                    : formState.selectedOption === 'Accessories' ? 2
+                                        : formState.selectedOption === 'Contact Lens' ? 3
+                                            : null,
+                            detailId: item.Id,
+                            poQty: item.quantity || 1,
+                            poPrice: item.price || item.BuyingPrice,
+                            taxPercentage: 0,
+                            Status: 0,
+                            ApplicationUserId: user.Id
+                        }));
+                    } else if (formState.selectedOption == "Contact Lens") {
+                        poDetails = scannedItems.map((item, index) => ({
+                            poMainId: createdPOMainId,
+                            poslNo: index + 1,
+                            productType: formState.selectedOption === 'Frame/Sunglass' ? 1
+                                : formState.selectedOption === 'Lens' ? 0
+                                    : formState.selectedOption === 'Accessories' ? 2
+                                        : formState.selectedOption === 'Contact Lens' ? 3
+                                            : null,
+                            detailId: item.cLDetailId,
+                            poQty: item.quantity || 1,
+                            poPrice: item.price || item.BuyingPrice,
+                            taxPercentage: 0,
+                            Status: 0,
+                            ApplicationUserId: user.Id
+                        }));
+                    } else if (formState.selectedOption == "Lens") {
+                        poDetails = scannedItems.map((item, index) => ({
+                            poMainId: createdPOMainId,
+                            poslNo: index + 1,
+                            productType: formState.selectedOption === 'Frame/Sunglass' ? 1
+                                : formState.selectedOption === 'Lens' ? 0
+                                    : formState.selectedOption === 'Accessories' ? 2
+                                        : formState.selectedOption === 'Contact Lens' ? 3
+                                            : null,
+                            detailId: item.OpticalLensDetailId,
+                            poQty: item.quantity || 1,
+                            poPrice: item.price || item.BuyingPrice,
+                            taxPercentage: 0,
+                            Status: 0,
+                            ApplicationUserId: user.Id
+                        }));
+                    }
                 } else {
                     if (selectedRows.length === 0) {
                         setAlertMessage({
@@ -686,7 +1469,10 @@ export default function SavePurchaseOrder() {
                         return;
                     }
 
-                    // Prepare PO details payload for new orders
+                    console.log("selectedRows ---------- ", selectedRows);
+
+
+                    // Prepare PO details payload for new orders 
                     poDetails = selectedRows.map((item, index) => ({
                         poMainId: createdPOMainId,
                         poslNo: index + 1,
@@ -695,10 +1481,10 @@ export default function SavePurchaseOrder() {
                                 : formState.selectedOption === 'Accessories' ? 2
                                     : formState.selectedOption === 'Contact Lens' ? 3
                                         : null,
-                        FrameDetailId: item.Id,
+                        detailId: formState.selectedOption === "Contact Lens" ? item.CLDetailId : formState.selectedOption === "Lens" ? item.OpticalLensDetailId : item.Id,
                         poQty: item.quantity || 1,
-                        poPrice: item.price || item.SellingPrice,
-                        taxPercentage: 0, // You can add tax percentage if available
+                        poPrice: item.price || item.BuyingPrice || item.buyingPrice,
+                        taxPercentage: 0,
                         Status: 0,
                         ApplicationUserId: user.Id
                     }));
@@ -714,20 +1500,22 @@ export default function SavePurchaseOrder() {
                     });
                     setShowAlert(true);
                     setTimeout(() => setShowAlert(false), 3000);
-                    setCurrentStep(4);
+                    // setCurrentStep(4);
                 }
             }
 
             // Refresh PO details after saving
             const payload = {
-                locationId: selectedLocation,
-                ApplicationUserId: user.Id,
-                vendorId: selectedVendor,
-                againstOrder: formState.shiptoAddress === "against" ? 1 : 0
+                locationId: Number(selectedLocation),
+                ApplicationUserId: Number(user.Id),
+                vendorId: Number(selectedVendor),
+                againstOrder: formState.shiptoAddress === "against" ? "1" : "0"
             };
 
-            const poDetailsResponse = await getAllPoDetails(payload).unwrap();
-            setPoreviewDetails(poDetailsResponse);
+            const poDetailsResponse = await getAllPoDetailsForNewOrder(payload).unwrap();
+            setPoreviewDetails(poDetailsResponse.data);
+            setCurrentStep(4);
+
 
         } catch (error) {
             console.error("Error saving purchase order details:", error);
@@ -745,9 +1533,7 @@ export default function SavePurchaseOrder() {
         try {
             const payload = {
                 poId: createdPOMainId,
-                // p_status: 1, // Status 1 for completed
                 remarks: formState.remarks || "",
-                // ApplicationUserId: user.Id
             };
 
             const response = await updatePoMain(payload).unwrap();
@@ -760,7 +1546,7 @@ export default function SavePurchaseOrder() {
                 setShowAlert(true);
                 setTimeout(() => setShowAlert(false), 3000);
                 // Optionally navigate to another page
-                navigate('/purchase-orders/create');
+                navigate('/');
             } else {
                 setAlertMessage({
                     type: "error",
@@ -824,20 +1610,32 @@ export default function SavePurchaseOrder() {
 
     const handleEditPriceClick = (item) => {
         console.log("item ---------------- ", item);
+        let price = null;
+        if (formState.shiptoAddress === "against") {
+            price = item?.poPrice || (item?.productType == 3 ? item?.priceMaster?.buyingPrice : item.pricing?.buyingPrice);
+        } else {
+            price = item?.poPrice || (item?.ProductDetails?.ProductType == 3 ? item?.ProductDetails?.price?.BuyingPrice : item?.ProductDetails?.Stock?.BuyingPrice);
+        }
         setCurrentEditingItem(item);
-        setEditedBuyingPrice(item?.poPrice || (item?.productType == 3 ? item?.priceMaster?.buyingPrice : item.pricing?.buyingPrice));
+        setEditedBuyingPrice(price);
         setEditPriceModalOpen(true);
     };
 
     const handleEditQtyClick = (item) => {
+        let Qty = null;
+        if (formState.shiptoAddress === "against") {
+            Qty = (item.poQty || item.orderQty - item.billedQty - item.cancelledQty);
+        } else {
+            Qty = (item?.poQty || item?.POQty);
+        }
         setCurrentEditingItem(item);
-        setEditedPoQty(item.poQty || item.orderQty - item.billedQty - item.cancelledQty);
+        setEditedPoQty(Qty);
         setEditQtyModalOpen(true);
     };
 
     const handlePriceUpdate = async () => {
         if (!currentEditingItem || !editedBuyingPrice) return;
-
+        console.log("currentEditingItem -------------- ", currentEditingItem);
         try {
             const payload = {
                 p_id: currentEditingItem.poDetailId,
@@ -846,21 +1644,39 @@ export default function SavePurchaseOrder() {
             const response = await updatePOPrice(payload).unwrap();
 
             if (response.status === "success") {
-                // Update poreviewDetails with the new price
-                setPoreviewDetails(prev => prev.map(item => {
-                    if (item.poDetailId === currentEditingItem.poDetailId) {
-                        return {
-                            ...item,
-                            poPrice: parseFloat(editedBuyingPrice),
-                            // Update pricing/priceMaster based on product type
-                            ...(item.productType === 3
-                                ? { priceMaster: { ...item.priceMaster, buyingPrice: parseFloat(editedBuyingPrice) } }
-                                : { pricing: { ...item.pricing, buyingPrice: parseFloat(editedBuyingPrice) } }
-                            )
-                        };
-                    }
-                    return item;
-                }));
+                if (formState.shiptoAddress === "against") {
+                    // Update poreviewDetails with the new price
+                    setPoreviewDetails(prev => prev.map(item => {
+                        if (item.poDetailId === currentEditingItem.poDetailId) {
+                            return {
+                                ...item,
+                                poPrice: parseFloat(editedBuyingPrice),
+                                // Update pricing/priceMaster based on product type
+                                ...(item.productType === 3
+                                    ? { priceMaster: { ...item.priceMaster, buyingPrice: parseFloat(editedBuyingPrice) } }
+                                    : { pricing: { ...item.pricing, buyingPrice: parseFloat(editedBuyingPrice) } }
+                                )
+                            };
+                        }
+                        return item;
+                    }));
+                } else {
+                    // Update poreviewDetails with the new price
+                    setPoreviewDetails(prev => prev.map(item => {
+                        if (item.poDetailId === currentEditingItem.poDetailId) {
+                            return {
+                                ...item,
+                                poPrice: parseFloat(editedBuyingPrice),
+                                // Update pricing/priceMaster based on product type
+                                ...(item?.ProductDetails?.ProductType === 3
+                                    ? { price: { ...item.price, BuyingPrice: parseFloat(editedBuyingPrice) } }
+                                    : { Stock: { ...item.Stock, BuyingPrice: parseFloat(editedBuyingPrice) } }
+                                )
+                            };
+                        }
+                        return item;
+                    }));
+                }
 
                 setAlertMessage({
                     type: "success",
@@ -895,10 +1711,12 @@ export default function SavePurchaseOrder() {
             return;
         }
 
-        const orderQty = currentEditingItem.orderQty;
-        if (parseInt(editedPoQty) > orderQty) {
-            setQtyError(`Quantity cannot exceed order quantity (${orderQty})`);
-            return;
+        if (formState.shiptoAddress === "against") {
+            const orderQty = currentEditingItem.orderQty;
+            if (parseInt(editedPoQty) > orderQty) {
+                setQtyError(`Quantity cannot exceed order quantity (${orderQty})`);
+                return;
+            }
         }
 
         setQtyError('');
@@ -1594,14 +2412,31 @@ export default function SavePurchaseOrder() {
                         className="bg-white rounded-2xl shadow-xl p-6"
                     >
                         <div className="flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-[#000060] mb-6">Step 3: {formState.selectedOption == "Frame/Sunglass" && "Frame/Sunglass"}</h2>
-                            <button
-                                onClick={handleBack}
-                                className="px-4 py-2 flex text-[#000060] rounded-lg hover:bg-gray-100 transition-colors gap-2"
-                            >
-                                <ArrowLeft />
-                                Back
-                            </button>
+                            <h2 className="text-xl font-bold text-[#000060] mb-6">Step 3:
+                                {formState.selectedOption == "Frame/Sunglass" && " Frame/Sunglass"}
+                                {formState.selectedOption == "Accessories" && " Accessories"}
+                                {formState.selectedOption == "Contact Lens" && " Contact Lens"}
+                                {formState.selectedOption == "Lens" && " Optical Lens"}
+
+                            </h2>
+                            <div className="flex gap-2 items-center justify-center">
+                                <button
+                                    onClick={handleBack}
+                                    className="px-4 py-2 flex text-[#000060] rounded-lg hover:bg-gray-100 transition-colors gap-2"
+                                >
+                                    <ArrowLeft />
+                                    Back
+                                </button>
+                                {showSearchInputs && (
+                                    <button
+                                        onClick={handleRefreshForm}
+                                        className="flex gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
+                                    >
+                                        <RefreshCcw />
+                                        Refresh
+                                    </button>
+                                )}
+                            </div>
                         </div>
                         <div className=" items-center my-10 w-full gap-6">
                             <div className="flex justify-start gap-12 mb-6">
@@ -1609,9 +2444,9 @@ export default function SavePurchaseOrder() {
                                     <label className="flex items-center space-x-2 cursor-pointer">
                                         <input
                                             type="radio"
-                                            name="shiptoAddress"
-                                            value="new"
-                                            checked={formState.frameEntry === "combined"}
+                                            name="EntryType"
+                                            value="combined"
+                                            checked={formState.EntryType === "combined"}
                                             onChange={handleInputChange}
                                             className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                         />
@@ -1620,9 +2455,9 @@ export default function SavePurchaseOrder() {
                                     <label className="flex items-center space-x-2 cursor-pointer">
                                         <input
                                             type="radio"
-                                            name="shiptoAddress"
-                                            value="against"
-                                            checked={formState.frameEntry === "seperate"}
+                                            name="EntryType"
+                                            value="seperate"
+                                            checked={formState.EntryType === "seperate"}
                                             onChange={handleInputChange}
                                             className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                         />
@@ -1649,7 +2484,12 @@ export default function SavePurchaseOrder() {
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter') {
                                                     e.preventDefault();
-                                                    handleAdd();
+                                                    {
+                                                        if (formState.selectedOption === "Frame/Sunglass") { handleSearchByBarcode(1) }
+                                                        else if (formState.selectedOption === "Lens") { handleSearchByBarcode(2) }
+                                                        else if (formState.selectedOption === "Accessories") { handleSearchByBarcode(3) }
+                                                        else if (formState.selectedOption === "Contact Lens") { handleSearchByBarcode(4) }
+                                                    };
                                                 }
                                             }}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060] pr-10"
@@ -1668,7 +2508,12 @@ export default function SavePurchaseOrder() {
                                     </div>
 
                                     <button
-                                        onClick={handleAdd}
+                                        onClick={() => {
+                                            if (formState.selectedOption === "Frame/Sunglass") { handleSearchByBarcode(1) }
+                                            else if (formState.selectedOption === "Lens") { handleSearchByBarcode(2) }
+                                            else if (formState.selectedOption === "Accessories") { handleSearchByBarcode(3) }
+                                            else if (formState.selectedOption === "Contact Lens") { handleSearchByBarcode(4) }
+                                        }}
                                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 whitespace-nowrap flex items-center"
                                         disabled={!formState.barcode || isLoading}
                                     >
@@ -1693,9 +2538,11 @@ export default function SavePurchaseOrder() {
                                     </button>
                                 </div>
                             ) : (
-                                <div className="flex-1 flex items-center gap-5">
+                                // <div className="flex-1">
+                                <div className="flex flex-col md:flex-row items-start md:items-center gap-4 flex-wrap">
+
                                     {/* Search Brand */}
-                                    <div className="relative flex-1">
+                                    <div className="flex-1 min-w-[200px]">
                                         <Autocomplete
                                             options={filteredBrands}
                                             getOptionLabel={(option) => option.BrandName}
@@ -1723,52 +2570,599 @@ export default function SavePurchaseOrder() {
                                                     fullWidth
                                                 />
                                             )}
-                                            sx={{ width: 400 }}
                                         />
                                     </div>
 
-                                    {/* Search Model */}
-                                    <div className="relative flex-1">
-                                        <input
-                                            id="model"
-                                            name="model"
-                                            type="text"
-                                            autoComplete="off"
-                                            value={modelNo}
-                                            onChange={(e) => setModelNo(e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060] pr-10"
-                                            placeholder="Enter model no."
-                                        />
-                                    </div>
 
-                                    {/* Search Button */}
-                                    <button
-                                        onClick={handleSearch}
-                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap flex items-center"
-                                        disabled={!brandId || !modelNo}
-                                    >
+                                    {formState.selectedOption === "Frame/Sunglass" && (
+                                        <div className="flex-1 min-w-[250px]">
+                                            <input
+                                                id="model"
+                                                name="model"
+                                                type="text"
+                                                autoComplete="off"
+                                                value={modelNo}
+                                                onChange={(e) => setModelNo(e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060] pr-10"
+                                                placeholder="Enter model no."
+                                            />
+                                        </div>
+                                    )}
+
+                                    {formState.selectedOption === "Accessories" && (
+                                        <div className="flex-1 min-w-[250px]">
+                                            <input
+                                                id="product"
+                                                name="productName"
+                                                type="text"
+                                                autoComplete="off"
+                                                value={productName}
+                                                onChange={(e) => setProductName(e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060] pr-10"
+                                                placeholder="Enter product name"
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* {console.log("modalities --------- ", modalities)} */}
+
+                                    {(formState.selectedOption === "Contact Lens") && (
                                         <>
+                                            <div className="flex-1 min-w-[300px]">
+                                                <Autocomplete
+                                                    options={modalities?.data || []}
+                                                    getOptionLabel={(option) => option.ModalityName || ""}
+                                                    onInputChange={(event, value) => {
+                                                        setModalityInput(value);
+                                                    }}
+                                                    onChange={(event, newValue) => {
+                                                        if (newValue) {
+                                                            setModalityInput(newValue.ModalityName);
+                                                            setModalityId(newValue.Id);
+                                                        }
+                                                    }}
+                                                    value={
+                                                        modalities?.data.find((b) => b.Id === modalityId) ||
+                                                        null
+                                                    }
+                                                    isOptionEqualToValue={(option, value) =>
+                                                        option.Id === value.Id
+                                                    }
+                                                    renderInput={(params) => (
+                                                        <TextField
+                                                            {...params}
+                                                            label="Search Modality"
+                                                            variant="outlined"
+                                                            fullWidth
+                                                        />
+                                                    )}
+                                                />
+                                            </div>
+
+                                            {productData && (
+                                                <div className="flex-1 min-w-[300px]">
+                                                    <Autocomplete
+                                                        options={productData?.data?.data || []}
+                                                        getOptionLabel={(option) => option.ProductName || ""}
+                                                        onInputChange={(event, value) => {
+                                                            setProductInput(value);
+                                                        }}
+                                                        onChange={(event, newValue) => {
+                                                            if (newValue) {
+                                                                setProductInput(newValue.ProductName);
+                                                                setProductId(newValue.Id);
+                                                            }
+                                                        }}
+                                                        value={
+                                                            productData?.data?.data.find((b) => b.Id === productId) ||
+                                                            null
+                                                        }
+                                                        isOptionEqualToValue={(option, value) =>
+                                                            option.Id === value.Id
+                                                        }
+                                                        renderInput={(params) => (
+                                                            <TextField
+                                                                {...params}
+                                                                label="Search Product"
+                                                                variant="outlined"
+                                                                fullWidth
+                                                            />
+                                                        )}
+                                                    />
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+
+                                    {/* Optical Lens */}
+                                    {(formState.selectedOption === "Lens" && brandId) && (
+                                        <div className="flex space-x-4">
+                                            <label>Product Type :</label>
+                                            <label className="flex items-center space-x-2 cursor-pointer">
+                                                <input
+                                                    type="radio"
+                                                    name="productType"
+                                                    value="Stocks"
+                                                    checked={olItemsStack.productType === "Stocks"}
+                                                    onChange={handleOlItemStackChange}
+                                                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                />
+                                                <span className="text-gray-700 font-medium">Stocks</span>
+                                            </label>
+                                            <label className="flex items-center space-x-2 cursor-pointer">
+                                                <input
+                                                    type="radio"
+                                                    name="productType"
+                                                    value="Rx"
+                                                    checked={olItemsStack.productType === "Rx"}
+                                                    onChange={handleOlItemStackChange}
+                                                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    disabled={true}
+                                                />
+                                                <span className="text-gray-700 font-medium">Rx</span>
+                                            </label>
+                                        </div>
+                                    )}
+
+                                    {console.log("focalityData --------------- ", focalityData)}
+
+                                    {(formState.selectedOption === "Frame/Sunglass" || formState.selectedOption === "Accessories") ? (
+                                        <button
+                                            onClick={() => {
+                                                if (formState.selectedOption === "Frame/Sunglass") handleDetailSearch(1)
+                                                else if (formState.selectedOption === "Accessories") handleDetailSearch(2)
+                                            }}
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap flex items-center justify-center w-full md:w-auto"
+                                            disabled={!brandId}
+                                        >
                                             <SearchIcon className="h-4 w-4 mr-1" />
                                             Search
-                                        </>
-                                    </button>
+                                        </button>
+                                    ) : null}
 
-                                    {/* Back to Barcode Button */}
                                     <button
                                         onClick={() => setShowSearchInputs(false)}
-                                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors whitespace-nowrap flex items-center"
+                                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors whitespace-nowrap flex items-center justify-center w-full md:w-auto"
                                     >
                                         Back to Barcode
                                     </button>
+
+
+                                    {(formState.selectedOption === "Lens" && formState.productType === "Stocks" && focalityData) && (
+                                        <>
+                                            <div className="w-full flex flex-col md:flex-row gap-4 mt-4">
+                                                <div className="flex-1">
+                                                    <AutocompleteField
+                                                        label="Focality"
+                                                        options={deduplicateOptions(
+                                                            focalityData?.data?.filter((b) => b.IsActive === 1) || [],
+                                                            "OpticalLensFocality.Id"
+                                                        )}
+                                                        valueField="OpticalLensFocality.Id"
+                                                        labelField="OpticalLensFocality.Focality"
+                                                        value={olItemsStack.focality}
+                                                        onChange={(val) =>
+                                                            setOlItemStack((prev) => ({ ...prev, focality: val }))
+                                                        }
+                                                        loading={isLoadingFocality}
+                                                        disabled={!!(olItemsStack.family || olItemsStack.design)}
+                                                    />
+                                                </div>
+
+                                                {olItemsStack.focality && (
+                                                    <div className="flex-1">
+                                                        <AutocompleteField
+                                                            label="Product Family"
+                                                            options={deduplicateOptions(
+                                                                familyData?.data?.filter((b) => b.IsActive === 1) || [],
+                                                                "OpticalLensProductFamily.Id"
+                                                            )}
+                                                            valueField="OpticalLensProductFamily.Id"
+                                                            labelField="OpticalLensProductFamily.FamilyName"
+                                                            value={olItemsStack.family}
+                                                            onChange={(val) =>
+                                                                setOlItemStack((prev) => ({ ...prev, family: val }))
+                                                            }
+                                                            loading={isLoadingFamily}
+                                                            disabled={!!olItemsStack.design}
+                                                        />
+                                                    </div>
+                                                )}
+
+                                                {olItemsStack.family && (
+                                                    <div className="flex-1">
+                                                        <AutocompleteField
+                                                            label="Product Design"
+                                                            options={deduplicateOptions(
+                                                                productDesignData?.data?.filter((b) => b.IsActive === 1) || [],
+                                                                "OpticalLensProductDesign.Id"
+                                                            )}
+                                                            valueField="OpticalLensProductDesign.Id"
+                                                            labelField="OpticalLensProductDesign.DesignName"
+                                                            value={olItemsStack.design}
+                                                            onChange={(val) =>
+                                                                setOlItemStack((prev) => ({ ...prev, design: val }))
+                                                            }
+                                                            loading={isLoadingProductDesign}
+                                                            disabled={!!olItemsStack.index}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {olItemsStack.design && (
+                                                <div className="w-full flex flex-col md:flex-row gap-4 mt-4">
+                                                    <div className="flex-1">
+                                                        <AutocompleteField
+                                                            label="Index Values"
+                                                            options={deduplicateOptions(
+                                                                indexValuesData?.data?.filter((b) => b.IsActive === 1) ||
+                                                                [],
+                                                                "OpticalLensIndex.Id"
+                                                            )}
+                                                            valueField="OpticalLensIndex.Id"
+                                                            labelField="OpticalLensIndex.Index"
+                                                            value={olItemsStack.index}
+                                                            onChange={(val, item) =>
+                                                                setOlItemStack((prev) => ({
+                                                                    ...prev,
+                                                                    index: val,
+                                                                    masterId: item?.MasterId || null,
+                                                                }))
+                                                            }
+                                                            loading={isLoadingIndexValues}
+                                                            disabled={!!(olItemsStack.masterId && olItemsStack.coating)}
+                                                        />
+                                                    </div>
+                                                    {olItemsStack.masterId && (
+                                                        <div className="flex-1">
+                                                            <AutocompleteField
+                                                                label="Coating"
+                                                                options={deduplicateOptions(
+                                                                    coatingsData?.data?.filter((b) => b.IsActive === 1) || [],
+                                                                    "OpticalLensCoating.Id"
+                                                                )}
+                                                                valueField="OpticalLensCoating.Id"
+                                                                labelField="OpticalLensCoating.CoatingName"
+                                                                value={olItemsStack.coating}
+                                                                onChange={(val, item) => {
+                                                                    if (!item) {
+                                                                        setOlItemStack((prev) => ({
+                                                                            ...prev,
+                                                                            coating: null,
+                                                                        }));
+                                                                        return;
+                                                                    }
+                                                                    setOlItemStack((prev) => ({
+                                                                        ...prev,
+                                                                        coating: item.OpticalLensCoating?.Id || null,
+                                                                    }));
+                                                                }}
+                                                                loading={isLoadingCoatings}
+                                                                disabled={!!olItemsStack.treatment}
+                                                            />
+                                                        </div>
+                                                    )}
+
+                                                    {olItemsStack.coating && (
+                                                        <div className="flex-1">
+                                                            <AutocompleteField
+                                                                label="Treatment"
+                                                                options={deduplicateOptions(
+                                                                    treatmentsData?.data?.filter((b) => b.IsActive === 1) || [],
+                                                                    "OpticalLensTreatment.Id"
+                                                                )}
+                                                                valueField="OpticalLensTreatment.Id"
+                                                                labelField="OpticalLensTreatment.TreatmentName"
+                                                                value={olItemsStack.treatment}
+                                                                onChange={(val, item) => {
+                                                                    if (!item) {
+                                                                        setOlItemStack((prev) => ({
+                                                                            ...prev,
+                                                                            coatingCombo: null,
+                                                                            treatment: null,
+                                                                        }));
+                                                                        return;
+                                                                    }
+                                                                    setOlItemStack((prev) => ({
+                                                                        ...prev,
+                                                                        coatingCombo: item.CoatingComboId,
+                                                                        treatment: item.OpticalLensTreatment?.Id,
+                                                                    }));
+                                                                }}
+                                                                loading={isLoadingTreatments}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {olItemsStack.treatment && (
+                                                <div className="w-full flex flex-col md:flex-row gap-4 mt-4">
+                                                    <div className="flex-1">
+                                                        <Input
+                                                            label="Product Name"
+                                                            value={olItemsStack.productName || ""}
+                                                            onChange={(e) =>
+                                                                setOlItemStack({ ...olItemsStack, productName: e.target.value })
+                                                            }
+                                                            placeholder="Enter product name"
+                                                            className="w-full"
+                                                            disabled
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
                                 </div>
+                                // </div>
                             )}
                         </div>
 
-                        {/* Rest of the component remains the same */}
+
+                        {(olItemsStack.treatment !== null && brandId) && (
+                            <Table
+                                columns={["Spherical Power", "Cylindrical Power", "Diameter", "Action"]}
+                                data={[{}]}
+                                renderRow={() => (
+                                    <TableRow key="input-row items-center">
+                                        <TableCell>
+                                            <Input
+                                                name="sphericalPower"
+                                                value={newItem.sphericalPower ?? ""}
+                                                onChange={handlePowerSearchInputChange}
+                                                error={errors.sphericalPower}
+                                                grayOut={searchFethed}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Input
+                                                name="cylindricalPower"
+                                                value={newItem.cylindricalPower ?? ""}
+                                                onChange={handlePowerSearchInputChange}
+                                                error={errors.cylindricalPower}
+                                                grayOut={searchFethed}
+                                            />
+                                        </TableCell>
+                                        <TableCell className="">
+                                            {(olPowerDia.length > 0) ? (
+                                                <select
+                                                    value={newItem.diameter}
+                                                    onChange={(e) => setNewItem((prev) => ({ ...prev, diameter: e.target.value }))}
+                                                    className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                    <option value="">Select a Diameter</option>
+                                                    {olPowerDia.map((dia) => (
+                                                        <option key={dia.Id} value={dia.Id}>
+                                                            {dia.DiameterSize}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <div className="flex items-center justify-center">
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={handleSearchDia}
+                                                        disabled={!newItem.sphericalPower || isGetDiameterLoading}
+                                                        variant="outline"
+                                                    >
+                                                        {isGetDiameterLoading ? "Fetching..." : <HardDriveDownload />}
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="flex gap-2">
+                                            <Button
+                                                size="sm"
+                                                onClick={handleOlSearch}
+                                                disabled={isPowerDetailsLoading || !newItem.sphericalPower || !newItem.diameter}
+                                                variant="outline"
+                                            >
+                                                {isPowerDetailsLoading ? "Searching..." : <SearchIcon />}
+                                            </Button>
+
+                                            <Button
+                                                size="sm"
+                                                onClick={handleRefresh}
+                                                disabled={isPowerDetailsLoading}
+                                                variant="outline"
+                                            >
+                                                {isPowerDetailsLoading ? "Refreshing..." : <RefreshCcw />}
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            />
+                        )}
+
+                        {/* Contact Lens */}
+                        {productId && (
+                            <Table
+                                columns={["Spherical Power", "Cylindrical Power", "Axis", "Additional", "Action"]}
+                                data={[{}]}
+                                renderRow={() => (
+                                    <TableRow key="input-row">
+                                        <TableCell>
+                                            <Input
+                                                name="sphericalPower"
+                                                value={newItem.sphericalPower ?? ""}
+                                                onChange={handlePowerSearchInputChange}
+                                                error={errors.sphericalPower}
+                                                // className={`${searchFethed ? "bg-neutral-400 pointer-events-none" : ""}`}
+                                                grayOut={searchFethed}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Input
+                                                name="cylindricalPower"
+                                                value={newItem.cylindricalPower ?? ""}
+                                                onChange={handlePowerSearchInputChange}
+                                                error={errors.cylindricalPower}
+                                                grayOut={searchFethed}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Input
+                                                name="axis"
+                                                value={newItem.axis ?? ""}
+                                                onChange={handlePowerSearchInputChange}
+                                                error={errors.axis}
+                                                grayOut={searchFethed}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Input
+                                                name="additional"
+                                                value={newItem.additional ?? ""}
+                                                onChange={handlePowerSearchInputChange}
+                                                error={errors.additional}
+                                                grayOut={searchFethed}
+                                            />
+                                        </TableCell>
+                                        <TableCell className="flex gap-2">
+                                            <Button
+                                                size="sm"
+                                                onClick={handleSearch}
+                                                disabled={isPowerDetailsLoading}
+                                                variant="outline"
+                                            >
+                                                {isPowerDetailsLoading ? "Searching..." : <SearchIcon />}
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                onClick={handleRefresh}
+                                                disabled={isPowerDetailsLoading}
+                                                variant="outline"
+                                            >
+                                                {isPowerDetailsLoading ? "Refreshing..." : <RefreshCcw />}
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            />
+                        )}
+
+                        {/* {console.log("items --------------- ", selectedRows)} */}
+
+                        {/* Contact Lens */}
+                        {(selectedRows.length > 0 && formState.selectedOption === "Contact Lens") && (
+                            <div className="p-6">
+                                <Table
+                                    columns={[
+                                        "Barcode",
+                                        "Spherical power",
+                                        "Cylindrical power",
+                                        "Axis",
+                                        "Additional",
+                                        "Buying Price",
+                                        "PO Qty",
+                                        "Action"
+                                    ]}
+                                    data={selectedRows}
+                                    renderRow={(item, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell>{item.barcode}</TableCell>
+                                            <TableCell>{item.sphericalPower}</TableCell>
+                                            <TableCell>{item.cylindricalPower}</TableCell>
+                                            <TableCell>{item.axis}</TableCell>
+                                            <TableCell>{item.additional}</TableCell>
+                                            {/* <TableCell>₹{item.buyingPrice}</TableCell> */}
+                                            <TableCell>₹{" "}
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    step="0.01"
+                                                    value={selectedRows.find(a => a.barcode === item.barcode)?.price || item.buyingPrice}
+                                                    onChange={(e) => updateScannedItemPrice(acc.Id, e.target.value)}
+                                                    className="w-30 px-2 py-1 border rounded"
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={selectedRows.find(a => a.barcode === item.barcode)?.quantity || 1}
+                                                    onChange={(e) => updateScannedItemQuantity(item.Id, e.target.value)}
+                                                    className="w-20 px-2 py-1 border rounded"
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <button
+                                                    onClick={() => handleDelete(index)}
+                                                    className="p-1 text-red-600 hover:text-red-800 "
+                                                    aria-label="Delete item"
+                                                >
+                                                    <Trash2 className="h-5 w-5" />
+                                                </button>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                />
+
+                                {/* <DisplayInformation
+                                    items={items}
+                                onSave={handleSaveOrder}
+                                isContactLensCreating={isContactLensCreating}
+                                /> */}
+                            </div>
+                        )}
+
+                        {(selectedRows.length > 0 && formState.selectedOption === "Lens") && (
+                            <div className="p-6">
+                                <Table
+                                    columns={[
+                                        "Barcode",
+                                        "Spherical Power",
+                                        "Cylindrical Power",
+                                        "Buying Price",
+                                        "PO QTY",
+                                        "Action"
+                                    ]}
+                                    data={selectedRows}
+                                    renderRow={(item, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell>{item.barcode}</TableCell>
+                                            <TableCell>{item.sphericalPower}</TableCell>
+                                            <TableCell>{item.cylindricalPower}</TableCell>
+                                            <TableCell>₹{" "}
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    step="0.01"
+                                                    value={selectedRows.find(a => a.barcode === item.barcode)?.price || item.buyingPrice}
+                                                    onChange={(e) => updateScannedItemPrice(acc.Id, e.target.value)}
+                                                    className="w-30 px-2 py-1 border rounded"
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={selectedRows.find(a => a.barcode === item.barcode)?.quantity || 1}
+                                                    onChange={(e) => updateScannedItemQuantity(item.Id, e.target.value)}
+                                                    className="w-20 px-2 py-1 border rounded"
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <button
+                                                    onClick={() => handleDelete(index)}
+                                                    className="p-1 text-red-600 hover:text-red-800 "
+                                                    aria-label="Delete item"
+                                                >
+                                                    <Trash2 className="h-5 w-5" />
+                                                </button>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                />
+                            </div>
+                        )}
+
+                        {/* {console.log("AccessoriesData ---------------", AccessoriesData)}; */}
+                        {/* Frame search result */}
                         {frameData && (
                             <Table
                                 columns={["Barcode", "Name", "S/O", "Polarised", "Photochromatic", "Clip No", "MRP", "Buying Price", "PO QTY", "Action"]}
-                                data={[frameData.data]}
+                                data={scannedItems}
                                 renderRow={(frame, index) => (
                                     <TableRow key={index}>
                                         <TableCell>{frame.Barcode}</TableCell>
@@ -1782,17 +3176,20 @@ export default function SavePurchaseOrder() {
                                         <TableCell>₹{frame.MRP}</TableCell>
                                         <TableCell>₹{" "}
                                             <input
-                                                type="float"
+                                                type="number"
                                                 min="1"
-                                                defaultValue={frame.SellingPrice}
+                                                step="0.01"
+                                                value={scannedItems.find(a => a.Id === frame.Id)?.price || frame.BuyingPrice}
+                                                onChange={(e) => updateScannedItemPrice(frame.Id, e.target.value)}
                                                 className="w-30 px-2 py-1 border rounded"
-                                            /></TableCell>
+                                            />
+                                        </TableCell>
                                         <TableCell>
                                             <input
                                                 type="number"
                                                 min="1"
-                                                max={frame.Quantity}
-                                                defaultValue="1"
+                                                value={scannedItems.find(a => a.Id === frame.Id)?.quantity || 1}
+                                                onChange={(e) => updateScannedItemQuantity(frame.Id, e.target.value)}
                                                 className="w-20 px-2 py-1 border rounded"
                                             />
                                         </TableCell>
@@ -1808,8 +3205,141 @@ export default function SavePurchaseOrder() {
                                 )}
                             />
                         )}
-                        {console.log("searchResults ------------- ", searchResults)}
-                        {(showSearchInputs && searchResults.length > 0) && (
+
+                        {/* Frame search result */}
+                        {OLData && (
+                            <Table
+                                columns={["Barcode", "Spherical Power", "Cylindrical Power", "Buying Price", "PO QTY", "Action"]}
+                                data={scannedItems}
+                                renderRow={(ol, index) => (
+                                    <TableRow key={index}>
+                                        <TableCell>{ol.Barcode}</TableCell>
+                                        <TableCell>{ol.Spherical}</TableCell>
+                                        <TableCell>{ol.Cylinder}</TableCell>
+                                        <TableCell>₹{" "}
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                step="0.01"
+                                                value={scannedItems.find(a => a.Id === ol.Id)?.price || ol.BuyingPrice}
+                                                onChange={(e) => updateScannedItemPrice(ol.Id, e.target.value)}
+                                                className="w-30 px-2 py-1 border rounded"
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                value={scannedItems.find(a => a.Id === ol.Id)?.quantity || 1}
+                                                onChange={(e) => updateScannedItemQuantity(ol.Id, e.target.value)}
+                                                className="w-20 px-2 py-1 border rounded"
+                                            />
+                                        </TableCell>
+                                        <TableCell className="px-6 py-4 whitespace-nowrap">
+                                            <button
+                                                className="p-1 text-red-600 hover:text-red-800 "
+                                                aria-label="Delete item"
+                                            >
+                                                <Trash2 className="h-5 w-5" />
+                                            </button>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            />
+                        )}
+
+                        {/* Accessory search result */}
+                        {AccessoriesData && (
+                            <Table
+                                columns={["Barcode", "Name", "Variation", "SKU Code", "MRP", "Buying Price", "PO QTY", "Action"]}
+                                data={scannedItems}
+                                renderRow={(acc, index) => (
+                                    <TableRow key={index}>
+                                        <TableCell>{acc.Barcode}</TableCell>
+                                        <TableCell>{acc.Name}</TableCell>
+                                        <TableCell>{acc.Variation}</TableCell>
+                                        <TableCell>{acc.SKU}</TableCell>
+                                        <TableCell>₹{acc.MRP}</TableCell>
+                                        <TableCell>₹{" "}
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                step="0.01"
+                                                value={scannedItems.find(item => item.Id === acc.Id)?.price || acc.BuyingPrice}
+                                                onChange={(e) => updateScannedItemPrice(acc.Id, e.target.value)}
+                                                className="w-30 px-2 py-1 border rounded"
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                value={scannedItems.find(item => item.Id === acc.Id)?.quantity || 1}
+                                                onChange={(e) => updateScannedItemQuantity(acc.Id, e.target.value)}
+                                                className="w-20 px-2 py-1 border rounded"
+                                            />
+                                        </TableCell>
+                                        <TableCell className="px-6 py-4 whitespace-nowrap">
+                                            <button
+                                                className="p-1 text-red-600 hover:text-red-800 "
+                                                aria-label="Delete item"
+                                            >
+                                                <Trash2 className="h-5 w-5" />
+                                            </button>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            />
+                        )}
+
+                        {console.log("scannedItems ----------------- ", scannedItems)}
+                        {/* Accessory search result */}
+                        {CLData && (
+                            <Table
+                                columns={["Barcode", "Spherical power", "Cylindrical power", "Axis", "Additional", "Buying Price", "PO QTY", "Action"]}
+                                data={scannedItems}
+                                renderRow={(cl, index) => (
+                                    <TableRow key={index}>
+                                        <TableCell>{cl.Barcode}</TableCell>
+                                        <TableCell>{cl.SphericalPower}</TableCell>
+                                        <TableCell>{cl.CylindricalPower}</TableCell>
+                                        <TableCell>{cl.Axis}</TableCell>
+                                        <TableCell>{cl.Additional}</TableCell>
+                                        <TableCell>₹{" "}
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                step="0.01"
+                                                value={scannedItems.find(item => item.CLDetailId === cl.CLDetailId)?.price || cl.BuyingPrice}
+                                                onChange={(e) => updateScannedItemPrice(cl.CLDetailId, e.target.value)}
+                                                className="w-30 px-2 py-1 border rounded"
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                value={scannedItems.find(item => item.CLDetailId === cl.CLDetailId)?.quantity || 1}
+                                                onChange={(e) => updateScannedItemQuantity(cl.CLDetailId, e.target.value)}
+                                                className="w-20 px-2 py-1 border rounded"
+                                            />
+                                        </TableCell>
+                                        <TableCell className="px-6 py-4 whitespace-nowrap">
+                                            <button
+                                                className="p-1 text-red-600 hover:text-red-800 "
+                                                aria-label="Delete item"
+                                            >
+                                                <Trash2 className="h-5 w-5" />
+                                            </button>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            />
+                        )}
+
+
+                        {/* {console.log("searchResults ------------- ", searchResults)} */}
+                        {(showSearchInputs && searchResults.length > 0 && formState.selectedOption === "Frame/Sunglass") && (
                             <Table
                                 columns={["", "Barcode", "Name", "S/O", "Polarised", "Photochromatic", "Clip No", "MRP", "Buying Price"]}
                                 data={searchResults}
@@ -1833,7 +3363,32 @@ export default function SavePurchaseOrder() {
                                         <TableCell className="text-center">{frame.Ph ? "Yes" : "No"}</TableCell>
                                         <TableCell className="text-center">{frame.Cl}</TableCell>
                                         <TableCell>₹{frame.MRP}</TableCell>
-                                        <TableCell>{frame.SellingPrice}</TableCell>
+                                        <TableCell>{frame.BuyingPrice}</TableCell>
+                                    </TableRow>
+                                )}
+                            />
+                        )}
+
+                        {(showSearchInputs && searchResults.length > 0 && formState.selectedOption === "Accessories") && (
+                            <Table
+                                columns={["", "Barcode", "Name", "Variation", "SKU Code", "Buying Price"]}
+                                data={searchResults}
+                                renderRow={(acc, index) => (
+                                    <TableRow key={acc.barcode}>
+                                        <TableCell>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedRows.some(
+                                                    (i) => i.Barcode === acc.Barcode
+                                                )}
+                                                onChange={() => handleCheckboxChange(acc)}
+                                            />
+                                        </TableCell>
+                                        <TableCell>{acc.Barcode}</TableCell>
+                                        <TableCell>{acc.Name}</TableCell>
+                                        <TableCell>{acc.Variation}</TableCell>
+                                        <TableCell>{acc.SKU}</TableCell>
+                                        <TableCell>{acc.BuyingPrice}</TableCell>
                                     </TableRow>
                                 )}
                             />
@@ -1913,277 +3468,443 @@ export default function SavePurchaseOrder() {
                         </div>
 
                         <div className="overflow-auto rounded-lg shadow">
-                            <table className="min-w-full divide-y divide-neutral-200">
-                                <thead className="bg-blue-50"> {/* bg-blue-50 */}
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">SL No.</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Order No.</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Product Type</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Product Details</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Buying Price</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Order Qty</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">PO Qty</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Avl. Qty</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Total Amount</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {poreviewDetails
-                                        // .filter(order => selectedOrders.includes(order.orderDetailId))
-                                        .map((order, index) => (
-                                            <tr key={order.id}>
-                                                <td className="px-6 py-4 whitespace-nowrap">{index + 1}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">{order.orderPrefix}/{order.orderNo}/{order.slNo}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">{order.productType == 0 && `OL` || order.productType == 1 && `F` || order.productType == 2 && `Acc` || order.productType == 3 && `CL`}</td>
-                                                {order.productType == 0 &&
-                                                    <td className="px-6 py-4 whitespace-wrap min-w-72">{order?.productDescName}
-                                                        {/* R Row */}
-                                                        {(order?.specs?.powerDetails?.right?.sphericalPower ||
-                                                            order?.specs?.powerDetails?.right?.cylindricalPower ||
-                                                            order?.specs?.powerDetails?.right?.axis ||
-                                                            order?.specs?.powerDetails?.right?.additional) && (
-                                                                <>
-                                                                    <br />
-                                                                    R: {order?.specs?.powerDetails?.right?.sphericalPower &&
-                                                                        `SPH: ${order?.specs?.powerDetails?.right?.sphericalPower > 0
-                                                                            ? `+${order?.specs?.powerDetails?.right?.sphericalPower}`
-                                                                            : order?.specs?.powerDetails?.right?.sphericalPower}`}
-                                                                    {order?.specs?.powerDetails?.right?.cylindricalPower &&
-                                                                        ` CYL: ${order?.specs?.powerDetails?.right?.cylindricalPower > 0
-                                                                            ? `+${order?.specs?.powerDetails?.right?.cylindricalPower}`
-                                                                            : order?.specs?.powerDetails?.right?.cylindricalPower}`}
-                                                                    {order?.specs?.powerDetails?.right?.axis &&
-                                                                        ` Axis: ${order?.specs?.powerDetails?.right?.axis}`}
-                                                                    {order?.specs?.powerDetails?.right?.additional &&
-                                                                        ` Add: ${order?.specs?.powerDetails?.right?.additional > 0
-                                                                            ? `+${order?.specs?.powerDetails?.right?.additional}`
-                                                                            : order?.specs?.powerDetails?.right?.additional}`}
-                                                                </>
-                                                            )}
+                            {formState.shiptoAddress === "against" ? (
+                                <table className="min-w-full divide-y divide-neutral-200">
+                                    <thead className="bg-blue-50"> {/* bg-blue-50 */}
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">SL No.</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Order No.</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Product Type</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Product Details</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Buying Price</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Order Qty</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">PO Qty</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Avl. Qty</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Total Amount</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {poreviewDetails
+                                            .map((order, index) => (
+                                                <tr key={order.id}>
+                                                    <td className="px-6 py-4 whitespace-nowrap">{index + 1}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">{order.orderPrefix}/{order.orderNo}/{order.slNo}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">{order.productType == 0 && `OL` || order.productType == 1 && `F` || order.productType == 2 && `Acc` || order.productType == 3 && `CL`}</td>
+                                                    {order.productType == 0 &&
+                                                        <td className="px-6 py-4 whitespace-wrap min-w-72">{order?.productDescName}
+                                                            {/* R Row */}
+                                                            {(order?.specs?.powerDetails?.right?.sphericalPower ||
+                                                                order?.specs?.powerDetails?.right?.cylindricalPower ||
+                                                                order?.specs?.powerDetails?.right?.axis ||
+                                                                order?.specs?.powerDetails?.right?.additional) && (
+                                                                    <>
+                                                                        <br />
+                                                                        R: {order?.specs?.powerDetails?.right?.sphericalPower &&
+                                                                            `SPH: ${order?.specs?.powerDetails?.right?.sphericalPower > 0
+                                                                                ? `+${order?.specs?.powerDetails?.right?.sphericalPower}`
+                                                                                : order?.specs?.powerDetails?.right?.sphericalPower}`}
+                                                                        {order?.specs?.powerDetails?.right?.cylindricalPower &&
+                                                                            ` CYL: ${order?.specs?.powerDetails?.right?.cylindricalPower > 0
+                                                                                ? `+${order?.specs?.powerDetails?.right?.cylindricalPower}`
+                                                                                : order?.specs?.powerDetails?.right?.cylindricalPower}`}
+                                                                        {order?.specs?.powerDetails?.right?.axis &&
+                                                                            ` Axis: ${order?.specs?.powerDetails?.right?.axis}`}
+                                                                        {order?.specs?.powerDetails?.right?.additional &&
+                                                                            ` Add: ${order?.specs?.powerDetails?.right?.additional > 0
+                                                                                ? `+${order?.specs?.powerDetails?.right?.additional}`
+                                                                                : order?.specs?.powerDetails?.right?.additional}`}
+                                                                    </>
+                                                                )}
 
-                                                        {/* L Row */}
-                                                        {(order?.specs?.powerDetails?.left?.sphericalPower ||
-                                                            order?.specs?.powerDetails?.left?.cylindricalPower ||
-                                                            order?.specs?.powerDetails?.left?.axis ||
-                                                            order?.specs?.powerDetails?.left?.additional) && (
-                                                                <>
-                                                                    <br />
-                                                                    L: {order?.specs?.powerDetails?.left?.sphericalPower &&
-                                                                        `SPH: ${order?.specs?.powerDetails?.left?.sphericalPower > 0
-                                                                            ? `+${order?.specs?.powerDetails?.left?.sphericalPower}`
-                                                                            : order?.specs?.powerDetails?.left?.sphericalPower}`}
-                                                                    {order?.specs?.powerDetails?.left?.cylindricalPower &&
-                                                                        ` CYL: ${order?.specs?.powerDetails?.left?.cylindricalPower > 0
-                                                                            ? `+${order?.specs?.powerDetails?.left?.cylindricalPower}`
-                                                                            : order?.specs?.powerDetails?.left?.cylindricalPower}`}
-                                                                    {order?.specs?.powerDetails?.left?.axis &&
-                                                                        ` Axis: ${order?.specs?.powerDetails?.left?.axis}`}
-                                                                    {order?.specs?.powerDetails?.left?.additional &&
-                                                                        ` Add: ${order?.specs?.powerDetails?.left?.additional > 0
-                                                                            ? `+${order?.specs?.powerDetails?.left?.additional}`
-                                                                            : order?.specs?.powerDetails?.left?.additional}`}
-                                                                </>
-                                                            )}
+                                                            {/* L Row */}
+                                                            {(order?.specs?.powerDetails?.left?.sphericalPower ||
+                                                                order?.specs?.powerDetails?.left?.cylindricalPower ||
+                                                                order?.specs?.powerDetails?.left?.axis ||
+                                                                order?.specs?.powerDetails?.left?.additional) && (
+                                                                    <>
+                                                                        <br />
+                                                                        L: {order?.specs?.powerDetails?.left?.sphericalPower &&
+                                                                            `SPH: ${order?.specs?.powerDetails?.left?.sphericalPower > 0
+                                                                                ? `+${order?.specs?.powerDetails?.left?.sphericalPower}`
+                                                                                : order?.specs?.powerDetails?.left?.sphericalPower}`}
+                                                                        {order?.specs?.powerDetails?.left?.cylindricalPower &&
+                                                                            ` CYL: ${order?.specs?.powerDetails?.left?.cylindricalPower > 0
+                                                                                ? `+${order?.specs?.powerDetails?.left?.cylindricalPower}`
+                                                                                : order?.specs?.powerDetails?.left?.cylindricalPower}`}
+                                                                        {order?.specs?.powerDetails?.left?.axis &&
+                                                                            ` Axis: ${order?.specs?.powerDetails?.left?.axis}`}
+                                                                        {order?.specs?.powerDetails?.left?.additional &&
+                                                                            ` Add: ${order?.specs?.powerDetails?.left?.additional > 0
+                                                                                ? `+${order?.specs?.powerDetails?.left?.additional}`
+                                                                                : order?.specs?.powerDetails?.left?.additional}`}
+                                                                    </>
+                                                                )}
 
-                                                        {order?.specs?.addOn?.addOnId && (<><br /> <span className="font-medium">AddOn: {order?.specs?.addOn?.addOnName}</span></>)}
-                                                        {order?.specs?.tint?.tintCode && (<><br /><span className="font-medium">Tint: {order?.specs?.tint?.tintName}</span></>)}
-                                                        {order?.hSN && (<><br /><span className="font-medium">HSN: {order?.hSN}</span></>)}
-                                                    </td>
-                                                }
-                                                {order.productType == 1 &&
-                                                    <td className="px-6 py-4 whitespace-wrap">{order?.productDescName}
-                                                        <br></br>{order?.size}-{order?.dBL}-{order?.templeLength}
-                                                        <br></br>{order?.category === 0 ? `Sunglass` : `OpticalFrame`}
-                                                        <br></br>{order?.barcode && `Barcode: ` + order?.barcode}
-                                                        <br></br>{order?.hSN && `HSN: ` + order?.hSN}
-                                                    </td>
-                                                }
-                                                {order.productType == 2 &&
-                                                    <td className="px-6 py-4 whitespace-wrap">{order?.productDescName}
-                                                        {order?.variationName && (<><br />Variation: {order?.variationName}</>)}
-                                                        {order?.barcode && (<><br />Barcode: {order?.barcode}</>)}
-                                                        {order?.hSN && (<><br />HSN: {order?.hSN}</>)}
-                                                    </td>
-                                                }
-                                                {order.productType == 3 &&
-                                                    <td className="px-6 py-4 whitespace-wrap">{order?.productDescName}
-                                                        <br></br>{order?.sphericalPower && (`Sph: ` + (order?.sphericalPower > 0 ? `+` + order?.sphericalPower : order?.sphericalPower))}
-                                                        {order?.cylindricalPower && (` Cyld: ` + (order?.cylindricalPower > 0 ? `+` + order?.cylindricalPower : order?.cylindricalPower))}
-                                                        {order?.axis && (` Axis: ` + (order?.axis))}
-                                                        {order?.additional && (` Add: ` + (order?.additional > 0 ? `+` + order?.additional : order?.additional))}
-                                                        {order?.color && (<><br />Clr: {order?.color > 0}</>)}
-                                                        {order?.barcode && (<><br />Barcode: {order?.barcode}</>)}
-                                                        {order?.hSN && (<><br />HSN: {order?.hSN}</>)}
-                                                    </td>
-                                                }
-                                                {order.productType == 3 ?
-                                                    <td className="px-6 py-4 whitespace-nowrap">{order.poPrice ?? order?.priceMaster?.buyingPrice}
+                                                            {order?.specs?.addOn?.addOnId && (<><br /> <span className="font-medium">AddOn: {order?.specs?.addOn?.addOnName}</span></>)}
+                                                            {order?.specs?.tint?.tintCode && (<><br /><span className="font-medium">Tint: {order?.specs?.tint?.tintName}</span></>)}
+                                                            {order?.hSN && (<><br /><span className="font-medium">HSN: {order?.hSN}</span></>)}
+                                                        </td>
+                                                    }
+                                                    {order.productType == 1 &&
+                                                        <td className="px-6 py-4 whitespace-wrap">{order?.productDescName}
+                                                            <br></br>{order?.size}-{order?.dBL}-{order?.templeLength}
+                                                            <br></br>{order?.category === 0 ? `Sunglass` : `OpticalFrame`}
+                                                            <br></br>{order?.barcode && `Barcode: ` + order?.barcode}
+                                                            <br></br>{order?.hSN && `HSN: ` + order?.hSN}
+                                                        </td>
+                                                    }
+                                                    {order.productType == 2 &&
+                                                        <td className="px-6 py-4 whitespace-wrap">{order?.productDescName}
+                                                            {order?.variationName && (<><br />Variation: {order?.variationName}</>)}
+                                                            {order?.barcode && (<><br />Barcode: {order?.barcode}</>)}
+                                                            {order?.hSN && (<><br />HSN: {order?.hSN}</>)}
+                                                        </td>
+                                                    }
+                                                    {order.productType == 3 &&
+                                                        <td className="px-6 py-4 whitespace-wrap">{order?.productDescName}
+                                                            <br></br>{order?.sphericalPower && (`Sph: ` + (order?.sphericalPower > 0 ? `+` + order?.sphericalPower : order?.sphericalPower))}
+                                                            {order?.cylindricalPower && (` Cyld: ` + (order?.cylindricalPower > 0 ? `+` + order?.cylindricalPower : order?.cylindricalPower))}
+                                                            {order?.axis && (` Axis: ` + (order?.axis))}
+                                                            {order?.additional && (` Add: ` + (order?.additional > 0 ? `+` + order?.additional : order?.additional))}
+                                                            {order?.color && (<><br />Clr: {order?.color > 0}</>)}
+                                                            {order?.barcode && (<><br />Barcode: {order?.barcode}</>)}
+                                                            {order?.hSN && (<><br />HSN: {order?.hSN}</>)}
+                                                        </td>
+                                                    }
+                                                    {order.productType == 3 ?
+                                                        <td className="px-6 py-4 whitespace-nowrap">{order.poPrice ?? order?.priceMaster?.buyingPrice}
+                                                            <button
+                                                                onClick={() => handleEditPriceClick(order)}
+                                                                className="ml-2 text-gray-500 hover:text-[#000060]"
+                                                            >
+                                                                <PenIcon className="w-4 h-4" />
+                                                            </button>
+                                                        </td>
+                                                        :
+                                                        <td className="px-6 py-4 whitespace-nowrap">{order.poPrice ?? order?.pricing?.buyingPrice}
+                                                            <button
+                                                                onClick={() => handleEditPriceClick(order)}
+                                                                className="ml-2 text-gray-500 hover:text-[#000060]"
+                                                            >
+                                                                <PenIcon className="w-4 h-4" />
+                                                            </button>
+                                                        </td>
+
+                                                    }
+                                                    <td className="px-6 py-4 whitespace-nowrap">{order?.orderQty}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">{order.poQty ?? order?.orderQty - order?.billedQty - order?.cancelledQty}
                                                         <button
-                                                            onClick={() => handleEditPriceClick(order)}
+                                                            onClick={() => handleEditQtyClick(order)}
                                                             className="ml-2 text-gray-500 hover:text-[#000060]"
                                                         >
                                                             <PenIcon className="w-4 h-4" />
                                                         </button>
                                                     </td>
-                                                    :
-                                                    <td className="px-6 py-4 whitespace-nowrap">{order.poPrice ?? order?.pricing?.buyingPrice}
+                                                    {order.productType == 3 ?
+                                                        // logic for sum of quantities in stock
+                                                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                            {order?.stock.reduce((total, item) => total + item.quantity, 0)}
+                                                        </td>
+                                                        :
+                                                        <td className="px-6 py-4 whitespace-nowrap text-center">{order?.pricing?.quantity}</td>
+                                                    }
+                                                    {/* // In the table cell where Total Amount is displayed: */}
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {order.productType == 0 ? (
+                                                            // Optical Lens calculation
+                                                            (() => {
+                                                                const bothLens = order?.specs?.powerDetails?.bothLens === 1;
+                                                                const buyingPrice = parseFloat(order?.pricing?.buyingPrice || 0);
+                                                                // Use poQty instead of orderQty for calculation
+                                                                const poQty = parseInt(order.poQty || (order.orderQty - order.billedQty - order.cancelledQty), 10);
+
+                                                                // Tint buying price
+                                                                const tintBuying =
+                                                                    parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) || 0;
+
+                                                                // Sum of addon buying prices
+                                                                const addonBuying = Array.isArray(order?.specs?.addOn)
+                                                                    ? order.specs.addOn.reduce(
+                                                                        (sum, add) => sum + (parseFloat(add?.addOnBuyingPrice || 0) || 0),
+                                                                        0
+                                                                    )
+                                                                    : parseFloat(order?.specs?.addOn?.addOnBuyingPrice || 0) || 0;
+
+                                                                // Calculate base
+                                                                let total;
+                                                                if (bothLens) {
+                                                                    total = buyingPrice * poQty + tintBuying + addonBuying;
+                                                                } else {
+                                                                    total =
+                                                                        buyingPrice * poQty + tintBuying / 2 + addonBuying / 2;
+                                                                }
+
+                                                                // Add tax
+                                                                const totalWithTax =
+                                                                    total + total * (parseFloat(order?.taxPercentage) / 100 || 0);
+
+                                                                return totalWithTax.toFixed(2);
+                                                            })()
+                                                        ) : order.productType === 3 ? (
+                                                            (
+                                                                (order?.priceMaster?.buyingPrice * (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty)) +
+                                                                (order?.priceMaster?.buyingPrice *
+                                                                    (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty) *
+                                                                    (order?.taxPercentage / 100))
+                                                            ).toFixed(2)
+                                                        ) : (
+                                                            // Default calculation
+                                                            (
+                                                                (order?.pricing?.buyingPrice * (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty)) +
+                                                                (order?.pricing?.buyingPrice *
+                                                                    (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty) *
+                                                                    (order?.taxPercentage / 100))
+                                                            ).toFixed(2)
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
                                                         <button
-                                                            onClick={() => handleEditPriceClick(order)}
+                                                            onClick={() => {
+                                                                setOrderToRemove(order.poDetailId);
+                                                                setShowRemoveModal(true);
+                                                            }}
+                                                            className="text-red-600 hover:text-red-800"
+                                                        >
+                                                            <Trash2 className="h-5 w-5" />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <table className="min-w-full divide-y divide-neutral-200">
+                                    <thead className="bg-blue-50"> {/* bg-blue-50 */}
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">SL No.</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Product Type</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Barcode</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Product Details</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Buying Price</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">PO Qty</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Avl. Qty</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Total Amount</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {console.log("poreviewDetails ---------- BHSBS", poreviewDetails)}
+                                        {poreviewDetails
+                                            .map((order, index) => (
+                                                <tr key={index}>
+                                                    <td className="px-6 py-4 whitespace-nowrap">{index + 1}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.ProductType == 0 && `OL` || order?.ProductDetails?.ProductType == 1 && `F` || order?.ProductDetails?.ProductType == 2 && `Acc` || order?.ProductDetails?.ProductType == 3 && `CL`}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.barcode}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.productName}
+                                                        <br />{order?.ProductDetails?.hsncode ? `HSN: ` + order?.ProductDetails?.hsncode : null}
+                                                    </td>
+                                                    {order?.ProductDetails?.ProductType == 3 ?
+                                                        <td className="px-6 py-4 whitespace-nowrap">{order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice}
+                                                            <button
+                                                                onClick={() => handleEditPriceClick(order)}
+                                                                className="ml-2 text-gray-500 hover:text-[#000060]"
+                                                            >
+                                                                <PenIcon className="w-4 h-4" />
+                                                            </button>
+                                                        </td>
+                                                        :
+                                                        <td className="px-6 py-4 whitespace-nowrap">{order?.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice}
+                                                            <button
+                                                                onClick={() => handleEditPriceClick(order)}
+                                                                className="ml-2 text-gray-500 hover:text-[#000060]"
+                                                            >
+                                                                <PenIcon className="w-4 h-4" />
+                                                            </button>
+                                                        </td>
+
+                                                    }
+                                                    <td className="px-6 py-4 whitespace-nowrap">{order?.poQty ?? order?.POQty}
+                                                        <button
+                                                            onClick={() => handleEditQtyClick(order)}
                                                             className="ml-2 text-gray-500 hover:text-[#000060]"
                                                         >
                                                             <PenIcon className="w-4 h-4" />
                                                         </button>
                                                     </td>
 
-                                                }
-                                                <td className="px-6 py-4 whitespace-nowrap">{order?.orderQty}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">{order.poQty ?? order?.orderQty - order?.billedQty - order?.cancelledQty}
-                                                    <button
-                                                        onClick={() => handleEditQtyClick(order)}
-                                                        className="ml-2 text-gray-500 hover:text-[#000060]"
-                                                    >
-                                                        <PenIcon className="w-4 h-4" />
-                                                    </button>
-                                                </td>
-                                                {order.productType == 3 ?
-                                                    // logic for sum of quantities in stock
-                                                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                        {order?.stock.reduce((total, item) => total + item.quantity, 0)}
+                                                    <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.Stock?.Quantity}</td>
+
+                                                    {/* // In the table cell where Total Amount is displayed: */}
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {order?.ProductDetails?.ProductType === 3 ? (
+                                                            (
+                                                                ((order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) * (order.poQty ?? order?.POQty)) +
+                                                                ((order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) *
+                                                                    (order.poQty ?? order?.POQty) *
+                                                                    (order?.ProductDetails?.GSTPercentage / 100))
+                                                            ).toFixed(2)
+                                                        ) : (
+                                                            // Default calculation
+                                                            (
+                                                                ((order?.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) * (order.poQty ?? order?.POQty)) +
+                                                                ((order?.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) *
+                                                                    (order.poQty ?? order?.POQty) *
+                                                                    (order?.ProductDetails?.GSTPercentage / 100))
+                                                            ).toFixed(2)
+                                                        )}
                                                     </td>
-                                                    :
-                                                    <td className="px-6 py-4 whitespace-nowrap text-center">{order?.pricing?.quantity}</td>
-                                                }
-                                                {/* // In the table cell where Total Amount is displayed: */}
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {order.productType == 0 ? (
-                                                        // Optical Lens calculation
-                                                        (() => {
-                                                            const bothLens = order?.specs?.powerDetails?.bothLens === 1;
-                                                            const buyingPrice = parseFloat(order?.pricing?.buyingPrice || 0);
-                                                            // Use poQty instead of orderQty for calculation
-                                                            const poQty = parseInt(order.poQty || (order.orderQty - order.billedQty - order.cancelledQty), 10);
-
-                                                            // Tint buying price
-                                                            const tintBuying =
-                                                                parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) || 0;
-
-                                                            // Sum of addon buying prices
-                                                            const addonBuying = Array.isArray(order?.specs?.addOn)
-                                                                ? order.specs.addOn.reduce(
-                                                                    (sum, add) => sum + (parseFloat(add?.addOnBuyingPrice || 0) || 0),
-                                                                    0
-                                                                )
-                                                                : parseFloat(order?.specs?.addOn?.addOnBuyingPrice || 0) || 0;
-
-                                                            // Calculate base
-                                                            let total;
-                                                            if (bothLens) {
-                                                                total = buyingPrice * poQty + tintBuying + addonBuying;
-                                                            } else {
-                                                                total =
-                                                                    buyingPrice * poQty + tintBuying / 2 + addonBuying / 2;
-                                                            }
-
-                                                            // Add tax
-                                                            const totalWithTax =
-                                                                total + total * (parseFloat(order?.taxPercentage) / 100 || 0);
-
-                                                            return totalWithTax.toFixed(2);
-                                                        })()
-                                                    ) : order.productType === 3 ? (
-                                                        (
-                                                            (order?.priceMaster?.buyingPrice * (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty)) +
-                                                            (order?.priceMaster?.buyingPrice *
-                                                                (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty) *
-                                                                (order?.taxPercentage / 100))
-                                                        ).toFixed(2)
-                                                    ) : (
-                                                        // Default calculation
-                                                        (
-                                                            (order?.pricing?.buyingPrice * (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty)) +
-                                                            (order?.pricing?.buyingPrice *
-                                                                (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty) *
-                                                                (order?.taxPercentage / 100))
-                                                        ).toFixed(2)
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <button
-                                                        onClick={() => {
-                                                            setOrderToRemove(order.poDetailId);
-                                                            setShowRemoveModal(true);
-                                                        }}
-                                                        className="text-red-600 hover:text-red-800"
-                                                    >
-                                                        <Trash2 className="h-5 w-5" />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                </tbody>
-                            </table>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <button
+                                                            onClick={() => {
+                                                                setOrderToRemove(order.poDetailId);
+                                                                setShowRemoveModal(true);
+                                                            }}
+                                                            className="text-red-600 hover:text-red-800"
+                                                        >
+                                                            <Trash2 className="h-5 w-5" />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                    </tbody>
+                                </table>
+                            )}
                         </div>
 
                         {/* Calculation Summary Section */}
-                        <div className="flex mt-10 justify-between px-5 rounded-2xl shadow p-8">
+                        {formState.shiptoAddress === "against" ?
+                            (<div className="flex mt-10 justify-between px-5 rounded-2xl shadow p-8">
 
-                            <div className="flex justify-between gap-4">
-                                <span className="text-gray-600 font-bold text-lg">Total Quantity :</span>
-                                <span className="font-bold text-lg">
-                                    {poreviewDetails
-                                        .reduce((total, order) => total + (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty), 0)}
-                                </span>
-                            </div>
+                                <div className="flex justify-between gap-4">
+                                    <span className="text-gray-600 font-bold text-lg">Total Quantity :</span>
+                                    <span className="font-bold text-lg">
+                                        {poreviewDetails
+                                            .reduce((total, order) => total + (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty), 0)}
+                                    </span>
+                                </div>
 
-                            <div className="flex justify-between gap-4">
-                                <span className="text-gray-600 font-bold text-lg">Total Gross Value :</span>
-                                <span className="font-bold text-lg">
-                                    ₹{
-                                        poreviewDetails
+                                <div className="flex justify-between gap-4">
+                                    <span className="text-gray-600 font-bold text-lg">Total Gross Value :</span>
+                                    <span className="font-bold text-lg">
+                                        ₹{
+                                            poreviewDetails
+                                                .reduce((total, order) => {
+                                                    const quantity = order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty;
+                                                    const price = order.productType === 3
+                                                        ? parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0
+                                                        : parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
+
+                                                    // Ensure both price and quantity are valid numbers
+                                                    if (price && !isNaN(price) && !isNaN(quantity)) {
+                                                        return total + (price * quantity);
+                                                    }
+                                                    return total;
+                                                }, 0)
+                                                ?.toFixed?.(2) ?? '0.00'
+                                        }
+                                    </span>
+                                </div>
+
+                                <div className="flex justify-between gap-4">
+                                    <span className="text-gray-600 font-bold text-lg">Total GST :</span>
+                                    <span className="font-bold text-lg">
+                                        ₹{poreviewDetails
                                             .reduce((total, order) => {
                                                 const quantity = order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty;
                                                 const price = order.productType === 3
                                                     ? parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0
                                                     : parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
-
-                                                // Ensure both price and quantity are valid numbers
+                                                const taxPercentage = parseFloat(order.taxPercentage / 100) || 0;
                                                 if (price && !isNaN(price) && !isNaN(quantity)) {
-                                                    return total + (price * quantity);
+                                                    return total + (price * quantity * taxPercentage);
                                                 }
                                                 return total;
                                             }, 0)
-                                            ?.toFixed?.(2) ?? '0.00'
-                                    }
-                                </span>
-                            </div>
+                                            ?.toFixed?.(2) ?? '0.00'}
+                                    </span>
+                                </div>
 
-                            <div className="flex justify-between gap-4">
-                                <span className="text-gray-600 font-bold text-lg">Total GST :</span>
-                                <span className="font-bold text-lg">
-                                    ₹{poreviewDetails
-                                        .reduce((total, order) => {
-                                            const quantity = order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty;
-                                            const price = order.productType === 3
-                                                ? parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0
-                                                : parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
-                                            const taxPercentage = parseFloat(order.taxPercentage / 100) || 0;
-                                            if (price && !isNaN(price) && !isNaN(quantity)) {
-                                                return total + (price * quantity * taxPercentage);
+                                <div className="flex justify-between gap-4">
+                                    <span className="text-gray-600 font-bold text-lg">Total Net Value :</span>
+                                    <span className="font-bold text-lg">
+                                        ₹{calculateTotalAmount().toFixed(2)}
+                                    </span>
+                                </div>
+                            </div>
+                            ) : (
+                                <div className="flex mt-10 justify-between px-5 rounded-2xl shadow p-8">
+
+                                    <div className="flex justify-between gap-4">
+                                        <span className="text-gray-600 font-bold text-lg">Total Quantity :</span>
+                                        <span className="font-bold text-lg">
+                                            {poreviewDetails
+                                                .reduce((total, order) => total + (order.poQty ?? order.POQty), 0)}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex justify-between gap-4">
+                                        <span className="text-gray-600 font-bold text-lg">Total Gross Value :</span>
+                                        <span className="font-bold text-lg">
+                                            ₹{
+                                                poreviewDetails
+                                                    .reduce((total, order) => {
+                                                        const quantity = order.poQty ?? order.POQty;
+                                                        const price = order?.ProductDetails?.ProductType === 3
+                                                            ? parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0
+                                                            : parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
+
+                                                        // Ensure both price and quantity are valid numbers
+                                                        if (price && !isNaN(price) && !isNaN(quantity)) {
+                                                            return total + (price * quantity);
+                                                        }
+                                                        return total;
+                                                    }, 0)
+                                                    ?.toFixed?.(2) ?? '0.00'
                                             }
-                                            return total;
-                                        }, 0)
-                                        ?.toFixed?.(2) ?? '0.00'}
-                                </span>
-                            </div>
+                                        </span>
+                                    </div>
 
-                            <div className="flex justify-between gap-4">
-                                <span className="text-gray-600 font-bold text-lg">Total Net Value :</span>
-                                <span className="font-bold text-lg">
-                                    ₹{calculateTotalAmount().toFixed(2)}
-                                </span>
-                            </div>
-                        </div>
+                                    <div className="flex justify-between gap-4">
+                                        <span className="text-gray-600 font-bold text-lg">Total GST :</span>
+                                        <span className="font-bold text-lg">
+                                            ₹{poreviewDetails
+                                                .reduce((total, order) => {
+                                                    const quantity = order.poQty ?? order.POQty;
+                                                    const price = order?.ProductDetails?.ProductType === 3
+                                                        ? parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0
+                                                        : parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
+                                                    const taxPercentage = parseFloat(order?.ProductDetails?.GSTPercentage / 100) || 0;
+                                                    if (price && !isNaN(price) && !isNaN(quantity)) {
+                                                        return total + (price * quantity * taxPercentage);
+                                                    }
+                                                    return total;
+                                                }, 0)
+                                                ?.toFixed?.(2) ?? '0.00'}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex justify-between gap-4">
+                                        <span className="text-gray-600 font-bold text-lg">Total Net Value :</span>
+                                        <span className="font-bold text-lg">
+                                            ₹{poreviewDetails
+                                                .reduce((total, order) => {
+                                                    const quantity = order.poQty ?? order.POQty;
+                                                    const price = order?.ProductDetails?.ProductType === 3
+                                                        ? parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0
+                                                        : parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
+                                                    const taxPercentage = parseFloat(order?.ProductDetails?.GSTPercentage / 100) || 0;
+                                                    if (price && !isNaN(price) && !isNaN(quantity)) {
+                                                        return total + ((price * quantity) + (price * quantity * taxPercentage));
+                                                    }
+                                                    return total;
+                                                }, 0)
+                                                ?.toFixed?.(2) ?? '0.00'
+                                            }
+                                        </span>
+                                    </div>
+                                </div>)
+                        }
 
                         <div className="flex items-center justify-between mt-10 mb-5 w-full">
                             {/* Remarks Section - takes available space */}
@@ -2434,4 +4155,55 @@ export default function SavePurchaseOrder() {
             }
         </>
     );
+};
+
+const AutocompleteField = ({
+    label,
+    options,
+    valueField,
+    labelField,
+    value,
+    onChange,
+    loading,
+    disabled = false,
+}) => {
+    return (
+        <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">{label}</label>
+            <Autocomplete
+                options={options}
+                getOptionLabel={(option) => getNested(option, labelField) || ""}
+                value={options.find((o) => getNested(o, valueField) === value) || null}
+                onChange={(_, newValue) =>
+                    onChange(getNested(newValue, valueField), newValue)
+                }
+                renderInput={(params) => (
+                    <TextField
+                        {...params}
+                        placeholder={`Select ${label}`}
+                        size="small"
+                        disabled={disabled}
+                    />
+                )}
+                loading={loading}
+                fullWidth
+                disabled={disabled}
+            />
+        </div>
+    );
+};
+
+// Utility to safely access nested values
+const getNested = (obj, path) =>
+    path.split(".").reduce((o, p) => (o ? o[p] : ""), obj);
+
+// Deduplicate based on nested key
+const deduplicateOptions = (options, keyPath) => {
+    const seen = new Set();
+    return options.filter((item) => {
+        const key = getNested(item, keyPath);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
 };

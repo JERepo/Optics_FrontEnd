@@ -19,7 +19,7 @@ export const purchaseOrderApi = createApi({
             query: (payload) => ({
                 url: `/api/v1/purchase-order/create-details`,
                 method: 'POST',
-                body: { orderDetails: payload}
+                body: { orderDetails: payload }
             }),
             providesTags: ['PurchaseOrderDetails'],
         }),
@@ -64,6 +64,29 @@ export const purchaseOrderApi = createApi({
                 body: payload
             })
         }),
+
+        getOlByBarcode: builder.query({
+            query: ({ barcode, locationId }) => ({
+                url: `/api/v1/optical-lens/getbybarcode?Barcode=${barcode}&LocationID=${locationId}`,
+                method: 'GET'
+            })
+        }),
+
+        getOlByDetailId: builder.mutation({
+            query: (payload) => ({
+                url: `/api/v1/optical-lens/getOlbyDetailId`,
+                method: 'POST',
+                body: payload
+            })
+        }),
+
+        getAllPoDetailsForNewOrder: builder.mutation({
+            query: (payload) => ({
+                url: `/api/v1/purchase-order/getpodetailsforneworder`,
+                method: 'POST',
+                body: payload
+            })
+        }) 
     })
 });
 
@@ -77,5 +100,8 @@ export const {
     useUpdatePoBuyingPriceMutation,
     useUpdatePoQtyMutation,
     useDeletePoMutation,
-    useUpdatePoMainMutation
+    useUpdatePoMainMutation,
+    useLazyGetOlByBarcodeQuery,
+    useGetOlByDetailIdMutation,
+    useGetAllPoDetailsForNewOrderMutation
 } = purchaseOrderApi;
