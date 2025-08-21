@@ -24,6 +24,7 @@ import {
 } from "../../../api/orderApi";
 import Loader from "../../../components/ui/Loader";
 import toast from "react-hot-toast";
+import { isValidNumericInput } from "../../../utils/isValidNumericInput";
 
 // Format number with commas
 const formatNumber = (num) => {
@@ -42,6 +43,9 @@ const DiscountInput = ({
   isApplyingDiscount,
   isRemovingDiscount,
 }) => {
+  const fittingPrice = parseFloat(item.FittingPrice) || 0;
+  const fittingGst = parseFloat(item.FittingGSTPercentage) || 0;
+  const toalSum = item.Total + fittingPrice + fittingPrice * (fittingGst / 100);
   const result = discountResults[item.OrderDetailId];
   const hasDiscount = !!result && result.value > 0;
   const error =
@@ -59,9 +63,10 @@ const DiscountInput = ({
                 name={`discount-${item.OrderDetailId}`}
                 value="1"
                 checked={discountTypes[item.OrderDetailId] === 1}
-                onChange={(e) =>
-                  onTypeChange(item.OrderDetailId, e.target.value)
-                }
+                onChange={(e) => {
+                  onTypeChange(item.OrderDetailId, e.target.value);
+                  onInputChange(item.OrderDetailId, "");
+                }}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
               />
               <span className="text-sm">Value</span>
@@ -72,9 +77,10 @@ const DiscountInput = ({
                 name={`discount-${item.OrderDetailId}`}
                 value="2"
                 checked={discountTypes[item.OrderDetailId] === 2}
-                onChange={(e) =>
-                  onTypeChange(item.OrderDetailId, e.target.value)
-                }
+                onChange={(e) => {
+                  onTypeChange(item.OrderDetailId, 2);
+                  onInputChange(item.OrderDetailId, ""); // reset input value
+                }}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
               />
               <span className="text-sm">%</span>
@@ -92,10 +98,17 @@ const DiscountInput = ({
                   type="number"
                   className="border pl-6 pr-2 py-1 rounded text-sm w-full"
                   placeholder="0.00"
-                  value={discountInputs[item.OrderDetailId] || ""}
-                  onChange={(e) =>
-                    onInputChange(item.OrderDetailId, e.target.value)
-                  }
+                  value={discountInputs[item.OrderDetailId] || 0}
+                  onChange={(e) => {
+                    let value = parseFloat(e.target.value) || 0;
+                    if (!isValidNumericInput(value)) return;
+                    if (value > toalSum) {
+                      value = toalSum;
+                    }
+                    onInputChange(item.OrderDetailId, value);
+                  }}
+                  min={0}
+                  max={toalSum}
                 />
               </div>
             )}
@@ -107,10 +120,15 @@ const DiscountInput = ({
                     error ? "border-red-500" : ""
                   }`}
                   placeholder="0"
-                  value={discountInputs[item.OrderDetailId] || ""}
-                  onChange={(e) =>
-                    onInputChange(item.OrderDetailId, e.target.value)
-                  }
+                  value={discountInputs[item.OrderDetailId] || 0}
+                  onChange={(e) => {
+                    let value = parseFloat(e.target.value) || 0;
+                    if (!isValidNumericInput(value)) return;
+                    if (value > 100) {
+                      value = 100;
+                    }
+                    onInputChange(item.OrderDetailId, value);
+                  }}
                   max="100"
                   min="0"
                 />
@@ -495,31 +513,54 @@ const OrderDetails = () => {
 
     return "";
   };
+  const getTotal = (item) => {
+    if (item.typeid === 0) {
+      const fittingPrice = parseFloat(item.FittingPrice) || 0;
+      const fittingGSTPercentage = parseFloat(item.FittingGSTPercentage) || 0;
+
+      const sum =
+        (parseFloat(item.Total) || 0) +
+        fittingPrice +
+        fittingPrice * (fittingGSTPercentage / 100);
+      return sum;
+    }
+
+    return parseFloat(item.Total) || 0;
+  };
 
   // Calculate totals for summary row
   const calculateTotals = () => {
-    if (!savedOrders || savedOrders?.length === 0) {
+    if (!savedOrders || savedOrders.length === 0) {
       return { totalQty: 0, totalGST: 0, totalAmount: 0 };
     }
 
-    return savedOrders?.reduce(
+    return savedOrders.reduce(
       (acc, item) => {
-        const qty = parseInt(item.OrderQty);
-        const total = parseFloat(item.Total);
+        const qty = parseInt(item.OrderQty) || 0;
+        const total = parseFloat(item.Total) || 0;
+
+        // GST
         const { gstAmount } = calculateGST(
-          item.DiscountedSellingPrice,
-          item.TaxPercentage
+          item.DiscountedSellingPrice || 0,
+          item.TaxPercentage || 0
         );
-        const gst = parseFloat(gstAmount);
-        const fitting =
-          parseFloat(item.FittingPrice) *
-          (parseFloat(item.FittingGSTPercentage) / 100);
-     
+        const gst = parseFloat(gstAmount) || 0;
+
+        // Fitting values (safe defaults)
+        const fittingPrice = parseFloat(item.FittingPrice) || 0;
+        const fittingGSTPercentage = parseFloat(item.FittingGSTPercentage) || 0;
+
+        // Fitting GST amount
+        const fittingGST = fittingPrice * (fittingGSTPercentage / 100);
+
         return {
           totalQty: acc.totalQty + qty,
-          totalGST: acc.totalGST + gst * qty + fitting,
+          totalGST:
+            acc.totalGST + gst * qty + (item.typeid == 0 ? fittingGST : 0),
           totalAmount:
-            acc.totalAmount + total + fitting + parseFloat(item.FittingPrice),
+            acc.totalAmount +
+            total +
+            (item.typeid == 0 ? fittingGST + fittingPrice : 0),
         };
       },
       { totalQty: 0, totalGST: 0, totalAmount: 0 }
@@ -545,7 +586,7 @@ const OrderDetails = () => {
     }
   };
   return (
-    <div className="max-w-7xl">
+    <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-md overflow-hidden">
         {/* Header Section */}
         <div className="p-4">
@@ -633,8 +674,9 @@ const OrderDetails = () => {
             </div>
           </div>
           {/* Order Items Table */}
-          <div className="overflow-x-auto px-4">
+         
             <Table
+            freeze={true}
               columns={[
                 "S.NO",
                 "Type",
@@ -668,11 +710,8 @@ const OrderDetails = () => {
                     <TableCell>{getShortTypeName(item.typeid)}</TableCell>
                     <TableCell>
                       <div
-                        className="text-sm"
-                        style={{
-                          whiteSpace: "pre-wrap",
-                          wordWrap: "break-word",
-                        }}
+                        className="whitespace-pre-wrap"
+                        
                       >
                         {getProductName(item)}
                       </div>
@@ -716,14 +755,7 @@ const OrderDetails = () => {
                       <div>₹{formatNumber(result.gstAmount)}</div>
                       <div>({result.taxPercentage}%)</div>
                     </TableCell>
-                    <TableCell>
-                      ₹
-                      {formatNumber(
-                        item.Total +
-                          parseFloat(item.FittingPrice) *
-                            (parseFloat(item.FittingGSTPercentage) / 100) +parseFloat(item.FittingPrice)
-                      )}
-                    </TableCell>
+                    <TableCell>₹{formatNumber(getTotal(item))}</TableCell>
                     <TableCell>
                       <Button
                         variant="ghost"
@@ -749,7 +781,7 @@ const OrderDetails = () => {
               }
               pagination={false}
             />
-          </div>
+         
 
           {/* Order Summary */}
           {savedOrders?.length > 0 && (

@@ -6,7 +6,7 @@ import { useOrder } from "../../../features/OrderContext";
 import {
   useGetDraftDataByIdQuery,
   useGetPatientsQuery,
-  useGetSalesReturnByIdQuery,
+  useLazyGetDraftDetailsQuery,
   useSalesMasterDraftMutation,
 } from "../../../api/salesReturnApi";
 import { useSelector } from "react-redux";
@@ -24,6 +24,7 @@ const SelectCustomer = () => {
     setSalesDraftData,
     setSelectedMainPatient,
     setCustomerSalesId,
+    currentSalesStep,
   } = useOrder();
 
   const { data: contactResp, isLoading: isPatientLoading } =
@@ -35,6 +36,11 @@ const SelectCustomer = () => {
     { id: selectedPatient?.Id },
     { skip: !selectedPatient?.Id }
   );
+
+  const [
+    getDraftData,
+    { data: salesDraftData, isLoading: isSalesDraftLoading },
+  ] = useLazyGetDraftDetailsQuery();
 
   const allContacts = useMemo(() => {
     if (!contactResp?.data?.data) return [];
@@ -63,20 +69,29 @@ const SelectCustomer = () => {
     if (!selectedPatient) return;
 
     try {
-      const existingDraft = draftData?.data.find(
-        (draft) =>
-          draft.Status === 0 &&
-          draft.CompanyID === parseInt(hasMultipleLocations[0]) &&
-          draft.PatientID === selectedPatient.Id &&
-          draft.ApplicationUserId === user.Id
-      );
+      const res = await getDraftData({
+        userId: user.Id,
+        companyId: parseInt(hasMultipleLocations[0]),
+        patientId: selectedPatient.Id,
+        reference: referenceApplicable,
+      }).unwrap();
 
+      const existingDraft =
+        res?.data?.Status === 0 &&
+        res?.data?.PatientID === selectedPatient.Id &&
+        res?.data?.ReferenceApplicable === referenceApplicable &&
+        res?.data?.ApplicationUserId === user.Id &&
+        res?.data?.SalesReturnDetails.length > 0 &&
+        res?.data?.CompanyID === parseInt(hasMultipleLocations[0])
       if (existingDraft) {
-        setSalesDraftData(existingDraft);
+        setSalesDraftData(res?.data);
+        setCustomerSalesId((prev) => ({
+          ...prev,
+          customerData: selectedPatient,
+        }));
         goToSalesStep(4);
         return;
       }
-
       const payload = {
         ReferenceApplicable: referenceApplicable === 1,
         CustomerID: selectedPatient.mainCustomerObject.Id,
@@ -90,6 +105,10 @@ const SelectCustomer = () => {
       }).unwrap();
 
       setSalesDraftData(response?.data?.data);
+      setCustomerSalesId((prev) => ({
+        ...prev,
+        customerData: selectedPatient,
+      }));
       goToSalesStep(2);
       toast.success("Sales Return is created");
     } catch (error) {
@@ -105,49 +124,14 @@ const SelectCustomer = () => {
 
   return (
     <div>
-      <div className="max-w-7xl">
+      <div className="max-w-8xl">
         <div className="bg-white rounded-xl shadow-sm">
           <div className="p-6 border-b border-gray-100">
             <div className="flex justify-between">
-              <div className="w-1/2">
-                <label className="font-medium text-neutral-700">
-                  Select Patient
-                </label>
-                <Autocomplete
-                  options={allContacts}
-                  getOptionLabel={(option) =>
-                    `${option.CustomerName} (${option.MobNumber})`
-                  }
-                  filterOptions={filter}
-                  value={
-                    allContacts.find(
-                      (contact) => contact.Id === selectedPatient?.Id
-                    ) || null
-                  }
-                  onChange={(_, newValue) => {
-                    setSelectedPatient(newValue || null);
-                    setSelectedMainPatient(newValue || null);
-                    setCustomerSalesId((prev) => ({
-                      ...prev,
-                      patientId: newValue?.Id || null,
-                      patientName: newValue?.CustomerName || "",
-                      customerId: newValue?.mainCustomerObject?.Id || null,
-                    }));
-                  }}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      placeholder="Select by Patient name or mobile"
-                      size="medium"
-                    />
-                  )}
-                  isOptionEqualToValue={(option, value) =>
-                    option.Id === value.Id
-                  }
-                  loading={isPatientLoading}
-                  fullWidth
-                />
-              </div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Step {currentSalesStep}
+              </h1>
+
               <div>
                 <Button
                   variant="outline"
@@ -157,7 +141,43 @@ const SelectCustomer = () => {
                 </Button>
               </div>
             </div>
-
+            <div className="w-1/2 mt-3">
+              <label className="font-medium text-neutral-700">
+                Select Patient
+              </label>
+              <Autocomplete
+                options={allContacts}
+                getOptionLabel={(option) =>
+                  `${option.CustomerName} (${option.MobNumber})`
+                }
+                filterOptions={filter}
+                value={
+                  allContacts.find(
+                    (contact) => contact.Id === selectedPatient?.Id
+                  ) || null
+                }
+                onChange={(_, newValue) => {
+                  setSelectedPatient(newValue || null);
+                  setSelectedMainPatient(newValue || null);
+                  setCustomerSalesId((prev) => ({
+                    ...prev,
+                    patientId: newValue?.Id || null,
+                    patientName: newValue?.CustomerName || "",
+                    customerId: newValue?.mainCustomerObject?.Id || null,
+                  }));
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder="Select by Patient name or mobile"
+                    size="medium"
+                  />
+                )}
+                isOptionEqualToValue={(option, value) => option.Id === value.Id}
+                loading={isPatientLoading}
+                fullWidth
+              />
+            </div>
             {selectedPatient && (
               <div className="p-6 grid grid-cols-3 gap-4 text-sm">
                 <div className="flex gap-1">

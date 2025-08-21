@@ -352,7 +352,7 @@ const ContactLens = () => {
   inputTableColumns.push("Action");
 
   return (
-    <div className="max-w-7xl h-auto">
+    <div className="max-w-8xl h-auto">
       <div className="bg-white rounded-xl shadow-sm">
         <div className="p-6 border-b border-gray-100">
           <div className="flex flex-col sm:flex-row justify-between items-start gap-4">

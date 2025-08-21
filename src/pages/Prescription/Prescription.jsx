@@ -153,7 +153,7 @@ const Prescription = () => {
   };
 
   return (
-    <div className="max-w-6xl">
+    <div className="max-w-8xl">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div className="text-3xl text-neutral-700 font-semibold">
           Prescription

@@ -3,7 +3,6 @@ import Radio from "../../../../components/Form/Radio";
 import Button from "../../../../components/ui/Button";
 import {
   useGetDIaDetailsMutation,
-  useGetIdentifierQuery,
   useGetPriceMutation,
   useSaveOpticalLensMutation,
   useUpdateIdentifierMutation,
@@ -13,6 +12,7 @@ import ConfirmationModal from "../../../../components/ui/ConfirmationModal";
 import { useGetAllRimTypeQuery } from "../../../../api/materialMaster";
 import { Autocomplete, TextField } from "@mui/material";
 import { useOrder } from "../../../../features/OrderContext";
+import { ErrorDisplayModal } from "../../../../components/ErrorsDisplay";
 
 const inputTableColumns = ["SPH", "CYLD", "Axis", "ADD", "Dia", "Details"];
 
@@ -21,15 +21,14 @@ const PowerDetailsFetch = ({
   setLensData,
   prescriptionData,
   focalityData,
-  items = [],
+
   customerId,
-  handleSaveOpticalLens,
+
   goToStep,
   selectedProduct,
   savedOrders,
 }) => {
   const { Identifiers } = useOrder();
-  console.log("Ident", Identifiers);
   const selectedFocality = focalityData?.find(
     (f) => f.OpticalLensFocality.Id === lensData.focality
   )?.OpticalLensFocality?.Add_Value;
@@ -64,6 +63,8 @@ const PowerDetailsFetch = ({
   const [warningMessage, setWarningMessage] = useState("");
   const [warningIssues, setWarningIssues] = useState([]);
   const [isPriceFetched, setIsPriceFetched] = useState(false);
+  const [errors, setErrors] = useState(null);
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
 
   const [updateIdentifier, { isLoading: isIdentfierSubmitting }] =
     useUpdateIdentifierMutation();
@@ -132,6 +133,22 @@ const PowerDetailsFetch = ({
   const handleCheckboxChange = (eye) => {
     if (lensData.powerSingleORboth === 0) {
       setSelectedEyes([eye]);
+      // Clear values for the unselected eye
+      const otherEye = eye === "R" ? "L" : "R";
+      setFormValues((prev) => ({
+        ...prev,
+        [otherEye]: {
+          SPH: "",
+          CYLD: "",
+          Axis: "",
+          ADD: "",
+          Dia: null,
+          converted: {},
+          OpticalLensDetailsId: [],
+          SellingPrice: "",
+          AvailableQty: 0,
+        },
+      }));
     }
   };
 
@@ -185,6 +202,7 @@ const PowerDetailsFetch = ({
 
   const isFieldDisabled = (eye, field) => {
     if (field === "Dia") {
+      // Dia field should be editable after fetching, unless price is fetched
       return (
         isPriceFetched ||
         !isEditable ||
@@ -198,7 +216,6 @@ const PowerDetailsFetch = ({
       (lensData.powerSingleORboth !== 1 && !selectedEyes.includes(eye))
     );
   };
-
   const handleGetDia = async () => {
     const isBothSelected = lensData.powerSingleORboth === 1;
     const isRSelected = isBothSelected || selectedEyes.includes("R");
@@ -230,20 +247,22 @@ const PowerDetailsFetch = ({
 
       if (res.status === "failure" || res.success === false) {
         const errors = res.error || res.errors;
-        if (Array.isArray(errors)) {
-          errors.forEach((err) => {
-            toast.error(` ${err.message}`);
-          });
-        } else if (typeof errors === "string") {
-          toast.error(errors);
-        } else {
-          toast.error("Failed to fetch Dia details");
-        }
+
+        setErrors(
+          Array.isArray(errors)
+            ? errors
+            : typeof errors === "string"
+            ? [errors]
+            : []
+        );
+        setErrorModalOpen(true);
+
         return;
       }
 
       const updatedForm = { ...formValues };
       let hasDetails = false;
+
       ["R", "L"].forEach((eye) => {
         if ((eye === "R" && isRSelected) || (eye === "L" && isLSelected)) {
           updatedForm[eye].converted = converted?.[eye] || {};
@@ -257,8 +276,18 @@ const PowerDetailsFetch = ({
           updatedForm[eye].SellingPrice = "";
           updatedForm[eye].AvailableQty = 0;
           if (eyeDetails.length > 0) hasDetails = true;
+        } else {
+          updatedForm[eye] = {
+            ...updatedForm[eye],
+            converted: {},
+            Dia: null,
+            OpticalLensDetailsId: [],
+            SellingPrice: "",
+            AvailableQty: 0,
+          };
         }
       });
+
       setFormValues(updatedForm);
       setDiaOptions(diameters || []);
       setIsDiaFetched(true);
@@ -266,15 +295,14 @@ const PowerDetailsFetch = ({
     } catch (err) {
       console.error("Error fetching Dia:", err);
       const errors = err.data?.error || err.data?.errors;
-      if (Array.isArray(errors)) {
-        errors.forEach((error) => {
-          toast.error(`${error.message}`);
-        });
-      } else if (typeof errors === "string") {
-        toast.error(errors);
-      } else {
-        toast.error("Failed to fetch Dia details");
-      }
+      setErrors(
+          Array.isArray(errors)
+            ? errors
+            : typeof errors === "string"
+            ? [errors]
+            : []
+        );
+        setErrorModalOpen(true);
     }
   };
 
@@ -311,6 +339,7 @@ const PowerDetailsFetch = ({
             0
           )
         : 0;
+
     const payload = {
       coatingComboId: lensData.coatingComboId,
       locationId: customerId.locationId,
@@ -333,15 +362,14 @@ const PowerDetailsFetch = ({
 
       if (res.status === "failure" || res.success === false) {
         const errors = res.error || res.errors;
-        if (Array.isArray(errors)) {
-          errors.forEach((err) => {
-            toast.error(`${err.message}`);
-          });
-        } else if (typeof errors === "string") {
-          toast.error(errors);
-        } else {
-          toast.error("Failed to fetch price details");
-        }
+         setErrors(
+          Array.isArray(errors)
+            ? errors
+            : typeof errors === "string"
+            ? [errors]
+            : []
+        );
+        setErrorModalOpen(true);
         return;
       }
 
@@ -366,8 +394,15 @@ const PowerDetailsFetch = ({
             details?.[eye]?.SellingPrice?.toString() || "";
           updatedForm[eye].AvailableQty =
             details?.[eye]?.AvailableQty?.toString() || "0";
+        } else {
+          updatedForm[eye] = {
+            ...updatedForm[eye],
+            SellingPrice: "",
+            AvailableQty: "0",
+          };
         }
       });
+
       setFormValues(updatedForm);
       setTotalSellingPrice(totalSellingPrice || null);
       setShowConfirmModal(false);
@@ -379,15 +414,14 @@ const PowerDetailsFetch = ({
     } catch (err) {
       console.error("Error fetching Price:", err);
       const errors = err.data?.error || err.data?.errors;
-      if (Array.isArray(errors)) {
-        errors.forEach((error) => {
-          toast.error(` ${error.message}`);
-        });
-      } else if (typeof errors === "string") {
-        toast.error(errors);
-      } else {
-        toast.error("Failed to fetch price details");
-      }
+       setErrors(
+          Array.isArray(errors)
+            ? errors
+            : typeof errors === "string"
+            ? [errors]
+            : []
+        );
+        setErrorModalOpen(true);
     }
   };
 
@@ -404,10 +438,14 @@ const PowerDetailsFetch = ({
     }
     setShowDiaDiffModal(false);
   };
-  
+
   const handleSave = async () => {
     if (lensData.rimType == null && lensData.withFitting === 1) {
       toast.error("Please select Frame Rim Type!");
+      return;
+    }
+    if (lensData.tintvalue === 1 && !lensData.tintId) {
+      toast.error("Please add Tint!");
       return;
     }
     const isBothSelected = lensData.powerSingleORboth === 1;
@@ -436,7 +474,7 @@ const PowerDetailsFetch = ({
       OrderReference: lensData.orderReference,
       patientId: customerId.patientId,
       MasterId: lensData.masterId,
-      withFitting: lensData.withFitting,
+      withFitting: lensData.withFitting === 1,
       frameType: lensData.rimType,
       rightPower: {
         sph: isRSelected ? safeParse(formValues.R.SPH) : null,
@@ -469,9 +507,9 @@ const PowerDetailsFetch = ({
       discountedSellingPrice: discountedPrice,
       olDetailId,
       index: lensData.indexValues,
-      companyId: customerId.companyId,
+      companyId: customerId.companyId || customerId.locationId,
     };
-    console.log("ppp",payload)
+    
     if (selectedProduct.value === 6) {
       payload.identifier = Identifiers?.identifier || null;
     }
@@ -512,7 +550,7 @@ const PowerDetailsFetch = ({
     }
     return null;
   };
-  console.log("frame rim types", rimTypes);
+
   return (
     <div className="bg-white shadow-sm p-4 mt-5 rounded-lg">
       <div className="flex justify-between items-center">
@@ -583,7 +621,10 @@ const PowerDetailsFetch = ({
               </td>
               {inputTableColumns.map((field) => (
                 <td key={field} className="p-3 align-top">
-                  {field === "Dia" && isDiaFetched ? (
+                  {field === "Dia" &&
+                  isDiaFetched &&
+                  (lensData.powerSingleORboth === 1 ||
+                    selectedEyes.includes(eye)) ? (
                     <select
                       className={`w-24 px-2 py-1 border rounded-md ${
                         isFieldDisabled(eye, field)
@@ -609,7 +650,10 @@ const PowerDetailsFetch = ({
                           </option>
                         ))}
                     </select>
-                  ) : field === "Details" && isPriceFetched ? (
+                  ) : field === "Details" &&
+                    isPriceFetched &&
+                    (lensData.powerSingleORboth === 1 ||
+                      selectedEyes.includes(eye)) ? (
                     <input
                       type="text"
                       value={`Selling Price: ${formValues[eye].SellingPrice}\n Qty: ${formValues[eye].AvailableQty}`}
@@ -617,7 +661,10 @@ const PowerDetailsFetch = ({
                       className="px-2 py-1 border rounded-md bg-gray-100 border-gray-200 text-gray-400"
                       disabled
                     />
-                  ) : field !== "Dia" && field !== "Details" ? (
+                  ) : field !== "Dia" &&
+                    field !== "Details" &&
+                    (lensData.powerSingleORboth === 1 ||
+                      selectedEyes.includes(eye)) ? (
                     <div>
                       <input
                         type="text"
@@ -638,7 +685,15 @@ const PowerDetailsFetch = ({
                         renderConvertedNote(eye, field)}
                     </div>
                   ) : (
-                    <div className="w-24"></div>
+                    <div className="w-24">
+                      <input
+                        type="text"
+                        value=""
+                        readOnly
+                        className="w-24 px-2 py-1 border rounded-md bg-gray-100 border-gray-200 text-gray-400"
+                        disabled
+                      />
+                    </div>
                   )}
                 </td>
               ))}
@@ -739,7 +794,11 @@ const PowerDetailsFetch = ({
           </>
         )}
       </div>
-
+      <ErrorDisplayModal
+        errors={errors}
+        open={errorModalOpen}
+        onClose={() => setErrorModalOpen(false)}
+      />
       <ConfirmationModal
         isOpen={showConfirmModal}
         onClose={() => setShowConfirmModal(false)}

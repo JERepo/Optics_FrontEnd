@@ -1,7 +1,6 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router";
 import { Table, TableCell, TableRow } from "../../components/Table";
-import { FiTrash2 } from "react-icons/fi";
 import { format } from "date-fns";
 import Button from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
@@ -10,8 +9,174 @@ import {
   useGetInvoiceDetailsQuery,
 } from "../../api/InvoiceApi";
 import { formatINR } from "../../utils/formatINR";
+import { useSelector } from "react-redux";
+
+
+const getProductName = (order) => {
+  const product = order?.productDetails?.[0];
+  if (!product) return "";
+
+  const { ProductType, FittingPrice, FittingGSTPercentage } = order;
+
+  const clean = (val) => {
+    if (
+      val === null ||
+      val === undefined ||
+      val === "undefined" ||
+      val === "null" ||
+      val === "N/A"
+    ) {
+      return "";
+    }
+    return String(val).trim();
+  };
+
+  const cleanPower = (val) => {
+    const cleaned = clean(val);
+    if (!cleaned) return "";
+    const num = parseFloat(cleaned);
+    if (isNaN(num)) return "";
+    return num >= 0 ? `+${num.toFixed(2)}` : `${num.toFixed(2)}`;
+  };
+
+  // Frame
+  if (ProductType === 1) {
+    const name = clean(product.productName);
+    const specDetails = clean(product.specs);
+    const barcodeVal = clean(product.barcode);
+    const hsn = clean(product.hSN);
+    const cat =
+      order.InvoiceMain?.InvoiceType === 0 ? "Optical Frame" : "Sunglass";
+
+    const line1 = [name].filter(Boolean).join(" ");
+    const line2 = [specDetails].filter(Boolean).join("-");
+
+    return [
+      line1,
+      line2,
+      cat,
+      barcodeVal && `Barcode: ${barcodeVal}`,
+      hsn && `HSN: ${hsn}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  // Accessory
+  if (ProductType === 2) {
+    const name = clean(product.productName);
+    const variation = clean(product.specs?.variation);
+    const barcodeVal = clean(product.specs?.barcode || product.barcode);
+    const hsn = clean(product.hSN);
+
+    return [
+      [name].filter(Boolean).join(" "),
+      variation && `Variation: ${variation}`,
+      barcodeVal && `Barcode: ${barcodeVal}`,
+      hsn && `HSN: ${hsn}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  // Contact Lens
+  if (ProductType === 3) {
+    const name = clean(product.productName);
+    const hsn = clean(product.hSN);
+    const barcodeVal = clean(product.barcode);
+    const batchCode = clean(order.BatchCode);
+    const color = clean(product.specs?.color);
+
+    const sph = cleanPower(product.specs?.sphericalPower);
+    const cyld = cleanPower(product.specs?.cylindricalPower);
+    const axis = clean(product.specs?.axis);
+    const addl = cleanPower(product.specs?.additional);
+
+    const specsList = [
+      sph && `SPH: ${sph}`,
+      cyld && `CYL: ${cyld}`,
+      axis && `Axis: ${axis}`,
+      addl && `Add: ${addl}`,
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    return [
+      name,
+      specsList,
+      color && `Color: ${color}`,
+      barcodeVal && `Barcode: ${barcodeVal}`,
+      batchCode && `Batch Code: ${batchCode || "-"}`,
+      hsn && `HSN: ${hsn}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  // Optical Lens
+  if (ProductType === 0) {
+    const olLine = [product.productName].map(clean).filter(Boolean).join(" ");
+
+    const right = product.specs?.powerDetails?.right || {};
+    const left = product.specs?.powerDetails?.left || {};
+
+    const rightParts = [
+      cleanPower(right.sphericalPower) &&
+        `SPH: ${cleanPower(right.sphericalPower)}`,
+      cleanPower(right.addition) && `Add: ${cleanPower(right.addition)}`,
+    ].filter(Boolean);
+
+    const leftParts = [
+      cleanPower(left.sphericalPower) &&
+        `SPH: ${cleanPower(left.sphericalPower)}`,
+      cleanPower(left.addition) && `Add: ${cleanPower(left.addition)}`,
+    ].filter(Boolean);
+
+    const powerLine = [
+      rightParts.length > 0 ? `R: ${rightParts.join(", ")}` : "",
+      leftParts.length > 0 ? `L: ${leftParts.join(", ")}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const addOnLine =
+      clean(product.specs?.addOn?.addOnName) &&
+      `Addon: ${clean(product.specs?.addOn?.addOnName)}`;
+    const tintLine =
+      clean(product.specs?.tint?.tintName) &&
+      `Tint: ${clean(product.specs?.tint?.tintName)}`;
+    const barcodeLine =
+      clean(product.barcode) && `Barcode: ${clean(product.barcode)}`;
+    const hsnLine = clean(product.hSN) && `HSN: ${clean(product.hSN)}`;
+
+    let fittingLine = "";
+    const fitPrice = parseFloat(FittingPrice);
+    const gstPerc = parseFloat(FittingGSTPercentage);
+    if (!isNaN(fitPrice) && !isNaN(gstPerc) && fitPrice > 0) {
+      const totalFitting = (fitPrice * (1 + gstPerc / 100)).toFixed(2);
+      fittingLine = `Fitting Price: ₹${totalFitting}`;
+    }
+
+    return [
+      olLine,
+      powerLine,
+      addOnLine,
+      barcodeLine,
+      tintLine,
+      hsnLine,
+      fittingLine,
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  return "";
+};
+
 
 const InvoiceView = () => {
+
+  const { hasMultipleLocations } = useSelector((state) => state.auth);
   const navigate = useNavigate();
   const { search } = useLocation();
   const params = new URLSearchParams(search);
@@ -23,7 +188,10 @@ const InvoiceView = () => {
   );
 
   const { data: invoiceDetailsById, isLoading: isViewLoading } =
-    useGetInvoiceDetailsQuery({ detailId: invoiceId });
+    useGetInvoiceDetailsQuery({
+      detailId: invoiceId,
+      locationId: parseInt(hasMultipleLocations[0]),
+    });
 
   const getTypeName = (id) => {
     const types = { 1: "F/S", 2: "ACC", 3: "CL" };
@@ -31,180 +199,6 @@ const InvoiceView = () => {
   };
 
 
-
-  const getProductName = (order) => {
-    const {
-      ProductType,
-
-      FittingPrice,
-      FittingGSTPercentage,
-
-      ProductDetails,
-    } = order;
-
-    const clean = (val) => {
-      if (
-        val === null ||
-        val === undefined ||
-        val === "undefined" ||
-        val === "null" ||
-        val === "N/A"
-      ) {
-        return "";
-      }
-      return String(val).trim();
-    };
-
-    const cleanPower = (val) => {
-      const cleaned = clean(val);
-      if (!cleaned) return "";
-      const num = parseFloat(cleaned);
-      if (isNaN(num)) return "";
-      return num >= 0 ? `+${num.toFixed(2)}` : `${num.toFixed(2)}`;
-    };
-
-    if (ProductType === 1) {
-      const name = clean(ProductDetails.productName);
-      const specDetails = clean(ProductDetails.specs);
-      const barcodeVal = clean(ProductDetails.barcode);
-      const hsn = clean(ProductDetails.hsncode);
-      const cat =
-        order.InvoiceMain?.InvoiceType === 0 ? "Optical Frame" : "Sunglass";
-
-      const line1 = [name].filter(Boolean).join(" ");
-      const line2 = [specDetails].filter(Boolean).join("-");
-
-      return [
-        line1,
-        line2,
-        cat,
-        barcodeVal && `Barcode: ${barcodeVal}`,
-        hsn && `HSN: ${hsn}`,
-      ]
-        .filter(Boolean)
-        .join("\n");
-    }
-
-    if (ProductType === 2) {
-      const name = clean(ProductDetails.productName);
-      const variation = clean(ProductDetails.specs);
-      const barcodeVal = clean(ProductDetails.barcode);
-      const hsn = clean(ProductDetails.hsncode);
-
-      return [
-        [name].filter(Boolean).join(" "),
-        variation && `Variation: ${variation}`,
-        barcodeVal && `Barcode: ${barcodeVal}`,
-        hsn && `HSN: ${hsn}`,
-      ]
-        .filter(Boolean)
-        .join("\n");
-    }
-
-    if (ProductType === 3) {
-      const name = clean(order.ProductDetails.productName);
-      const hsn = clean(order.ProductDetails.hSN);
-      const barcodeVal = clean(order.ProductDetails.barcode);
-      const batchCode = clean(order.ProductDetails.BatchCode);
-
-      // parse specs string into object
-      const specsObj = {};
-      if (typeof order.ProductDetails.specs === "string") {
-        order.ProductDetails.specs.split(",").forEach((pair) => {
-          let [key, value] = pair.split(":").map((s) => s.trim());
-          if (value === "null") value = null;
-          specsObj[key] = value;
-        });
-      }
-
-      const sph = cleanPower(specsObj.Sph);
-      const cyld = cleanPower(specsObj.Cyld);
-      const axis = clean(specsObj.Axis);
-      const addl = cleanPower(specsObj.Add);
-      const clr = clean(order.colour);
-
-      const specsList = [
-        sph && `SPH: ${sph}`,
-        cyld && `CYL: ${cyld}`,
-        axis && `Axis: ${axis}`,
-        addl && `Add: ${addl}`,
-      ]
-        .filter(Boolean)
-        .join(", ");
-
-      return [
-        name,
-        specsList,
-        clr && `Color: ${clr}`,
-        barcodeVal && `Barcode: ${barcodeVal}`,
-        batchCode && `Batch Code: ${batchCode || "-"}`,
-        hsn && `HSN: ${hsn}`,
-      ]
-        .filter(Boolean)
-        .join("\n");
-    }
-
-    if (ProductType === 0) {
-      const olLine = [order.ProductDetails.productName]
-        .map(clean)
-        .filter(Boolean)
-        .join(" ");
-
-      const right = ProductDetails.Specs?.find((p) => p.side === "R") || {};
-      const left = ProductDetails.Specs?.find((p) => p.side === "L") || {};
-
-      const rightParts = [
-        cleanPower(right.sph) && `SPH: ${cleanPower(right.sph)}`,
-        cleanPower(right.addition) && `Add: ${cleanPower(right.addition)}`,
-      ].filter(Boolean);
-
-      const leftParts = [
-        cleanPower(left.sph) && `SPH: ${cleanPower(left.sph)}`,
-        cleanPower(left.addition) && `Add: ${cleanPower(left.addition)}`,
-      ].filter(Boolean);
-
-      const powerLine = [
-        rightParts.length > 0 ? `R: ${rightParts.join(", ")}` : "",
-        leftParts.length > 0 ? `L: ${leftParts.join(", ")}` : "",
-      ]
-        .filter(Boolean)
-        .join("\n");
-
-      const addOnLine =
-        clean(ProductDetails?.AddOns?.[0]?.addOnName) &&
-        `Addon: ${clean(ProductDetails?.AddOns?.[0]?.addOnName)}`;
-      const tintLine =
-        clean(ProductDetails?.Tint) && `Tint: ${clean(ProductDetails?.Tint)}`;
-      const barcodeLine =
-        clean(ProductDetails.barcode) &&
-        `Barcode: ${clean(ProductDetails.barcode)}`;
-      const hsnLine =
-        clean(ProductDetails.hsncode) &&
-        `HSN: ${clean(ProductDetails.hsncode)}`;
-
-      let fittingLine = "";
-      const fitPrice = parseFloat(FittingPrice);
-      const gstPerc = parseFloat(FittingGSTPercentage);
-      if (!isNaN(fitPrice) && !isNaN(gstPerc) && fitPrice > 0) {
-        const totalFitting = (fitPrice * (1 + gstPerc / 100)).toFixed(2);
-        fittingLine = `Fitting Price: ₹${totalFitting}`;
-      }
-
-      return [
-        olLine,
-        powerLine,
-        addOnLine,
-        barcodeLine,
-        tintLine,
-        hsnLine,
-        fittingLine,
-      ]
-        .filter(Boolean)
-        .join("\n");
-    }
-
-    return "";
-  };
 
   const calculateGST = (sellingPrice, taxPercentage) => {
     const price = parseFloat(sellingPrice);
@@ -226,19 +220,28 @@ const InvoiceView = () => {
     const invoicePrice = parseFloat(item.InvoicePrice || 0);
     const qty = parseFloat(item.InvoiceQty || 0);
     const fittingPrice = parseFloat(item.FittingPrice || 0);
-    const fittingGST = parseFloat(item.FittingGSTPercentage || 0)
-    const totalFittinPrice = calculateGST(fittingPrice,fittingGST).gstAmount
 
-    return sum + ((invoicePrice * qty) + parseFloat(totalFittinPrice));
+    return (
+      sum +
+      (invoicePrice * qty +
+        (item.ProductType == 0 ? parseFloat(fittingPrice) : 0))
+    );
   }, 0);
 
   const gstAmount = invoiceDetailsById?.reduce((sum, item) => {
     const price = parseFloat(item.InvoicePrice) || 0;
     const qty = parseInt(item.InvoiceQty) || 0;
     const taxPercent = parseFloat(item.TaxPercent) || 0;
+    const fittingPrice = parseFloat(item.FittingPrice || 0);
+    const fittingGST = parseFloat(item.FittingGSTPercentage || 0);
+    const totalFittinPrice = fittingPrice * (fittingGST / 100);
 
     const { gstAmount } = calculateGST(price * qty, taxPercent);
-    return sum + parseFloat(gstAmount) || 0;
+    return (
+      sum +
+        parseFloat(gstAmount) +
+        (item.ProductType == 0 ? totalFittinPrice : 0) || 0
+    );
   }, 0);
 
   const getOrderStatus = (status) => {
@@ -260,10 +263,12 @@ const InvoiceView = () => {
   }
 
   return (
-    <div className="max-w-7xl">
+    <div className="max-w-8xl">
       <div className="bg-white rounded-sm shadow-sm overflow-hidden p-6">
         <div className="flex justify-between items-center mb-3">
-          <div className="text-neutral-800 text-2xl font-semibold">Invoice Details</div>
+          <div className="text-neutral-800 text-2xl font-semibold">
+            Invoice Details
+          </div>
           <div>
             <Button variant="outline" onClick={() => navigate("/invoice")}>
               Back
@@ -323,14 +328,8 @@ const InvoiceView = () => {
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>{`${invoice.OrderMaster?.OrderPrefix}/${invoice.OrderMaster?.OrderNo}/${invoice.InvoiceSlNo}`}</TableCell>
                 <TableCell>{getTypeName(invoice?.ProductType)}</TableCell>
-                <TableCell className="">
-                  <div
-                    className="text-sm"
-                    style={{
-                      whiteSpace: "pre-wrap",
-                      wordWrap: "break-word",
-                    }}
-                  >
+                <TableCell>
+                  <div className="whitespace-pre-wrap">
                     {getProductName(invoice)}
                   </div>
                 </TableCell>
@@ -343,7 +342,10 @@ const InvoiceView = () => {
                   ₹
                   {formatINR(
                     parseFloat(invoice.InvoiceQty) *
-                      parseFloat(invoice.InvoicePrice)
+                      parseFloat(invoice.InvoicePrice) +
+                      (invoice.ProductType === 0
+                        ? parseFloat(invoice.FittingPrice)
+                        : 0)
                   )}
                 </TableCell>
               </TableRow>
@@ -366,7 +368,7 @@ const InvoiceView = () => {
               </div>
               <div className="flex flex-col">
                 <span className="text-neutral-700 font-semibold text-lg">
-                 Total GST
+                  Total GST
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
                   ₹{formatINR(gstAmount) || "0"}

@@ -35,10 +35,13 @@ const PaymentFlow = ({ collectPayment, onClose }) => {
     customerId,
     fullPayments,
     setFullPayments,
-    updatePaymentDetails
+    setPaymentDetails,
+    updatePaymentDetails,
+    updateFullPayments,
+    resetOrderContext,
   } = useOrder();
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
-  console.log("pppppp", paymentDetails);
+
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
   const [fullPaymentDetails, setFullPaymentDetails] = useState([]);
   const [newPayment, setNewPayment] = useState({
@@ -65,25 +68,23 @@ const PaymentFlow = ({ collectPayment, onClose }) => {
 
     const totalPaid =
       fullPayments?.length > 0
-        ? fullPaymentDetails.reduce((sum, payment) => {
+        ? fullPaymentDetails?.reduce((sum, payment) => {
             const amt = parseFloat(payment.Amount);
             return sum + (isNaN(amt) ? 0 : amt);
           }, 0)
         : 0;
 
-    const remainingToPay = Math.max(advance - totalPaid, 0);
+    // Round to 2 decimal places to avoid floating-point precision issues
+    const remainingToPay = Number(Math.max(advance - totalPaid, 0).toFixed(2));
 
     if (collectPayment) {
-      // After payment is made
       return {
         TotalAmount: total,
-
         AdvanceAmount: paymentDetails.advance,
         BalanceAmount: advance,
         RemainingToPay: remainingToPay,
       };
     } else {
-      // Before any payment
       return {
         TotalAmount: total,
         AdvanceAmount: advance,
@@ -212,7 +213,7 @@ const PaymentFlow = ({ collectPayment, onClose }) => {
 
     return payments;
   };
-
+ 
   const handleSave = async () => {
     if (updatedDetails.RemainingToPay > 0) {
       toast.error("Please cover the remaining balance before saving.");
@@ -237,7 +238,7 @@ const PaymentFlow = ({ collectPayment, onClose }) => {
           Amount: Number(value),
         })
       ),
-
+      detailidwithoutadvance: paymentDetails?.withOutAdvance,
       payments: preparePaymentsStructure(),
     };
 
@@ -247,7 +248,11 @@ const PaymentFlow = ({ collectPayment, onClose }) => {
         payload: finalStructure,
       }).unwrap();
       toast.success("Order created Successfully");
-      updatePaymentDetails([])
+      resetOrderContext();
+      updatePaymentDetails([]);
+      setFullPaymentDetails([]);
+      updateFullPayments([]);
+
       navigate("/order-list");
     } catch (error) {
       console.log("error");
@@ -266,7 +271,6 @@ const PaymentFlow = ({ collectPayment, onClose }) => {
       Number(parseFloat(newPayment.Amount).toFixed(2)) >
       Number(parseFloat(updatedDetails.RemainingToPay).toFixed(2))
     ) {
-      
       validationErrors.amount = "Amount cannot exceed remaining balance";
     }
 
@@ -351,7 +355,7 @@ const PaymentFlow = ({ collectPayment, onClose }) => {
 
   return (
     <div className="">
-      <div className="max-w-7xl">
+      <div className="max-w-8xl">
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
           <div className="p-6">
             {/* Header */}
@@ -403,7 +407,7 @@ const PaymentFlow = ({ collectPayment, onClose }) => {
             </div>
 
             {/* Payment Entries */}
-            {fullPaymentDetails.length > 0 && (
+            {fullPaymentDetails?.length > 0 && (
               <div className="mt-8">
                 <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
                   Payment Entries

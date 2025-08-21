@@ -58,8 +58,8 @@ export const InvoiceApi = createApi({
       }),
     }),
     getInvoiceDetails: builder.query({
-      query: ({ detailId }) => ({
-        url: `/api/v1/invoice/details/${detailId}`,
+      query: ({ detailId, locationId }) => ({
+        url: `/api/v1/invoice/details/${detailId}?locationId=${locationId}`,
       }),
     }),
   }),

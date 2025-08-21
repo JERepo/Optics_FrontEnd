@@ -9,6 +9,7 @@ import {
   useGetSalesReturnByIdQuery,
 } from "../../../api/salesReturnApi";
 import { useOrder } from "../../../features/OrderContext";
+import {formatINR} from '../../../utils/formatINR'
 
 const formatNumber = (num) => {
   return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "0";
@@ -146,7 +147,7 @@ const SalesView = () => {
   }
 
   return (
-    <div className="max-w-7xl">
+    <div className="max-w-8xl">
       <div className="bg-white rounded-sm shadow-sm overflow-hidden p-6">
         <div className="flex justify-between items-center mb-3">
           <div></div>
@@ -226,16 +227,16 @@ const SalesView = () => {
                     {getProductName(s)}
                   </div>
                 </TableCell>
-                <TableCell>{s.ReturnPricePerUnit}</TableCell>
+                <TableCell>₹{formatINR(s.ReturnPricePerUnit)}</TableCell>
                 <TableCell>
-                  {calculateGST(
+                  ₹{formatINR(calculateGST(
                     parseFloat(s.ReturnPricePerUnit),
                     parseFloat(s.GSTPercentage)
-                  ).gstAmount}
+                  ).gstAmount)}
                 </TableCell>
                 <TableCell>{s.ReturnQty}</TableCell>
-                <TableCell>{s.FittingCharges ?? 0}</TableCell>
-                <TableCell>{s.TotalAmount}</TableCell>
+                <TableCell>₹{formatINR(s.FittingCharges ?? 0)}</TableCell>
+                <TableCell>₹{formatINR(s.TotalAmount)}</TableCell>
               </TableRow>
             )}
             emptyMessage={isLoading ? "Loading..." : "No data available"}
@@ -259,7 +260,7 @@ const SalesView = () => {
                   Total Amount
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
-                  ₹{formatNumber(Number(grandTotal?.toFixed(2))) || "0"}
+                  ₹{formatINR(Number(grandTotal?.toFixed(2))) || "0"}
                 </span>
               </div>
             </div>

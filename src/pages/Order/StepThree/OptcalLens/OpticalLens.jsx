@@ -55,7 +55,9 @@ const OpticalLens = () => {
     FrameDetailedId,
     goToStep,
     setCustomerId,
+    Identifiers,
   } = useOrder();
+  console.log("ident", Identifiers);
   const [enableSave, setEnableSave] = useState(false);
   const [openChange, setOpenChange] = useState(false);
   const [openAdd, setOpenAdd] = useState(false);
@@ -211,7 +213,7 @@ const OpticalLens = () => {
   );
 
   const { data: acuity } = useGetAllVisualAcuityQuery();
- 
+
   // Update productName based on dropdown selections
   useEffect(() => {
     const brand =
@@ -307,7 +309,7 @@ const OpticalLens = () => {
   const [isperscriptionOpen, setIsPerscriptionOpen] = useState(false);
 
   return (
-    <div className="max-w-7xl">
+    <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-sm">
         <div className="p-6 border-b border-gray-100">
           <div>
@@ -403,13 +405,11 @@ const OpticalLens = () => {
               className="w-1/2"
             />
 
-            <div className="flex items-center gap-4 mt-4">
+            <div className="flex items-center gap-6">
               {/* Brand */}
-              <div className="space-y-1 w-1/3">
-                <label className="text-sm font-medium text-gray-700">
-                  Brand
-                </label>
+              <div className="flex items-center gap-2 w-1/2">
                 <Autocomplete
+                  label="Brand"
                   options={deduplicateOptions(
                     allBrandsData?.filter(
                       (b) => b.IsActive === 1 && b.OpticalLensActive === 1
@@ -833,6 +833,10 @@ const AutocompleteField = ({
             placeholder={`Select ${label}`}
             size="small"
             disabled={disabled}
+            InputProps={{
+              ...params.InputProps,
+              style: { color: "#000" }, // <-- force black text
+            }}
           />
         )}
         loading={loading}

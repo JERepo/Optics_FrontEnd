@@ -20,7 +20,7 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
     customerId: null,
     orderId: null,
     mobileNo: null,
-    customerData :null
+    customerData: null,
   });
   const [draftData, setDraftData] = useState(null);
 
@@ -85,8 +85,34 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
     setPaymentDetails(details);
   };
 
+  const updateFullPayments = (data) => {
+    setFullPayments(data);
+  };
   const updateSelectedOrderDetails = (details) => {
     setSelectedOrderDetails(details);
+  };
+  const resetOrderContext = () => {
+    setCustomerId({
+      countryId: null,
+      companyId: null,
+      patientName: null,
+      patientId: null,
+      locationId: null,
+      customerId: null,
+      orderId: null,
+      mobileNo: null,
+      customerData: null,
+    });
+    setDraftData(null);
+    setCurrentStep(0);
+    setCurrentSubStep(1);
+    setSelectedProduct({ value: 1, label: "Frame/Sunglass" });
+    setCustomerDetails(null);
+    setFrameDetaildId(null);
+    setPaymentDetails(null);
+    setFullPayments([]);
+    setSelectedOrderDetails(null);
+    setIdentifiers({ frameDetailedId: null, identifier: null });
   };
 
   // Sales Return Data
@@ -99,6 +125,7 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
     locationId: null,
     customerId: null,
     mobileNo: null,
+    customerData: null,
   });
 
   const [salesDraftData, setSalesDraftData] = useState(null);
@@ -148,9 +175,9 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
     setReferenceApplicable((prev) => (prev === 0 ? 1 : 0));
   };
 
-  const updateSelectedPatient = (data) =>{
-    setSelectedMainPatient(data)
-  }
+  const updateSelectedPatient = (data) => {
+    setSelectedMainPatient(data);
+  };
   const calculateGST = (sellingPrice, taxPercentage) => {
     const price = parseFloat(sellingPrice);
     const taxRate = parseFloat(taxPercentage) / 100;
@@ -220,6 +247,8 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
         setIdentifiers,
         fullPayments,
         setFullPayments,
+        updateFullPayments,
+        resetOrderContext,
 
         // sales values
         totalSalesSteps: TOTAL_SALES_STEPS,
@@ -246,7 +275,7 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
         calculateGST,
         selectedPatient,
         setSelectedMainPatient,
-        updateSelectedPatient
+        updateSelectedPatient,
       }}
     >
       {children}

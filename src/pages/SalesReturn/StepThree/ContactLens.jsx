@@ -29,8 +29,12 @@ import { useLazyGetBatchDetailsQuery } from "../../../api/InvoiceApi";
 import { useSelector } from "react-redux";
 import {
   useGetBatchBarCodeMutation,
+  useLazyGetBatchesForCLQuery,
+  useLazyGetInvoiceDetailsQuery,
   useSaveProductsMutation,
 } from "../../../api/salesReturnApi";
+import { formatINR } from "../../../utils/formatINR";
+import Modal from "../../../components/ui/Modal";
 
 // Validation helpers
 const isMultipleOfQuarter = (value) => {
@@ -41,45 +45,6 @@ const isMultipleOfQuarter = (value) => {
 const isValidAxis = (value) => {
   const num = Number(value);
   return Number.isInteger(num) && num >= 1 && num <= 180;
-};
-
-const DisplayInformation = ({ items, onSave, isContactLensCreating }) => {
-  const totalQty = items.reduce(
-    (sum, item) => sum + Number(item.orderQty || 0),
-    0
-  );
-  const totalAmount = items.reduce(
-    (sum, item) =>
-      sum + Number(item.sellingPrice || 0) * Number(item.orderQty || 0),
-    0
-  );
-
-  return (
-    <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-6">
-          <div>
-            <p className="text-sm font-medium text-gray-500">Total Quantity</p>
-            <p className="text-lg font-semibold text-gray-800">{totalQty}</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-500">Total Amount</p>
-            <p className="text-lg font-semibold text-gray-800">
-              ₹{totalAmount.toFixed(2)}
-            </p>
-          </div>
-        </div>
-        <Button
-          onClick={onSave}
-          isLoading={isContactLensCreating}
-          className="bg-green-600 hover:bg-green-700"
-          size="lg"
-        >
-          Save & Next
-        </Button>
-      </div>
-    </div>
-  );
 };
 
 const getProductName = (order) => {
@@ -190,19 +155,97 @@ const getProductName = (order) => {
 
   return "";
 };
+const getProductNameYes = (order) => {
+  const {
+    productName,
+    BrandName,
+    specs = {},
+    HSN,
+    hSN,
+    barcode,
+    color,
+    Barcode,
+    ProductType,
+    Colour,
+    brandName,
+  } = order;
+
+  const clean = (val) => {
+    if (
+      val === null ||
+      val === undefined ||
+      val === "undefined" ||
+      val === "null" ||
+      val === "N/A" ||
+      val === 0
+    ) {
+      return "";
+    }
+    return String(val).trim();
+  };
+
+  const cleanPower = (val) => {
+    const cleaned = clean(val);
+    if (!cleaned) return "";
+    const num = parseFloat(cleaned);
+    if (isNaN(num)) return "";
+    return num >= 0 ? `+${num.toFixed(2)}` : `${num.toFixed(2)}`;
+  };
+
+  const name = clean(productName);
+  const hsn = clean(HSN || hSN);
+  const brand = clean(brandName);
+  const barcodeVal = clean(Barcode || barcode);
+  const clr = clean(Colour || color);
+
+  // Ensure specs is an object, handle cases where it might be a string
+  let specsObj = {};
+
+  specsObj = {
+    Sph: specs.SphericalPower || specs.sphericalPower,
+    Cyld: specs.CylindricalPower || specs.cylindricalPower,
+    Axis: specs.Axis || specs.axis,
+    Add: specs.Additional || specs.additional,
+  };
+
+  const sph = cleanPower(specsObj.Sph);
+  const cyld = cleanPower(specsObj.Cyld);
+  const axis = clean(specsObj.Axis);
+  const addl = cleanPower(specsObj.Add);
+
+  const specsList = [
+    sph && `SPH: ${sph}`,
+    cyld && `CYL: ${cyld}`,
+    axis && `Axis: ${axis}`,
+    addl && `Add: ${addl}`,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  return [
+    brand && `${brand} ${name}`,
+    specsList,
+    clr && `Color: ${clr}`,
+    barcodeVal && `Barcode: ${barcodeVal}`,
+    hsn && `HSN: ${hsn}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+};
 
 const ContactLens = () => {
   const {
-    selectedSalesProduct,
     prevSalesStep,
-    currentSalesStep,
     customerSalesId,
     salesDraftData,
-    salesReturnData,
-    setSalesReturnData,
+
     findGSTPercentage,
     calculateGST,
     goToSalesStep,
+    referenceApplicable,
+    selectedPatient,
+    currentSalesStep,
+    selectedSalesProduct
   } = useOrder();
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
   const [searchFethed, setSearchFetched] = useState(false);
@@ -212,14 +255,18 @@ const ContactLens = () => {
   const [productSearch, setProductSearch] = useState(1); // Default to Enter Product Barcode
   const [selectBatch, setSelectBatch] = useState(0);
   const [selectedBatchCode, setSelectedBatchCode] = useState(null);
-  const [editingIndex, setEditingIndex] = useState(-1);
   const [editMode, setEditMode] = useState({});
   const [editReturnQty, setEditReturnQty] = useState("");
-  const [editReturnPrice, setEditReturnPrice] = useState(""); // New state for editing price
+  const [editReturnPrice, setEditReturnPrice] = useState("");
   const [batchCodeInput, setbatchCodeInput] = useState("");
   const [productCodeInput, setProductCodeInput] = useState("");
   const [detailId, setDetailId] = useState(false);
   const [openBatch, setOpenBatch] = useState(false);
+  const [openReferenceYes, setOpenReferenceYes] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [isInvoiceSelected, setIsInvoiceSelected] = useState(false);
+  const [selectedInvoiceReturnQty, setSelectedInvoiceReturnQty] = useState(0);
+  const [detaildAccId, setDetailAccId] = useState(null);
   const [lensData, setLensData] = useState({
     orderReference: null,
     brandId: null,
@@ -266,6 +313,11 @@ const ContactLens = () => {
   ] = useGetBatchBarCodeMutation();
   const [saveFinalProducts, { isLoading: isFinalProductsSaving }] =
     useSaveProductsMutation();
+  const [
+    getInvoiceDetails,
+    { data: InvoiceDetails, isLoading: isInvoiceLoading },
+  ] = useLazyGetInvoiceDetailsQuery();
+  const [getCLBatches, { data: CLBatches }] = useLazyGetBatchesForCLQuery();
 
   useEffect(() => {
     setEditMode((prev) => {
@@ -289,9 +341,15 @@ const ContactLens = () => {
     const item = mainClDetails[index];
 
     if (field === "returnPrice") {
-      setEditReturnPrice(item.returnPrice || "");
+      setEditReturnPrice(
+        referenceApplicable === 1
+          ? item.ReturnPricePerUnit || ""
+          : item.returnPrice || ""
+      );
     } else if (field === "returnQty") {
-      setEditReturnQty(item.returnQty || "");
+      setEditReturnQty(
+        referenceApplicable === 1 ? item.ReturnQty || "" : item.returnQty || ""
+      );
     }
   };
   const saveEdit = (index, field) => {
@@ -299,30 +357,57 @@ const ContactLens = () => {
     const parsedPrice = parseFloat(editReturnPrice);
     const item = mainClDetails[index];
 
-    if (field === "returnQty" && parsedQty > item.Quantity) {
-      toast.error("Sales return qty should not be greater than quantity");
-      return;
-    }
-    if (
-      field === "returnPrice" &&
-      parsedPrice > parseFloat(item.SellingPrice)
-    ) {
+    const sellingPrice =
+      referenceApplicable === 1
+        ? parseFloat(item.ActualSellingPrice)
+        : parseFloat(item.SellingPrice);
+
+    if (field === "returnPrice" && parsedPrice > sellingPrice) {
       toast.error(
         "Sales return price should not be greater than selling price"
       );
       return;
     }
 
+    if (field === "returnQty") {
+      const maxQty =
+        referenceApplicable === 1
+          ? item.InvoiceQty - parseInt(item.ReturnQty || 0)
+          : item.Quantity;
+      if (parsedQty > maxQty) {
+        toast.error(
+          "Sales return qty should not be greater than " +
+            (referenceApplicable === 1 ? "pending quantity" : "quantity")
+        );
+        return;
+      }
+    }
+
     setMainClDetails((prev) =>
-      prev.map((it, i) =>
-        i === index
-          ? {
-              ...it,
-              ...(field === "returnPrice" && { returnPrice: parsedPrice }),
-              ...(field === "returnQty" && { returnQty: parsedQty }),
+      prev.map((it, i) => {
+        if (i === index) {
+          let updatedItem = { ...it };
+          if (field === "returnPrice") {
+            if (referenceApplicable === 1) {
+              updatedItem.ReturnPricePerUnit = parsedPrice;
+              updatedItem.TotalAmount =
+                parsedPrice * (updatedItem.ReturnQty || 0);
+            } else {
+              updatedItem.returnPrice = parsedPrice;
             }
-          : it
-      )
+          } else if (field === "returnQty") {
+            if (referenceApplicable === 1) {
+              updatedItem.ReturnQty = parsedQty;
+              updatedItem.TotalAmount =
+                (updatedItem.ReturnPricePerUnit || 0) * parsedQty;
+            } else {
+              updatedItem.returnQty = parsedQty;
+            }
+          }
+          return updatedItem;
+        }
+        return it;
+      })
     );
     setEditMode((prev) => ({
       ...prev,
@@ -363,7 +448,7 @@ const ContactLens = () => {
       powerData: null,
     });
     setSelectedBatchCode(null);
-    setProductSearch(1); // Reset to Enter Product Barcode
+    setProductSearch(1);
     setDetailId(false);
     setProductCodeInput("");
   };
@@ -414,7 +499,6 @@ const ContactLens = () => {
 
     setErrors((prev) => ({ ...prev, [name]: message }));
   };
-
   const handleSearch = async () => {
     if (!newItem.sphericalPower) {
       toast.error("Please enter Spherical Power before searching.");
@@ -448,14 +532,14 @@ const ContactLens = () => {
           powerData: data,
         });
         setSearchFetched(true);
-        if (data.CLBatchCode === 1) {
-          await getBatches({
-            clBatchId: data.CLDetailId,
-            locationId: hasMultipleLocations[0],
+        if (data.CLBatchCode === 1 && referenceApplicable === 0) {
+          await getCLBatches({
+            detailId: data.CLDetailId,
+            locationId: parseInt(hasMultipleLocations[0]),
           }).unwrap();
           setDetailId(true);
           setOpenBatch(true);
-        } else if (data.CLBatchCode === 0) {
+        } else if (data.CLBatchCode === 0 && referenceApplicable === 0) {
           const cc = {
             ...data,
             returnPrice: parseFloat(data.SellingPrice),
@@ -463,43 +547,66 @@ const ContactLens = () => {
           };
           setMainClDetails((prev) => [...prev, cc]);
           handleRefresh();
+        } else if (data.CLBatchCode === 1 && referenceApplicable === 1) {
+          const response = await getCLBatches({
+            detailId: data.CLDetailId,
+            locationId: parseInt(hasMultipleLocations[0]),
+          }).unwrap();
+          setDetailAccId(data.CLDetailId);
+          setDetailId(true);
+          setOpenBatch(true);
+        } else if (data.CLBatchCode === 0 && referenceApplicable === 1) {
+          try {
+            await getInvoiceDetails({
+              productType: 3,
+              detailId: data.CLDetailId,
+              batchCode: null,
+              patientId: customerSalesId.patientId,
+              locationId: customerSalesId.locationId,
+            }).unwrap();
+            setDetailAccId(data.CLDetailId);
+            setOpenReferenceYes(true);
+          } catch (error) {
+            toast.error("No eligible Invoice exists for the given product");
+          }
         }
       } else {
         setSearchFetched(false);
-        toast.error("No matching power found");
         setDetailId(false);
         setOpenBatch(false);
       }
     } catch (error) {
       console.error("error", error);
-      toast.error("No matching power found");
       setSearchFetched(false);
       setDetailId(false);
       setOpenBatch(false);
     }
   };
 
+  const handleDeleteYes = (index) => {
+    console.log("yes");
+    setMainClDetails((prev) => prev.filter((item, i) => i !== index));
+  };
   const handleGetBatchBarCodeDetails = async () => {
     if (!batchCodeInput) {
       return;
     }
     try {
-      const batches = batchDetails?.data?.batches;
+      const batches = CLBatches;
       const isAvailable = batches?.find(
         (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
       );
-      if (isAvailable) {
+      console.log("isavaila", isAvailable);
+      if (isAvailable && referenceApplicable === 0) {
         const newItemCl = {
           ...isAvailable,
-          ...newItem.powerData,
           selectBatch,
-          returnPrice: parseFloat(isAvailable.SellingPrice),
-          returnQty: parseInt(isAvailable.Quantity),
+          returnPrice: parseFloat(newItem.sellingPrice),
+          returnQty: newItem.orderQty,
           ...(detailId ? batchBarCodeDetails?.data?.data : {}),
         };
 
         setMainClDetails((prev) => [...prev, newItemCl]);
-
         setLensData({
           orderReference: null,
           brandId: null,
@@ -522,6 +629,25 @@ const ContactLens = () => {
         setSelectedBatchCode("");
         setDetailId(false);
         setProductCodeInput("");
+        setbatchCodeInput("");
+      } else if (isAvailable && referenceApplicable === 1) {
+        await getInvoiceDetails({
+          productType: 3,
+          detailId:
+            selectBatch === 1
+              ? batchBarCodeDetails?.data.data.CLDetailId
+              : newItem.CLDetailId,
+          batchCode: isAvailable.CLBatchBarCode,
+          patientId: customerSalesId.patientId,
+          locationId: customerSalesId.locationId,
+        }).unwrap();
+        const id =
+          selectBatch === 1
+            ? batchBarCodeDetails?.data.data.CLDetailId
+            : newItem.CLDetailId;
+        setDetailAccId(id);
+        setOpenReferenceYes(true);
+        setbatchCodeInput("");
       } else {
         toast.error("Entered BatchBarcode is not exists!");
       }
@@ -540,7 +666,7 @@ const ContactLens = () => {
         locationId: parseInt(hasMultipleLocations[0]),
       }).unwrap();
 
-      if (response?.data.data.CLBatchCode === 0) {
+      if (response?.data.data.CLBatchCode === 0 && referenceApplicable === 0) {
         const cc = {
           ...response?.data.data,
           returnPrice: parseFloat(response?.data.data.SellingPrice),
@@ -548,9 +674,36 @@ const ContactLens = () => {
         };
         setMainClDetails((prev) => [...prev, cc]);
         setProductCodeInput("");
-      } else {
-        const batchCodeData = await getBatches({
-          clBatchId: response?.data.data.CLDetailId,
+      } else if (
+        response?.data.data.CLBatchCode === 1 &&
+        referenceApplicable === 0
+      ) {
+        const batchCodeData = await getCLBatches({
+          detailId: response?.data.data.CLDetailId,
+          locationId: parseInt(hasMultipleLocations[0]),
+        }).unwrap();
+        if (batchCodeData) {
+          setDetailId(true);
+        }
+      } else if (
+        referenceApplicable === 1 &&
+        response?.data.data.CLBatchCode === 0
+      ) {
+        await getInvoiceDetails({
+          productType: 3,
+          detailId: response?.data.data.CLDetailId,
+          batchCode: null,
+          patientId: customerSalesId.patientId,
+          locationId: customerSalesId.locationId,
+        }).unwrap();
+        setDetailAccId(response?.data.data.CLDetailId);
+        setOpenReferenceYes(true);
+      } else if (
+        referenceApplicable === 1 &&
+        response?.data.data.CLBatchCode === 1
+      ) {
+        const batchCodeData = await getCLBatches({
+          detailId: response?.data.data.CLDetailId,
           locationId: parseInt(hasMultipleLocations[0]),
         }).unwrap();
         if (batchCodeData) {
@@ -559,32 +712,102 @@ const ContactLens = () => {
       }
     } catch (error) {
       console.log(error);
-      toast.error(error?.data.error);
+      toast.error(
+        error?.data.error || "No eligible Invoice exists for the given product"
+      );
     }
   };
-  const handleSaveBatchData = () => {
-    let sub;
-    if ((!detailId || openBatch) && productSearch == 0) {
-      sub = {
-        ...newItem.powerData,
-        ...selectedBatchCode,
-        MRP: selectedBatchCode.CLMRP,
+  const handleSaveBatchData = async () => {
+    if (referenceApplicable === 0) {
+      console.log("inside save",batchBarCodeDetails?.data.data.SellingPrice)
+      let sub;
+      if ((!detailId || openBatch) && productSearch == 0) {
+        sub = {
+          ...newItem.powerData,
+          ...selectedBatchCode,
+          MRP: selectedBatchCode.CLMRP,
 
-        returnPrice: parseFloat(selectedBatchCode.SellingPrice),
-        returnQty: 1,
-      };
-    } else if (detailId && productSearch == 1) {
-      sub = {
-        ...batchBarCodeDetails?.data.data,
-        ...selectedBatchCode,
-        MRP: selectedBatchCode.CLMRP,
-        returnPrice: parseFloat(batchBarCodeDetails?.data.data.CLMRP),
-        returnQty: 1,
-      };
+          returnPrice: parseFloat(batchBarCodeDetails?.data.data.SellingPrice),
+          returnQty: 1,
+        };
+      } else if (detailId && productSearch == 1) {
+        sub = {
+          ...batchBarCodeDetails?.data.data,
+          ...selectedBatchCode,
+          MRP: selectedBatchCode.CLMRP,
+          returnPrice: parseFloat(batchBarCodeDetails?.data.data.SellingPrice),
+          returnQty: 1,
+        };
+      }
+
+      setMainClDetails((prev) => [...prev, sub]);
+      handleRefresh();
+    } else if (referenceApplicable === 1) {
+      try {
+        await getInvoiceDetails({
+          productType: 3,
+          detailId:
+            productSearch === 1
+              ? batchBarCodeDetails?.data.data.CLDetailId
+              : newItem.CLDetailId,
+          batchCode: selectedBatchCode.CLBatchCode || null,
+          patientId: customerSalesId.patientId,
+          locationId: customerSalesId.locationId,
+        }).unwrap();
+        const id =
+          productSearch === 1
+            ? batchBarCodeDetails?.data.data.CLDetailId
+            : newItem.CLDetailId;
+        setDetailAccId(id);
+        setOpenReferenceYes(true);
+      } catch (error) {
+        toast.error("No eligible Invoice exists for the given product");
+      }
+    }
+  };
+  const handleAddData = () => {
+    if (!selectedInvoiceReturnQty || isNaN(selectedInvoiceReturnQty)) {
+      toast.error("Please enter a valid Return Qty");
+      return;
     }
 
-    setMainClDetails((prev) => [...prev, sub]);
+    if (
+      selectedInvoice?.InvoiceQty - parseInt(selectedInvoice?.ReturnQty) <
+      selectedInvoiceReturnQty
+    ) {
+      toast.error("Sales Return Quantity cannot exceed Pending Quantity!");
+      return;
+    }
 
+    // Check if item already exists in items array
+    const itemExists = mainClDetails.some(
+      (item) => item.Id === selectedInvoice?.Id
+    );
+
+    if (itemExists) {
+      toast.error("This invoice item has already been added!");
+      return;
+    }
+
+    const newItemCL = {
+      ...newItem,
+      AccId: detaildAccId,
+      ...selectedInvoice,
+      ReturnQty: selectedInvoiceReturnQty,
+      ReturnPricePerUnit: selectedInvoice.ActualSellingPrice,
+      GSTPercentage: 18,
+      TotalAmount:
+        parseFloat(selectedInvoice.ActualSellingPrice) *
+        selectedInvoiceReturnQty,
+    };
+
+    setMainClDetails((prev) => [...prev, newItemCL]);
+    setDetailAccId(null)
+    setOpenReferenceYes(false);
+    setIsInvoiceSelected(false);
+    setSelectedInvoiceReturnQty(0);
+    setSelectedInvoice(null);
+    setbatchCodeInput("");
     setLensData({
       orderReference: null,
       brandId: null,
@@ -607,8 +830,9 @@ const ContactLens = () => {
     setSelectedBatchCode(null);
     setDetailId(false);
     setProductCodeInput("");
+    handleRefresh();
   };
-
+  console.log("mainCl", mainClDetails);
   const handleSaveData = async () => {
     if (!Array.isArray(mainClDetails) || mainClDetails.length === 0) {
       console.warn("No details to save");
@@ -619,14 +843,23 @@ const ContactLens = () => {
         const payload = {
           SRMasterID: salesDraftData.Id ?? null,
           ProductType: detail.ProductType ?? 3,
-          ContactLensDetailId: detail.CLDetailId ?? null,
+          ContactLensDetailId: detail.CLDetailId ?? detail.AccId ?? null,
           AccessoryDetailId: detail.AccessoryDetailId ?? null,
           FrameDetailId: detail.FrameDetailId ?? null,
           OpticalLensDetailId: detail.OpticalLensDetailId ?? null,
           BatchCode: detail.CLBatchCode ?? null,
-          CNQty: detail.returnQty ?? null,
-          SRP: parseFloat(detail.MRP) ?? null,
-          ReturnPrice: detail.returnPrice ?? null,
+          CNQty:
+            referenceApplicable === 0
+              ? detail.returnQty
+              : detail.ReturnQty ?? null,
+          SRP:
+            referenceApplicable === 0
+              ? parseFloat(detail.MRP)
+              : parseFloat(detail.SRP) ?? null,
+          ReturnPrice:
+            referenceApplicable === 0
+              ? detail.returnPrice
+              : parseFloat(detail.ReturnPricePerUnit) ?? null,
           ProductTaxPercentage: Array.isArray(detail.TaxDetails)
             ? findGSTPercentage(detail).taxPercentage
             : findGSTPercentage({
@@ -635,7 +868,7 @@ const ContactLens = () => {
               }).taxPercentage ?? null,
           FittingReturnPrice: detail.FittingReturnPrice ?? null,
           FittingTaxPercentage: detail.FittingTaxPercentage ?? null,
-          InvoiceDetailId: detail.InvoiceDetailId ?? null,
+          InvoiceDetailId: detail.Id ?? null,
           ApplicationUserId: user.Id,
         };
         await saveFinalProducts({ payload }).unwrap();
@@ -659,17 +892,24 @@ const ContactLens = () => {
     "",
   ];
 
-  if (newItem.CLDetailId && !searchFethed) {
+  if (newItem.CLDetailId && !searchFethed && referenceApplicable === 0) {
     inputTableColumns.push("Avl.Qty", "Order Qty", "Action");
   }
 
-  console.log("main", newItem, detailId);
   return (
-    <div className="max-w-7xl h-auto">
+    <div className="max-w-8xl h-auto">
       <div className="bg-white rounded-xl shadow-sm p-2">
         <div className="p-6 border-b border-gray-100">
           <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-            <div></div>
+            <div>
+                <div>
+              <div className="flex items-center gap-4 mb-4"></div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Step {currentSalesStep}: {selectedSalesProduct.label}
+              </h1>
+             
+            </div>
+            </div>
             <div className="flex gap-3">
               <Button
                 onClick={() => prevSalesStep()}
@@ -682,141 +922,353 @@ const ContactLens = () => {
             </div>
           </div>
         </div>
-        {mainClDetails.length > 0 && (
-          <Table
-            expand={true}
-            columns={[
-              "S.No",
-              "Invoice no",
-              "product type",
-              "product details",
-              "srp",
-              "return price",
-              "gst amt",
-              "return qty",
-              "total amount",
-              "action",
-            ]}
-            data={mainClDetails}
-            renderRow={(item, index) => (
-              <TableRow>
-                <TableCell>{index + 1}</TableCell>
-                <TableCell></TableCell>
-                <TableCell>CL</TableCell>
-                <TableCell className="whitespace-pre-line">
-                  {getProductName(item)}
-                </TableCell>
-                <TableCell>₹{item.MRP}</TableCell>
-                <TableCell>
-                  {editMode[index]?.returnPrice ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        value={editReturnPrice}
-                        onChange={(e) => setEditReturnPrice(e.target.value)}
-                        className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                        placeholder="Enter price"
-                        min="0"
+        {referenceApplicable === 0 && (
+          <div>
+            {mainClDetails.length > 0 && (
+              <Table
+                expand={true}
+                columns={[
+                  "S.No",
+                  "Invoice no",
+                  "product type",
+                  "product details",
+                  "srp",
+                  "return price",
+                  "gst amt",
+                  "return qty",
+                  "total amount",
+                  "action",
+                ]}
+                data={mainClDetails}
+                renderRow={(item, index) => (
+                  <TableRow>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell></TableCell>
+                    <TableCell>CL</TableCell>
+                    <TableCell className="whitespace-pre-line">
+                      {getProductName(item)}
+                    </TableCell>
+                    <TableCell>₹{item.MRP}</TableCell>
+                    <TableCell>
+                      {editMode[index]?.returnPrice ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            value={editReturnPrice}
+                            onChange={(e) => setEditReturnPrice(e.target.value)}
+                            className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                            placeholder="Enter price"
+                            min="0"
+                          />
+                          <button
+                            onClick={() => saveEdit(index, "returnPrice")}
+                            className="text-neutral-400 transition"
+                            title="Save"
+                          >
+                            <FiCheck size={18} />
+                          </button>
+                          <button
+                            onClick={() => cancelEdit(index, "returnPrice")}
+                            className="text-neutral-400 transition"
+                            title="Cancel"
+                          >
+                            <FiX size={18} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-700">
+                            ₹{item.returnPrice}
+                          </span>
+                          <button
+                            onClick={() => toggleEditMode(index, "returnPrice")}
+                            className="text-neutral-400 transition"
+                            title="Edit Price"
+                          >
+                            <FiEdit2 size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {Array.isArray(item.TaxDetails)
+                        ? findGSTPercentage(item).gstAmount
+                        : calculateGST(
+                            parseFloat(item.returnPrice),
+                            parseFloat(item.TaxDetails?.SalesTaxPerct || 0)
+                          ).gstAmount}
+                    </TableCell>
+                    <TableCell>
+                      {editMode[index]?.returnQty ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            value={editReturnQty}
+                            onChange={(e) => setEditReturnQty(e.target.value)}
+                            className="w-20 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                            min="1"
+                          />
+                          <button
+                            onClick={() => saveEdit(index, "returnQty")}
+                            className="text-neutral-400 transition"
+                            title="Save"
+                          >
+                            <FiCheck size={18} />
+                          </button>
+                          <button
+                            onClick={() => cancelEdit(index, "returnQty")}
+                            className="text-neutral-400 transition"
+                            title="Cancel"
+                          >
+                            <FiX size={18} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-700">
+                            {item.returnQty}
+                          </span>
+                          <button
+                            onClick={() => toggleEditMode(index, "returnQty")}
+                            className="text-neutral-400 transition"
+                            title="Edit Quantity"
+                          >
+                            <FiEdit2 size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      ₹
+                      {(
+                        parseFloat(item.returnPrice) *
+                        parseFloat(item.returnQty)
+                      ).toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      <FiTrash2
+                        className="text-red-500 hover:text-red-700 cursor-pointer"
+                        onClick={() => handleDelete(index)}
                       />
-                      <button
-                        onClick={() => saveEdit(index, "returnPrice")}
-                        className="text-neutral-400 transition"
-                        title="Save"
-                      >
-                        <FiCheck size={18} />
-                      </button>
-                      <button
-                        onClick={() => cancelEdit(index, "returnPrice")}
-                        className="text-neutral-400 transition"
-                        title="Cancel"
-                      >
-                        <FiX size={18} />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-700">₹{item.returnPrice}</span>
-                      <button
-                        onClick={() => toggleEditMode(index, "returnPrice")}
-                        className="text-neutral-400 transition"
-                        title="Edit Price"
-                      >
-                        <FiEdit2 size={14} />
-                      </button>
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {Array.isArray(item.TaxDetails)
-                    ? findGSTPercentage(item).gstAmount
-                    : calculateGST(
-                        parseFloat(item.returnPrice),
-                        parseFloat(item.TaxDetails?.SalesTaxPerct || 0)
-                      ).gstAmount}
-                </TableCell>
-                <TableCell>
-                  {editMode[index]?.returnQty ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        value={editReturnQty}
-                        onChange={(e) => setEditReturnQty(e.target.value)}
-                        className="w-20 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                        min="1"
-                      />
-                      <button
-                        onClick={() => saveEdit(index, "returnQty")}
-                        className="text-neutral-400 transition"
-                        title="Save"
-                      >
-                        <FiCheck size={18} />
-                      </button>
-                      <button
-                        onClick={() => cancelEdit(index, "returnQty")}
-                        className="text-neutral-400 transition"
-                        title="Cancel"
-                      >
-                        <FiX size={18} />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-700">{item.returnQty}</span>
-                      <button
-                        onClick={() => toggleEditMode(index, "returnQty")}
-                        className="text-neutral-400 transition"
-                        title="Edit Quantity"
-                      >
-                        <FiEdit2 size={14} />
-                      </button>
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell>
-                  ₹
-                  {(
-                    parseFloat(item.returnPrice) * parseFloat(item.returnQty)
-                  ).toFixed(2)}
-                </TableCell>
-                <TableCell>
-                  <FiTrash2
-                    className="text-red-500 hover:text-red-700 cursor-pointer"
-                    onClick={() => handleDelete(index)}
-                  />
-                </TableCell>
-              </TableRow>
+                    </TableCell>
+                  </TableRow>
+                )}
+              />
             )}
-          />
+            {mainClDetails.length > 0 && (
+              <div className="flex justify-end mt-5">
+                <Button
+                  onClick={handleSaveData}
+                  isLoading={isFinalProductsSaving}
+                  disabled={isFinalProductsSaving}
+                >
+                  Save & Next
+                </Button>
+              </div>
+            )}
+          </div>
         )}
-        {mainClDetails.length > 0 && (
-          <div className="flex justify-end mt-5">
-            <Button
-              onClick={handleSaveData}
-              isLoading={isFinalProductsSaving}
-              disabled={isFinalProductsSaving}
+        {referenceApplicable === 1 && mainClDetails.length > 0 && (
+          <div className="p-6">
+            <Table
+              expand={true}
+              columns={[
+                "S.No",
+                "Invoice No",
+                "Type",
+                "Product Details",
+                "SRP",
+                "Return Price",
+                "GST Amt",
+                "Return Qty",
+                "Total Amount",
+                "Action",
+              ]}
+              data={mainClDetails}
+              renderRow={(item, index) => (
+                <TableRow
+                  key={
+                    item.InvoiceDetailId ||
+                    `${item.InvoiceMain?.InvoiceNo}/${item.InvoiceSlNo}/${index}`
+                  }
+                >
+                  <TableCell className="text-center">{index + 1}</TableCell>
+                  <TableCell>
+                    {item["InvoiceMain.InvoicePrefix"]}/
+                    {item["InvoiceMain.InvoiceNo"]}/{item.InvoiceSlNo}
+                  </TableCell>
+                  <TableCell className="text-center">CL</TableCell>
+                  <TableCell className="whitespace-pre-line">
+                    {getProductNameYes(item.ProductDetails[0])}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    ₹{formatINR(parseFloat(item.SRP || 0))}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {editMode[index]?.returnPrice ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          value={editReturnPrice}
+                          onChange={(e) => setEditReturnPrice(e.target.value)}
+                          className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                          placeholder="Enter return price"
+                          min="0"
+                        />
+                        <button
+                          onClick={() => saveEdit(index, "returnPrice")}
+                          className="text-neutral-400 transition"
+                          title="Save"
+                        >
+                          <FiCheck size={18} />
+                        </button>
+                        <button
+                          onClick={() => cancelEdit(index, "returnPrice")}
+                          className="text-neutral-400 transition"
+                          title="Cancel"
+                        >
+                          <FiX size={18} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-700">
+                          ₹{formatINR(parseFloat(item.ReturnPricePerUnit || 0))}
+                        </span>
+                        <button
+                          onClick={() => toggleEditMode(index, "returnPrice")}
+                          className="text-neutral-400 transition"
+                          title="Edit Return Price"
+                        >
+                          <FiEdit2 size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    ₹
+                    {formatINR(
+                      calculateGST(
+                        parseFloat(item.ReturnPricePerUnit || 0) *
+                          parseInt(item.ReturnQty || 0),
+                        parseFloat(item.GSTPercentage || 0)
+                      ).gstAmount
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {item.ReturnQty || 0}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    ₹{formatINR(parseFloat(item.TotalAmount || 0))}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      className="px-3 py-1"
+                      onClick={() => handleDeleteYes(index)}
+                      icon={FiTrash2}
+                    ></Button>
+                  </TableCell>
+                </TableRow>
+              )}
+            />
+            <div className="flex justify-end mt-6">
+              <Button
+                type="submit"
+                isLoading={isFinalProductsSaving}
+                className="px-6 py-3 bg-green-600 hover:bg-green-700"
+                onClick={handleSaveData}
+              >
+                Save & Continue
+              </Button>
+            </div>
+          </div>
+        )}
+        {referenceApplicable === 1 && (
+          <div>
+            <Modal
+              width="max-w-4xl"
+              isOpen={openReferenceYes}
+              onClose={() => {
+                setOpenReferenceYes(false);
+                setIsInvoiceSelected(false);
+              }}
             >
-              Save & Next
-            </Button>
+              <h1 className="text-neutral-700 text-2xl mb-3">Invoice List</h1>
+              {!isInvoiceSelected && (
+                <Table
+                  columns={[
+                    "S.No",
+                    "INVOICE No",
+                    "invoice value",
+                    "invoice qty",
+                    "sale return qty",
+                    "pending return qty",
+                    "Action",
+                  ]}
+                  data={InvoiceDetails?.data}
+                  renderRow={(item, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>
+                        {item["InvoiceMain.InvoicePrefix"]}/
+                        {item["InvoiceMain.InvoiceNo"]}/{item.InvoiceSlNo}
+                      </TableCell>
+                      <TableCell>
+                        ₹
+                        {formatINR(
+                          parseFloat(item.ActualSellingPrice) * item.InvoiceQty
+                        )}
+                      </TableCell>
+                      <TableCell>{item.InvoiceQty}</TableCell>
+
+                      <TableCell>{item.ReturnQty}</TableCell>
+                      <TableCell>
+                        {item.InvoiceQty - parseInt(item.ReturnQty)}
+                      </TableCell>
+                      <TableCell>
+                        <button
+                          className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          onClick={() => {
+                            setSelectedInvoice(item);
+                            setIsInvoiceSelected(true);
+                            setSelectedInvoiceReturnQty(
+                              item.InvoiceQty - parseInt(item.ReturnQty)
+                            );
+                          }}
+                        >
+                          Select
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                />
+              )}
+              {isInvoiceSelected && (
+                <div className="flex gap-2 ">
+                  <Input
+                    value={
+                      selectedInvoice?.InvoiceQty -
+                      parseInt(selectedInvoice?.ReturnQty)
+                    }
+                    grayOut={true}
+                    label="Pending Qty"
+                  />
+                  <Input
+                    value={selectedInvoiceReturnQty}
+                    label="Sales Return Qty"
+                    onChange={(e) =>
+                      setSelectedInvoiceReturnQty(e.target.value)
+                    }
+                  />
+                </div>
+              )}
+
+              {isInvoiceSelected && (
+                <div className="w-full mt-5">
+                  <Button onClick={handleAddData}>Save</Button>
+                </div>
+              )}
+            </Modal>
           </div>
         )}
         <div className="p-6">
@@ -1106,17 +1558,17 @@ const ContactLens = () => {
               />
             </div>
 
-            {batchDetails?.data?.batches && selectBatch === 0 && (
-              <div className="w-1/3 mt-5">
-                <div className="space-y-2">
+            {CLBatches && selectBatch === 0 && (
+              <div className=" mt-5 flex items-center gap-4">
+                <div className="space-y-2 w-1/3">
                   <label className="block text-sm font-medium text-gray-700">
                     Select by BatchCode
                   </label>
                   <Autocomplete
-                    options={batchDetails?.data?.batches || []}
+                    options={CLBatches || []}
                     getOptionLabel={(option) => option.CLBatchCode || ""}
                     value={
-                      batchDetails?.data?.batches?.find(
+                      CLBatches?.find(
                         (batch) =>
                           batch.CLBatchCode === selectedBatchCode?.CLBatchCode
                       ) || null
@@ -1136,6 +1588,14 @@ const ContactLens = () => {
                     }
                   />
                 </div>
+                {selectedBatchCode && (
+                  <Button
+                    className="w-[150px] mt-8"
+                    onClick={handleSaveBatchData}
+                  >
+                    {referenceApplicable === 1 ? "Search Invoice" : "Save"}
+                  </Button>
+                )}
               </div>
             )}
             {selectBatch === 1 && (
@@ -1152,12 +1612,6 @@ const ContactLens = () => {
                 />
                 <Button onClick={handleGetBatchBarCodeDetails}>Search</Button>
               </div>
-            )}
-
-            {selectedBatchCode && (
-              <Button className="w-[200px] mt-5" onClick={handleSaveBatchData}>
-                Save
-              </Button>
             )}
           </div>
         )}
