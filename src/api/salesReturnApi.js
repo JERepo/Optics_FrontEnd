@@ -73,8 +73,8 @@ export const salesReturnApi = createApi({
       }),
     }),
     getMainSalesById: builder.query({
-      query: ({ id }) => ({
-        url: `/api/v1/sales-Return/getsalesdetails/${id}`,
+      query: ({ id, locationId }) => ({
+        url: `/api/v1/sales-Return/getsalesdetails/${id}?locationid=${locationId}`,
       }),
     }),
     getDraftDataById: builder.query({
@@ -122,5 +122,5 @@ export const {
   useLazyGetInvoiceDetailsQuery,
   useLazyGetBatchesForCLQuery,
   useGetOlInvoiceDetailsQuery,
-  useLazyGetDraftDetailsQuery
+  useLazyGetDraftDetailsQuery,
 } = salesReturnApi;

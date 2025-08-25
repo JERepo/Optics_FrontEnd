@@ -378,41 +378,53 @@ const AccessoryFrame = () => {
       )
     );
   };
-const toggleEditMode = (id, index, field) => {
-  setEditMode((prev) => {
-    const key = `${id}-${index}`;
-    const currentMode = prev[key]?.[field];
+  const toggleEditMode = (id, index, field) => {
+    setEditMode((prev) => {
+      const key = `${id}-${index}`;
+      const currentMode = prev[key]?.[field];
 
-    if (currentMode && field === "sellingPrice" && referenceApplicable === 0) {
-      // Revert to original price or MRP if canceling
-      setItems((prevItems) =>
-        prevItems.map((i, idx) =>
-          i.Barcode === id && idx === index
-            ? { ...i, SellingPrice: prev[key].originalPrice || i.MRP }
-            : i
-        )
-      );
-    } else if (currentMode && field === "returnPrice" && referenceApplicable === 1) {
-      // Revert to original price or ActualSellingPrice if canceling
-      setItems((prevItems) =>
-        prevItems.map((i, idx) =>
-          i.Id === id && idx === index
-            ? { ...i, ReturnPricePerUnit: prev[key].originalPrice || i.ActualSellingPrice }
-            : i
-        )
-      );
-    }
+      if (
+        currentMode &&
+        field === "sellingPrice" &&
+        referenceApplicable === 0
+      ) {
+        // Revert to original price or MRP if canceling
+        setItems((prevItems) =>
+          prevItems.map((i, idx) =>
+            i.Barcode === id && idx === index
+              ? { ...i, SellingPrice: prev[key].originalPrice || i.MRP }
+              : i
+          )
+        );
+      } else if (
+        currentMode &&
+        field === "returnPrice" &&
+        referenceApplicable === 1
+      ) {
+        // Revert to original price or ActualSellingPrice if canceling
+        setItems((prevItems) =>
+          prevItems.map((i, idx) =>
+            i.Id === id && idx === index
+              ? {
+                  ...i,
+                  ReturnPricePerUnit:
+                    prev[key].originalPrice || i.ActualSellingPrice,
+                }
+              : i
+          )
+        );
+      }
 
-    return {
-      ...prev,
-      [key]: {
-        ...prev[key],
-        [field]: !currentMode,
-        originalPrice: prev[key]?.originalPrice, // Preserve original price
-      },
-    };
-  });
-};
+      return {
+        ...prev,
+        [key]: {
+          ...prev[key],
+          [field]: !currentMode,
+          originalPrice: prev[key]?.originalPrice, // Preserve original price
+        },
+      };
+    });
+  };
 
   const handleConfirmBypassWarnings = async () => {
     if (!warningPayload) return;
@@ -494,8 +506,9 @@ const toggleEditMode = (id, index, field) => {
           SRMasterID: salesDraftData.Id ?? null,
           ProductType: detail.ProductType ?? 2,
           ContactLensDetailId: detail.CLDetailId ?? null,
-          AccessoryDetailId: detail.AccessoryDetailId ?? null,
-          FrameDetailId: detail.Acc ?? detail.Id ?? null,
+          AccessoryDetailId:
+            referenceApplicable === 0 ? detail.Id : detail.Acc ?? null,
+          FrameDetailId: null,
           OpticalLensDetailId: detail.OpticalLensDetailId ?? null,
           BatchCode: detail.CLBatchCode ?? null,
           CNQty:

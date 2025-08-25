@@ -35,6 +35,7 @@ import {
 } from "../../../api/salesReturnApi";
 import { formatINR } from "../../../utils/formatINR";
 import Modal from "../../../components/ui/Modal";
+import { useSaveStockDetailsMutation } from "../../../api/stockTransfer";
 
 // Validation helpers
 const isMultipleOfQuarter = (value) => {
@@ -139,12 +140,12 @@ const getProductName = (order) => {
       .join(", ");
 
     return [
-      brand && `${brand} ${name}`,
+      name && brand && `${brand} ${name}`,
       specsList,
       clr && `Color: ${clr}`,
       barcodeVal && `Barcode: ${barcodeVal}`,
-      (batchIsZero || batchBar) &&
-        `Batch Code: ${batchBar || batchIsZero || "-"}`,
+      (batchIsOne || batchIsZero || batchBar) &&
+        `Batch Code: ${batchBar || batchIsOne || batchIsZero || "-"}`,
       expiry && `Expiry : ${expiry.split("-").reverse().join("/")}`,
       hsn && `HSN: ${hsn}`,
     ]
@@ -154,118 +155,32 @@ const getProductName = (order) => {
 
   return "";
 };
-const getProductNameYes = (order) => {
-  const {
-    productName,
-    BrandName,
-    specs = {},
-    HSN,
-    hSN,
-    barcode,
-    color,
-    Barcode,
-    ProductType,
-    Colour,
-    brandName,
-  } = order;
-
-  const clean = (val) => {
-    if (
-      val === null ||
-      val === undefined ||
-      val === "undefined" ||
-      val === "null" ||
-      val === "N/A" ||
-      val === 0
-    ) {
-      return "";
-    }
-    return String(val).trim();
-  };
-
-  const cleanPower = (val) => {
-    const cleaned = clean(val);
-    if (!cleaned) return "";
-    const num = parseFloat(cleaned);
-    if (isNaN(num)) return "";
-    return num >= 0 ? `+${num.toFixed(2)}` : `${num.toFixed(2)}`;
-  };
-
-  const name = clean(productName);
-  const hsn = clean(HSN || hSN);
-  const brand = clean(brandName);
-  const barcodeVal = clean(Barcode || barcode);
-  const clr = clean(Colour || color);
-
-  // Ensure specs is an object, handle cases where it might be a string
-  let specsObj = {};
-
-  specsObj = {
-    Sph: specs.SphericalPower || specs.sphericalPower,
-    Cyld: specs.CylindricalPower || specs.cylindricalPower,
-    Axis: specs.Axis || specs.axis,
-    Add: specs.Additional || specs.additional,
-  };
-
-  const sph = cleanPower(specsObj.Sph);
-  const cyld = cleanPower(specsObj.Cyld);
-  const axis = clean(specsObj.Axis);
-  const addl = cleanPower(specsObj.Add);
-
-  const specsList = [
-    sph && `SPH: ${sph}`,
-    cyld && `CYL: ${cyld}`,
-    axis && `Axis: ${axis}`,
-    addl && `Add: ${addl}`,
-  ]
-    .filter(Boolean)
-    .join(", ");
-
-  return [
-    brand && `${brand} ${name}`,
-    specsList,
-    clr && `Color: ${clr}`,
-    barcodeVal && `Barcode: ${barcodeVal}`,
-    hsn && `HSN: ${hsn}`,
-  ]
-    .filter(Boolean)
-    .join("\n");
-};
 
 const ContactLens = () => {
   const {
-    prevSalesStep,
-    customerSalesId,
-    salesDraftData,
-
-    findGSTPercentage,
+    selectedStockProduct,
+    prevStockStep,
+    goToStockStep,
+    stockDraftData,
+    customerStock,
     calculateGST,
-    goToSalesStep,
-    referenceApplicable,
-    selectedPatient,
-    currentSalesStep,
-    selectedSalesProduct
+    currentStockStep,
   } = useOrder();
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
   const [searchFethed, setSearchFetched] = useState(false);
 
   const [mainClDetails, setMainClDetails] = useState([]);
   const [showInputRow, setShowInputRow] = useState(true);
-  const [productSearch, setProductSearch] = useState(1); // Default to Enter Product Barcode
+  const [productSearch, setProductSearch] = useState(1);
   const [selectBatch, setSelectBatch] = useState(0);
   const [selectedBatchCode, setSelectedBatchCode] = useState(null);
   const [editMode, setEditMode] = useState({});
-  const [editReturnQty, setEditReturnQty] = useState("");
-  const [editReturnPrice, setEditReturnPrice] = useState("");
+
   const [batchCodeInput, setbatchCodeInput] = useState("");
   const [productCodeInput, setProductCodeInput] = useState("");
   const [detailId, setDetailId] = useState(false);
   const [openBatch, setOpenBatch] = useState(false);
-  const [openReferenceYes, setOpenReferenceYes] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [isInvoiceSelected, setIsInvoiceSelected] = useState(false);
-  const [selectedInvoiceReturnQty, setSelectedInvoiceReturnQty] = useState(0);
-  const [detaildAccId, setDetailAccId] = useState(null);
+
   const [lensData, setLensData] = useState({
     orderReference: null,
     brandId: null,
@@ -302,7 +217,7 @@ const ContactLens = () => {
     { skip: !lensData.productId }
   );
 
-  const [getBatches, { data: batchDetails }] = useLazyGetBatchDetailsQuery();
+  const [getCLBatches, { data: CLBatches }] = useLazyGetBatchDetailsQuery();
   const [getPowerDetails, { isLoading: isPowerDetailsLoading }] =
     useGetPowerDetailsMutation();
 
@@ -310,122 +225,29 @@ const ContactLens = () => {
     getBatchBarCodeDetails,
     { data: batchBarCodeDetails, isLoading: isbatchBarLoading },
   ] = useGetBatchBarCodeMutation();
-  const [saveFinalProducts, { isLoading: isFinalProductsSaving }] =
-    useSaveProductsMutation();
-  const [
-    getInvoiceDetails,
-    { data: InvoiceDetails, isLoading: isInvoiceLoading },
-  ] = useLazyGetInvoiceDetailsQuery();
-  const [getCLBatches, { data: CLBatches }] = useLazyGetBatchesForCLQuery();
+
+  // const [getCLBatches, { data: CLBatches }] = useLazyGetBatchesForCLQuery();
+
+  const [saveStockTransfer, { isLoading: isStockTransferLoading }] =
+    useSaveStockDetailsMutation();
 
   useEffect(() => {
     setEditMode((prev) => {
       const newEditMode = { ...prev };
-      mainClDetails.forEach((_, index) => {
-        if (!newEditMode[index]) {
-          newEditMode[index] = { returnPrice: false, returnQty: false };
+      mainClDetails.forEach((item, index) => {
+        const key = `${item.Barcode}-${index}`;
+        if (!newEditMode[key]) {
+          newEditMode[key] = {
+            BuyingPrice: false,
+            qty: false,
+            originalPrice: item.BuyingPrice,
+            originalQty: item.stkQty,
+          };
         }
       });
       return newEditMode;
     });
   }, [mainClDetails]);
-  const toggleEditMode = (index, field) => {
-    setEditMode((prev) => ({
-      ...prev,
-      [index]: {
-        ...prev[index],
-        [field]: !prev[index]?.[field],
-      },
-    }));
-    const item = mainClDetails[index];
-
-    if (field === "returnPrice") {
-      setEditReturnPrice(
-        referenceApplicable === 1
-          ? item.ReturnPricePerUnit || ""
-          : item.returnPrice || ""
-      );
-    } else if (field === "returnQty") {
-      setEditReturnQty(
-        referenceApplicable === 1 ? item.ReturnQty || "" : item.returnQty || ""
-      );
-    }
-  };
-  const saveEdit = (index, field) => {
-    const parsedQty = parseFloat(editReturnQty);
-    const parsedPrice = parseFloat(editReturnPrice);
-    const item = mainClDetails[index];
-
-    const sellingPrice =
-      referenceApplicable === 1
-        ? parseFloat(item.ActualSellingPrice)
-        : parseFloat(item.SellingPrice);
-
-    if (field === "returnPrice" && parsedPrice > sellingPrice) {
-      toast.error(
-        "Sales return price should not be greater than selling price"
-      );
-      return;
-    }
-
-    if (field === "returnQty") {
-      const maxQty =
-        referenceApplicable === 1
-          ? item.InvoiceQty - parseInt(item.ReturnQty || 0)
-          : item.Quantity;
-      if (parsedQty > maxQty) {
-        toast.error(
-          "Sales return qty should not be greater than " +
-            (referenceApplicable === 1 ? "pending quantity" : "quantity")
-        );
-        return;
-      }
-    }
-
-    setMainClDetails((prev) =>
-      prev.map((it, i) => {
-        if (i === index) {
-          let updatedItem = { ...it };
-          if (field === "returnPrice") {
-            if (referenceApplicable === 1) {
-              updatedItem.ReturnPricePerUnit = parsedPrice;
-              updatedItem.TotalAmount =
-                parsedPrice * (updatedItem.ReturnQty || 0);
-            } else {
-              updatedItem.returnPrice = parsedPrice;
-            }
-          } else if (field === "returnQty") {
-            if (referenceApplicable === 1) {
-              updatedItem.ReturnQty = parsedQty;
-              updatedItem.TotalAmount =
-                (updatedItem.ReturnPricePerUnit || 0) * parsedQty;
-            } else {
-              updatedItem.returnQty = parsedQty;
-            }
-          }
-          return updatedItem;
-        }
-        return it;
-      })
-    );
-    setEditMode((prev) => ({
-      ...prev,
-      [index]: {
-        ...prev[index],
-        [field]: false,
-      },
-    }));
-  };
-
-  const cancelEdit = (index, field) => {
-    setEditMode((prev) => ({
-      ...prev,
-      [index]: {
-        ...prev[index],
-        [field]: false,
-      },
-    }));
-  };
   const handleRefresh = () => {
     setLensData({
       orderReference: null,
@@ -511,7 +333,7 @@ const ContactLens = () => {
       Axis: parseInt(newItem.axis) || null,
       Additional: parseInt(newItem.additional) || null,
       Colour: lensData.color || null,
-      locationId: customerSalesId.locationId,
+      locationId: customerStock.locationId,
     };
 
     try {
@@ -531,43 +353,25 @@ const ContactLens = () => {
           powerData: data,
         });
         setSearchFetched(true);
-        if (data.CLBatchCode === 1 && referenceApplicable === 0) {
+        if (data.CLBatchCode === 1) {
           await getCLBatches({
-            detailId: data.CLDetailId,
+            clBatchId: data.CLDetailId,
             locationId: parseInt(hasMultipleLocations[0]),
           }).unwrap();
           setDetailId(true);
           setOpenBatch(true);
-        } else if (data.CLBatchCode === 0 && referenceApplicable === 0) {
+        } else if (data.CLBatchCode === 0) {
+          if (data.AvlQty <= 0) {
+            toast.error("Stock quantity must be greater than 0!");
+            return;
+          }
           const cc = {
             ...data,
-            returnPrice: parseFloat(data.SellingPrice),
-            returnQty: 1,
+            stkQty: 1,
+            Quantity: parseInt(data.AvlQty),
           };
           setMainClDetails((prev) => [...prev, cc]);
           handleRefresh();
-        } else if (data.CLBatchCode === 1 && referenceApplicable === 1) {
-          const response = await getCLBatches({
-            detailId: data.CLDetailId,
-            locationId: parseInt(hasMultipleLocations[0]),
-          }).unwrap();
-          setDetailAccId(data.CLDetailId);
-          setDetailId(true);
-          setOpenBatch(true);
-        } else if (data.CLBatchCode === 0 && referenceApplicable === 1) {
-          try {
-            await getInvoiceDetails({
-              productType: 3,
-              detailId: data.CLDetailId,
-              batchCode: null,
-              patientId: customerSalesId.patientId,
-              locationId: customerSalesId.locationId,
-            }).unwrap();
-            setDetailAccId(data.CLDetailId);
-            setOpenReferenceYes(true);
-          } catch (error) {
-            toast.error("No eligible Invoice exists for the given product");
-          }
         }
       } else {
         setSearchFetched(false);
@@ -582,26 +386,98 @@ const ContactLens = () => {
     }
   };
 
-  const handleDeleteYes = (index) => {
-    console.log("yes");
-    setMainClDetails((prev) => prev.filter((item, i) => i !== index));
+  const toggleEditMode = (id, index, field, action = "toggle") => {
+    setEditMode((prev) => {
+      const key = `${id}-${index}`;
+      const currentMode = prev[key]?.[field];
+      const item = mainClDetails.find((i, idx) => idx === index);
+
+      if (field === "BuyingPrice" && !currentMode) {
+        return {
+          ...prev,
+          [key]: {
+            ...prev[key],
+            [field]: !currentMode,
+            originalPrice: item.BuyingPrice,
+          },
+        };
+      }
+
+      if (field === "qty" && !currentMode) {
+        return {
+          ...prev,
+          [key]: {
+            ...prev[key],
+            [field]: !currentMode,
+            originalQty: item.stkQty, // Store original quantity
+          },
+        };
+      }
+
+      if (currentMode && action === "cancel") {
+        if (field === "BuyingPrice") {
+          setMainClDetails((prevItems) =>
+            prevItems.map((i, idx) =>
+              idx === index ? { ...i, BuyingPrice: prev[key].originalPrice } : i
+            )
+          );
+        } else if (field === "qty") {
+          setMainClDetails((prevItems) =>
+            prevItems.map((i, idx) =>
+              idx === index ? { ...i, stkQty: prev[key].originalQty } : i
+            )
+          );
+        }
+      }
+
+      return {
+        ...prev,
+        [key]: {
+          ...prev[key],
+          [field]: !currentMode,
+          originalPrice: prev[key]?.originalPrice,
+          originalQty: prev[key]?.originalQty,
+        },
+      };
+    });
+  };
+  const handleQtyChange = (barcode, qty, index) => {
+    const newQty = Number(qty);
+    const avlQty = Number(mainClDetails[index].Quantity);
+    if (newQty > avlQty) {
+      toast.error("Stock quantity cannot exceed available quantity!");
+      return;
+    }
+    if (newQty < 0) {
+      toast.error("Stock quantity must be greater than 0!");
+      return;
+    }
+    setMainClDetails((prev) =>
+      prev.map((i, idx) => (idx === index ? { ...i, stkQty: newQty } : i))
+    );
   };
   const handleGetBatchBarCodeDetails = async () => {
     if (!batchCodeInput) {
       return;
     }
     try {
-      const batches = CLBatches;
+      const batches = CLBatches?.data.batches;
       const isAvailable = batches?.find(
         (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
       );
-      console.log("isavaila", isAvailable);
-      if (isAvailable && referenceApplicable === 0) {
+
+      if (isAvailable) {
+        if (parseInt(batchBarCodeDetails?.data?.data.AvlQty) <= 0) {
+          toast.error("Stock quantity must be greater than 0!");
+          return;
+        }
+
         const newItemCl = {
           ...isAvailable,
+          ...newItem.powerData,
           selectBatch,
-          returnPrice: parseFloat(newItem.sellingPrice),
-          returnQty: newItem.orderQty,
+          stkQty: 1,
+          Quantity: parseInt(newItem.powerData.AvlQty),
           ...(detailId ? batchBarCodeDetails?.data?.data : {}),
         };
 
@@ -629,26 +505,6 @@ const ContactLens = () => {
         setDetailId(false);
         setProductCodeInput("");
         setbatchCodeInput("");
-      } else if (isAvailable && referenceApplicable === 1) {
-        await getInvoiceDetails({
-          productType: 3,
-          detailId:
-            selectBatch === 1
-              ? batchBarCodeDetails?.data.data.CLDetailId
-              : newItem.CLDetailId,
-          batchCode: isAvailable.CLBatchBarCode,
-          patientId: customerSalesId.patientId,
-          locationId: customerSalesId.locationId,
-        }).unwrap();
-        const id =
-          selectBatch === 1
-            ? batchBarCodeDetails?.data.data.CLDetailId
-            : newItem.CLDetailId;
-        setDetailAccId(id);
-        setOpenReferenceYes(true);
-        setbatchCodeInput("");
-      } else {
-        toast.error("Entered BatchBarcode is not exists!");
       }
     } catch (error) {
       console.log(error);
@@ -665,45 +521,21 @@ const ContactLens = () => {
         locationId: parseInt(hasMultipleLocations[0]),
       }).unwrap();
 
-      if (response?.data.data.CLBatchCode === 0 && referenceApplicable === 0) {
+      if (response?.data.data.CLBatchCode === 0) {
+        if(response?.data.data.Quantity <= 0){
+          toast.error("Stock quantity must be greater than 0!")
+        }
         const cc = {
           ...response?.data.data,
-          returnPrice: parseFloat(response?.data.data.pSellingPrice),
-          returnQty: 1,
-          MRP :parseFloat(response?.data.data.pMRP)
+          stkQty: 1,
+          Quantity: response?.data.data.Quantity,
+          MRP: response?.data.data.MRP,
         };
         setMainClDetails((prev) => [...prev, cc]);
         setProductCodeInput("");
-      } else if (
-        response?.data.data.CLBatchCode === 1 &&
-        referenceApplicable === 0
-      ) {
+      } else if (response?.data.data.CLBatchCode === 1) {
         const batchCodeData = await getCLBatches({
-          detailId: response?.data.data.CLDetailId,
-          locationId: parseInt(hasMultipleLocations[0]),
-        }).unwrap();
-        if (batchCodeData) {
-          setDetailId(true);
-        }
-      } else if (
-        referenceApplicable === 1 &&
-        response?.data.data.CLBatchCode === 0
-      ) {
-        await getInvoiceDetails({
-          productType: 3,
-          detailId: response?.data.data.CLDetailId,
-          batchCode: null,
-          patientId: customerSalesId.patientId,
-          locationId: customerSalesId.locationId,
-        }).unwrap();
-        setDetailAccId(response?.data.data.CLDetailId);
-        setOpenReferenceYes(true);
-      } else if (
-        referenceApplicable === 1 &&
-        response?.data.data.CLBatchCode === 1
-      ) {
-        const batchCodeData = await getCLBatches({
-          detailId: response?.data.data.CLDetailId,
+          clBatchId: response?.data.data.CLDetailId,
           locationId: parseInt(hasMultipleLocations[0]),
         }).unwrap();
         if (batchCodeData) {
@@ -712,176 +544,146 @@ const ContactLens = () => {
       }
     } catch (error) {
       console.log(error);
-      toast.error(
-        error?.data.error || "No eligible Invoice exists for the given product"
-      );
+      toast.error(error?.data.error);
     }
   };
   const handleSaveBatchData = async () => {
-    if (referenceApplicable === 0) {
-      console.log("inside save",batchBarCodeDetails?.data.data.SellingPrice)
-      let sub;
-      if ((!detailId || openBatch) && productSearch == 0) {
-        sub = {
-          ...newItem.powerData,
-          ...selectedBatchCode,
-          MRP: selectedBatchCode.CLMRP,
-
-          returnPrice: parseFloat(newItem.powerData.SellingPrice),
-          returnQty: 1,
-        };
-      } else if (detailId && productSearch == 1) {
-        sub = {
-          ...batchBarCodeDetails?.data.data,
-          ...selectedBatchCode,
-          MRP: selectedBatchCode.CLMRP,
-          returnPrice: parseFloat(batchBarCodeDetails?.data.data.SellingPrice),
-          returnQty: 1,
-        };
+    let sub;
+    if ((!detailId || openBatch) && productSearch == 0) {
+      if (newItem.avlQty <= 0) {
+        toast.error("Stock quantity must be greater than 0!");
+        return;
       }
-
-      setMainClDetails((prev) => [...prev, sub]);
-      handleRefresh();
-    } else if (referenceApplicable === 1) {
-      try {
-        await getInvoiceDetails({
-          productType: 3,
-          detailId:
-            productSearch === 1
-              ? batchBarCodeDetails?.data.data.CLDetailId
-              : newItem.CLDetailId,
-          batchCode: selectedBatchCode.CLBatchCode || null,
-          patientId: customerSalesId.patientId,
-          locationId: customerSalesId.locationId,
-        }).unwrap();
-        const id =
-          productSearch === 1
-            ? batchBarCodeDetails?.data.data.CLDetailId
-            : newItem.CLDetailId;
-        setDetailAccId(id);
-        setOpenReferenceYes(true);
-      } catch (error) {
-        toast.error("No eligible Invoice exists for the given product");
-      }
-    }
-  };
-  const handleAddData = () => {
-    if (!selectedInvoiceReturnQty || isNaN(selectedInvoiceReturnQty)) {
-      toast.error("Please enter a valid Return Qty");
-      return;
+      sub = {
+        ...newItem.powerData,
+        ...selectedBatchCode,
+        stkQty: 1,
+        Quantity: newItem.avlQty,
+        MRP: selectedBatchCode.CLMRP,
+      };
+    } else if (detailId && productSearch == 1) {
+      sub = {
+        ...batchBarCodeDetails?.data.data,
+        ...selectedBatchCode,
+        stkQty: 1,
+        Quantity: batchBarCodeDetails?.data.data.Quantity,
+        MRP: selectedBatchCode.CLMRP,
+      };
     }
 
-    if (
-      selectedInvoice?.InvoiceQty - parseInt(selectedInvoice?.ReturnQty) <
-      selectedInvoiceReturnQty
-    ) {
-      toast.error("Sales Return Quantity cannot exceed Pending Quantity!");
-      return;
-    }
-
-    // Check if item already exists in items array
-    const itemExists = mainClDetails.some(
-      (item) => item.Id === selectedInvoice?.Id
-    );
-
-    if (itemExists) {
-      toast.error("This invoice item has already been added!");
-      return;
-    }
-
-    const newItemCL = {
-      ...newItem,
-      AccId: detaildAccId,
-      ...selectedInvoice,
-      ReturnQty: selectedInvoiceReturnQty,
-      ReturnPricePerUnit: selectedInvoice.ActualSellingPrice,
-      GSTPercentage: 18,
-      TotalAmount:
-        parseFloat(selectedInvoice.ActualSellingPrice) *
-        selectedInvoiceReturnQty,
-    };
-
-    setMainClDetails((prev) => [...prev, newItemCL]);
-    setDetailAccId(null)
-    setOpenReferenceYes(false);
-    setIsInvoiceSelected(false);
-    setSelectedInvoiceReturnQty(0);
-    setSelectedInvoice(null);
-    setbatchCodeInput("");
-    setLensData({
-      orderReference: null,
-      brandId: null,
-      modalityId: null,
-      productId: null,
-      color: null,
-    });
-    setSearchFetched(false);
-    setNewItem({
-      CLDetailId: null,
-      sphericalPower: null,
-      cylindricalPower: null,
-      axis: null,
-      additional: null,
-      avlQty: null,
-      orderQty: null,
-      sellingPrice: null,
-      powerData: null,
-    });
-    setSelectedBatchCode(null);
-    setDetailId(false);
-    setProductCodeInput("");
+    setMainClDetails((prev) => [...prev, sub]);
     handleRefresh();
   };
-  console.log("mainCl", mainClDetails);
+  const handleSellingPriceChange = (barcode, price, index) => {
+    const item = mainClDetails.find((i, idx) => idx === index);
+    const newPrice = Number(price);
+
+    if (newPrice > item.MRP) {
+      toast.error("Return Price cannot be greater than MRP!");
+      return;
+    }
+
+    setMainClDetails((prev) =>
+      prev.map((i, idx) =>
+        idx === index ? { ...i, BuyingPrice: newPrice } : i
+      )
+    );
+  };
+  const calculateStockGST = (item) => {
+    if (!item) return 0;
+    if (customerStock.inState === 0) {
+      const detail = item.TaxDetails[0];
+      return { gstAmount: 0, slabNo: detail.Id, gstPercent: 0 }; // no GST for out of state
+    }
+
+    const tax = item.TaxDetails;
+    if (!tax || !Array.isArray(tax.Details)) {
+      return { gstAmount: 0, slabNo: null, gstPercent: 0 };
+    }
+
+    const transferPrice = parseFloat(item.BuyingPrice) || 0;
+
+    if (tax.length === 1) {
+      const detail = tax.Details[0];
+      const taxPercent = parseFloat(detail.PurTaxPerct) || 0;
+      // return transferPrice * (taxPercent / 100);
+      const gstAmount = transferPrice * (taxPercent / 100);
+      return {
+        gstAmount,
+        slabNo: detail.Id,
+        gstPercent: taxPercent,
+      };
+    }
+
+    for (let i = 0; i < tax.length; i++) {
+      const detail = tax.Details[i];
+      const slabEnd = parseFloat(detail.SlabEnd);
+      const salesTax = parseFloat(detail.SalesTaxPerct) || 0;
+
+      if (isNaN(slabEnd)) continue;
+
+      // Adjusted slabEnd = SlabEnd / (1 + SalesTax%)
+      const newSlabEnd = slabEnd / (1 + salesTax / 100);
+
+      if (transferPrice <= newSlabEnd) {
+        const taxPercent = parseFloat(detail.PurTaxPerct) || 0;
+        const gstAmount = transferPrice * (taxPercent / 100);
+        return {
+          gstAmount,
+          slabNo: detail.Id || i + 1,
+          gstPercent: taxPercent,
+        };
+      }
+    }
+
+    const lastDetail = tax[tax.length - 1];
+    const fallbackTaxPercent = parseFloat(lastDetail?.PurTaxPerct) || 0;
+    const gstAmount = transferPrice * (fallbackTaxPercent / 100);
+    return {
+      gstAmount,
+      slabNo: lastDetail?.Id || tax.Details.length,
+      gstPercent: lastDetail?.PurTaxPerct || 0,
+    };
+  };
+
   const handleSaveData = async () => {
     if (!Array.isArray(mainClDetails) || mainClDetails.length === 0) {
       console.warn("No details to save");
       return;
     }
-    try {
-      for (const detail of mainClDetails) {
-        const payload = {
-          SRMasterID: salesDraftData.Id ?? null,
-          ProductType: detail.ProductType ?? 3,
-          ContactLensDetailId: detail.CLDetailId ?? detail.AccId ?? null,
-          AccessoryDetailId: detail.AccessoryDetailId ?? null,
-          FrameDetailId: detail.FrameDetailId ?? null,
-          OpticalLensDetailId: detail.OpticalLensDetailId ?? null,
-          BatchCode: detail.CLBatchCode ?? null,
-          CNQty:
-            referenceApplicable === 0
-              ? detail.returnQty
-              : detail.ReturnQty ?? null,
-          SRP:
-            referenceApplicable === 0
-              ? parseFloat(detail.MRP)
-              : parseFloat(detail.SRP) ?? null,
-          ReturnPrice:
-            referenceApplicable === 0
-              ? detail.returnPrice
-              : parseFloat(detail.ReturnPricePerUnit) ?? null,
-          ProductTaxPercentage: Array.isArray(detail.TaxDetails)
-            ? findGSTPercentage(detail).taxPercentage
-            : findGSTPercentage({
-                ...detail,
-                TaxDetails: [{ ...detail.TaxDetails }],
-              }).taxPercentage ?? null,
-          FittingReturnPrice: detail.FittingReturnPrice ?? null,
-          FittingTaxPercentage: detail.FittingTaxPercentage ?? null,
-          InvoiceDetailId: detail.Id ?? null,
-          ApplicationUserId: user.Id,
-        };
-        await saveFinalProducts({ payload }).unwrap();
-      }
 
-      goToSalesStep(4);
+    try {
+      const payload = {
+        STOutMainId: stockDraftData.ID || stockDraftData[0].ID,
+        products: mainClDetails.map((item) => {
+          return {
+            ProductType: 3,
+            detailId: item.CLDetailId,
+            BatchCode: item.CLBatchCode || item.CLBatchBarCode,
+            STQtyOut: item.stkQty,
+            TransferPrice: parseFloat(item.BuyingPrice),
+            gstPercentage: calculateStockGST(item).gstPercent,
+            mrp: parseFloat(item.MRP),
+          };
+        }),
+      };
+      console.log(payload);
+      await saveStockTransfer({ payload }).unwrap();
+      toast.success("Frame Stock transfer out successfully added");
+      goToStockStep(4);
     } catch (error) {
-      console.error("Error saving detail:", error);
+      toast.error(error?.data.error);
     }
   };
 
-  const handleDelete = (index) => {
-    setMainClDetails((prev) => prev.filter((_, i) => i !== index));
+  const handleDelete = (id, index) => {
+    setMainClDetails((prev) => prev.filter((i, idx) => idx !== index));
+
+    setEditMode((prev) => {
+      const newEditMode = { ...prev };
+      delete newEditMode[`${id}-${index}`];
+      return newEditMode;
+    });
   };
 
   const inputTableColumns = [
@@ -892,7 +694,7 @@ const ContactLens = () => {
     "",
   ];
 
-  if (newItem.CLDetailId && !searchFethed && referenceApplicable === 0) {
+  if (newItem.CLDetailId && !searchFethed) {
     inputTableColumns.push("Avl.Qty", "Order Qty", "Action");
   }
 
@@ -902,17 +704,16 @@ const ContactLens = () => {
         <div className="p-6 border-b border-gray-100">
           <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
             <div>
-                <div>
-              <div className="flex items-center gap-4 mb-4"></div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Step {currentSalesStep}: {selectedSalesProduct.label}
-              </h1>
-             
-            </div>
+              <div>
+                <div className="flex items-center gap-4 mb-4"></div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Step {currentStockStep}: {selectedStockProduct.label}
+                </h1>
+              </div>
             </div>
             <div className="flex gap-3">
               <Button
-                onClick={() => prevSalesStep()}
+                onClick={() => prevStockStep()}
                 icon={FiArrowLeft}
                 variant="outline"
               >
@@ -922,53 +723,71 @@ const ContactLens = () => {
             </div>
           </div>
         </div>
-        {referenceApplicable === 0 && (
-          <div>
-            {mainClDetails.length > 0 && (
+
+        <div>
+          {mainClDetails.length > 0 && (
+            <div className="p-6">
               <Table
-                expand={true}
                 columns={[
-                  "S.No",
-                  "Invoice no",
-                  "product type",
-                  "product details",
-                  "srp",
-                  "return price",
-                  "gst amt",
-                  "return qty",
+                  "s.no",
+                  "type",
+                  "Product name",
+                  "mrp",
+                  "transfer price",
+                  "gst",
+                  "stock out qty",
+                  "Avl qty",
                   "total amount",
-                  "action",
+                  "Action",
                 ]}
-                data={mainClDetails}
+                data={mainClDetails || []}
                 renderRow={(item, index) => (
-                  <TableRow>
+                  <TableRow key={`${item.Barcode}-${index}`}>
                     <TableCell>{index + 1}</TableCell>
-                    <TableCell></TableCell>
                     <TableCell>CL</TableCell>
-                    <TableCell className="whitespace-pre-line">
+                    <TableCell className="whitespace-pre-wrap">
                       {getProductName(item)}
                     </TableCell>
                     <TableCell>₹{item.MRP}</TableCell>
                     <TableCell>
-                      {editMode[index]?.returnPrice ? (
+                      {editMode[`${item.Barcode}-${index}`]?.BuyingPrice ? (
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
-                            value={editReturnPrice}
-                            onChange={(e) => setEditReturnPrice(e.target.value)}
+                            value={item.BuyingPrice || ""}
+                            onChange={(e) =>
+                              handleSellingPriceChange(
+                                item.Barcode,
+                                e.target.value,
+                                index
+                              )
+                            }
                             className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                             placeholder="Enter price"
-                            min="0"
                           />
                           <button
-                            onClick={() => saveEdit(index, "returnPrice")}
+                            onClick={() =>
+                              toggleEditMode(
+                                item.Barcode,
+                                index,
+                                "BuyingPrice",
+                                "save"
+                              )
+                            }
                             className="text-neutral-400 transition"
                             title="Save"
                           >
                             <FiCheck size={18} />
                           </button>
                           <button
-                            onClick={() => cancelEdit(index, "returnPrice")}
+                            onClick={() =>
+                              toggleEditMode(
+                                item.Barcode,
+                                index,
+                                "BuyingPrice",
+                                "cancel"
+                              )
+                            }
                             className="text-neutral-400 transition"
                             title="Cancel"
                           >
@@ -977,11 +796,11 @@ const ContactLens = () => {
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-700">
-                            ₹{item.returnPrice}
-                          </span>
+                          ₹{formatINR(item.BuyingPrice)}
                           <button
-                            onClick={() => toggleEditMode(index, "returnPrice")}
+                            onClick={() =>
+                              toggleEditMode(item.Barcode, index, "BuyingPrice")
+                            }
                             className="text-neutral-400 transition"
                             title="Edit Price"
                           >
@@ -991,32 +810,37 @@ const ContactLens = () => {
                       )}
                     </TableCell>
                     <TableCell>
-                      {Array.isArray(item.TaxDetails)
-                        ? findGSTPercentage(item).gstAmount
-                        : calculateGST(
-                            parseFloat(item.returnPrice),
-                            parseFloat(item.TaxDetails?.SalesTaxPerct || 0)
-                          ).gstAmount}
+                      ₹{formatINR(calculateStockGST(item).gstAmount)}
                     </TableCell>
                     <TableCell>
-                      {editMode[index]?.returnQty ? (
+                      {editMode[`${item.Barcode}-${index}`]?.qty ? (
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
-                            value={editReturnQty}
-                            onChange={(e) => setEditReturnQty(e.target.value)}
+                            value={item.stkQty}
+                            onChange={(e) =>
+                              handleQtyChange(
+                                item.Barcode,
+                                e.target.value,
+                                index
+                              )
+                            }
                             className="w-20 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                             min="1"
                           />
                           <button
-                            onClick={() => saveEdit(index, "returnQty")}
+                            onClick={() =>
+                              toggleEditMode(item.Barcode, index, "qty")
+                            }
                             className="text-neutral-400 transition"
                             title="Save"
                           >
                             <FiCheck size={18} />
                           </button>
                           <button
-                            onClick={() => cancelEdit(index, "returnQty")}
+                            onClick={() =>
+                              toggleEditMode(item.Barcode, index, "qty")
+                            }
                             className="text-neutral-400 transition"
                             title="Cancel"
                           >
@@ -1025,11 +849,11 @@ const ContactLens = () => {
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-700">
-                            {item.returnQty}
-                          </span>
+                          {item.stkQty}
                           <button
-                            onClick={() => toggleEditMode(index, "returnQty")}
+                            onClick={() =>
+                              toggleEditMode(item.Barcode, index, "qty")
+                            }
                             className="text-neutral-400 transition"
                             title="Edit Quantity"
                           >
@@ -1038,239 +862,40 @@ const ContactLens = () => {
                         </div>
                       )}
                     </TableCell>
+                    <TableCell>{item.Quantity}</TableCell>
                     <TableCell>
                       ₹
-                      {(
-                        parseFloat(item.returnPrice) *
-                        parseFloat(item.returnQty)
-                      ).toFixed(2)}
+                      {formatINR(
+                        parseFloat(item.BuyingPrice) * item.Quantity +
+                          calculateStockGST(item).gstAmount * item.Quantity
+                      )}
                     </TableCell>
                     <TableCell>
-                      <FiTrash2
-                        className="text-red-500 hover:text-red-700 cursor-pointer"
-                        onClick={() => handleDelete(index)}
-                      />
+                      <button
+                        onClick={() => handleDelete(item.Barcode, index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <FiTrash2 />
+                      </button>
                     </TableCell>
                   </TableRow>
                 )}
               />
-            )}
-            {mainClDetails.length > 0 && (
-              <div className="flex justify-end mt-5">
+              <div className="flex justify-end mt-6">
                 <Button
+                  type="submit"
+                  isLoading={isStockTransferLoading}
+                  disabled={isStockTransferLoading}
+                  className="px-6 py-3 bg-green-600 hover:bg-green-700"
                   onClick={handleSaveData}
-                  isLoading={isFinalProductsSaving}
-                  disabled={isFinalProductsSaving}
                 >
-                  Save & Next
+                  Save & Continue
                 </Button>
               </div>
-            )}
-          </div>
-        )}
-        {referenceApplicable === 1 && mainClDetails.length > 0 && (
-          <div className="p-6">
-            <Table
-              expand={true}
-              columns={[
-                "S.No",
-                "Invoice No",
-                "Type",
-                "Product Details",
-                "SRP",
-                "Return Price",
-                "GST Amt",
-                "Return Qty",
-                "Total Amount",
-                "Action",
-              ]}
-              data={mainClDetails}
-              renderRow={(item, index) => (
-                <TableRow
-                  key={
-                    item.InvoiceDetailId ||
-                    `${item.InvoiceMain?.InvoiceNo}/${item.InvoiceSlNo}/${index}`
-                  }
-                >
-                  <TableCell className="text-center">{index + 1}</TableCell>
-                  <TableCell>
-                    {item["InvoiceMain.InvoicePrefix"]}/
-                    {item["InvoiceMain.InvoiceNo"]}/{item.InvoiceSlNo}
-                  </TableCell>
-                  <TableCell className="text-center">CL</TableCell>
-                  <TableCell className="whitespace-pre-line">
-                    {getProductNameYes(item.ProductDetails[0])}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₹{formatINR(parseFloat(item.SRP || 0))}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {editMode[index]?.returnPrice ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          value={editReturnPrice}
-                          onChange={(e) => setEditReturnPrice(e.target.value)}
-                          className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                          placeholder="Enter return price"
-                          min="0"
-                        />
-                        <button
-                          onClick={() => saveEdit(index, "returnPrice")}
-                          className="text-neutral-400 transition"
-                          title="Save"
-                        >
-                          <FiCheck size={18} />
-                        </button>
-                        <button
-                          onClick={() => cancelEdit(index, "returnPrice")}
-                          className="text-neutral-400 transition"
-                          title="Cancel"
-                        >
-                          <FiX size={18} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-700">
-                          ₹{formatINR(parseFloat(item.ReturnPricePerUnit || 0))}
-                        </span>
-                        <button
-                          onClick={() => toggleEditMode(index, "returnPrice")}
-                          className="text-neutral-400 transition"
-                          title="Edit Return Price"
-                        >
-                          <FiEdit2 size={14} />
-                        </button>
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₹
-                    {formatINR(
-                      calculateGST(
-                        parseFloat(item.ReturnPricePerUnit || 0) *
-                          parseInt(item.ReturnQty || 0),
-                        parseFloat(item.GSTPercentage || 0)
-                      ).gstAmount
-                    )}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {item.ReturnQty || 0}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ₹{formatINR(parseFloat(item.TotalAmount || 0))}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      className="px-3 py-1"
-                      onClick={() => handleDeleteYes(index)}
-                      icon={FiTrash2}
-                    ></Button>
-                  </TableCell>
-                </TableRow>
-              )}
-            />
-            <div className="flex justify-end mt-6">
-              <Button
-                type="submit"
-                isLoading={isFinalProductsSaving}
-                className="px-6 py-3 bg-green-600 hover:bg-green-700"
-                onClick={handleSaveData}
-              >
-                Save & Continue
-              </Button>
             </div>
-          </div>
-        )}
-        {referenceApplicable === 1 && (
-          <div>
-            <Modal
-              width="max-w-4xl"
-              isOpen={openReferenceYes}
-              onClose={() => {
-                setOpenReferenceYes(false);
-                setIsInvoiceSelected(false);
-              }}
-            >
-              <h1 className="text-neutral-700 text-2xl mb-3">Invoice List</h1>
-              {!isInvoiceSelected && (
-                <Table
-                  columns={[
-                    "S.No",
-                    "INVOICE No",
-                    "invoice value",
-                    "invoice qty",
-                    "sale return qty",
-                    "pending return qty",
-                    "Action",
-                  ]}
-                  data={InvoiceDetails?.data}
-                  renderRow={(item, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell>
-                        {item["InvoiceMain.InvoicePrefix"]}/
-                        {item["InvoiceMain.InvoiceNo"]}/{item.InvoiceSlNo}
-                      </TableCell>
-                      <TableCell>
-                        ₹
-                        {formatINR(
-                          parseFloat(item.ActualSellingPrice) * item.InvoiceQty
-                        )}
-                      </TableCell>
-                      <TableCell>{item.InvoiceQty}</TableCell>
+          )}
+        </div>
 
-                      <TableCell>{item.ReturnQty}</TableCell>
-                      <TableCell>
-                        {item.InvoiceQty - parseInt(item.ReturnQty)}
-                      </TableCell>
-                      <TableCell>
-                        <button
-                          className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                          onClick={() => {
-                            setSelectedInvoice(item);
-                            setIsInvoiceSelected(true);
-                            setSelectedInvoiceReturnQty(
-                              item.InvoiceQty - parseInt(item.ReturnQty)
-                            );
-                          }}
-                        >
-                          Select
-                        </button>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                />
-              )}
-              {isInvoiceSelected && (
-                <div className="flex gap-2 ">
-                  <Input
-                    value={
-                      selectedInvoice?.InvoiceQty -
-                      parseInt(selectedInvoice?.ReturnQty)
-                    }
-                    grayOut={true}
-                    label="Pending Qty"
-                  />
-                  <Input
-                    value={selectedInvoiceReturnQty}
-                    label="Sales Return Qty"
-                    onChange={(e) =>
-                      setSelectedInvoiceReturnQty(e.target.value)
-                    }
-                  />
-                </div>
-              )}
-
-              {isInvoiceSelected && (
-                <div className="w-full mt-5">
-                  <Button onClick={handleAddData}>Save</Button>
-                </div>
-              )}
-            </Modal>
-          </div>
-        )}
         <div className="p-6">
           <div className="flex items-center gap-4">
             <Radio
@@ -1558,17 +1183,17 @@ const ContactLens = () => {
               />
             </div>
 
-            {CLBatches && selectBatch === 0 && (
+            {CLBatches?.data.batches && selectBatch === 0 && (
               <div className=" mt-5 flex items-center gap-4">
                 <div className="space-y-2 w-1/3">
                   <label className="block text-sm font-medium text-gray-700">
                     Select by BatchCode
                   </label>
                   <Autocomplete
-                    options={CLBatches || []}
+                    options={CLBatches?.data.batches || []}
                     getOptionLabel={(option) => option.CLBatchCode || ""}
                     value={
-                      CLBatches?.find(
+                      CLBatches?.data.batches?.find(
                         (batch) =>
                           batch.CLBatchCode === selectedBatchCode?.CLBatchCode
                       ) || null
@@ -1593,7 +1218,7 @@ const ContactLens = () => {
                     className="w-[150px] mt-8"
                     onClick={handleSaveBatchData}
                   >
-                    {referenceApplicable === 1 ? "Search Invoice" : "Save"}
+                    Save
                   </Button>
                 )}
               </div>

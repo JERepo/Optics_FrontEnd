@@ -66,7 +66,7 @@ const getProductName = (order) => {
     return joinNonEmpty(
       [
         clean(detail.productName),
-        clean(detail.Variation) && `Variation: ${clean(detail.Variation)}`,
+        clean(detail.Variation) && `Variation: ${clean(detail.Variation.Variation)}`,
         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
         clean(detail.hsncode) && `HSN: ${clean(detail.hsncode)}`,
       ],

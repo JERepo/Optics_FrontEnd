@@ -290,7 +290,7 @@ const OrderView = () => {
         {/* Product Table */}
         <div className="mt-10">
           <Table
-          freeze={true}
+            freeze={true}
             expand={true}
             name="Product name"
             columns={columns}
@@ -300,19 +300,19 @@ const OrderView = () => {
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>{getTypeName(order?.typeid)}</TableCell>
                 <TableCell className="">
-                  <div
-                   className="whitespace-pre-wrap"
-                  >
+                  <div className="whitespace-pre-wrap">
                     {getProductName(order)}
                   </div>
                 </TableCell>
                 <TableCell>{formatValue(order?.OrderQty)}</TableCell>
                 <TableCell>₹{formatINR(order?.Rate)}</TableCell>
                 <TableCell>
-                  ₹
-                  {order?.DiscountValue
-                    ? `${order.DiscountValue}(${order.DiscountPercentage}%)`
-                    : 0}
+                  <div className="flex flex-col items-center">
+                  <div>
+                    ₹{order?.DiscountValue ? `${order.DiscountValue}` : 0}
+                  </div>
+                  <div>({order.DiscountPercentage || 0})%</div>
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex  flex-col">
@@ -321,11 +321,10 @@ const OrderView = () => {
                       {formatINR(
                         parseFloat(
                           calculateGST(
-                            parseFloat(order.DiscountedSellingPrice) *
-                              parseFloat(order.OrderQty),
+                            parseFloat(order.DiscountedSellingPrice),
                             parseFloat(order.TaxPercentage)
                           ).gstAmount
-                        ) 
+                        )
                       )}
                     </div>
                     <div>({order.TaxPercentage}%)</div>

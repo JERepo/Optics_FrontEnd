@@ -326,7 +326,7 @@ const InvoiceView = () => {
             renderRow={(invoice, index) => (
               <TableRow key={index}>
                 <TableCell>{index + 1}</TableCell>
-                <TableCell>{`${invoice.OrderMaster?.OrderPrefix}/${invoice.OrderMaster?.OrderNo}/${invoice.InvoiceSlNo}`}</TableCell>
+                <TableCell>{`${invoice.OrderDetail?.OrderMaster.OrderPrefix}/${invoice.OrderDetail?.OrderMaster?.OrderNo}/${invoice.InvoiceSlNo}`}</TableCell>
                 <TableCell>{getTypeName(invoice?.ProductType)}</TableCell>
                 <TableCell>
                   <div className="whitespace-pre-wrap">

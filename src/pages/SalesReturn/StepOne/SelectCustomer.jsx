@@ -76,15 +76,15 @@ const SelectCustomer = () => {
         reference: referenceApplicable,
       }).unwrap();
 
+      const data = res?.data[0];
       const existingDraft =
-        res?.data?.Status === 0 &&
-        res?.data?.PatientID === selectedPatient.Id &&
-        res?.data?.ReferenceApplicable === referenceApplicable &&
-        res?.data?.ApplicationUserId === user.Id &&
-        res?.data?.SalesReturnDetails.length > 0 &&
-        res?.data?.CompanyID === parseInt(hasMultipleLocations[0])
+        data?.Status === 0 &&
+        data?.PatientID === selectedPatient.Id &&
+        data?.ReferenceApplicable === referenceApplicable &&
+        data?.ApplicationUserId === user.Id &&
+        data?.CompanyID === parseInt(hasMultipleLocations[0]);
       if (existingDraft) {
-        setSalesDraftData(res?.data);
+        setSalesDraftData(data);
         setCustomerSalesId((prev) => ({
           ...prev,
           customerData: selectedPatient,
@@ -92,6 +92,11 @@ const SelectCustomer = () => {
         goToSalesStep(4);
         return;
       }
+    } catch (error) {
+      console.log(error);
+    }
+
+    try {
       const payload = {
         ReferenceApplicable: referenceApplicable === 1,
         CustomerID: selectedPatient.mainCustomerObject.Id,
@@ -246,8 +251,8 @@ const SelectCustomer = () => {
               <div className="flex justify-end">
                 <Button
                   onClick={handleSaveDraft}
-                  isLoading={isDraftLoading}
-                  disabled={isDraftLoading}
+                  isLoading={isDraftLoading || isSalesDraftLoading}
+                  disabled={isDraftLoading || isSalesDraftLoading}
                 >
                   Save & Next
                 </Button>

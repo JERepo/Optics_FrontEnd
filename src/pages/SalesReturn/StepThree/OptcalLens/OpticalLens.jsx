@@ -513,8 +513,12 @@ const OpticalLens = () => {
     }));
   };
   const handleAddToTable = () => {
-    if (!lensData.productName || !lensData.tintId) {
+    if (!lensData.productName) {
       toast.error("Please select all required fields before adding.");
+      return;
+    }
+    if(lensData.tintvalue === 1 && !lensData.tintId){
+       toast.error("Please select all required fields before adding.");
       return;
     }
 

@@ -62,6 +62,9 @@ import InvoiceView from "../pages/Invoice/InvoiceView";
 import SalesList from "../pages/SalesReturn/MainSalesReturn/SalesList";
 import TotalSales from "../pages/SalesReturn";
 import SalesView from "../pages/SalesReturn/MainSalesReturn/SalesView";
+import StockTransfer from "../pages/StockTransfer";
+import StockTransferOut from "../pages/StockTransfer/MainStockTransferOut/StockTransferOut";
+import StockTransferView from "../pages/StockTransfer/MainStockTransferOut/StockTransferView";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -695,6 +698,18 @@ export const router = createBrowserRouter([
         path: "sales-return/create",
         element: <TotalSales />,
       },
+      {
+        path :"stock-transfer",
+        element : <StockTransferOut />
+      },
+       {
+        path :"stock-transfer/view",
+        element : <StockTransferView />
+      },
+      {
+        path :"stock-transfer/create",
+        element : <StockTransfer />
+      }
     ],
   },
   {

@@ -2,6 +2,7 @@ import { createContext, useContext, useState } from "react";
 
 const TOTAL_STEPS = 6;
 const TOTAL_SALES_STEPS = 4;
+const TOTAL_STOCK_STEPS = 4;
 
 const OrderContext = createContext();
 
@@ -215,6 +216,62 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
     return calculateGST(price, gstPercent);
   };
 
+  // Stock Transfer
+  const [customerStock, setCustomerStockOut] = useState({
+    countryId: null,
+    companyId: null,
+    patientName: null,
+    patientId: null,
+    locationId: null,
+    customerId: null,
+    mobileNo: null,
+    customerData: null,
+    inState :null
+  });
+
+  const [stockDraftData, setStockDraftData] = useState(null);
+
+  const [currentStockStep, setCurrentStockStep] = useState(1);
+  const [currentStockSubStep, setCurrentStockSubStep] = useState(1);
+  const [selectedStockProduct, setSelectedStockProduct] = useState({
+    value: 1,
+    label: "Frame/Sunglass",
+  });
+  const [selectedStockPatient, setSelectedStockPatient] = useState(null);
+
+  const goToStockStep = (step) => {
+    if (step >= 1 && step <= TOTAL_STOCK_STEPS) {
+      setCurrentStockStep(step);
+      setCurrentStockSubStep(1);
+    }
+  };
+
+  const nextStockStep = () => {
+    setCurrentStockStep((prev) => (prev < TOTAL_STOCK_STEPS ? prev + 1 : prev));
+    setCurrentStockSubStep(1);
+  };
+
+  const prevStockStep = () => {
+    setCurrentStockStep((prev) => (prev > 1 ? prev - 1 : prev));
+    setCurrentStockSubStep(1);
+  };
+
+  const goToSubStockStep = (subStep) => {
+    setCurrentStockSubStep(subStep);
+  };
+
+  const nextSubStockStep = () => {
+    setCurrentStockSubStep((prev) => prev + 1);
+  };
+
+  const prevSubStockStep = () => {
+    setCurrentStockSubStep((prev) => (prev > 1 ? prev - 1 : prev));
+  };
+
+  const setSubStockStep = (step) => {
+    setCurrentStockSubStep(step);
+  };
+
   return (
     <OrderContext.Provider
       value={{
@@ -250,7 +307,7 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
         updateFullPayments,
         resetOrderContext,
 
-        // sales values
+        // sales return
         totalSalesSteps: TOTAL_SALES_STEPS,
         selectedSalesProduct,
         setSelectedSalesProduct,
@@ -276,6 +333,28 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
         selectedPatient,
         setSelectedMainPatient,
         updateSelectedPatient,
+
+        // sales return
+        totalStockSteps: TOTAL_STOCK_STEPS,
+        selectedStockProduct,
+        setSelectedStockProduct,
+        currentStockStep,
+        setCurrentStockStep,
+        currentStockSubStep,
+        setCurrentStockSubStep,
+        stockDraftData,
+        setStockDraftData,
+        goToStockStep,
+        nextStockStep,
+        goToSubStockStep,
+        nextSubStockStep,
+        prevSubStockStep,
+        prevStockStep,
+        setSubStockStep,
+        customerStock,
+        setCustomerStockOut,
+        selectedStockPatient,
+        setSelectedStockPatient,
       }}
     >
       {children}
