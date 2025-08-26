@@ -499,7 +499,7 @@ const FrameSunglass = () => {
       toast.success("Frame Stock transfer out successfully added");
       goToStockStep(4);
     } catch (error) {
-      toast.error(error?.data.error);
+     console.log(error)
     }
   };
 

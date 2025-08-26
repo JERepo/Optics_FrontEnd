@@ -54,9 +54,9 @@ export const salesReturnApi = createApi({
       }),
       providesTags: ["SalesReturn"],
     }),
-    completeSaleRetun: builder.mutation({
-      query: ({ id, payload }) => ({
-        url: `/api/v1/sales-Return/deleteupdate?SRMasterID=${id}`,
+    completeSaleReturn: builder.mutation({
+      query: ({ id, userId, locationId, payload }) => ({
+        url: `/api/v1/sales-Return/deleteupdate?SRMasterID=${id}&ApplicationUserId=${userId}&locationID=${locationId}`,
         method: "PUT",
         body: payload,
       }),

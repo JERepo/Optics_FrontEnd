@@ -311,7 +311,7 @@ const OrderView = () => {
                   <div>
                     ₹{order?.DiscountValue ? `${order.DiscountValue}` : 0}
                   </div>
-                  <div>({order.DiscountPercentage || 0})%</div>
+                  <div>({order.DiscountPercentage || 0}%)</div>
                   </div>
                 </TableCell>
                 <TableCell>

@@ -180,61 +180,67 @@ const OpticalLens = () => {
   const [saveStockTransfer, { isLoading: isStockTransferLoading }] =
     useSaveStockDetailsMutation();
   const calculateStockGST = (item) => {
-    if (!item) return 0;
+    if (!item) return { gstAmount: 0, slabNo: null, gstPercent: 0 };
+
     if (customerStock.inState === 0) {
-      const detail = item.TaxDetails[0];
-      return { gstAmount: 0, slabNo: detail.Id, gstPercent: 0 }; // no GST for out of state
+      const detail = item.TaxDetails?.[0];
+      return {
+        gstAmount: 0,
+        slabNo: detail?.TaxDetailId ?? null,
+        gstPercent: 0,
+      };
     }
 
     const tax = item.TaxDetails;
-    if (!tax || !Array.isArray(tax.Details)) {
+    if (!Array.isArray(tax) || tax.length === 0) {
       return { gstAmount: 0, slabNo: null, gstPercent: 0 };
     }
 
     const transferPrice = parseFloat(item.BuyingPrice) || 0;
 
+    // case: single tax slab
     if (tax.length === 1) {
-      const detail = tax.Details[0];
+      const detail = tax[0];
       const taxPercent = parseFloat(detail.PurTaxPerct) || 0;
-      // return transferPrice * (taxPercent / 100);
       const gstAmount = transferPrice * (taxPercent / 100);
       return {
         gstAmount,
-        slabNo: detail.Id,
+        slabNo: detail.TaxDetailId,
         gstPercent: taxPercent,
       };
     }
 
+    // case: multiple slabs
     for (let i = 0; i < tax.length; i++) {
-      const detail = tax.Details[i];
+      const detail = tax[i];
       const slabEnd = parseFloat(detail.SlabEnd);
       const salesTax = parseFloat(detail.SalesTaxPerct) || 0;
 
       if (isNaN(slabEnd)) continue;
 
-      // Adjusted slabEnd = SlabEnd / (1 + SalesTax%)
       const newSlabEnd = slabEnd / (1 + salesTax / 100);
-
       if (transferPrice <= newSlabEnd) {
         const taxPercent = parseFloat(detail.PurTaxPerct) || 0;
         const gstAmount = transferPrice * (taxPercent / 100);
         return {
           gstAmount,
-          slabNo: detail.Id || i + 1,
+          slabNo: detail.TaxDetailId || i + 1,
           gstPercent: taxPercent,
         };
       }
     }
 
+    // fallback: last slab
     const lastDetail = tax[tax.length - 1];
     const fallbackTaxPercent = parseFloat(lastDetail?.PurTaxPerct) || 0;
     const gstAmount = transferPrice * (fallbackTaxPercent / 100);
     return {
       gstAmount,
-      slabNo: lastDetail?.Id || tax.Details.length,
-      gstPercent: lastDetail?.PurTaxPerct || 0,
+      slabNo: lastDetail?.TaxDetailId ?? tax.length,
+      gstPercent: fallbackTaxPercent,
     };
   };
+
   // Update productName based on dropdown selections
   useEffect(() => {
     const brand =
@@ -341,7 +347,7 @@ const OpticalLens = () => {
       returnPrice: 0,
       returnQty: 1,
     });
-    setBarcodeData([])
+    setBarcodeData([]);
 
     setEditMode({});
   };
@@ -754,6 +760,7 @@ const OpticalLens = () => {
   };
 
   const inputTableColumns = ["SPH", "CYLD", "Dia", "transferQty"];
+  console.log("batchde", barcodeData);
   return (
     <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-sm">
@@ -1450,56 +1457,61 @@ const OpticalLens = () => {
               )}
             />
           )}
-         
-         {barcodeData.length > 0 && 
-          <div className="mt-5 p-4 bg-gray-50 rounded-lg flex justify-end">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <span className="text-lg font-medium text-neutral-700">
-                  Total Quantity:
-                </span>
-                <span className="ml-2 text-xl font-semibold text-neutral-700">
-                  {barcodeData.reduce((sum, item) => sum + (item.tqty || 0), 0)}
-                </span>
-              </div>
-              <div>
-                <span className="text-lg font-medium text-neutral-700">
-                  Total GST:
-                </span>
-                <span className="ml-2 text-xl font-semibold text-neutral-700">
-                  ₹
-                  {formatINR(
-                    barcodeData.reduce((sum, item) => {
-                      const { gstPercent } = calculateStockGST(item);
-                      const gstAmount =
-                        (item.BuyingPrice || 0) *
-                        (item.tqty || 0) *
-                        (gstPercent / 100);
-                      return sum + gstAmount;
-                    }, 0)
-                  )}
-                </span>
-              </div>
-              <div>
-                <span className="text-lg font-medium text-neutral-700">
-                  Total Amount:
-                </span>
-                <span className="ml-2 text-xl font-semibold text-neutral-700">
-                  ₹
-                  {formatINR(
-                    barcodeData.reduce((sum, item) => {
-                      const { gstPercent } = calculateStockGST(item);
-                      const baseAmount =
-                        (item.BuyingPrice || 0) * (item.tqty || 0);
-                      const gstAmount = baseAmount * (gstPercent / 100);
-                      return sum + (baseAmount + gstAmount);
-                    }, 0)
-                  )}
-                </span>
+
+          {barcodeData.length > 0 && (
+            <div className="mt-5 p-4 bg-gray-50 rounded-lg flex justify-end">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <span className="text-lg font-medium text-neutral-700">
+                    Total Quantity:
+                  </span>
+                  <span className="ml-2 text-xl font-semibold text-neutral-700">
+                    {barcodeData.reduce(
+                      (sum, item) => sum + (item.tqty || 0),
+                      0
+                    )}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-lg font-medium text-neutral-700">
+                    Total GST:
+                  </span>
+                  <span className="ml-2 text-xl font-semibold text-neutral-700">
+                    ₹
+                    {formatINR(
+                      barcodeData.reduce((sum, item) => {
+                        const { gstPercent } = calculateStockGST(item);
+                        const gstAmount =
+                          (item.BuyingPrice || 0) *
+                          (item.tqty || 0) *
+                          (parseFloat(gstPercent) / 100);
+                        return sum + gstAmount;
+                      }, 0)
+                    )}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-lg font-medium text-neutral-700">
+                    Total Amount:
+                  </span>
+                  <span className="ml-2 text-xl font-semibold text-neutral-700">
+                    ₹
+                    {formatINR(
+                      barcodeData.reduce((sum, item) => {
+                        const { gstPercent } = calculateStockGST(item);
+                        const baseAmount =
+                          (parseFloat(item.BuyingPrice) || 0) *
+                          (item.tqty || 0);
+                        const gstAmount = baseAmount * (gstPercent / 100);
+                        return sum + (baseAmount + gstAmount);
+                      }, 0)
+                    )}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>}
-           {barcodeData.length > 0 && (
+          )}
+          {barcodeData.length > 0 && (
             <div className="flex justify-end mt-5">
               {" "}
               <Button

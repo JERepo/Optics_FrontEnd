@@ -769,7 +769,7 @@ const AccessoryFrame = () => {
                     )}
                   </TableCell>
                   <TableCell>
-                    {formatINR(calculateStockGST(item).gstAmount)}
+                    ₹{formatINR(calculateStockGST(item).gstAmount)}({calculateStockGST(item).gstPercent}%)
                   </TableCell>
                   <TableCell>
                     {editMode[`${item.Barcode}-${index}`]?.qty ? (
@@ -821,8 +821,8 @@ const AccessoryFrame = () => {
                   <TableCell>
                     ₹
                     {formatINR(
-                      parseFloat(item.BuyingPrice) * item.Quantity +
-                        calculateStockGST(item).gstAmount * item.Quantity
+                      parseFloat(item.BuyingPrice) * item.stkQty +
+                        calculateStockGST(item).gstAmount * item.stkQty
                     )}
                   </TableCell>
                   <TableCell>

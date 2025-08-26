@@ -524,6 +524,7 @@ const ContactLens = () => {
       if (response?.data.data.CLBatchCode === 0) {
         if(response?.data.data.Quantity <= 0){
           toast.error("Stock quantity must be greater than 0!")
+          return;
         }
         const cc = {
           ...response?.data.data,
@@ -590,59 +591,64 @@ const ContactLens = () => {
     );
   };
   const calculateStockGST = (item) => {
-    if (!item) return 0;
+    if (!item) return { gstAmount: 0, slabNo: null, gstPercent: 0 };
+
     if (customerStock.inState === 0) {
-      const detail = item.TaxDetails[0];
-      return { gstAmount: 0, slabNo: detail.Id, gstPercent: 0 }; // no GST for out of state
+      const detail = item.TaxDetails?.[0];
+      return {
+        gstAmount: 0,
+        slabNo: detail?.TaxDetailId ?? null,
+        gstPercent: 0,
+      };
     }
 
     const tax = item.TaxDetails;
-    if (!tax || !Array.isArray(tax.Details)) {
+    if (!Array.isArray(tax) || tax.length === 0) {
       return { gstAmount: 0, slabNo: null, gstPercent: 0 };
     }
 
     const transferPrice = parseFloat(item.BuyingPrice) || 0;
 
+    // case: single tax slab
     if (tax.length === 1) {
-      const detail = tax.Details[0];
+      const detail = tax[0];
       const taxPercent = parseFloat(detail.PurTaxPerct) || 0;
-      // return transferPrice * (taxPercent / 100);
       const gstAmount = transferPrice * (taxPercent / 100);
       return {
         gstAmount,
-        slabNo: detail.Id,
+        slabNo: detail.TaxDetailId,
         gstPercent: taxPercent,
       };
     }
 
+    // case: multiple slabs
     for (let i = 0; i < tax.length; i++) {
-      const detail = tax.Details[i];
+      const detail = tax[i];
       const slabEnd = parseFloat(detail.SlabEnd);
       const salesTax = parseFloat(detail.SalesTaxPerct) || 0;
 
       if (isNaN(slabEnd)) continue;
 
-      // Adjusted slabEnd = SlabEnd / (1 + SalesTax%)
       const newSlabEnd = slabEnd / (1 + salesTax / 100);
-
       if (transferPrice <= newSlabEnd) {
         const taxPercent = parseFloat(detail.PurTaxPerct) || 0;
         const gstAmount = transferPrice * (taxPercent / 100);
         return {
           gstAmount,
-          slabNo: detail.Id || i + 1,
+          slabNo: detail.TaxDetailId || i + 1,
           gstPercent: taxPercent,
         };
       }
     }
 
+    // fallback: last slab
     const lastDetail = tax[tax.length - 1];
     const fallbackTaxPercent = parseFloat(lastDetail?.PurTaxPerct) || 0;
     const gstAmount = transferPrice * (fallbackTaxPercent / 100);
     return {
       gstAmount,
-      slabNo: lastDetail?.Id || tax.Details.length,
-      gstPercent: lastDetail?.PurTaxPerct || 0,
+      slabNo: lastDetail?.TaxDetailId ?? tax.length,
+      gstPercent: fallbackTaxPercent,
     };
   };
 
@@ -697,7 +703,7 @@ const ContactLens = () => {
   if (newItem.CLDetailId && !searchFethed) {
     inputTableColumns.push("Avl.Qty", "Order Qty", "Action");
   }
-
+console.log(mainClDetails)
   return (
     <div className="max-w-8xl h-auto">
       <div className="bg-white rounded-xl shadow-sm p-2">
@@ -810,7 +816,7 @@ const ContactLens = () => {
                       )}
                     </TableCell>
                     <TableCell>
-                      ₹{formatINR(calculateStockGST(item).gstAmount)}
+                      ₹{formatINR(calculateStockGST(item).gstAmount)}({calculateStockGST(item).gstPercent}%)
                     </TableCell>
                     <TableCell>
                       {editMode[`${item.Barcode}-${index}`]?.qty ? (

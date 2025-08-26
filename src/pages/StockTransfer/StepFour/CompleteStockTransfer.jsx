@@ -73,7 +73,7 @@ const getProductName = (item) => {
     const lines = [
       ProductName || productName,
       Variation ? `Variation: ${Variation.Variation}` : "",
-      Barcode ? `Barcode: ${Barcode}` : "",
+      barcode ? `Barcode: ${barcode}` : "",
       clean(hsncode) ? `HSN: ${hsncode}` : "",
     ];
     return lines.filter(Boolean).join("\n");
@@ -108,21 +108,23 @@ const getProductName = (item) => {
     const tintName = clean(Tint?.name) || "";
     const addOns = AddOns?.map((a) => clean(a.name)).filter(Boolean) || [];
 
-    const specsLines = (Array.isArray(Specs) ? Specs : [])
+    const specsLines = (Array.isArray(Specs) ? Specs : [{...Specs}])
       .map((spec) => {
         const side = clean(spec?.side);
-        const sph = clean(spec?.sph);
-        const cyl = clean(spec?.cyl);
+        const sph = clean(spec?.sph || spec.Spherical);
+        const cyl = clean(spec?.cyl || spec.Cylinder);
+        const dia = clean(spec.Diameter)
         const axis = clean(spec?.axis);
         const addition = clean(spec?.addition);
 
         const powerValues = [];
         if (sph) powerValues.push(`SPH ${formatPowerValue(sph)}`);
         if (cyl) powerValues.push(`CYL ${formatPowerValue(cyl)}`);
+        if(dia) powerValues.push(`Dia ${formatPowerValue(dia)}`);
         if (axis) powerValues.push(`Axis ${formatPowerValue(axis)}`);
         if (addition) powerValues.push(`Add ${formatPowerValue(addition)}`);
 
-        return powerValues.length ? `${side}: ${powerValues.join(", ")}` : "";
+        return powerValues.join(", ");
       })
       .filter(Boolean)
       .join("\n");
@@ -300,7 +302,7 @@ const CompleteStockTransfer = () => {
                   {formatINR(
                     getStockOutPrice(item) *
                       (parseFloat(item.ProductTaxPercentage) / 100)
-                  )}
+                  )}({parseFloat(item.ProductTaxPercentage)}%)
                 </TableCell>
 
                 <TableCell>{item.STQtyOut}</TableCell>
@@ -316,8 +318,16 @@ const CompleteStockTransfer = () => {
                 </TableCell>
                 <TableCell>
                   ₹
-                  {formatINR(
+                  {/* {formatINR(
                     [1, 2, 3].includes(item.ProductType)
+                      ? parseFloat(item.Stock.BuyingPrice) * item.STQtyOut +
+                          getStockOutPrice(item) *
+                            ((parseFloat(item.ProductTaxPercentage) / 100) *
+                              item.STQtyOut)
+                      : 0
+                  )} */}
+                   {formatINR(
+                    [1, 2, 3,0].includes(item.ProductType)
                       ? parseFloat(item.Stock.BuyingPrice) * item.STQtyOut +
                           getStockOutPrice(item) *
                             ((parseFloat(item.ProductTaxPercentage) / 100) *

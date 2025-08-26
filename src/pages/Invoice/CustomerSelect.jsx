@@ -759,7 +759,7 @@ const CustomerSelect = () => {
       .map((x) => x.identifier)
       .filter(Boolean);
 
-    for (const id of identifiers) {
+     for (const id of identifiers) {
       const groupItems = localProductData.filter((x) => x.identifier === id);
       const selectedGroupItems = groupItems.filter((x) =>
         selectedProducts.includes(x.orderDetailId)
@@ -769,14 +769,20 @@ const CustomerSelect = () => {
         selectedGroupItems.length > 0 &&
         selectedGroupItems.length < groupItems.length
       ) {
-        // Find first missing item’s row number (index + 1)
+        // Find first missing item’s row number
         const missingItem = groupItems.find(
           (x) => !selectedProducts.includes(x.orderDetailId)
         );
-        const missingIndex =
-          filteredProducts.findIndex(
-            (x) => x.orderDetailId === missingItem.orderDetailId
-          ) + 1;
+
+        const idx = filteredProducts.findIndex(
+          (x) => x.orderDetailId === missingItem.orderDetailId
+        );
+        console.log("idx", idx);
+        if (idx === -1) {
+          continue;
+        }
+
+        const missingIndex = idx + 1;
 
         if (groupItems.some((x) => x.productType === 1)) {
           // Frame + Lens case
@@ -925,14 +931,20 @@ const CustomerSelect = () => {
         selectedGroupItems.length > 0 &&
         selectedGroupItems.length < groupItems.length
       ) {
-        // Find first missing item’s row number (index + 1)
+        // Find first missing item’s row number
         const missingItem = groupItems.find(
           (x) => !selectedProducts.includes(x.orderDetailId)
         );
-        const missingIndex =
-          filteredProducts.findIndex(
-            (x) => x.orderDetailId === missingItem.orderDetailId
-          ) + 1;
+
+        const idx = filteredProducts.findIndex(
+          (x) => x.orderDetailId === missingItem.orderDetailId
+        );
+        console.log("idx", idx);
+        if (idx === -1) {
+          continue;
+        }
+
+        const missingIndex = idx + 1;
 
         if (groupItems.some((x) => x.productType === 1)) {
           // Frame + Lens case

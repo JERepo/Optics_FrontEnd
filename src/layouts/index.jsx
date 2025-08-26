@@ -699,17 +699,29 @@ export const router = createBrowserRouter([
         element: <TotalSales />,
       },
       {
-        path :"stock-transfer",
-        element : <StockTransferOut />
-      },
-       {
-        path :"stock-transfer/view",
-        element : <StockTransferView />
+        path: "stock-transfer",
+        element: (
+          <ErrorBoundary>
+            <StockTransferOut />
+          </ErrorBoundary>
+        ),
       },
       {
-        path :"stock-transfer/create",
-        element : <StockTransfer />
-      }
+        path: "stock-transfer/view",
+        element: (
+          <ErrorBoundary>
+            <StockTransferView />
+          </ErrorBoundary>
+        ),
+      },
+      {
+        path: "stock-transfer/create",
+        element: (
+          <ErrorBoundary>
+            <StockTransfer />
+          </ErrorBoundary>
+        ),
+      },
     ],
   },
   {

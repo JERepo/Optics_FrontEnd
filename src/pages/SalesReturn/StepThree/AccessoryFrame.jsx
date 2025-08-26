@@ -47,6 +47,7 @@ const getProductDetailsText = (order) => {
     brandName,
     size,
     category,
+    variationName
   } = order;
 
   const clean = (val) => {
@@ -80,11 +81,13 @@ const getProductDetailsText = (order) => {
 
   return [
     brand && name ? `Brand: ${brand} - ${name}` : brand || name,
-    hsn && `HSN: ${hsn}`,
+    
     sizeVal && `Size: ${sizeVal}`,
+    variationName && `Variation: ${variationName}`,
     getCategoryName(category) && `Category: ${getCategoryName(category)}`,
     clr && `Color: ${clr}`,
     barcodeVal && `Barcode: ${barcodeVal}`,
+    hsn && `HSN: ${hsn}`,
   ]
     .filter(Boolean)
     .join("\n");
@@ -491,7 +494,7 @@ const AccessoryFrame = () => {
     setSelectedInvoiceReturnQty(0);
     setSelectedInvoice(null);
   };
-
+console.log("items",items)
   const handleSaveData = async () => {
     if (referenceApplicable === 0) {
       if (!Array.isArray(items) || items.length === 0) {
@@ -908,19 +911,19 @@ const AccessoryFrame = () => {
                     `${item.InvoiceMain?.InvoiceNo}/${item.InvoiceSlNo}/${index}`
                   }
                 >
-                  <TableCell className="text-center">{index + 1}</TableCell>
+                  <TableCell className="">{index + 1}</TableCell>
                   <TableCell>
                     {item["InvoiceMain.InvoicePrefix"]}/
                     {item["InvoiceMain.InvoiceNo"]}/{item.InvoiceSlNo}
                   </TableCell>
-                  <TableCell className="text-center">ACC</TableCell>
+                  <TableCell className="">ACC</TableCell>
                   <TableCell className="whitespace-pre-line">
                     {getProductDetailsText(item.ProductDetails[0])}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="">
                     ₹{formatINR(parseFloat(item.SRP || 0))}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="">
                     {editMode[`${item.Id}-${index}`]?.returnPrice ? (
                       <div className="flex items-center gap-2">
                         <input
@@ -957,9 +960,8 @@ const AccessoryFrame = () => {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-700">
-                          ₹{formatINR(parseFloat(item.ReturnPricePerUnit || 0))}
-                        </span>
+                       
+                         ₹{formatINR(parseFloat(item.ReturnPricePerUnit || 0))}
                         <button
                           onClick={() =>
                             toggleEditMode(item.Id, index, "returnPrice")
@@ -972,7 +974,7 @@ const AccessoryFrame = () => {
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="">
                     ₹
                     {formatINR(
                       calculateGST(
@@ -982,10 +984,10 @@ const AccessoryFrame = () => {
                       ).gstAmount
                     )}
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="">
                     {item.ReturnQty || 0}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="">
                     ₹{formatINR(parseFloat(item.TotalAmount || 0))}
                   </TableCell>
                   <TableCell>
@@ -1056,6 +1058,7 @@ const AccessoryFrame = () => {
                       </TableCell>
                       <TableCell>
                         <button
+                        className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                           onClick={() => {
                             setSelectedInvoice(item);
                             setIsInvoiceSelected(true);

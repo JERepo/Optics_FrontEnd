@@ -57,6 +57,7 @@ const getProductNameYes = (item) => {
     fittingGSTPercentage,
     hSN,
     specs,
+    productDescName
   } = product;
 
   const clean = (val) => {
@@ -78,42 +79,45 @@ const getProductNameYes = (item) => {
     return num > 0 ? `+${val}` : val;
   };
 
-  const tintName = clean(specs?.tint.tintName);
+  const tintName = clean(specs?.tint?.tintName);
   const addOns = specs?.addOn?.addOnName;
 
-  const specsLines = (specs.PowerDetails || [])
-    .map((spec) => {
-      const side = clean(spec.side);
-      const sph = clean(spec.sph);
-      const cyl = clean(spec.cyl);
-      const axis = clean(spec.axis);
-      const addition = clean(spec.addition);
+  const pd = specs?.powerDetails || {};
+const specsLines = ["right", "left"]
+  .map((side) => {
+    const eye = pd[side];
+    if (!eye) return "";
+    const sph = clean(eye.sphericalPower);
+    const cyl = clean(eye.cylinder);
+    const axis = clean(eye.axis);
+    const addition = clean(eye.addition);
 
-      const powerValues = [];
-      if (sph) powerValues.push(`SPH ${formatPowerValue(sph)}`);
-      if (cyl) powerValues.push(`CYL ${formatPowerValue(cyl)}`);
-      if (axis) powerValues.push(`Axis ${formatPowerValue(axis)}`);
-      if (addition) powerValues.push(`Add ${formatPowerValue(addition)}`);
+    const powerValues = [];
+    if (sph) powerValues.push(`SPH ${formatPowerValue(sph)}`);
+    if (cyl) powerValues.push(`CYL ${formatPowerValue(cyl)}`);
+    if (axis) powerValues.push(`Axis ${formatPowerValue(axis)}`);
+    if (addition) powerValues.push(`Add ${formatPowerValue(addition)}`);
 
-      return powerValues.length ? `${side}: ${powerValues.join(", ")}` : "";
-    })
-    .filter(Boolean)
-    .join("\n");
+   
+    const label = side === "right" ? "R" : "L";
+    return powerValues.length ? `${label}: ${powerValues.join(", ")}` : "";
+  })
+  .filter(Boolean)
+  .join("\n");
 
   const lines = [
-    `${clean(brandName)} ${clean(productName)}`,
+    `${clean(brandName)} ${clean(productDescName)}`,
     specsLines,
     clean(barcode) && `Barcode: ${barcode}`,
-
     tintName ? `Tint: ${tintName}` : "",
-
     addOns?.length > 0 ? `AddOn: ${addOns}` : "",
     clean(hSN) && `HSN: ${hSN}`,
-    clean(fittingPrice) ? `Fitting Price: ${fittingPrice}` : "",
+    clean(fittingPrice) ? `Fitting Price: ${fittingPrice}` : ""
   ];
 
   return lines.filter(Boolean).join("\n");
 };
+
 const getProductName = (order) => {
   console.log("orr", order);
   const { ProductType, productName, ProductName, tintName, AddOnData } = order;
@@ -419,6 +423,8 @@ const OpticalLens = () => {
       returnQty: 1,
     });
     setEditMode({});
+    setMainOLDetails([])
+    setSelectedInvoice(null)
   };
 
   const handleOLensBack = () => {
@@ -457,6 +463,7 @@ const OpticalLens = () => {
     const parsedQty = parseFloat(editReturnQty);
     const parsedPrice = parseFloat(editReturnPrice);
     const item = mainOLDetails[index];
+    console.log(parsedPrice);
 
     if (field === "returnQty") {
       if (isNaN(parsedQty) || parsedQty < 1) {
@@ -465,7 +472,7 @@ const OpticalLens = () => {
       }
     }
     if (field === "returnPrice") {
-      if (parsedPrice > parseFloat(item.CLMRP || item.SRP)) {
+      if (parsedPrice > parseFloat(parseFloat(item.ActualSellingPrice))) {
         toast.error("Return price cannot be greater than selling price");
         return;
       }
@@ -517,8 +524,8 @@ const OpticalLens = () => {
       toast.error("Please select all required fields before adding.");
       return;
     }
-    if(lensData.tintvalue === 1 && !lensData.tintId){
-       toast.error("Please select all required fields before adding.");
+    if (lensData.tintvalue === 1 && !lensData.tintId) {
+      toast.error("Please select all required fields before adding.");
       return;
     }
 
@@ -564,6 +571,7 @@ const OpticalLens = () => {
       returnQty: 1,
     });
   };
+  console.log(mainOLDetails);
   const handleDeleteYes = (id, index) => {
     if (referenceApplicable === 1) {
       setMainOLDetails((prev) => prev.filter((item, i) => i !== index));
@@ -583,10 +591,17 @@ const OpticalLens = () => {
       toast.error("Please select an invoice before adding.");
       return;
     }
+    const exist = mainOLDetails.find((item) => item.Id === selectedInvoice.Id);
+    if (exist) {
+      toast.error("Invoice already exist please choose another");
+      return;
+    }
 
     const newItem = {
       ...selectedInvoice,
-      ReturnPricePerUnit: editReturnFittingPrice || 555,
+      ReturnPricePerUnit:
+        parseInt(selectedInvoice?.InvoiceQty) *
+        parseFloat(selectedInvoice?.ActualSellingPrice),
       ReturnQty: 1,
     };
     console.log("new ", newItem);
@@ -598,48 +613,74 @@ const OpticalLens = () => {
 
   useEffect(() => {
     setEditReturnFittingprice(
-      parseFloat(selectedInvoice?.ProductDetails[0]?.fittingPrice)
+      parseFloat(selectedInvoice?.ProductDetails[0]?.fittingPrice || 0)
     );
   }, [selectedInvoice]);
   const getProductDisplayName = (product) => {
-    const { brandName, productName, hSN, barcode, fittingPrice, specs } =
-      product;
+    const {
+      brandName,
+      productName,
+      hSN,
+      barcode,
+      fittingPrice,
+      specs,
+      coatingName,
+      treatmentName,
+    } = product;
 
-    // Extract power details (right + left)
-    const rightPower = specs?.powerDetails?.right
-      ? `Right(Sph: ${specs.powerDetails.right.sphericalPower}, Add: ${
-          specs.powerDetails.right.addition
-        }, Axis: ${specs.powerDetails.right.axis ?? "-"}, Dia: ${
-          specs.powerDetails.right.diameter
-        })`
+    // Cleaner to remove null, undefined, "null", "undefined", "N/A", or blank strings
+    const clean = (val) => {
+      if (
+        val == null ||
+        val === "null" ||
+        val === "undefined" ||
+        val === "N/A" ||
+        (typeof val === "string" && val.trim() === "")
+      ) {
+        return "";
+      }
+      return String(val).trim();
+    };
+
+    const right = specs?.powerDetails?.right;
+    const left = specs?.powerDetails?.left;
+
+    const formatLens = (side, data) => {
+      if (!data) return "";
+      const parts = [];
+      if (clean(side)) parts.push(side);
+      if (clean(data.sphericalPower))
+        parts.push(`Sph: ${clean(data.sphericalPower)}`);
+      if (clean(data.addition)) parts.push(`Add: ${clean(data.addition)}`);
+      if (clean(data.axis)) parts.push(`Axis: ${clean(data.axis)}`);
+      if (clean(data.diameter)) parts.push(`Dia: ${clean(data.diameter)}`);
+      return parts.length ? `${side}(${parts.slice(1).join(", ")})` : "";
+    };
+
+    const rightPower = formatLens("R", right);
+    const leftPower = formatLens("L", left);
+
+    const tint = clean(specs?.tint?.tintName)
+      ? `Tint: ${clean(specs.tint.tintName)}`
       : "";
-
-    const leftPower = specs?.powerDetails?.left
-      ? `Left(Sph: ${specs.powerDetails.left.sphericalPower}, Add: ${
-          specs.powerDetails.left.addition
-        }, Axis: ${specs.powerDetails.left.axis ?? "-"}, Dia: ${
-          specs.powerDetails.left.diameter
-        })`
-      : "";
-
-    const tint = specs?.tint?.tintName ? `Tint: ${specs.tint.tintName}` : "";
-    const addOn = specs?.addOn?.addOnName
-      ? `AddOn: ${specs.addOn.addOnName}`
+    const addOn = clean(specs?.addOn?.addOnName)
+      ? `AddOn: ${clean(specs.addOn.addOnName)}`
       : "";
 
     return [
-      brandName,
-      productName,
+      clean(brandName),
+      clean(productName),
       rightPower,
       leftPower,
       tint,
       addOn,
-      hSN ? `HSN: ${hSN}` : "",
-      barcode ? `Barcode: ${barcode}` : "",
-      fittingPrice ? `Fitting Price: ${fittingPrice}` : "",
+      coatingName,
+      treatmentName,
+      clean(barcode) ? `${clean(barcode)}` : "",
+      clean(fittingPrice) ? ` ${clean(fittingPrice)}` : "",
     ]
-      .filter(Boolean) // remove empty
-      .join(" | "); // separator
+      .filter(Boolean)
+      .join(" ");
   };
 
   const handleSaveData = async () => {
@@ -657,15 +698,27 @@ const OpticalLens = () => {
           FrameDetailId: detail.FrameDetailId ?? null,
           OpticalLensDetailId: detail.OrderDetailId ?? null,
           BatchCode: detail.CLBatchCode ?? null,
-          CNQty: referenceApplicable === 0 ?detail.returnQty : detail.ReturnQty ?? null,
-          SRP: referenceApplicable === 0 ?parseFloat(detail.returnPrice):parseFloat(detail.SRP) ?? null,
+          CNQty:
+            referenceApplicable === 0
+              ? detail.returnQty
+              : detail.ReturnQty ?? null,
+          SRP:
+            referenceApplicable === 0
+              ? parseFloat(detail.returnPrice)
+              : parseFloat(detail.SRP) ?? null,
           ReturnPrice:
             referenceApplicable === 0
               ? detail.returnPrice
               : detail.ReturnPricePerUnit ?? null,
           ProductTaxPercentage: findGSTPercentage(detail).taxPercentage ?? null,
-          FittingReturnPrice:referenceApplicable === 0? detail.FittingReturnPrice:detail.ProductDetails[0]?.fittingPrice ?? null,
-          FittingTaxPercentage:referenceApplicable === 0? detail.FittingTaxPercentage:detail.ProductDetails[0]?.fittingGSTPercentage ?? null,
+          FittingReturnPrice:
+            referenceApplicable === 0
+              ? detail.FittingReturnPrice
+              : detail.ProductDetails[0]?.fittingPrice ?? null,
+          FittingTaxPercentage:
+            referenceApplicable === 0
+              ? detail.FittingTaxPercentage
+              : detail.ProductDetails[0]?.fittingGSTPercentage ?? null,
           InvoiceDetailId: detail.Id ?? null,
           ApplicationUserId: user.Id,
         };
@@ -921,12 +974,11 @@ const OpticalLens = () => {
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-700">
-                            ₹
+                         
+                           ₹
                             {formatINR(
                               parseFloat(item.ReturnPricePerUnit || 0)
                             )}
-                          </span>
                           <button
                             onClick={() =>
                               toggleEditMode(item.Id, index, "returnPrice")
@@ -943,9 +995,9 @@ const OpticalLens = () => {
                       ₹
                       {formatINR(
                         calculateGST(
-                          parseFloat(item.ReturnPricePerUnit || 0) *
-                            parseInt(item.ReturnQty || 0),
-                          parseFloat(item.GSTPercentage || 0)
+                          (parseFloat(item.ReturnPricePerUnit || 0) *
+                            parseInt(item.ReturnQty || 0)),
+                          parseFloat(item.ProductDetails[0].taxPercentage || 0)
                         ).gstAmount
                       )}
                     </TableCell>
@@ -953,7 +1005,10 @@ const OpticalLens = () => {
                       {item.ReturnQty || 0}
                     </TableCell>
                     <TableCell>
-                      ₹{formatINR(parseFloat(item.TotalAmount || 0))}
+                      ₹
+                      {formatINR(
+                        parseFloat((item.ReturnPricePerUnit * item.ReturnQty) + editReturnFittingPrice)
+                      )}
                     </TableCell>
                     <TableCell>
                       <Button

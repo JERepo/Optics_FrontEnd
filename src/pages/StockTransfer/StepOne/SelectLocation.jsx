@@ -46,7 +46,7 @@ const SelectLocation = () => {
         userId: user.Id,
       }).unwrap();
 
-      const draft = res?.data?.records[0];
+      const draft = res?.data?.records[0] || res?.data.draft;
       const existDraft =
         draft?.Status === 0 &&
         draft?.FromCompanyId === customerStock.companyId &&
@@ -75,7 +75,7 @@ const SelectLocation = () => {
       toast.success("Stock transfer out successfully created!");
       setCustomerStockOut((prev) => ({
         ...prev,
-        inState: response?.data.data.InState,
+        inState: response?.data.draft.InState,
       }));
       setStockDraftData(response?.data.data);
       goToStockStep(2);

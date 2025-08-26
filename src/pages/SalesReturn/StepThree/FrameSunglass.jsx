@@ -45,7 +45,10 @@ const getProductDetailsText = (order) => {
     Colour,
     brandName,
     size,
+    dBL,
+    templeLength,
     category,
+    modelNo,
   } = order;
 
   const clean = (val) => {
@@ -69,6 +72,7 @@ const getProductDetailsText = (order) => {
   const barcodeVal = clean(Barcode || barcode);
   const clr = clean(Colour || color);
   const sizeVal = clean(size);
+  const mo = clean(modelNo);
 
   // map category
   const getCategoryName = (cat) => {
@@ -79,11 +83,12 @@ const getProductDetailsText = (order) => {
 
   return [
     brand && name ? `Brand: ${brand} - ${name}` : brand || name,
-    hsn && `HSN: ${hsn}`,
-    sizeVal && `Size: ${sizeVal}`,
+    mo && `Model No:${mo}`,
+    sizeVal && `Size: ${sizeVal}-${dBL}-${templeLength}`,
     getCategoryName(category) && `Category: ${getCategoryName(category)}`,
     clr && `Color: ${clr}`,
     barcodeVal && `Barcode: ${barcodeVal}`,
+    hsn && `HSN: ${hsn}`,
   ]
     .filter(Boolean)
     .join("\n");
@@ -734,7 +739,10 @@ const FrameSunglass = () => {
                       <TableCell>
                         {item.Category === "O" ? "Optical Frame" : "Sunglass"}
                       </TableCell>
-                      <TableCell>{item.PO == 1 ? "Yes" : "No"}</TableCell>
+                      <TableCell>
+                        {item.PO == 1 ? "Photochromatic" : ""}
+                        {item.Ph == 1 ? "Polarised" : ""}
+                      </TableCell>
                       <TableCell>₹{item.MRP}</TableCell>
                       <TableCell>
                         {editMode[`${item.Barcode}-${index}`]?.sellingPrice ? (

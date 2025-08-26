@@ -6,6 +6,7 @@ import Button from "../../../components/ui/Button";
 import Loader from "../../../components/ui/Loader";
 import { formatINR } from "../../../utils/formatINR";
 import { useGetStockTransferOutByIdQuery } from "../../../api/stockTransfer";
+import { useSelector } from "react-redux";
 
 const getProductName = (item) => {
   const {
@@ -66,7 +67,7 @@ const getProductName = (item) => {
     const lines = [
       ProductName || productName,
       Variation ? `Variation: ${Variation.Variation}` : "",
-      Barcode ? `Barcode: ${Barcode}` : "",
+      barcode ? `Barcode: ${barcode}` : "",
       clean(hsncode) ? `HSN: ${hsncode}` : "",
     ];
     return lines.filter(Boolean).join("\n");
@@ -127,7 +128,8 @@ const getProductName = (item) => {
           `${brandName} ${productName}`
       ),
       specsLines,
-      clean(barcode) && `Color: ${colour}`,
+      clean(colour) && `Color: ${colour}`,
+      clean(barcode) && `Barcode: ${barcode}`,
       clean(hsncode) && `HSN: ${hsncode}`,
       tintName ? `Tint: ${tintName}` : "",
       addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
@@ -140,7 +142,6 @@ const getProductName = (item) => {
   return "";
 };
 
-
 const getStockOutPrice = (item) => {
   if (!item.Stock) {
     return 0;
@@ -148,11 +149,11 @@ const getStockOutPrice = (item) => {
 
   if (item.ProductType === 3) {
     if (item.CLBatchCode === 0) {
-      return item.STQtyOut * parseFloat(item.price?.BuyingPrice || 0);
+      return parseFloat(item.price?.BuyingPrice || 0);
     }
 
     return item.Stock?.reduce(
-      (sum, s) => sum + item.STQtyOut * parseFloat(s.BuyingPrice || 0),
+      (sum, s) => sum + parseFloat(s.BuyingPrice || 0),
       0
     );
   }
@@ -162,25 +163,34 @@ const getStockOutPrice = (item) => {
 const StockTransferView = () => {
   const navigate = useNavigate();
   const { search } = useLocation();
+  const { hasMultipleLocations } = useSelector((state) => state.auth);
   const params = new URLSearchParams(search);
   const stockOut = params.get("stockOutId");
 
-const {data:stockDetails,isLoading}=  useGetStockTransferOutByIdQuery()
+  const { data: stockDetails, isLoading } = useGetStockTransferOutByIdQuery({
+    mainId: stockOut,
+    locationId: parseInt(hasMultipleLocations[0]),
+  });
 
-const getShortTypeName = (id) => {
-  if (id === null || id === undefined) return;
-  if (id === 1) return "F/S";
-  if (id === 2) return "ACC";
-  if (id === 3) return "CL";
-  if (id === 0) return "OL";
-  return "";
-};
+  const getShortTypeName = (id) => {
+    if (id === null || id === undefined) return;
+    if (id === 1) return "F/S";
+    if (id === 2) return "ACC";
+    if (id === 3) return "CL";
+    if (id === 0) return "OL";
+    return "";
+  };
 
+  if (isLoading) {
+    return <Loader color="black" />;
+  }
   return (
     <div className="max-w-8xl">
       <div className="bg-white rounded-sm shadow-sm overflow-hidden p-6">
         <div className="flex justify-between items-center mb-3">
-          <div>View Stock Transfer Out Details</div>
+          <div className="text-xl font-medium text-neutral-700">
+            View Stock Transfer Out Details
+          </div>
           <div>
             <Button
               variant="outline"
@@ -192,14 +202,33 @@ const getShortTypeName = (id) => {
         </div>
         {/* Order Details */}
         <div className="grid grid-cols-3 gap-3">
-          <Info label="From Location Name" value="" />
-          <Info label="To Location Name" value="" />
-          <Info label="Date" value="" />
-          <Info label="Stock Out No" value="" />
+          <Info
+            label="From Location Name"
+            value={stockDetails?.data?.result?.FromCompany?.LocationName}
+          />
+          <Info
+            label="To Location Name"
+            value={stockDetails?.data?.result?.ToCompany?.LocationName}
+          />
+          <Info
+            label="Date"
+            value={
+              stockDetails?.data?.result?.STOutCreateDate
+                ? format(
+                    new Date(stockDetails.data.result.STOutCreateDate),
+                    "dd/MM/yyyy"
+                  )
+                : ""
+            }
+          />
+          <Info
+            label="Stock Out No"
+            value={`${stockDetails?.data?.result?.STOutPrefix}/${stockDetails?.data?.result?.STOutNo}`}
+          />
         </div>
 
         {/* Product Table */}
-        <div className="p-6">
+        <div className="mt-5">
           <Table
             columns={[
               "s.no",
@@ -211,7 +240,6 @@ const getShortTypeName = (id) => {
               "stock out qty",
               "Avl qty",
               "total amount",
-              "Action",
             ]}
             data={stockDetails?.data?.result.details || []}
             renderRow={(item, index) => (
@@ -229,6 +257,7 @@ const getShortTypeName = (id) => {
                     getStockOutPrice(item) *
                       (parseFloat(item.ProductTaxPercentage) / 100)
                   )}
+                  ({item.ProductTaxPercentage}%)
                 </TableCell>
 
                 <TableCell>{item.STQtyOut}</TableCell>
@@ -245,7 +274,7 @@ const getShortTypeName = (id) => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    [1, 2, 3].includes(item.ProductType)
+                    [1, 2, 3, 0].includes(item.ProductType)
                       ? parseFloat(item.Stock.BuyingPrice) * item.STQtyOut +
                           getStockOutPrice(item) *
                             ((parseFloat(item.ProductTaxPercentage) / 100) *
@@ -253,15 +282,13 @@ const getShortTypeName = (id) => {
                       : 0
                   )}
                 </TableCell>
-               
               </TableRow>
             )}
-           
           />
         </div>
 
         {/* Summary Section */}
-        {/* {salesDetails && (
+        {stockDetails?.data?.result && (
           <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200 justify-end">
             <div className="flex justify-end gap-10">
               <div className="flex flex-col">
@@ -269,7 +296,29 @@ const getShortTypeName = (id) => {
                   Total Qty
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
-                  {formatNumber(totalQty) || "0"}
+                  {formatINR(
+                    stockDetails?.data?.result?.details.reduce(
+                      (sum, item) => sum + item.STQtyOut,
+                      0
+                    )
+                  ) || "0"}
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-neutral-700 font-semibold text-lg">
+                  Total GST
+                </span>
+                <span className="text-neutral-600 text-xl font-medium">
+                  ₹
+                  {formatINR(
+                    stockDetails?.data?.result?.details.reduce(
+                      (sum, item) =>
+                        sum +
+                        getStockOutPrice(item) *
+                          (parseFloat(item.ProductTaxPercentage) / 100),
+                      0
+                    )
+                  ) || "0"}
                 </span>
               </div>
               <div className="flex flex-col">
@@ -277,12 +326,19 @@ const getShortTypeName = (id) => {
                   Total Amount
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
-                  ₹{formatINR(Number(grandTotal?.toFixed(2))) || "0"}
+                  ₹
+                  {formatINR(
+                    stockDetails?.data?.result?.details.reduce(
+                      (sum, item) =>
+                        sum + item.STQtyOut * parseFloat(item.TransferPrice),
+                      0
+                    )
+                  ) || "0"}
                 </span>
               </div>
             </div>
           </div>
-        )} */}
+        )}
       </div>
     </div>
   );

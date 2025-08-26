@@ -11,6 +11,7 @@ import { useNavigate } from "react-router";
 import { FiTrash2 } from "react-icons/fi";
 import { formatINR } from "../../../utils/formatINR";
 import toast from "react-hot-toast";
+import { useSelector } from "react-redux";
 
 const getProductName = (order) => {
   const {
@@ -45,8 +46,12 @@ const getProductName = (order) => {
 
   // Frames (ProductType 1)
   if (productType === 1) {
-    const line1 = clean(detail.productName);
-    const line2 = clean(detail.Size?.Size);
+    const line1 = clean(
+      `${detail.brandName} ${clean(
+        detail.productName || detail.productDescName
+      )}`
+    );
+    const line2 = clean(detail.Size?.Size) || clean(detail.specs);
     const cat = "Optical Frame";
 
     return joinNonEmpty(
@@ -65,8 +70,9 @@ const getProductName = (order) => {
   if (productType === 2) {
     return joinNonEmpty(
       [
-        clean(detail.productName),
-        clean(detail.Variation) && `Variation: ${clean(detail.Variation.Variation)}`,
+        clean(`${detail.brandName} ${detail.productName}`),
+        clean(detail.Variation?.Variation) &&
+          `Variation: ${detail.Variation?.Variation}`,
         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
         clean(detail.hsncode) && `HSN: ${clean(detail.hsncode)}`,
       ],
@@ -109,20 +115,22 @@ const getProductName = (order) => {
 
   // Ophthalmic Lenses (ProductType 0)
   if (productType === 0) {
-    const olLine = clean(detail.productName);
+    const olLine = clean(`${detail.brandName} ${detail.productName}`);
 
     const formatPower = (eye) =>
       joinNonEmpty(
         [
-          cleanPower(eye?.Spherical) && `SPH: ${cleanPower(eye?.Spherical)}`,
-          cleanPower(eye?.Add) && `Add: ${cleanPower(eye?.Add)}`,
-          clean(eye?.Diameter) && `Dia: ${clean(eye?.Diameter)}`,
+          cleanPower(eye?.sphericalPower) &&
+            `SPH: ${cleanPower(eye?.sphericalPower)}`,
+          cleanPower(eye?.addition) && `Add: ${cleanPower(eye?.addition)}`,
+          clean(eye?.diameter) && `Dia: ${clean(eye?.diameter)}`,
         ],
         ", "
       );
 
-    const rightParts = formatPower(detail.Specs || {});
-    const leftParts = ""; // no separate left/right in this response
+    const pd = detail?.specs?.powerDetails || {};
+    const rightParts = formatPower(pd.right || {});
+    const leftParts = formatPower(pd.left || {});
 
     const powerLine = joinNonEmpty(
       [rightParts && `R: ${rightParts}`, leftParts && `L: ${leftParts}`],
@@ -144,7 +152,8 @@ const getProductName = (order) => {
         powerLine,
         clean(detail.colour) && `Color: ${detail.colour}`,
         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
-        clean(detail.hsncode) && `HSN: ${clean(detail.hsncode)}`,
+        clean(detail.hSN || detail.hsncode) &&
+          `HSN: ${clean(detail.hSN) || clean(detail.hsncode)}`,
         fittingLine,
       ],
       "\n"
@@ -164,6 +173,7 @@ const getShortTypeName = (id) => {
 };
 
 const CompleteSalesReturn = () => {
+  const { user } = useSelector((state) => state.auth);
   const [comment, setComment] = useState("");
   const navigate = useNavigate();
   const [itemsToDelete, setItemsToDelete] = useState([]);
@@ -178,13 +188,11 @@ const CompleteSalesReturn = () => {
     customerSalesId,
   } = useOrder();
 
-  const {
-    data: finalProducts,
-    isLoading: isProductsLoading,
-  } = useGetSavedSalesReturnQuery(
-    { id: salesDraftData?.Id, locationId: customerSalesId.locationId },
-    { skip: !selectedPatient }
-  );
+  const { data: finalProducts, isLoading: isProductsLoading } =
+    useGetSavedSalesReturnQuery(
+      { id: salesDraftData?.Id, locationId: customerSalesId.locationId },
+      { skip: !selectedPatient }
+    );
   const [completeSales, { isLoading: isCompleteSalesLoading }] =
     useCompleteSaleRetunMutation();
 
@@ -223,7 +231,12 @@ const CompleteSalesReturn = () => {
     try {
       setDeletingId(id);
       const payload = { delete: [id] };
-      await completeSales({ id: salesDraftData.Id, payload }).unwrap();
+      await completeSales({
+        id: salesDraftData.Id,
+        userId: user.Id,
+        locationId: customerSalesId.locationId,
+        payload,
+      }).unwrap();
       setDeletingId(null);
       toast.success("Deleted successfully");
     } catch (error) {
@@ -248,7 +261,12 @@ const CompleteSalesReturn = () => {
         creditBilling: "No",
       };
 
-      await completeSales({ id: salesDraftData.Id, payload }).unwrap();
+      await completeSales({
+        id: salesDraftData.Id,
+        userId: user.Id,
+        locationId: customerSalesId.locationId,
+        payload,
+      }).unwrap();
       setItemsToDelete([]);
       setComment("");
       navigate("/sales-return");
@@ -326,27 +344,31 @@ const CompleteSalesReturn = () => {
               return (
                 <TableRow key={item.SalesReturnDetailId || index}>
                   <TableCell className="text-center">{index + 1}</TableCell>
-                  <TableCell>{}</TableCell>
+                  <TableCell>
+                    {item.InvoiceMain && (
+                      <div>
+                        {item.InvoiceMain.InvoicePrefix}/
+                        {item.InvoiceMain.InvoiceNo}
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell className="text-center">
                     {getShortTypeName(item.ProductType)}
                   </TableCell>
                   <TableCell>
-                    <div className="whitespace-pre-wrap break-words max-w-xs">
+                    <div className="whitespace-pre-wrap">
                       {getProductName(mappedOrder)}
                     </div>
                   </TableCell>
-                  <TableCell >
-                    ₹{parseFloat(item.SRP || 0)}
-                  </TableCell>
-                  <TableCell >
+                  <TableCell>₹{parseFloat(item.SRP || 0)}</TableCell>
+                  <TableCell>
                     ₹{parseFloat(item.ReturnPricePerUnit || 0)}
                   </TableCell>
-                  <TableCell >
+                  <TableCell>
                     ₹
                     {
                       calculateGST(
-                        ((item.ReturnPricePerUnit) *
-                          (item.ReturnQty)),
+                        item.ReturnPricePerUnit * item.ReturnQty,
                         parseFloat(item.GSTPercentage || 0)
                       ).gstAmount
                     }
@@ -354,9 +376,7 @@ const CompleteSalesReturn = () => {
                   <TableCell className="text-center">
                     {item.ReturnQty || 0}
                   </TableCell>
-                  <TableCell >
-                    ₹{parseFloat(item.TotalAmount || 0)}
-                  </TableCell>
+                  <TableCell>₹{parseFloat(item.TotalAmount || 0)}</TableCell>
                   <TableCell>
                     <Button
                       isLoading={deletingId === item.id}

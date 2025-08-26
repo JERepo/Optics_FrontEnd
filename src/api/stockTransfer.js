@@ -60,6 +60,7 @@ export const stockTransferApi = createApi({
       query: () => ({
         url: `/api/v1/stock-transfer/out/all`,
       }),
+      providesTags: ["StockTransfer"],
     }),
     getStockTransferOutById:builder.query({
       query:({mainId,locationId}) => ({
