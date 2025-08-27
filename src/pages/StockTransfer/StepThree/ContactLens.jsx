@@ -354,12 +354,17 @@ const ContactLens = () => {
         });
         setSearchFetched(true);
         if (data.CLBatchCode === 1) {
-          await getCLBatches({
+          try {
+            await getCLBatches({
             clBatchId: data.CLDetailId,
             locationId: parseInt(hasMultipleLocations[0]),
           }).unwrap();
           setDetailId(true);
           setOpenBatch(true);
+          } catch (error) {
+            toast.error(error?.data.error)
+            return;
+          }
         } else if (data.CLBatchCode === 0) {
           if (data.AvlQty <= 0) {
             toast.error("Stock quantity must be greater than 0!");
@@ -700,9 +705,9 @@ const ContactLens = () => {
     "",
   ];
 
-  if (newItem.CLDetailId && !searchFethed) {
-    inputTableColumns.push("Avl.Qty", "Order Qty", "Action");
-  }
+  // if (newItem.CLDetailId && !searchFethed) {
+  //   inputTableColumns.push("Avl.Qty", "Order Qty", "Action");
+  // }
 console.log(mainClDetails)
   return (
     <div className="max-w-8xl h-auto">
@@ -872,8 +877,8 @@ console.log(mainClDetails)
                     <TableCell>
                       ₹
                       {formatINR(
-                        parseFloat(item.BuyingPrice) * item.Quantity +
-                          calculateStockGST(item).gstAmount * item.Quantity
+                        parseFloat(item.BuyingPrice) * item.stkQty +
+                          calculateStockGST(item).gstAmount * item.stkQty
                       )}
                     </TableCell>
                     <TableCell>

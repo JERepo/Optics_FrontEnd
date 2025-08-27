@@ -309,6 +309,7 @@ const FrameSunglass = () => {
   };
 
   const handleQtyChange = (barcode, qty, index) => {
+   
     setItems((prev) =>
       prev.map((i, idx) =>
         i.Barcode === barcode && idx === index

@@ -66,8 +66,8 @@ import StockTransfer from "../pages/StockTransfer";
 import StockTransferOut from "../pages/StockTransfer/MainStockTransferOut/StockTransferOut";
 import StockTransferView from "../pages/StockTransfer/MainStockTransferOut/StockTransferView";
 import TotalPurchaseReturn from "../pages/PurchaseReturn";
-import PurchaseReturn from "../pages/PurchaseReturn/MainPurchaseReturn/StockTransferOut";
-import PurchaseReturnView from "../pages/PurchaseReturn/MainPurchaseReturn/StockTransferView";
+import PurchaseReturn from "../pages/PurchaseReturn/MainPurchaseReturn/PurchaseReturn";
+import PurchaseReturnView from "../pages/PurchaseReturn/MainPurchaseReturn/PurchaseReturnView";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 

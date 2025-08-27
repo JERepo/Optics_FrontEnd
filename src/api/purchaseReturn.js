@@ -51,6 +51,16 @@ export const purchaseReturnApi = createApi({
       }),
       providesTags: ["PurchaseReturn"],
     }),
+    getPRById:builder.query({
+      query : (id) => ({
+        url : `/api/v1/purchase-Return/PR/${id}`
+      })
+    }),
+    getPRDataForView:builder.query({
+      query : ({id,locationId}) => ({
+        url : `/api/v1/purchase-Return/getPrdetails/${id}?locationId=${locationId}`
+      })
+    })
   }),
 });
 
@@ -62,5 +72,7 @@ export const {
   useGetPurchaseDetailsQuery,
   useDeleteUpdatePRMutation,
   useGetAllPRQuery,
+  useGetPRByIdQuery,
+  useGetPRDataForViewQuery
 
 } = purchaseReturnApi;

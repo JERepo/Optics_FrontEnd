@@ -486,7 +486,7 @@ const FrameSunglass = () => {
             ProductType: 1,
             detailId: item.Id,
             BatchCode: null,
-            STQtyOut: item.Quantity,
+            STQtyOut: item.stkQty,
             TransferPrice: parseFloat(item.BuyingPrice),
             gstPercentage: calculateStockGST(item).gstPercent,
             mrp: item.MRP,
@@ -827,8 +827,8 @@ const FrameSunglass = () => {
                     <TableCell>
                       ₹
                       {formatINR(
-                        parseFloat(item.BuyingPrice) * item.Quantity +
-                          calculateStockGST(item).gstAmount * item.Quantity
+                        (parseFloat(item.BuyingPrice) * item.stkQty) +
+                          (calculateStockGST(item).gstAmount * item.stkQty)
                       )}
                     </TableCell>
                     <TableCell>

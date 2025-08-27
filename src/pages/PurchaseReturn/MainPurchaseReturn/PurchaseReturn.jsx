@@ -76,7 +76,7 @@ const PurchaseReturn = () => {
   const today = new Date();
 
   const handleViewSalesReturn = (id) => {
-    navigate(`/stock-transfer/view?stockOutId=${id}`);
+    navigate(`/purchase-return/view?purchaseId=${id}`);
   };
 
   if (isPRDetailsLoading) {
