@@ -114,7 +114,7 @@ export const {
   useGetPriceByCoatingComboIdQuery,
   useSaveProductsMutation,
   useGetSavedSalesReturnQuery,
-  useCompleteSaleRetunMutation,
+  useCompleteSaleReturnMutation,
   useGetAllSalesReturnQuery,
   useGetSalesReturnByIdQuery,
   useGetMainSalesByIdQuery,

@@ -13,10 +13,16 @@ import {
 } from "../../../api/stockTransfer";
 import toast from "react-hot-toast";
 import Loader from "../../../components/ui/Loader";
+import {
+  useDeleteUpdatePRMutation,
+  useGetPurchaseDetailsQuery,
+} from "../../../api/purchaseReturn";
+import { useSelector } from "react-redux";
 
 const getProductName = (item) => {
+  const type = item.ProductType;
+  const detail = item ? item.ProductDetails : {};
   const {
-    typeid,
     ProductName,
     Size,
     Barcode,
@@ -31,11 +37,10 @@ const getProductName = (item) => {
     FittingPrice,
     productName,
     barcode,
-    ProductType,
     hsncode,
     colour,
     brandName,
-  } = item;
+  } = detail;
 
   const clean = (val) => {
     if (
@@ -57,7 +62,7 @@ const getProductName = (item) => {
   };
 
   // For Frame (typeid = 1)
-  if (ProductType === 1) {
+  if (type === 1) {
     const lines = [
       productName,
       Size ? `Size: ${Size.Size}` : "",
@@ -69,7 +74,7 @@ const getProductName = (item) => {
   }
 
   // For Accessories (ProductType = 2)
-  if (ProductType === 2) {
+  if (type === 2) {
     const lines = [
       ProductName || productName,
       Variation ? `Variation: ${Variation.Variation}` : "",
@@ -79,8 +84,8 @@ const getProductName = (item) => {
     return lines.filter(Boolean).join("\n");
   }
 
-  // For Contact Lens (ProductType = 3)
-  if (ProductType === 3) {
+  // For Contact Lens (type = 3)
+  if (type === 3) {
     const specs = PowerSpecs
       ? [
           PowerSpecs.Sph ? `Sph: ${clean(PowerSpecs.Sph)}` : "",
@@ -103,24 +108,24 @@ const getProductName = (item) => {
     return lines.filter(Boolean).join("\n");
   }
 
-  // For Optical Lens (ProductType = 0)
-  if (ProductType === 0) {
+  // For Optical Lens (type = 0)
+  if (type === 0) {
     const tintName = clean(Tint?.name) || "";
     const addOns = AddOns?.map((a) => clean(a.name)).filter(Boolean) || [];
 
-    const specsLines = (Array.isArray(Specs) ? Specs : [{...Specs}])
+    const specsLines = (Array.isArray(Specs) ? Specs : [{ ...Specs }])
       .map((spec) => {
         const side = clean(spec?.side);
         const sph = clean(spec?.sph || spec.Spherical);
         const cyl = clean(spec?.cyl || spec.Cylinder);
-        const dia = clean(spec.Diameter)
+        const dia = clean(spec.Diameter);
         const axis = clean(spec?.axis);
         const addition = clean(spec?.addition);
 
         const powerValues = [];
         if (sph) powerValues.push(`SPH ${formatPowerValue(sph)}`);
         if (cyl) powerValues.push(`CYL ${formatPowerValue(cyl)}`);
-        if(dia) powerValues.push(`Dia ${formatPowerValue(dia)}`);
+        if (dia) powerValues.push(`Dia ${formatPowerValue(dia)}`);
         if (axis) powerValues.push(`Axis ${formatPowerValue(axis)}`);
         if (addition) powerValues.push(`Add ${formatPowerValue(addition)}`);
 
@@ -159,64 +164,80 @@ const getShortTypeName = (id) => {
 };
 
 const getStockOutPrice = (item) => {
-  if (!item.Stock) {
-    return 0;
-  }
-
   if (item.ProductType === 3) {
-    if (item.CLBatchCode === 0) {
-      return item.STQtyOut * parseFloat(item.price?.BuyingPrice || 0);
+    if (item.ProductDetails.CLBatchCode === 1) {
+      return parseFloat(item.ProductDetails.price?.MRP || 0);
     }
 
-    return item.Stock?.reduce(
-      (sum, s) => sum + item.STQtyOut * parseFloat(s.BuyingPrice || 0),
-      0
-    );
+    const stockCheck = Array.isArray(item.ProductDetails.Stock)
+      ? item.ProductDetails.Stock.reduce(
+          (sum, item) => sum + parseFloat(item.MRP),
+          0
+        )
+      : item.ProductDetails.Stock.MRP;
+    return stockCheck;
+  } else if (item.ProductType === 1) {
+    return parseFloat(item.ProductDetails.Stock.FrameSRP);
+  } else if (item.ProductType === 2) {
+    return parseFloat(item.ProductDetails.Stock.OPMRP);
   }
 
-  return item.STQtyOut * parseFloat(item.Stock?.BuyingPrice || 0);
+  return 0;
 };
 
 const CompleteStockTransfer = () => {
   const [comment, setComment] = useState("");
   const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
   const [deletingId, setDeletingId] = useState(null);
 
-  const { customerStock, goToStockStep, prevStockStep, stockDraftData } =
-    useOrder();
-  const { data: stockDetails, isLoading: isStockDetailsLoading } =
-    useGetStockOutDetailsQuery({
-      mainId: stockDraftData.ID || stockDraftData[0].ID,
-      locationId: customerStock.locationId,
+  const {
+    prevPurchaseStep,
+    goToPurchaseStep,
+    customerPurchase,
+    purchaseDraftData,
+  } = useOrder();
+
+  const { data: purchaseDetails, isLoading: isPurchaseDetailsLoading } =
+    useGetPurchaseDetailsQuery({
+      mainId: purchaseDraftData.Id || purchaseDraftData[0].Id,
+      locationId: customerPurchase.locationId,
     });
 
-  const [updateStockTO, { isLoading: isUpdating }] =
-    useUpdateStockTransferOutMutation();
+  const [updatePR, { isLoading: isPRUpdating }] = useDeleteUpdatePRMutation();
 
   const handleDeleteItem = async (id) => {
     setDeletingId(id);
     try {
+      // const payload = {
+      //   STOutMainId: purchaseDraftData.ID || purchaseDraftData[0].ID,
+      //   FromCompanyId: customerPurchase.locationId,
+      //   Comment: comment,
+      //   delete: [id],
+      // };
       const payload = {
-        STOutMainId: stockDraftData.ID || stockDraftData[0].ID,
-        FromCompanyId: customerStock.locationId,
-        Comment: comment,
-        delete: [id],
+        delete: [id], // Array of PurchaseReturnDetail IDs to delete (optional)
       };
-      await updateStockTO({ payload }).unwrap();
+      await updatePR({
+        prId: purchaseDraftData.Id || purchaseDraftData[0].Id,
+        userId: user.Id,
+        locationId: customerPurchase.locationId,
+        payload,
+      }).unwrap();
       toast.success("Deleted successfully");
     } catch (error) {
-      toast.error(error?.data.error.message);
+      toast.error(error?.data.message);
     }
   };
 
-  const totals = (stockDetails?.data?.details || []).reduce(
+  const totals = (purchaseDetails?.details || []).reduce(
     (acc, item) => {
-      const qty = item.STQtyOut || 0;
+      const qty = item.DNQty || 0;
       const basicValue = getStockOutPrice(item);
       const gst =
         (basicValue * parseFloat(item.ProductTaxPercentage || 0)) / 100;
       const total = basicValue + gst;
-
+      console.log(basicValue);
       acc.totalQty += qty;
       acc.totalGST += gst;
       acc.totalBasicValue += basicValue;
@@ -226,7 +247,7 @@ const CompleteStockTransfer = () => {
     },
     { totalQty: 0, totalGST: 0, totalBasicValue: 0, totalReturnValue: 0 }
   );
-
+  console.log(totals);
   const formattedTotals = {
     totalQty: totals.totalQty,
     totalGST: formatINR(totals.totalGST),
@@ -236,21 +257,24 @@ const CompleteStockTransfer = () => {
   const handleSaveStockTransferOut = async () => {
     try {
       const payload = {
-        STOutMainId: stockDraftData.ID || stockDraftData[0].ID,
-        FromCompanyId: customerStock.locationId,
-        Comment: comment,
-        delete: [],
-        totalQty: parseInt( formattedTotals.totalQty),
-        totalBasic:parseFloat( formattedTotals.totalBasicValue),
-        totalValue:parseFloat( formattedTotals.totalReturnValue),
-        totalGST: parseFloat(formattedTotals.totalGST),
+        comment: comment,
+        TotalQty: totals.totalQty,
+        TotalGST: totals.totalGST,
+        TotalBasicValue: totals.totalBasicValue,
+        TotalValue: totals.totalReturnValue,
       };
-      await updateStockTO({ payload }).unwrap();
+
+      await updatePR({
+        prId: purchaseDraftData.Id || purchaseDraftData[0].Id,
+        userId: user.Id,
+        locationId: customerPurchase.locationId,
+        payload,
+      }).unwrap();
       console.log(payload);
-      toast.success("Stock TransferOut successfully updated");
-      navigate("/stock-transfer")
+      toast.success("Purchase return successfully updated");
+      navigate("/purchase-return");
     } catch (error) {
-      toast.error(error?.data.error);
+      toast.error(error?.data.message);
     }
   };
 
@@ -264,8 +288,8 @@ const CompleteStockTransfer = () => {
               Stock Out Transfer Details
             </h2>
             <div className="flex items-center gap-4">
-              <Button onClick={() => goToStockStep(2)}>Add Product</Button>
-              <Button variant="outline" onClick={() => prevStockStep()}>
+              <Button onClick={() => goToPurchaseStep(2)}>Add Product</Button>
+              <Button variant="outline" onClick={() => prevPurchaseStep()}>
                 Back
               </Button>
             </div>
@@ -277,70 +301,52 @@ const CompleteStockTransfer = () => {
           <Table
             columns={[
               "s.no",
-              "type",
-              "Product name",
-              "mrp",
-              "transfer price",
-              "gst",
-              "stock out qty",
-              "Avl qty",
-              "total amount",
-              "Action",
+              "Product type",
+              "supplier order no",
+              "product details",
+              "srp",
+              "return qty",
+              "return product price",
+              "gst/unit",
+              "return total price",
+              "action",
             ]}
-            data={stockDetails?.data?.details || []}
+            data={purchaseDetails?.details || []}
             renderRow={(item, index) => (
               <TableRow key={item.ID}>
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>{getShortTypeName(item.ProductType)}</TableCell>
+                <TableCell></TableCell>
                 <TableCell className="whitespace-pre-wrap">
                   {getProductName(item)}
                 </TableCell>
-                <TableCell>₹{formatINR(item.SRP)}</TableCell>
                 <TableCell>₹{formatINR(getStockOutPrice(item))}</TableCell>
+                <TableCell>{item.DNQty}</TableCell>
+                <TableCell>₹{item.DNPrice}</TableCell>
                 <TableCell>
                   ₹
                   {formatINR(
                     getStockOutPrice(item) *
                       (parseFloat(item.ProductTaxPercentage) / 100)
-                  )}({parseFloat(item.ProductTaxPercentage)}%)
+                  )}
+                  ({parseFloat(item.ProductTaxPercentage)}%)
                 </TableCell>
 
-                <TableCell>{item.STQtyOut}</TableCell>
-                <TableCell>
-                  {[1, 2, 3].includes(item.ProductType)
-                    ? Array.isArray(item.Stock)
-                      ? item.Stock.reduce(
-                          (sum, s) => sum + (s.Quantity ?? 0),
-                          0
-                        )
-                      : item.Stock?.Quantity ?? 0
-                    : 0}
-                </TableCell>
                 <TableCell>
                   ₹
-                  {/* {formatINR(
-                    [1, 2, 3].includes(item.ProductType)
-                      ? parseFloat(item.Stock.BuyingPrice) * item.STQtyOut +
-                          getStockOutPrice(item) *
-                            ((parseFloat(item.ProductTaxPercentage) / 100) *
-                              item.STQtyOut)
-                      : 0
-                  )} */}
-                   {formatINR(
-                    [1, 2, 3].includes(item.ProductType)
-                      ? parseFloat(item.Stock.BuyingPrice) * item.STQtyOut +
-                          getStockOutPrice(item) *
-                            ((parseFloat(item.ProductTaxPercentage) / 100) *
-                              item.STQtyOut)
-                      : 0
+                  {formatINR(
+                    parseFloat(getStockOutPrice(item) * item.DNQty) +
+                      getStockOutPrice(item) *
+                        ((parseFloat(item.ProductTaxPercentage) / 100) *
+                          item.DNQty)
                   )}
                 </TableCell>
                 <TableCell>
                   <button
-                    onClick={() => handleDeleteItem(item.ID)}
+                    onClick={() => handleDeleteItem(item.Id)}
                     className="text-red-500 hover:text-red-700"
                   >
-                    {deletingId === item.ID && isUpdating ? (
+                    {deletingId === item.Id && isPRUpdating ? (
                       <Loader color="black" />
                     ) : (
                       <FiTrash2 />
@@ -350,11 +356,11 @@ const CompleteStockTransfer = () => {
               </TableRow>
             )}
             emptyMessage={
-              isStockDetailsLoading ? "Loading..." : "No data found"
+              isPurchaseDetailsLoading ? "Loading..." : "No data found"
             }
           />
         </div>
-        {stockDetails?.data?.details?.length > 0 && (
+        {purchaseDetails?.details?.length > 0 && (
           <div className="flex gap-10 justify-end mt-5 p-6 border-t border-gray-200 bg-gray-50">
             <div className="flex gap-6">
               <span className="text-lg font-semibold">
@@ -372,7 +378,7 @@ const CompleteStockTransfer = () => {
             </div>
           </div>
         )}
-        {stockDetails?.data?.details?.length > 0 && (
+        {purchaseDetails?.details?.length > 0 && (
           <div>
             {/* Comment Section */}
             <div className="p-4">
@@ -397,8 +403,8 @@ const CompleteStockTransfer = () => {
               <Button
                 className="bg-blue-600 hover:bg-blue-700 text-white"
                 onClick={handleSaveStockTransferOut}
-                isLoading={isUpdating}
-                disabled={isUpdating}
+                isLoading={isPRUpdating}
+                disabled={isPRUpdating}
               >
                 Save & Next
               </Button>

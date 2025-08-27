@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useOrder } from "../../../features/OrderContext";
 import { Table, TableCell, TableRow } from "../../../components/Table";
 import {
-  useCompleteSaleRetunMutation,
+  useCompleteSaleReturnMutation,
   useGetSavedSalesReturnQuery,
 } from "../../../api/salesReturnApi";
 import Button from "../../../components/ui/Button";
@@ -194,7 +194,7 @@ const CompleteSalesReturn = () => {
       { skip: !selectedPatient }
     );
   const [completeSales, { isLoading: isCompleteSalesLoading }] =
-    useCompleteSaleRetunMutation();
+    useCompleteSaleReturnMutation();
 
   // Calculate totals
   const totals = finalProducts?.data?.reduce(

@@ -76,11 +76,11 @@ const SelectCustomer = () => {
         reference: referenceApplicable,
       }).unwrap();
 
-      const data = res?.data[0];
+      const data = res?.data[res?.data.length - 1];
       const existingDraft =
         data?.Status === 0 &&
         data?.PatientID === selectedPatient.Id &&
-        data?.ReferenceApplicable === referenceApplicable &&
+        data?.ReferenceApplicable == referenceApplicable &&
         data?.ApplicationUserId === user.Id &&
         data?.CompanyID === parseInt(hasMultipleLocations[0]);
       if (existingDraft) {

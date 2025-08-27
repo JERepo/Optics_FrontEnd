@@ -65,6 +65,9 @@ import SalesView from "../pages/SalesReturn/MainSalesReturn/SalesView";
 import StockTransfer from "../pages/StockTransfer";
 import StockTransferOut from "../pages/StockTransfer/MainStockTransferOut/StockTransferOut";
 import StockTransferView from "../pages/StockTransfer/MainStockTransferOut/StockTransferView";
+import TotalPurchaseReturn from "../pages/PurchaseReturn";
+import PurchaseReturn from "../pages/PurchaseReturn/MainPurchaseReturn/StockTransferOut";
+import PurchaseReturnView from "../pages/PurchaseReturn/MainPurchaseReturn/StockTransferView";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -722,6 +725,18 @@ export const router = createBrowserRouter([
           </ErrorBoundary>
         ),
       },
+      {
+        path: "purchase-return/create",
+        element: <TotalPurchaseReturn />,
+      },
+      {
+        path :"purchase-return",
+        element : <PurchaseReturn />
+      },
+       {
+        path :"purchase-return/view",
+        element : <PurchaseReturnView />
+      }
     ],
   },
   {

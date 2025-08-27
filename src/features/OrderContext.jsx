@@ -3,6 +3,7 @@ import { createContext, useContext, useState } from "react";
 const TOTAL_STEPS = 6;
 const TOTAL_SALES_STEPS = 4;
 const TOTAL_STOCK_STEPS = 4;
+const TOTAL_PURCHASE_STEPS = 4
 
 const OrderContext = createContext();
 
@@ -272,6 +273,61 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
     setCurrentStockSubStep(step);
   };
 
+  // Purchase Return
+  const [customerPurchase, setCustomerPurchase] = useState({
+    countryId: null,
+    companyId: null,
+    patientName: null,
+    patientId: null,
+    locationId: null,
+    customerId: null,
+    mobileNo: null,
+    customerData: null,
+  });
+
+  const [purchaseDraftData, setPurchaseDraftData] = useState(null);
+
+  const [currentPurchaseStep, setCurrentPurchaseStep] = useState(1);
+  const [currentPurchaseSubStep, setCurrentPurchaseSubStep] = useState(1);
+  const [selectedPurchaseProduct, setSelectedPurchaseProduct] = useState({
+    value: 1,
+    label: "Frame/Sunglass",
+  });
+  const [selectedPurchasePatient, setSelectedPurchasePatient] = useState(null);
+
+  const goToPurchaseStep = (step) => {
+    if (step >= 1 && step <= TOTAL_PURCHASE_STEPS) {
+      setCurrentPurchaseStep(step);
+      setCurrentPurchaseSubStep(1);
+    }
+  };
+
+  const nextPurchaseStep = () => {
+    setCurrentPurchaseStep((prev) => (prev < TOTAL_PURCHASE_STEPS ? prev + 1 : prev));
+    setCurrentPurchaseSubStep(1);
+  };
+
+  const prevPurchaseStep = () => {
+    setCurrentPurchaseStep((prev) => (prev > 1 ? prev - 1 : prev));
+    setCurrentPurchaseSubStep(1);
+  };
+
+  const goToSubPurchaseStep = (subStep) => {
+    setCurrentPurchaseSubStep(subStep);
+  };
+
+  const nextSubPurchaseStep = () => {
+    setCurrentPurchaseSubStep((prev) => prev + 1);
+  };
+
+  const prevSubPurchaseStep = () => {
+    setCurrentPurchaseSubStep((prev) => (prev > 1 ? prev - 1 : prev));
+  };
+
+  const setSubPurchaseStep = (step) => {
+    setCurrentPurchaseSubStep(step);
+  };
+
   return (
     <OrderContext.Provider
       value={{
@@ -355,6 +411,28 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
         setCustomerStockOut,
         selectedStockPatient,
         setSelectedStockPatient,
+
+         // purchase return
+        totalPurchaseSteps: TOTAL_PURCHASE_STEPS,
+        selectedPurchaseProduct,
+        setSelectedPurchaseProduct,
+        currentPurchaseStep,
+        setCurrentPurchaseStep,
+        currentPurchaseSubStep,
+        setCurrentPurchaseSubStep,
+        purchaseDraftData,
+        setPurchaseDraftData,
+        goToPurchaseStep,
+        nextPurchaseStep,
+        goToSubPurchaseStep,
+        nextSubPurchaseStep,
+        prevSubPurchaseStep,
+        prevPurchaseStep,
+        setSubPurchaseStep,
+        customerPurchase,
+        setCustomerPurchase,
+        selectedPurchasePatient,
+        setSelectedPurchasePatient,
       }}
     >
       {children}

@@ -64,6 +64,7 @@ const SelectLocation = () => {
       }
     } catch (error) {
       toast.error(error?.data.error);
+      return;
     }
 
     try {
@@ -80,7 +81,7 @@ const SelectLocation = () => {
       setStockDraftData(response?.data.data);
       goToStockStep(2);
     } catch (error) {
-      toast.error(error.data.error);
+      toast.error(error.data.error.message);
     }
   };
 

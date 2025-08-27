@@ -31,6 +31,7 @@ import { companiesApi } from "../api/companiesApi";
 import { InvoiceApi } from "../api/InvoiceApi";
 import { salesReturnApi } from "../api/salesReturnApi";
 import { stockTransferApi } from "../api/stockTransfer";
+import { purchaseReturnApi } from "../api/purchaseReturn";
 
 const persistConfig = {
   key: "auth",
@@ -79,6 +80,7 @@ export const store = configureStore({
     [InvoiceApi.reducerPath]: InvoiceApi.reducer,
     [salesReturnApi.reducerPath]: salesReturnApi.reducer,
     [stockTransferApi.reducerPath]: stockTransferApi.reducer,
+    [purchaseReturnApi.reducerPath]:purchaseReturnApi.reducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -111,7 +113,8 @@ export const store = configureStore({
       companiesApi.middleware,
       InvoiceApi.middleware,
       salesReturnApi.middleware,
-      stockTransferApi.middleware
+      stockTransferApi.middleware,
+      purchaseReturnApi.middleware
     ),
 });
 
