@@ -8,11 +8,12 @@ import { useNavigate } from "react-router";
 import { FiTrash2 } from "react-icons/fi";
 import { formatINR } from "../../../utils/formatINR";
 import {
-  useGetStockOutDetailsQuery,
-  useUpdateStockTransferOutMutation,
+  useDeleteUpdateSTKInMutation,
+  useGetStockInDetailsQuery,
 } from "../../../api/stockTransfer";
 import toast from "react-hot-toast";
 import Loader from "../../../components/ui/Loader";
+import { useSelector } from "react-redux";
 
 const getProductName = (item) => {
   const {
@@ -164,45 +165,59 @@ const getStockOutPrice = (item) => {
   }
 
   if (item.ProductType === 3) {
-    if (item.CLBatchCode === 1) {
-      return  parseFloat(item.price?.BuyingPrice || 0);
+    if (item.CLBatchCode === 0) {
+      return item.STQtyOut * parseFloat(item.price?.BuyingPrice || 0);
     }
 
     return item.Stock?.reduce(
-      (sum, s) => sum + parseFloat(s.BuyingPrice || 0),
+      (sum, s) => sum + item.STQtyOut * parseFloat(s.BuyingPrice || 0),
       0
     );
   }
 
-  return parseFloat(item.Stock?.BuyingPrice || 0);
+  return item.STQtyOut * parseFloat(item.Stock?.BuyingPrice || 0);
 };
 
-const CompleteStockTransfer = () => {
+const CompleteStockTransferIn = () => {
+  const { user } = useSelector((state) => state.auth);
   const [comment, setComment] = useState("");
   const navigate = useNavigate();
   const [deletingId, setDeletingId] = useState(null);
 
-  const { customerStock, goToStockStep, prevStockStep, stockDraftData,updateCurrentStockStep } =
-    useOrder();
-  const { data: stockDetails, isLoading: isStockDetailsLoading } =
-    useGetStockOutDetailsQuery({
-      mainId: stockDraftData.ID || stockDraftData[0].ID,
-      locationId: customerStock.locationId,
+  const {
+    customerStockTransferIn,
+    currentStockTransferInStep,
+    stockTransferInDraftData,
+    goToStockTransferInStep,
+    prevStockTransferInStep,
+    selectedStockTransferInProduct,
+  } = useOrder();
+  // const { data: stockDetails, isLoading: isStockDetailsLoading } =
+  //   useGetStockOutDetailsQuery({
+  // mainId: stockTransferInDraftData.ID || stockTransferInDraftData[0].ID,
+  // locationId: customerStock.locationId,
+  //   });
+
+  const { stockDetails, isLoading: isStockDetailsLoading } =
+    useGetStockInDetailsQuery({
+      mainId: stockTransferInDraftData.ID,
+      locationId: customerStockTransferIn.locationId,
     });
 
-  const [updateStockTO, { isLoading: isUpdating }] =
-    useUpdateStockTransferOutMutation();
+  const [updateStockTI, { isLoading: isUpdating }] =
+    useDeleteUpdateSTKInMutation();
 
   const handleDeleteItem = async (id) => {
     setDeletingId(id);
     try {
       const payload = {
-        STOutMainId: stockDraftData.ID || stockDraftData[0].ID,
-        FromCompanyId: customerStock.locationId,
+        STOutMainId:
+          stockTransferInDraftData.ID || stockTransferInDraftData[0].ID,
+        FromCompanyId: customerStockTransferIn.locationId,
         Comment: comment,
         delete: [id],
       };
-      await updateStockTO({ payload }).unwrap();
+      await updateStockTI({ payload }).unwrap();
       toast.success("Deleted successfully");
     } catch (error) {
       toast.error(error?.data.error.message);
@@ -236,25 +251,25 @@ const CompleteStockTransfer = () => {
   const handleSaveStockTransferOut = async () => {
     try {
       const payload = {
-        STOutMainId: stockDraftData.ID || stockDraftData[0].ID,
-        FromCompanyId: customerStock.locationId,
-        Comment: comment,
-        delete: [],
-        totalQty: parseInt(formattedTotals.totalQty),
-        totalBasic: parseFloat(formattedTotals.totalBasicValue),
-        totalValue: parseFloat(formattedTotals.totalReturnValue),
-        totalGST: parseFloat(formattedTotals.totalGST),
+        STOutMainId: customerStockTransferIn.mainId ?? null,
+        ApplicationUserID: user.Id ?? null,
+        companyId: customerStockTransferIn.locationId ?? null,
+        totalQtyIn: parseInt(formattedTotals.totalQty) ?? null,
+        totalGSTValueIn: parseFloat(formattedTotals.totalGST) ?? null,
+        totalBasicValueIn: parseFloat(formattedTotals.totalBasicValue) ?? null,
+        totalValueIn: parseFloat(formattedTotals.totalReturnValue) ?? null,
+        Comment: comment ?? null,
       };
-      await updateStockTO({ payload }).unwrap();
+
+      await updateStockTI({ payload }).unwrap();
       console.log(payload);
-      toast.success("Stock TransferOut successfully updated");
-      navigate("/stock-transfer");
-      // updateCurrentStockStep(0)
+      toast.success("Stock TransferIn successfully updated");
+      // navigate("/stock-transfer");
     } catch (error) {
       toast.error(error?.data.error);
     }
   };
-console.log(stockDetails)
+  console.log(stockTransferInDraftData, customerStockTransferIn);
   return (
     <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -262,11 +277,16 @@ console.log(stockDetails)
         <div className="p-6 border-b border-gray-200 bg-gray-50">
           <div className="flex justify-between">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              Stock Out Transfer Details
+              Stock TransferIn Details
             </h2>
             <div className="flex items-center gap-4">
-              <Button onClick={() => goToStockStep(2)}>Add Product</Button>
-              <Button variant="outline" onClick={() => prevStockStep()}>
+              <Button onClick={() => goToStockTransferInStep(2)}>
+                Add Product
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => prevStockTransferInStep()}
+              >
                 Back
               </Button>
             </div>
@@ -277,16 +297,25 @@ console.log(stockDetails)
         <div className="p-6">
           <Table
             columns={[
+              // "s.no",
+              // "type",
+              // "Product name",
+              // "mrp",
+              // "transfer price",
+              // "gst",
+              // "stock out qty",
+              // "Avl qty",
+              // "total amount",
+              // "Action",
               "s.no",
               "type",
-              "Product name",
-              "mrp",
+              "product name",
               "transfer price",
+              "transfer out qty",
+              "transfer in qty",
               "gst",
-              "stock out qty",
-              "Avl qty",
               "total amount",
-              "Action",
+              "action",
             ]}
             data={stockDetails?.data?.details || []}
             renderRow={(item, index) => (
@@ -297,7 +326,7 @@ console.log(stockDetails)
                   {getProductName(item)}
                 </TableCell>
                 <TableCell>₹{formatINR(item.SRP)}</TableCell>
-                <TableCell>₹{formatINR(getStockOutPrice(item) * item.STQtyOut)}</TableCell>
+                <TableCell>₹{formatINR(getStockOutPrice(item))}</TableCell>
                 <TableCell>
                   ₹
                   {formatINR(
@@ -308,24 +337,15 @@ console.log(stockDetails)
                 </TableCell>
 
                 <TableCell>{item.STQtyOut}</TableCell>
-                <TableCell>
-                  {[1, 2, 3].includes(item.ProductType)
-                    ? Array.isArray(item.Stock)
-                      ? item.Stock.reduce(
-                          (sum, s) => sum + (s.Quantity ?? 0),
-                          0
-                        )
-                      : item.Stock?.Quantity ?? 0
-                    : 0}
-                </TableCell>
+
                 <TableCell>
                   ₹
                   {formatINR(
-                    [1, 2, 3,0].includes(item.ProductType)
-                      ? (getStockOutPrice(item) * item.STQtyOut) +
-                          (getStockOutPrice(item) *
+                    [1, 2, 3].includes(item.ProductType)
+                      ? parseFloat(item.Stock.BuyingPrice) * item.STQtyOut +
+                          getStockOutPrice(item) *
                             ((parseFloat(item.ProductTaxPercentage) / 100) *
-                              item.STQtyOut))
+                              item.STQtyOut)
                       : 0
                   )}
                 </TableCell>
@@ -404,4 +424,4 @@ console.log(stockDetails)
   );
 };
 
-export default CompleteStockTransfer;
+export default CompleteStockTransferIn;

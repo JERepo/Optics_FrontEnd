@@ -29,6 +29,7 @@ const getProductName = (item) => {
     hsncode,
     colour,
     brandName,
+    BatchCode,
   } = item;
 
   const clean = (val) => {
@@ -91,6 +92,7 @@ const getProductName = (item) => {
       specs ? `Power: ${specs}` : "",
       clean(colour) ? `Colour: ${clean(colour)}` : "",
       barcode ? `Barcode: ${barcode}` : "",
+      clean(BatchCode) && `BatchCode: ${BatchCode}`,
       clean(hsncode) ? `HSN: ${hsncode}` : "",
     ];
 

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useOrder } from "../../../features/OrderContext";
 import {
   FiArrowLeft,
@@ -14,36 +14,32 @@ import Button from "../../../components/ui/Button";
 import { Table, TableCell, TableRow } from "../../../components/Table";
 import { useGetAllBrandsQuery } from "../../../api/brandsApi";
 import {
-  useLazyFetchBarcodeForAccessoryQuery,
-  useLazyGetByBrandAndProductNameQuery,
-  useSaveAccessoryMutation,
+  useLazyGetByBarCodeQuery,
+  useLazyGetByBrandAndModalQuery,
+  useSaveFrameMutation,
 } from "../../../api/orderApi";
 import toast from "react-hot-toast";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import { Autocomplete, TextField } from "@mui/material";
-import { useSelector } from "react-redux";
 import Radio from "../../../components/Form/Radio";
-import { useSaveStockDetailsMutation } from "../../../api/stockTransfer";
+
+import { useSelector } from "react-redux";
 import { formatINR } from "../../../utils/formatINR";
 import {
-  validateQuantity,
-  validateStockQty,
-} from "../../../utils/isValidNumericInput";
+  useGetStockOutDetailsQuery,
+  useSaveSTIMutation,
+} from "../../../api/stockTransfer";
 
-
-
-const AccessoryFrame = () => {
+const FrameSunglass = () => {
   const {
-    selectedStockProduct,
-    prevStockStep,
-    goToStockStep,
-    stockDraftData,
-    customerStock,
-    calculateGST,
-    currentStockStep,
+    customerStockTransferIn,
+    currentStockTransferInStep,
+    stockTransferInDraftData,
+    goToStockTransferInStep,
+    prevStockTransferInStep,
+    selectedStockTransferInProduct,
   } = useOrder();
-  const { user } = useSelector((state) => state.auth);
-
+  const { user, hasMultipleLocations } = useSelector((state) => state.auth);
   const [barcode, setBarcode] = useState("");
   const [searchMode, setSearchMode] = useState(false);
   const [brandInput, setBrandInput] = useState("");
@@ -52,11 +48,12 @@ const AccessoryFrame = () => {
   const [items, setItems] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [warningPayload, setWarningPayload] = useState(null);
-  const [singleOrCombine, setSingleOrCombine] = useState(0); // 0 = Combine, 1 = Separate
+  const [singleOrCombine, setSingleOrCombine] = useState(0);
   const [editMode, setEditMode] = useState({}); // { [barcode-index]: { sellingPrice: false, qty: false } }
-
+  const { data: stockOutData } = useGetStockOutDetailsQuery({
+    mainId: customerStockTransferIn.mainId,
+    locationId: parseInt(hasMultipleLocations[0]),
+  });
   const { data: allBrands } = useGetAllBrandsQuery();
   const [
     fetchByBarcode,
@@ -65,15 +62,14 @@ const AccessoryFrame = () => {
       isLoading: isBarcodeLoading,
       isFetching: isBarCodeFetching,
     },
-  ] = useLazyFetchBarcodeForAccessoryQuery();
+  ] = useLazyGetByBarCodeQuery();
   const [
-    fetchByBrandProduct,
+    fetchByBrandModal,
     { isLoading: isBrandModelLoading, isFetching: isBrandAndModalFetching },
-  ] = useLazyGetByBrandAndProductNameQuery();
-  const [saveAccessory, { isLoading: isFrameSaving }] =
-    useSaveAccessoryMutation();
+  ] = useLazyGetByBrandAndModalQuery();
+
   const [saveStockTransfer, { isLoading: isStockTransferLoading }] =
-    useSaveStockDetailsMutation();
+    useSaveSTIMutation();
 
   useEffect(() => {
     setEditMode((prev) => {
@@ -92,41 +88,60 @@ const AccessoryFrame = () => {
       return newEditMode;
     });
   }, [items]);
+
   const handleBarcodeSubmit = async (e) => {
     e.preventDefault();
     if (!barcode) return;
     try {
       const res = await fetchByBarcode({
         barcode,
-        locationId: customerStock.locationId,
+        locationId: customerStockTransferIn.locationId,
       }).unwrap();
       const data = res?.data;
-      if (data && validateQuantity(data)) {
-        setItems((prev) => {
-          if (singleOrCombine === 1) {
-            return [{ ...data, stkQty: 1 }, ...prev];
-          } else {
-            // Combine Entry: Increment stkQty or add new item
-            const index = prev.findIndex((i) => i.Barcode === data.Barcode);
-            if (index !== -1) {
-              const newStkQty = Number(prev[index].stkQty) + 1;
-              const qty = Number(prev[index].Quantity);
-              return prev.map((item, idx) =>
-                idx === index
-                  ? {
-                      ...item,
-                      stkQty: newStkQty,
-                      Quantity: qty + data.Quantity,
-                    }
-                  : item
-              );
-            } else {
-              return [{ ...data, stkQty: 1 }, ...prev];
-            }
-          }
-        });
-        setBarcode("");
-      }
+
+      setItems((prev) => {
+        // Check if product exists in StockTransferOut
+        const STOProduct = stockOutData?.data.details.find(
+          (item) => item.FrameDetailId === data.Id
+        );
+        if (!STOProduct) {
+          toast.error("Product is not present in the selected Stock Transfer");
+          return prev;
+        }
+
+        // Find existing in our items (local scanned state)
+        const existing = prev.find((i) => i.Barcode === data.Barcode);
+
+        // Determine current STQtyIn (from state if exists, else from backend)
+        const currentSTQtyIn = existing?.tiq ?? STOProduct.STQtyIn;
+
+        // Check pending qty
+        if (STOProduct.STQtyOut === currentSTQtyIn) {
+          toast.error("No Pending Qty left for the given product");
+          return prev;
+        }
+
+        if (existing) {
+          const newStkQty = currentSTQtyIn + 1;
+          return prev.map((item) =>
+            item.Barcode === data.Barcode
+              ? {
+                  ...item,
+                  ...STOProduct,
+                  STQtyIn: newStkQty,
+                  tiq: newStkQty,
+                }
+              : item
+          );
+        } else {
+          return [
+            { ...data, ...STOProduct, tiq: 1, STQtyIn: currentSTQtyIn + 1 },
+            ...prev,
+          ];
+        }
+      });
+
+      setBarcode("");
     } catch (error) {
       toast.error("Product does not exist");
       setBarcode("");
@@ -135,19 +150,16 @@ const AccessoryFrame = () => {
 
   const handleBrandModelSubmit = async (e) => {
     e.preventDefault();
-    if (!brandId || !modelNo) {
-      toast.error("Brand or Product name is mandatory!");
-      return;
-    }
+    if (!brandId) return;
 
     try {
-      const res = await fetchByBrandProduct({
+      const res = await fetchByBrandModal({
         brand: brandId,
-        product: modelNo,
-        locationId: customerStock.locationId,
-      });
+        modal: modelNo,
+        locationId: customerStockTransferIn.locationId,
+      }).unwrap();
 
-      const data = res?.data?.data;
+      const data = res?.data;
 
       if (data && data.length > 0) {
         setSearchResults(data);
@@ -163,7 +175,7 @@ const AccessoryFrame = () => {
         setSearchMode(false);
       }
     } catch (err) {
-      const msg = err?.data?.message || err?.error || "Failed to fetch models";
+      const msg = err?.data?.message || err?.error || "Product does not exist";
       toast.error(msg);
       setBrandInput("");
       setBrandId(null);
@@ -196,43 +208,70 @@ const AccessoryFrame = () => {
   const handleAddSelectedItems = () => {
     setItems((prev) => {
       let updated = [...prev];
+
       selectedRows.forEach((selected) => {
-        if (!validateQuantity(selected)) return;
-        if (singleOrCombine === 1) {
-          // Separate Entry: Add new item with stkQty: 1
-          updated = [{ ...selected, stkQty: 1 }, ...updated];
-        } else {
-          // Combine Entry: Increment stkQty or add new item
-          const index = updated.findIndex(
-            (i) => i.Barcode === selected.Barcode
-          );
-          if (index !== -1) {
-            const newStkQty = Number(updated[index].stkQty) + 1;
-            const qty = Number(prev[index].Quantity);
-            if (!validateStockQty(updated[index], newStkQty)) {
-              return; // Skip this item if stkQty exceeds AvlQty
-            }
-            updated = updated.map((item, idx) =>
-              idx === index
-                ? { ...item, stkQty: newStkQty, Quantity: qty + index.Quantity }
+        const STOProduct = stockOutData?.data.details.find(
+          (item) => item.FrameDetailId === selected.Id
+        );
+
+        if (!STOProduct) {
+          toast.error("Product is not present in the selected Stock Transfer");
+          return;
+        }
+
+        // Find existing item in state
+        const existing = updated.find((i) => i.Barcode === selected.Barcode);
+
+        // Use updated STQtyIn from state if exists, else from backend
+        const currentSTQtyIn = existing?.tiq ?? STOProduct.STQtyIn;
+
+        // Check pending qty with latest value
+        if (STOProduct.STQtyOut === currentSTQtyIn) {
+          toast.error("No Pending Qty left for the given product");
+          return;
+        }
+
+        // If still pending
+        if (STOProduct.STQtyOut > currentSTQtyIn) {
+          if (existing) {
+            const newStkQty = currentSTQtyIn + 1;
+
+            updated = updated.map((item) =>
+              item.Barcode === selected.Barcode
+                ? {
+                    ...item,
+                    ...STOProduct,
+                    STQtyIn: newStkQty,
+                    tiq: newStkQty,
+                  }
                 : item
             );
           } else {
-            updated = [{ ...selected, stkQty: 1 }, ...updated];
+            updated = [
+              {
+                ...selected,
+                ...STOProduct,
+                tiq: 1,
+                STQtyIn: currentSTQtyIn + 1,
+              },
+              ...updated,
+            ];
           }
         }
       });
+
       return updated;
     });
+
     setSelectedRows([]);
     setSearchResults([]);
   };
 
   const handleQtyChange = (barcode, qty, index) => {
     const newQty = Number(qty);
-    const avlQty = Number(items[index].Quantity);
+    const avlQty = Number(items[index].STQtyOut);
     if (newQty > avlQty) {
-      toast.error("Stock quantity cannot exceed available quantity!");
+      toast.error("TransferIn qty cannot exceed transferOut qty");
       return;
     }
     if (newQty < 0) {
@@ -241,24 +280,7 @@ const AccessoryFrame = () => {
     }
     setItems((prev) =>
       prev.map((i, idx) =>
-        i.Barcode === barcode && idx === index ? { ...i, stkQty: newQty } : i
-      )
-    );
-  };
-  const handleSellingPriceChange = (barcode, price, index) => {
-    const item = items.find((i, idx) => i.Barcode === barcode && idx === index);
-    const newPrice = Number(price);
-
-    if (newPrice > item.MRP) {
-      toast.error("Return Price cannot be greater than MRP!");
-      return;
-    }
-
-    setItems((prev) =>
-      prev.map((i, idx) =>
-        i.Barcode === barcode && idx === index
-          ? { ...i, BuyingPrice: newPrice }
-          : i
+        i.Barcode === barcode && idx === index ? { ...i, tiq: newQty } : i
       )
     );
   };
@@ -274,6 +296,7 @@ const AccessoryFrame = () => {
       return newEditMode;
     });
   };
+
   const toggleEditMode = (id, index, field, action = "toggle") => {
     setEditMode((prev) => {
       const key = `${id}-${index}`;
@@ -297,7 +320,7 @@ const AccessoryFrame = () => {
           [key]: {
             ...prev[key],
             [field]: !currentMode,
-            originalQty: item.stkQty, // Store original quantity
+            originalQty: item.tiq, // Store original quantity
           },
         };
       }
@@ -315,7 +338,7 @@ const AccessoryFrame = () => {
           setItems((prevItems) =>
             prevItems.map((i, idx) =>
               i.Barcode === id && idx === index
-                ? { ...i, stkQty: prev[key].originalQty }
+                ? { ...i, tiq: prev[key].originalQty }
                 : i
             )
           );
@@ -334,37 +357,8 @@ const AccessoryFrame = () => {
     });
   };
 
-  const handleConfirmBypassWarnings = async () => {
-    if (!warningPayload) return;
-    const newPayload = {
-      products: items.map((item) => ({
-        otherProductDetailId: item.Id,
-        qty: item.Quantity,
-        PatientID: customerSalesId.patientId,
-        locationId: customerSalesId.locationId,
-        bypassWarnings: true,
-      })),
-    };
-    try {
-      await saveAccessory({
-        orderId: customerSalesId.orderId,
-        payload: newPayload,
-      }).unwrap();
-      toast.success("Accessories saved with warnings bypassed.");
-      setShowConfirmModal(false);
-      goToSalesStep(4);
-    } catch (err) {
-      setShowConfirmModal(false);
-      toast.error("Failed to save after confirming warnings.");
-    }
-  };
-
   const calculateStockGST = (item) => {
     if (!item) return 0;
-    if (customerStock.inState === 0) {
-      const detail = item.Tax.Details[0];
-      return { gstAmount: 0, slabNo: detail.Id, gstPercent: 0 }; // no GST for out of state
-    }
 
     const tax = item.Tax;
     if (!tax || !Array.isArray(tax.Details)) {
@@ -416,6 +410,24 @@ const AccessoryFrame = () => {
     };
   };
 
+  const handleSellingPriceChange = (barcode, price, index) => {
+    const item = items.find((i, idx) => i.Barcode === barcode && idx === index);
+    const newPrice = Number(price);
+
+    if (newPrice > item.MRP) {
+      toast.error("Return Price cannot be greater than MRP!");
+      return;
+    }
+
+    setItems((prev) =>
+      prev.map((i, idx) =>
+        i.Barcode === barcode && idx === index
+          ? { ...i, BuyingPrice: newPrice }
+          : i
+      )
+    );
+  };
+
   const handleSaveData = async () => {
     if (!Array.isArray(items) || items.length === 0) {
       console.warn("No details to save");
@@ -424,35 +436,38 @@ const AccessoryFrame = () => {
     console.log("items", items);
     try {
       const payload = {
-        STOutMainId: stockDraftData.ID || stockDraftData[0].ID,
+        STInMainId: stockTransferInDraftData.ID,
+        STOutMainId: customerStockTransferIn.mainId,
         products: items.map((item) => {
           return {
             ProductType: 2,
             detailId: item.Id,
             BatchCode: null,
-            STQtyOut: item.Quantity,
-            TransferPrice: parseFloat(item.BuyingPrice),
+            STQtyIn: item.tiq,
+            STQtyOut: item.STQtyOut,
+            transferPrice: parseFloat(item.BuyingPrice),
             gstPercentage: calculateStockGST(item).gstPercent,
-            mrp: item.MRP,
+            srp: parseFloat(item.MRP),
           };
         }),
       };
+
       console.log(payload);
       await saveStockTransfer({ payload }).unwrap();
-      toast.success("Accessory Stock transfer out successfully added");
-      goToStockStep(4);
+      toast.success("Frame Stock transfer out successfully added");
+      goToStockTransferInStep(4);
     } catch (error) {
-      toast.error(error?.data.error);
+      console.log(error);
     }
   };
 
   const filteredBrands = allBrands?.filter(
     (b) =>
-      b.OthersProductsActive === 1 &&
+      b.FrameActive === 1 &&
       b.IsActive === 1 &&
       b.BrandName.toLowerCase().includes(brandInput.toLowerCase())
   );
-
+  console.log(items);
   return (
     <div className="max-w-8xl h-auto">
       <div className="bg-white rounded-xl shadow-sm">
@@ -461,7 +476,8 @@ const AccessoryFrame = () => {
             <div>
               <div className="flex items-center gap-4 mb-4"></div>
               <h1 className="text-2xl font-bold text-gray-900">
-                Step {currentStockStep}: {selectedStockProduct.label}
+                Step {currentStockTransferInStep}:{" "}
+                {selectedStockTransferInProduct.label}
               </h1>
               <p className="text-sm text-gray-500 mt-1">
                 {searchMode
@@ -471,7 +487,7 @@ const AccessoryFrame = () => {
             </div>
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <Button
-                onClick={prevStockStep}
+                onClick={() => prevStockTransferInStep()}
                 icon={FiArrowLeft}
                 variant="outline"
               >
@@ -499,20 +515,7 @@ const AccessoryFrame = () => {
                     Enter Barcode
                   </label>
 
-                  <div className="flex items-center gap-5">
-                    <Radio
-                      value="0"
-                      onChange={() => setSingleOrCombine(0)}
-                      checked={singleOrCombine === 0}
-                      label="Combine Entry"
-                    />
-                    <Radio
-                      value="1"
-                      onChange={() => setSingleOrCombine(1)}
-                      checked={singleOrCombine === 1}
-                      label="Separate Entry"
-                    />
-                  </div>
+                 
                 </div>
                 <div className="flex gap-2">
                   <div className="relative flex items-center">
@@ -552,20 +555,7 @@ const AccessoryFrame = () => {
                   >
                     Search by Brand & Model *
                   </label>
-                  <div className="flex items-center gap-5">
-                    <Radio
-                      value="0"
-                      onChange={() => setSingleOrCombine(0)}
-                      checked={singleOrCombine === 0}
-                      label="Combine Entry"
-                    />
-                    <Radio
-                      value="1"
-                      onChange={() => setSingleOrCombine(1)}
-                      checked={singleOrCombine === 1}
-                      label="Separate Entry"
-                    />
-                  </div>
+                 
                 </div>
                 <div className="flex gap-2">
                   <Autocomplete
@@ -601,7 +591,7 @@ const AccessoryFrame = () => {
                     type="text"
                     value={modelNo}
                     onChange={(e) => setModelNo(e.target.value)}
-                    placeholder="Product Name"
+                    placeholder="Model Number"
                     className="flex-1 pl-4 pr-4 py-3 border border-gray-300 rounded-lg"
                   />
                   <Button
@@ -625,179 +615,184 @@ const AccessoryFrame = () => {
           )}
         </div>
 
-        {items.length > 0 && (
-          <div className="p-6">
-            <Table
-              columns={[
-                "s.no",
-                "type",
-                "Product name",
-                "mrp",
-                "transfer price",
-                "gst",
-                "stock out qty",
-                "Avl qty",
-                "total amount",
-                "Action",
-              ]}
-              data={items}
-              renderRow={(item, index) => (
-                <TableRow key={`${item.Barcode}-${index}`}>
-                  <TableCell>{index + 1}</TableCell>
-                  <TableCell>ACC</TableCell>
-                  <TableCell className="whitespace-pre-wrap">
-                    <div>{item.Name}</div>
-                    <div>Variation: {item.Variation}</div>
+        <div>
+          {items.length > 0 && (
+            <div className="p-6">
+              <Table
+                columns={[
+                  "s.no",
+                  "type",
+                  "product name",
+                  "transfer price",
+                  "transfer out qty",
+                  "transfer in qty",
+                  "gst",
+                  "total amount",
+                  "action",
+                ]}
+                data={items}
+                renderRow={(item, index) => (
+                  <TableRow key={`${item.Barcode}-${index}`}>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>F/S</TableCell>
+                    <TableCell className="whitespace-pre-wrap">
+                      <div>{item.Name}</div>
+                      <div>Size: {item.Size.Size}</div>
+                      <div>Barcode: {item.Barcode}</div>
+                    </TableCell>
+                    <TableCell>
+                      {editMode[`${item.Barcode}-${index}`]?.BuyingPrice ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            value={item.BuyingPrice || ""}
+                            onChange={(e) =>
+                              handleSellingPriceChange(
+                                item.Barcode,
+                                e.target.value,
+                                index
+                              )
+                            }
+                            className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                            placeholder="Enter price"
+                          />
+                          <button
+                            onClick={() =>
+                              toggleEditMode(
+                                item.Barcode,
+                                index,
+                                "BuyingPrice",
+                                "save"
+                              )
+                            }
+                            className="text-neutral-400 transition"
+                            title="Save"
+                          >
+                            <FiCheck size={18} />
+                          </button>
+                          <button
+                            onClick={() =>
+                              toggleEditMode(
+                                item.Barcode,
+                                index,
+                                "BuyingPrice",
+                                "cancel"
+                              )
+                            }
+                            className="text-neutral-400 transition"
+                            title="Cancel"
+                          >
+                            <FiX size={18} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          ₹{formatINR(item.BuyingPrice)}
+                          <button
+                            onClick={() =>
+                              toggleEditMode(item.Barcode, index, "BuyingPrice")
+                            }
+                            className="text-neutral-400 transition"
+                            title="Edit Price"
+                          >
+                            <FiEdit2 size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </TableCell>
 
-                    <div>Barcode: {item.Barcode}</div>
-                  </TableCell>
-                  <TableCell>₹{formatINR(item.MRP)}</TableCell>
-                  <TableCell>
-                    {editMode[`${item.Barcode}-${index}`]?.BuyingPrice ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          value={item.BuyingPrice || ""}
-                          onChange={(e) =>
-                            handleSellingPriceChange(
-                              item.Barcode,
-                              e.target.value,
-                              index
-                            )
-                          }
-                          className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                          placeholder="Enter price"
-                        />
-                        <button
-                          onClick={() =>
-                            toggleEditMode(
-                              item.Barcode,
-                              index,
-                              "BuyingPrice",
-                              "save"
-                            )
-                          }
-                          className="text-neutral-400 transition"
-                          title="Save"
-                        >
-                          <FiCheck size={18} />
-                        </button>
-                        <button
-                          onClick={() =>
-                            toggleEditMode(
-                              item.Barcode,
-                              index,
-                              "BuyingPrice",
-                              "cancel"
-                            )
-                          }
-                          className="text-neutral-400 transition"
-                          title="Cancel"
-                        >
-                          <FiX size={18} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        ₹{formatINR(item.BuyingPrice)}
-                        <button
-                          onClick={() =>
-                            toggleEditMode(item.Barcode, index, "BuyingPrice")
-                          }
-                          className="text-neutral-400 transition"
-                          title="Edit Price"
-                        >
-                          <FiEdit2 size={14} />
-                        </button>
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    ₹{formatINR(calculateStockGST(item).gstAmount)}({calculateStockGST(item).gstPercent}%)
-                  </TableCell>
-                  <TableCell>
-                    {editMode[`${item.Barcode}-${index}`]?.qty ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          value={item.stkQty}
-                          onChange={(e) =>
-                            handleQtyChange(item.Barcode, e.target.value, index)
-                          }
-                          className="w-20 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                          min="1"
-                        />
-                        <button
-                          onClick={() =>
-                            toggleEditMode(item.Barcode, index, "qty")
-                          }
-                          className="text-neutral-400 transition"
-                          title="Save"
-                        >
-                          <FiCheck size={18} />
-                        </button>
-                        <button
-                          onClick={() =>
-                            toggleEditMode(item.Barcode, index, "qty")
-                          }
-                          className="text-neutral-400 transition"
-                          title="Cancel"
-                        >
-                          <FiX size={18} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        {item.stkQty}
-                        <button
-                          onClick={() =>
-                            toggleEditMode(item.Barcode, index, "qty")
-                          }
-                          className="text-neutral-400 transition"
-                          title="Edit Quantity"
-                        >
-                          <FiEdit2 size={14} />
-                        </button>
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>{item.Quantity}</TableCell>
-                  <TableCell>
-                    ₹
-                    {formatINR(
-                      parseFloat(item.BuyingPrice) * item.stkQty +
-                        calculateStockGST(item).gstAmount * item.stkQty
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <button
-                      onClick={() => handleDelete(item.Barcode, index)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <FiTrash2 />
-                    </button>
-                  </TableCell>
-                </TableRow>
-              )}
-            />
-            <div className="flex justify-end mt-6">
-              <Button
-                type="submit"
-                isLoading={isStockTransferLoading}
-                disabled={isStockTransferLoading}
-                className="px-6 py-3 bg-green-600 hover:bg-green-700"
-                onClick={handleSaveData}
-              >
-                Save & Continue
-              </Button>
+                    <TableCell>{item.STQtyOut}</TableCell>
+                    <TableCell>
+                      {editMode[`${item.Barcode}-${index}`]?.qty ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            value={item.tiq}
+                            onChange={(e) =>
+                              handleQtyChange(
+                                item.Barcode,
+                                e.target.value,
+                                index
+                              )
+                            }
+                            className="w-20 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                            min="1"
+                          />
+                          <button
+                            onClick={() =>
+                              toggleEditMode(item.Barcode, index, "qty")
+                            }
+                            className="text-neutral-400 transition"
+                            title="Save"
+                          >
+                            <FiCheck size={18} />
+                          </button>
+                          <button
+                            onClick={() =>
+                              toggleEditMode(item.Barcode, index, "qty")
+                            }
+                            className="text-neutral-400 transition"
+                            title="Cancel"
+                          >
+                            <FiX size={18} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          {item.tiq}
+                          <button
+                            onClick={() =>
+                              toggleEditMode(item.Barcode, index, "qty")
+                            }
+                            className="text-neutral-400 transition"
+                            title="Edit Quantity"
+                          >
+                            <FiEdit2 size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      ₹{formatINR(calculateStockGST(item).gstAmount)}(
+                      {calculateStockGST(item).gstPercent}%)
+                    </TableCell>
+                    <TableCell>
+                      ₹
+                      {formatINR(
+                        parseFloat(item.BuyingPrice) * item.tiq +
+                          calculateStockGST(item).gstAmount * item.tiq
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <button
+                        onClick={() => handleDelete(item.Barcode, index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <FiTrash2 />
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                )}
+              />
+              <div className="flex justify-end mt-6">
+                <Button
+                  type="submit"
+                  isLoading={isStockTransferLoading}
+                  disabled={isStockTransferLoading}
+                  className="px-6 py-3 bg-green-600 hover:bg-green-700"
+                  onClick={handleSaveData}
+                >
+                  Save & Continue
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {!searchMode && searchResults.length > 0 && (
           <div className="p-6">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-semibold">Select Accessories</h3>
+              <h3 className="font-semibold">Select Frames</h3>
               <div className="">
                 {selectedRows.length > 0 ? (
                   <Button
@@ -822,8 +817,9 @@ const AccessoryFrame = () => {
                 "",
                 "Barcode",
                 "Name",
-                "Variation",
-                "sku code",
+                "Frame Size",
+                "S/O",
+                "Product Details",
                 "MRP",
                 "Buying Price",
               ]}
@@ -841,8 +837,11 @@ const AccessoryFrame = () => {
                   </TableCell>
                   <TableCell>{item.Barcode}</TableCell>
                   <TableCell>{item.Name}</TableCell>
-                  <TableCell>{item.Variation}</TableCell>
-                  <TableCell>{item.SKU}</TableCell>
+                  <TableCell>{item.Size}</TableCell>
+                  <TableCell>
+                    {item.Category === 0 ? "Optical Frame" : "Sunglass"}
+                  </TableCell>
+                  <TableCell>{item.PO}</TableCell>
                   <TableCell>{item.MRP}</TableCell>
                   <TableCell>{item.BuyingPrice}</TableCell>
                 </TableRow>
@@ -851,41 +850,8 @@ const AccessoryFrame = () => {
           </div>
         )}
       </div>
-      <ConfirmationModal
-        isOpen={showConfirmModal}
-        onClose={() => setShowConfirmModal(false)}
-        onConfirm={handleConfirmBypassWarnings}
-        title="Stock Warning"
-        message={
-          warningPayload && warningPayload.length > 0 ? (
-            <>
-              <p className="mb-2">Some accessories have stock issues:</p>
-              <ul className="list-disc pl-5">
-                {warningPayload.map((warning, idx) => {
-                  const indexInItems =
-                    items.findIndex(
-                      (item) => item.Id === warning.otherProductDetailId
-                    ) + 1;
-                  return (
-                    <li key={warning.otherProductDetailId}>
-                      Accessory #{indexInItems}: {warning.message}
-                    </li>
-                  );
-                })}
-              </ul>
-              <p className="mt-2">Do you want to proceed anyway?</p>
-            </>
-          ) : (
-            "Some accessories are out of stock. Do you want to proceed anyway?"
-          )
-        }
-        confirmText="Yes, Proceed"
-        cancelText="Cancel"
-        danger={false}
-        isLoading={isFrameSaving}
-      />
     </div>
   );
 };
 
-export default AccessoryFrame;
+export default FrameSunglass;

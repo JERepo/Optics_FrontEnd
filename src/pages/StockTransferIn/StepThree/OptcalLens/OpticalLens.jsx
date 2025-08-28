@@ -36,6 +36,7 @@ import { isValidNumericInput } from "../../../../utils/isValidNumericInput";
 import { formatINR } from "../../../../utils/formatINR";
 import {
   useGetOlDetailsByOlDetailIdMutation,
+  useGetStockOutDetailsQuery,
   useLazyGetOLByBarcodeQuery,
   useSaveStockDetailsMutation,
 } from "../../../../api/stockTransfer";
@@ -47,15 +48,156 @@ const productTypes = [
   { value: 1, lable: "Rx" },
 ];
 
+const getProductName = (item) => {
+  const {
+    typeid,
+    ProductName,
+    Size,
+    Barcode,
+    PatientName,
+    PowerSpecs,
+    Variation,
+    Specs,
+    Colour,
+    Category,
+    Tint,
+    AddOns,
+    FittingPrice,
+    productName,
+    barcode,
+    ProductType,
+    hsncode,
+    colour,
+    brandName,
+  } = item;
+
+  const clean = (val) => {
+    if (
+      val === null ||
+      val === undefined ||
+      val === "undefined" ||
+      val === "null" ||
+      val === "N/A"
+    ) {
+      return "";
+    }
+    return val;
+  };
+
+  const formatPowerValue = (val) => {
+    const num = parseFloat(val);
+    if (isNaN(num)) return val;
+    return num > 0 ? `+${val}` : val;
+  };
+
+  // For Frame (typeid = 1)
+  if (ProductType === 1) {
+    const lines = [
+      productName,
+      Size ? `Size: ${Size.Size}` : "",
+      Category === 0 ? "Category: Optical Frame" : "Category: Sunglasses",
+      barcode ? `Barcode: ${barcode}` : "",
+      clean(hsncode) ? `HSN: ${hsncode}` : "",
+    ];
+    return lines.filter(Boolean).join("\n");
+  }
+
+  // For Accessories (ProductType = 2)
+  if (ProductType === 2) {
+    const lines = [
+      ProductName || productName,
+      Variation ? `Variation: ${Variation.Variation}` : "",
+      barcode ? `Barcode: ${barcode}` : "",
+      clean(hsncode) ? `HSN: ${hsncode}` : "",
+    ];
+    return lines.filter(Boolean).join("\n");
+  }
+
+  // For Contact Lens (ProductType = 3)
+  if (ProductType === 3) {
+    const specs = PowerSpecs
+      ? [
+          PowerSpecs.Sph ? `Sph: ${clean(PowerSpecs.Sph)}` : "",
+          PowerSpecs.Cyl ? `Cyl: ${clean(PowerSpecs.Cyl)}` : "",
+          PowerSpecs.Axis ? `Axis: ${clean(PowerSpecs.Axis)}` : "",
+          PowerSpecs.Add ? `Add: ${clean(PowerSpecs.Add)}` : "",
+        ]
+          .filter(Boolean)
+          .join(", ")
+      : "";
+
+    const lines = [
+      ProductName || productName,
+      specs ? `Power: ${specs}` : "",
+      clean(colour) ? `Colour: ${clean(colour)}` : "",
+      barcode ? `Barcode: ${barcode}` : "",
+      clean(hsncode) ? `HSN: ${hsncode}` : "",
+    ];
+
+    return lines.filter(Boolean).join("\n");
+  }
+
+  // For Optical Lens (ProductType = 0)
+  if (ProductType === 0) {
+    const tintName = clean(Tint?.name) || "";
+    const addOns = AddOns?.map((a) => clean(a.name)).filter(Boolean) || [];
+
+    const specsLines = (Array.isArray(Specs) ? Specs : [{ ...Specs }])
+      .map((spec) => {
+        const side = clean(spec?.side);
+        const sph = clean(spec?.sph || spec.Spherical);
+        const cyl = clean(spec?.cyl || spec.Cylinder);
+        const dia = clean(spec.Diameter);
+        const axis = clean(spec?.axis);
+        const addition = clean(spec?.addition);
+
+        const powerValues = [];
+        if (sph) powerValues.push(`SPH ${formatPowerValue(sph)}`);
+        if (cyl) powerValues.push(`CYL ${formatPowerValue(cyl)}`);
+        if (dia) powerValues.push(`Dia ${formatPowerValue(dia)}`);
+        if (axis) powerValues.push(`Axis ${formatPowerValue(axis)}`);
+        if (addition) powerValues.push(`Add ${formatPowerValue(addition)}`);
+
+        return powerValues.join(", ");
+      })
+      .filter(Boolean)
+      .join("\n");
+
+    const lines = [
+      clean(
+        (ProductName || productName) &&
+          brandName &&
+          `${brandName} ${productName}`
+      ),
+      specsLines,
+      clean(barcode) && `Color: ${colour}`,
+      clean(hsncode) && `HSN: ${hsncode}`,
+      tintName ? `Tint: ${tintName}` : "",
+      addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
+      clean(FittingPrice) ? `Fitting Price: ${FittingPrice}` : "",
+    ];
+
+    return lines.filter(Boolean).join("\n");
+  }
+
+  return "";
+};
+
 const OpticalLens = () => {
   const {
-    selectedStockProduct,
-    prevStockStep,
-    goToStockStep,
-    stockDraftData,
-    customerStock,
-    calculateGST,
-    currentStockStep,
+    // selectedStockTransferInProduct,
+    // prevStockTransferInStep,
+    // goToStockTransferInStep,
+    // stockTransferInDraftData,
+    // customerStock,
+    // calculateGST,
+    // currentStockTransferInStep,
+    customerStockTransferIn,
+    currentStockTransferInStep,
+    stockTransferInDraftData,
+    goToStockTransferInStep,
+    prevStockTransferInStep,
+    selectedStockTransferInProduct,
   } = useOrder();
 
   const { user } = useSelector((state) => state.auth);
@@ -179,17 +321,12 @@ const OpticalLens = () => {
     useLazyGetOLByBarcodeQuery();
   const [saveStockTransfer, { isLoading: isStockTransferLoading }] =
     useSaveStockDetailsMutation();
+  const { data: stockOutData } = useGetStockOutDetailsQuery({
+    mainId: customerStockTransferIn.mainId,
+    locationId: customerStockTransferIn.locationId,
+  });
   const calculateStockGST = (item) => {
     if (!item) return { gstAmount: 0, slabNo: null, gstPercent: 0 };
-
-    if (customerStock.inState === 0) {
-      const detail = item.TaxDetails?.[0];
-      return {
-        gstAmount: 0,
-        slabNo: detail?.TaxDetailId ?? null,
-        gstPercent: 0,
-      };
-    }
 
     const tax = item.TaxDetails;
     if (!Array.isArray(tax) || tax.length === 0) {
@@ -312,7 +449,7 @@ const OpticalLens = () => {
             BuyingPrice: false,
             qty: false,
             originalPrice: item.BuyingPrice,
-            originalQty: item.stkQty, // Store original quantity
+            originalQty: item.tiq, // Store original quantity
           };
         }
       });
@@ -348,12 +485,13 @@ const OpticalLens = () => {
       returnQty: 1,
     });
     setBarcodeData([]);
+    setPowerDetailId(null);
 
     setEditMode({});
   };
 
   const handleOLensBack = () => {
-    prevStockStep();
+    prevStockTransferInStep();
   };
   const handleDelete = (id, index) => {
     setBarcodeData((prev) =>
@@ -464,42 +602,57 @@ const OpticalLens = () => {
     try {
       const res = await getOLByBarcode({
         barcode,
-        locationId: customerStock.locationId,
+        locationId: customerStockTransferIn.locationId,
       }).unwrap();
 
       if (res?.data) {
         setBarcodeData((prev) => {
-          const existingIndex = prev.findIndex(
-            (item) => item.Barcode === res.data.Barcode
+          // Check if product exists in StockTransferOut
+          const STOProduct = stockOutData?.data.details.find(
+            (item) => item.OpticalLensDetailId === res?.data.OpticalLensDetailId
           );
+          if (!STOProduct) {
+            toast.error(
+              "Product is not present in the selected Stock Transfer"
+            );
+            return prev;
+          }
 
-          if (existingIndex !== -1) {
-            const existingItem = prev[existingIndex];
+          // Find existing in our items (local scanned state)
+          const existing = prev.find((i) => i.Barcode === res?.data.Barcode);
 
-            // Check if transfer qty is already at max
-            if ((existingItem.tqty || 0) >= existingItem.Quantity) {
-              toast.error("Transfer qty cannot exceed available quantity");
-              return prev; // no update
-            }
+          // Determine current STQtyIn (from state if exists, else from backend)
+          const currentSTQtyIn = existing?.tiq ?? STOProduct.STQtyIn;
 
+          // Check pending qty
+          if (STOProduct.STQtyOut === currentSTQtyIn) {
+            toast.error("No Pending Qty left for the given product");
+            return prev;
+          }
+
+          if (existing) {
+            const newStkQty = currentSTQtyIn + 1;
             // Otherwise, increment
             return prev.map((item, idx) =>
-              idx === existingIndex
+              item.Barcode === res.data.Barcode
                 ? {
                     ...item,
-                    tqty: (item.tqty || 0) + 1,
-                    Quantity: item.Quantity,
+                    ...STOProduct,
+                    STQtyIn: newStkQty,
+                    tiq: newStkQty,
                   }
                 : item
             );
           } else {
-            // If new entry, but make sure Quantity > 0
-            if ((res.data.Quantity || 0) <= 0) {
-              toast.error("No stock available for this barcode");
-              return prev;
-            }
-
-            return [...prev, { ...res.data, tqty: 1 }];
+            return [
+              ...prev,
+              {
+                ...res.data,
+                ...STOProduct,
+                tiq: 1,
+                STQtyIn: currentSTQtyIn + 1,
+              },
+            ];
           }
         });
 
@@ -521,6 +674,7 @@ const OpticalLens = () => {
   const [errorModalOpen, setErrorModalOpen] = useState(false);
   const [isEditable, setIsEditable] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
+  const [powerDetailId, setPowerDetailId] = useState(null);
 
   const [formValues, setFormValues] = useState({
     R: {
@@ -572,6 +726,7 @@ const OpticalLens = () => {
     setShowGetDiaButton(true);
     setIsDiaFetched(false);
     setDiaOptions([]);
+    setPowerDetailId(null);
   };
   const isFieldDisabled = (eye, field) => {
     if (field === "Dia") {
@@ -674,7 +829,7 @@ const OpticalLens = () => {
           updatedForm[eye].detailId = detail?.OpticalLensDetailsId || null;
         }
       });
-
+      setPowerDetailId(details[0].OpticalLensDetailsId);
       setFormValues(updatedForm);
       setDiaOptions(diameters || []);
       setIsDiaFetched(true);
@@ -691,6 +846,7 @@ const OpticalLens = () => {
           : []
       );
       setErrorModalOpen(true);
+      setPowerDetailId(null);
     }
   };
 
@@ -698,7 +854,7 @@ const OpticalLens = () => {
     try {
       const payload = {
         olDetailId: formValues[eye]?.detailId,
-        locationId: parseInt(customerStock.locationId),
+        locationId: parseInt(customerStockTransferIn.locationId),
       };
 
       if (!payload.olDetailId) {
@@ -708,18 +864,36 @@ const OpticalLens = () => {
 
       const res = await getPowerByOl({ payload }).unwrap();
 
+      // Check if product exists in StockTransferOut
+      const STOProduct = stockOutData?.data.details.find(
+        (item) => item.OpticalLensDetailId === res?.data.OpticalLensDetailId
+      );
+      if (!STOProduct) {
+        toast.error("Product is not present in the selected Stock Transfer");
+        return;
+      }
+
+      // Find existing in our items (local scanned state)
+      const existing = barcodeData.find((i) => i.Barcode === res?.data.Barcode);
+
+      // Determine current STQtyIn (from state if exists, else from backend)
+      const currentSTQtyIn = existing?.tiq ?? STOProduct.STQtyIn;
+
+      // Check pending qty
+      if (STOProduct.STQtyOut === currentSTQtyIn) {
+        toast.error("No Pending Qty left for the given product");
+        return;
+      }
+
       if (res?.data) {
         setBarcodeData((prev) => {
-          // If new entry, but make sure Quantity > 0
-          if ((res.data.Quantity || 0) <= 0) {
-            toast.error("No stock available for this barcode");
-            return prev;
-          }
-
-          return [...prev, { ...res.data, tqty: 1 }];
+          return [
+            ...prev,
+            { ...res.data, ...STOProduct, tiq: 1, STQtyIn: currentSTQtyIn + 1 },
+          ];
         });
 
-        setBarcode(""); // clear input after scan
+        setBarcode("");
         setShowAdd(false);
       } else {
         toast.error("Barcode doesn't exist!");
@@ -734,33 +908,35 @@ const OpticalLens = () => {
       console.warn("No details to save");
       return;
     }
-    console.log("barcodeData", barcodeData);
+    console.log("bar",barcodeData)
     try {
       const payload = {
-        STOutMainId: stockDraftData.ID || stockDraftData[0].ID,
+        STInMainId: stockTransferInDraftData.ID,
+        STOutMainId: parseInt(customerStockTransferIn.mainId),
         products: barcodeData.map((item) => {
           return {
             ProductType: 0,
             detailId: item.OpticalLensDetailId,
             BatchCode: null,
-            STQtyOut: item.tqty,
-            TransferPrice: parseFloat(item.BuyingPrice),
+            STQtyIn: item.tiq,
+            STQtyOut: item.STQtyOut,
+            transferPrice: parseFloat(item.BuyingPrice),
             gstPercentage: calculateStockGST(item).gstPercent,
-            mrp: item.MRP || 0,
+            srp: parseFloat(item.SRP),
           };
         }),
       };
       console.log(payload);
       await saveStockTransfer({ payload }).unwrap();
-      toast.success("Frame Stock transfer out successfully added");
-      goToStockStep(4);
+      toast.success("Optical Lens transferin successfully added");
+      goToStockTransferInStep(4);
     } catch (error) {
       toast.error(error?.data.error.message);
     }
   };
 
   const inputTableColumns = ["SPH", "CYLD", "Dia", "transferQty"];
-  console.log("batchde", barcodeData);
+
   return (
     <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-sm">
@@ -771,7 +947,8 @@ const OpticalLens = () => {
 
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h1 className="text-2xl font-bold text-neutral-700">
-              Step {currentStockStep}: {selectedStockProduct.label}
+              Step {currentStockTransferInStep}:{" "}
+              {selectedStockTransferInProduct.label}
             </h1>
             <div className="flex gap-3 w-full sm:w-auto">
               <Button
@@ -790,63 +967,69 @@ const OpticalLens = () => {
               </Button>
             </div>
           </div>
+
           <form onSubmit={handleBarcodeSubmit} className="space-y-2 mb-5">
-                       <div className="flex flex-col gap-3">
-                         <div className="flex items-center justify-between w-1/2 mb-3">
-                           <div className="flex items-center gap-5">
-                             <Radio
-                               value="0"
-                               onChange={() => setBarCodeOrProduct(0)}
-                               checked={barCodeOrproduct === 0}
-                               label="Stock lenses(By barcode)"
-                             />
-                             <Radio
-                               value="1"
-                               onChange={() => setBarCodeOrProduct(1)}
-                               checked={barCodeOrproduct === 1}
-                               label="Search Product"
-                             />
-                           </div>
-                         </div>
-                         {barCodeOrproduct === 0 && 
-                         <div className="flex gap-2">
-                           <div className="relative flex items-center">
-                             <input
-                               id="barcode"
-                               type="text"
-                               value={barcode}
-                               onChange={(e) => setBarcode(e.target.value)}
-                               placeholder="Scan or enter barcode"
-                               className="w-[400px] pl-10 pr-4 py-3 border border-gray-300 rounded-lg"
-                             />
-                             <FiSearch className="absolute left-3 text-gray-400" />
-                           </div>
-                           <Button
-                             type="submit"
-                             isLoading={isByBarcodeLoading}
-                             disabled={isByBarcodeLoading}
-                           >
-                             Add
-                           </Button>
-                         </div>}
-                       </div>
-                     </form>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between w-1/2 mb-3">
+                <div className="flex items-center gap-5">
+                  <Radio
+                    value="0"
+                    onChange={() => setBarCodeOrProduct(0)}
+                    checked={barCodeOrproduct === 0}
+                    label="Stock lenses(By barcode)"
+                  />
+                  <Radio
+                    value="1"
+                    onChange={() => setBarCodeOrProduct(1)}
+                    checked={barCodeOrproduct === 1}
+                    label="Search Product"
+                  />
+                </div>
+              </div>
+              {barCodeOrproduct === 0 && (
+                <div className="flex gap-2">
+                  <div className="relative flex items-center">
+                    <input
+                      id="barcode"
+                      type="text"
+                      value={barcode}
+                      onChange={(e) => setBarcode(e.target.value)}
+                      placeholder="Scan or enter barcode"
+                      className="w-[400px] pl-10 pr-4 py-3 border border-gray-300 rounded-lg"
+                    />
+                    <FiSearch className="absolute left-3 text-gray-400" />
+                  </div>
+                  <Button
+                    type="submit"
+                    isLoading={isByBarcodeLoading}
+                    disabled={isByBarcodeLoading}
+                  >
+                    Add
+                  </Button>
+                </div>
+              )}
+            </div>
+          </form>
+
           {barcodeData.length > 0 && barCodeOrproduct === 0 && (
             <Table
               columns={[
-                "Barcode",
-                "Spherical power",
-                "Cylindrical power",
+                "s.no",
+                "type",
+                "product name",
                 "transfer price",
-                "transfer qty",
-                "Action",
+                "transfer out qty",
+                "transfer in qty",
+                "gst",
+                "total amount",
+                "action",
               ]}
               data={barcodeData}
               renderRow={(item, index) => (
                 <TableRow key={index}>
-                  <TableCell>{item.Barcode}</TableCell>
-                  <TableCell>{item.Spherical}</TableCell>
-                  <TableCell>{item.Cylinder}</TableCell>
+                  <TableCell>{index + 1}</TableCell>
+                  <TableCell>OL</TableCell>
+                  <TableCell className="whitespace-pre-wrap">{getProductName(item)}</TableCell>
                   <TableCell>
                     {editMode[`${item.Barcode}-${index}`]?.BuyingPrice ? (
                       <div className="flex items-center gap-2">
@@ -907,13 +1090,13 @@ const OpticalLens = () => {
                       </div>
                     )}
                   </TableCell>
-
+                  <TableCell>{item.STQtyOut}</TableCell>
                   <TableCell>
                     {editMode[`${item.Barcode}-${index}`]?.qty ? (
                       <div className="flex items-center gap-2">
                         <input
                           type="number"
-                          value={item.tqty}
+                          value={item.tiq}
                           onChange={(e) =>
                             handleQtyChange(item.Barcode, e.target.value, index)
                           }
@@ -941,7 +1124,7 @@ const OpticalLens = () => {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        {item.tqty}
+                        {item.tiq}
                         <button
                           onClick={() =>
                             toggleEditMode(item.Barcode, index, "qty", "cancel")
@@ -952,6 +1135,17 @@ const OpticalLens = () => {
                           <FiEdit2 size={14} />
                         </button>
                       </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    ₹{formatINR(calculateStockGST(item).gstAmount)}(
+                    {calculateStockGST(item).gstPercent}%)
+                  </TableCell>
+                  <TableCell>
+                    ₹
+                    {formatINR(
+                      parseFloat(item.BuyingPrice) * item.tiq +
+                        calculateStockGST(item).gstAmount * item.tiq
                     )}
                   </TableCell>
                   <TableCell>
@@ -1323,19 +1517,22 @@ const OpticalLens = () => {
           {barcodeData.length > 0 && barCodeOrproduct === 1 && (
             <Table
               columns={[
-                "Barcode",
-                "Spherical power",
-                "Cylindrical power",
+                "s.no",
+                "type",
+                "product name",
                 "transfer price",
-                "transfer qty",
-                "Action",
+                "transfer out qty",
+                "transfer in qty",
+                "gst",
+                "total amount",
+                "action",
               ]}
               data={barcodeData}
               renderRow={(item, index) => (
                 <TableRow key={index}>
-                  <TableCell>{item.Barcode}</TableCell>
-                  <TableCell>{item.Spherical}</TableCell>
-                  <TableCell>{item.Cylinder}</TableCell>
+                  <TableCell>{index + 1}</TableCell>
+                  <TableCell>OL</TableCell>
+                  <TableCell className="whitespace-pre-wrap">{getProductName(item)}</TableCell>
                   <TableCell>
                     {editMode[`${item.Barcode}-${index}`]?.BuyingPrice ? (
                       <div className="flex items-center gap-2">
@@ -1396,13 +1593,13 @@ const OpticalLens = () => {
                       </div>
                     )}
                   </TableCell>
-
+                  <TableCell>{item.STQtyOut}</TableCell>
                   <TableCell>
                     {editMode[`${item.Barcode}-${index}`]?.qty ? (
                       <div className="flex items-center gap-2">
                         <input
                           type="number"
-                          value={item.tqty}
+                          value={item.tiq}
                           onChange={(e) =>
                             handleQtyChange(item.Barcode, e.target.value, index)
                           }
@@ -1430,7 +1627,7 @@ const OpticalLens = () => {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        {item.tqty}
+                        {item.tiq}
                         <button
                           onClick={() =>
                             toggleEditMode(item.Barcode, index, "qty", "cancel")
@@ -1441,6 +1638,17 @@ const OpticalLens = () => {
                           <FiEdit2 size={14} />
                         </button>
                       </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    ₹{formatINR(calculateStockGST(item).gstAmount)}(
+                    {calculateStockGST(item).gstPercent}%)
+                  </TableCell>
+                  <TableCell>
+                    ₹
+                    {formatINR(
+                      parseFloat(item.BuyingPrice) * item.tiq +
+                        calculateStockGST(item).gstAmount * item.tiq
                     )}
                   </TableCell>
                   <TableCell>
@@ -1466,7 +1674,7 @@ const OpticalLens = () => {
                   </span>
                   <span className="ml-2 text-xl font-semibold text-neutral-700">
                     {barcodeData.reduce(
-                      (sum, item) => sum + (item.tqty || 0),
+                      (sum, item) => sum + (item.tiq || 0),
                       0
                     )}
                   </span>
@@ -1482,7 +1690,7 @@ const OpticalLens = () => {
                         const { gstPercent } = calculateStockGST(item);
                         const gstAmount =
                           (item.BuyingPrice || 0) *
-                          (item.tqty || 0) *
+                          (item.tiq || 0) *
                           (parseFloat(gstPercent) / 100);
                         return sum + gstAmount;
                       }, 0)
@@ -1500,7 +1708,7 @@ const OpticalLens = () => {
                         const { gstPercent } = calculateStockGST(item);
                         const baseAmount =
                           (parseFloat(item.BuyingPrice) || 0) *
-                          (item.tqty || 0);
+                          (item.tiq || 0);
                         const gstAmount = baseAmount * (gstPercent / 100);
                         return sum + (baseAmount + gstAmount);
                       }, 0)

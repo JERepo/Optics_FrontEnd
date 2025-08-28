@@ -4,6 +4,7 @@ const TOTAL_STEPS = 6;
 const TOTAL_SALES_STEPS = 4;
 const TOTAL_STOCK_STEPS = 4;
 const TOTAL_PURCHASE_STEPS = 4
+const TOTAL_STOCKIN_STEPS = 4;
 
 const OrderContext = createContext();
 
@@ -272,6 +273,9 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
   const setSubStockStep = (step) => {
     setCurrentStockSubStep(step);
   };
+  const updateCurrentStockStep = (step) => {
+    setCurrentStockStep(step)
+  }
 
   // Purchase Return
   const [customerPurchase, setCustomerPurchase] = useState({
@@ -326,6 +330,62 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
 
   const setSubPurchaseStep = (step) => {
     setCurrentPurchaseSubStep(step);
+  };
+
+  // StockTransferIn
+  const [customerStockTransferIn, setCustomerStockTransferIn] = useState({
+    countryId: null,
+    companyId: null,
+    patientName: null,
+    patientId: null,
+    locationId: null,
+    customerId: null,
+    mobileNo: null,
+    mainId:null,
+    customerData: null,
+  });
+
+  const [stockTransferInDraftData, setStockTransferInDraftData] = useState(null);
+
+  const [currentStockTransferInStep, setCurrentStockTransferInStep] = useState(1);
+  const [currentStockTransferInSubStep, setCurrentStockTransferInSubStep] = useState(1);
+  const [selectedStockTransferInProduct, setSelectedStockTransferInProduct] = useState({
+    value: 1,
+    label: "Frame/Sunglass",
+  });
+  const [selectedStockTransferInPatient, setSelectedStockTransferInPatient] = useState(null);
+
+  const goToStockTransferInStep = (step) => {
+    if (step >= 1 && step <= TOTAL_STOCKIN_STEPS) {
+      setCurrentStockTransferInStep(step);
+      setCurrentStockTransferInSubStep(1);
+    }
+  };
+
+  const nextStockTransferInStep = () => {
+    setCurrentStockTransferInStep((prev) => (prev < TOTAL_STOCKIN_STEPS ? prev + 1 : prev));
+    setCurrentStockTransferInSubStep(1);
+  };
+
+  const prevStockTransferInStep = () => {
+    setCurrentStockTransferInStep((prev) => (prev > 1 ? prev - 1 : prev));
+    setCurrentStockTransferInSubStep(1);
+  };
+
+  const goToSubStockTransferInStep = (subStep) => {
+    setCurrentStockTransferInSubStep(subStep);
+  };
+
+  const nextSubStockTransferInStep = () => {
+    setCurrentStockTransferInSubStep((prev) => prev + 1);
+  };
+
+  const prevSubStockTransferInStep = () => {
+    setCurrentStockTransferInSubStep((prev) => (prev > 1 ? prev - 1 : prev));
+  };
+
+  const setSubStockTransferInStep = (step) => {
+    setCurrentStockTransferInSubStep(step);
   };
 
   return (
@@ -390,7 +450,7 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
         setSelectedMainPatient,
         updateSelectedPatient,
 
-        // sales return
+        //  stock transfer out
         totalStockSteps: TOTAL_STOCK_STEPS,
         selectedStockProduct,
         setSelectedStockProduct,
@@ -411,6 +471,7 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
         setCustomerStockOut,
         selectedStockPatient,
         setSelectedStockPatient,
+        updateCurrentStockStep,
 
          // purchase return
         totalPurchaseSteps: TOTAL_PURCHASE_STEPS,
@@ -433,6 +494,28 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
         setCustomerPurchase,
         selectedPurchasePatient,
         setSelectedPurchasePatient,
+
+        // Stock transfer In
+        totalStockTransferInSteps: TOTAL_STOCKIN_STEPS,
+        selectedStockTransferInProduct,
+        setSelectedStockTransferInProduct,
+        currentStockTransferInStep,
+        setCurrentStockTransferInStep,
+        currentStockTransferInSubStep,
+        setCurrentStockTransferInSubStep,
+        stockTransferInDraftData,
+        setStockTransferInDraftData,
+        goToStockTransferInStep,
+        nextStockTransferInStep,
+        goToSubStockTransferInStep,
+        nextSubStockTransferInStep,
+        prevSubStockTransferInStep,
+        prevStockTransferInStep,
+        setSubStockTransferInStep,
+        customerStockTransferIn,
+        setCustomerStockTransferIn,
+        selectedStockTransferInPatient,
+        setSelectedStockTransferInPatient,
       }}
     >
       {children}

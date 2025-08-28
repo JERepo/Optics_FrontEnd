@@ -23,26 +23,26 @@ import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import { Autocomplete, TextField } from "@mui/material";
 import { useSelector } from "react-redux";
 import Radio from "../../../components/Form/Radio";
-import { useSaveStockDetailsMutation } from "../../../api/stockTransfer";
+import {
+  useGetStockOutDetailsQuery,
+  useSaveStockDetailsMutation,
+} from "../../../api/stockTransfer";
 import { formatINR } from "../../../utils/formatINR";
 import {
   validateQuantity,
   validateStockQty,
 } from "../../../utils/isValidNumericInput";
 
-
-
 const AccessoryFrame = () => {
   const {
-    selectedStockProduct,
-    prevStockStep,
-    goToStockStep,
-    stockDraftData,
-    customerStock,
-    calculateGST,
-    currentStockStep,
+    customerStockTransferIn,
+    currentStockTransferInStep,
+    stockTransferInDraftData,
+    goToStockTransferInStep,
+    prevStockTransferInStep,
+    selectedStockTransferInProduct,
   } = useOrder();
-  const { user } = useSelector((state) => state.auth);
+  const { user, hasMultipleLocations } = useSelector((state) => state.auth);
 
   const [barcode, setBarcode] = useState("");
   const [searchMode, setSearchMode] = useState(false);
@@ -52,11 +52,13 @@ const AccessoryFrame = () => {
   const [items, setItems] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [warningPayload, setWarningPayload] = useState(null);
   const [singleOrCombine, setSingleOrCombine] = useState(0); // 0 = Combine, 1 = Separate
   const [editMode, setEditMode] = useState({}); // { [barcode-index]: { sellingPrice: false, qty: false } }
 
+  const { data: stockOutData } = useGetStockOutDetailsQuery({
+    mainId: customerStockTransferIn.mainId,
+    locationId: parseInt(hasMultipleLocations[0]),
+  });
   const { data: allBrands } = useGetAllBrandsQuery();
   const [
     fetchByBarcode,
@@ -92,41 +94,63 @@ const AccessoryFrame = () => {
       return newEditMode;
     });
   }, [items]);
+
   const handleBarcodeSubmit = async (e) => {
     e.preventDefault();
     if (!barcode) return;
     try {
       const res = await fetchByBarcode({
         barcode,
-        locationId: customerStock.locationId,
+        locationId: customerStockTransferIn.locationId,
       }).unwrap();
       const data = res?.data;
-      if (data && validateQuantity(data)) {
-        setItems((prev) => {
-          if (singleOrCombine === 1) {
-            return [{ ...data, stkQty: 1 }, ...prev];
+
+      setItems((prev) => {
+        // Check if product exists in StockTransferOut
+        const STOProduct = stockOutData?.data.details.find(
+          (item) => item.FrameDetailId === data.Id
+        );
+        if (!STOProduct) {
+          toast.error("Product is not present in the selected Stock Transfer");
+          return prev;
+        }
+
+        // Find existing in our items (local scanned state)
+        const existing = prev.find((i) => i.Barcode === data.Barcode);
+
+        // Determine current STQtyIn (from state if exists, else from backend)
+        const currentSTQtyIn = existing?.tiq ?? STOProduct.STQtyIn;
+
+        // Check pending qty
+        if (STOProduct.STQtyOut === currentSTQtyIn) {
+          toast.error("No Pending Qty left for the given product");
+          return prev;
+        }
+
+        // If valid, update state
+      
+          if (existing) {
+            const newStkQty = currentSTQtyIn + 1;
+            return prev.map((item) =>
+              item.Barcode === data.Barcode
+                ? {
+                    ...item,
+                    ...STOProduct,
+                    STQtyIn: newStkQty,
+                    tiq: newStkQty,
+                  }
+                : item
+            );
           } else {
-            // Combine Entry: Increment stkQty or add new item
-            const index = prev.findIndex((i) => i.Barcode === data.Barcode);
-            if (index !== -1) {
-              const newStkQty = Number(prev[index].stkQty) + 1;
-              const qty = Number(prev[index].Quantity);
-              return prev.map((item, idx) =>
-                idx === index
-                  ? {
-                      ...item,
-                      stkQty: newStkQty,
-                      Quantity: qty + data.Quantity,
-                    }
-                  : item
-              );
-            } else {
-              return [{ ...data, stkQty: 1 }, ...prev];
-            }
+            return [
+              { ...data, ...STOProduct, tiq: 1, STQtyIn: currentSTQtyIn + 1 },
+              ...prev,
+            ];
           }
-        });
-        setBarcode("");
-      }
+        
+      });
+
+      setBarcode("");
     } catch (error) {
       toast.error("Product does not exist");
       setBarcode("");
@@ -144,7 +168,7 @@ const AccessoryFrame = () => {
       const res = await fetchByBrandProduct({
         brand: brandId,
         product: modelNo,
-        locationId: customerStock.locationId,
+        locationId: customerStockTransferIn.locationId,
       });
 
       const data = res?.data?.data;
@@ -196,43 +220,72 @@ const AccessoryFrame = () => {
   const handleAddSelectedItems = () => {
     setItems((prev) => {
       let updated = [...prev];
+
       selectedRows.forEach((selected) => {
-        if (!validateQuantity(selected)) return;
-        if (singleOrCombine === 1) {
-          // Separate Entry: Add new item with stkQty: 1
-          updated = [{ ...selected, stkQty: 1 }, ...updated];
-        } else {
-          // Combine Entry: Increment stkQty or add new item
-          const index = updated.findIndex(
-            (i) => i.Barcode === selected.Barcode
-          );
-          if (index !== -1) {
-            const newStkQty = Number(updated[index].stkQty) + 1;
-            const qty = Number(prev[index].Quantity);
-            if (!validateStockQty(updated[index], newStkQty)) {
-              return; // Skip this item if stkQty exceeds AvlQty
+        const STOProduct = stockOutData?.data.details.find(
+          (item) => item.FrameDetailId === selected.Id
+        );
+
+        if (!STOProduct) {
+          toast.error("Product is not present in the selected Stock Transfer");
+          return;
+        }
+
+        // Find existing item in state
+        const existing = updated.find((i) => i.Barcode === selected.Barcode);
+
+        // Use updated STQtyIn from state if exists, else from backend
+        const currentSTQtyIn = existing?.tiq ?? STOProduct.STQtyIn;
+
+        // Check pending qty with latest value
+        if (STOProduct.STQtyOut === currentSTQtyIn) {
+          toast.error("No Pending Qty left for the given product");
+          return;
+        }
+
+        // If still pending
+        if (STOProduct.STQtyOut > currentSTQtyIn) {
+          
+            if (existing) {
+              const newStkQty = currentSTQtyIn + 1;
+
+              updated = updated.map((item) =>
+                item.Barcode === selected.Barcode
+                  ? {
+                      ...item,
+                      ...STOProduct,
+                      STQtyIn: newStkQty,
+                      tiq: newStkQty,
+                    }
+                  : item
+              );
+            } else {
+              updated = [
+                {
+                  ...selected,
+                  ...STOProduct,
+                  tiq: 1,
+                  STQtyIn: currentSTQtyIn + 1,
+                },
+                ...updated,
+              ];
             }
-            updated = updated.map((item, idx) =>
-              idx === index
-                ? { ...item, stkQty: newStkQty, Quantity: qty + index.Quantity }
-                : item
-            );
-          } else {
-            updated = [{ ...selected, stkQty: 1 }, ...updated];
-          }
+          
         }
       });
+
       return updated;
     });
+
     setSelectedRows([]);
     setSearchResults([]);
   };
 
   const handleQtyChange = (barcode, qty, index) => {
     const newQty = Number(qty);
-    const avlQty = Number(items[index].Quantity);
+    const avlQty = Number(items[index].STQtyOut);
     if (newQty > avlQty) {
-      toast.error("Stock quantity cannot exceed available quantity!");
+      toast.error("TransferIn qty cannot exceed transferOut qty");
       return;
     }
     if (newQty < 0) {
@@ -241,7 +294,7 @@ const AccessoryFrame = () => {
     }
     setItems((prev) =>
       prev.map((i, idx) =>
-        i.Barcode === barcode && idx === index ? { ...i, stkQty: newQty } : i
+        i.Barcode === barcode && idx === index ? { ...i, tiq: newQty } : i
       )
     );
   };
@@ -297,7 +350,7 @@ const AccessoryFrame = () => {
           [key]: {
             ...prev[key],
             [field]: !currentMode,
-            originalQty: item.stkQty, // Store original quantity
+            originalQty: item.tiq, // Store original quantity
           },
         };
       }
@@ -315,7 +368,7 @@ const AccessoryFrame = () => {
           setItems((prevItems) =>
             prevItems.map((i, idx) =>
               i.Barcode === id && idx === index
-                ? { ...i, stkQty: prev[key].originalQty }
+                ? { ...i, tiq: prev[key].originalQty }
                 : i
             )
           );
@@ -334,37 +387,8 @@ const AccessoryFrame = () => {
     });
   };
 
-  const handleConfirmBypassWarnings = async () => {
-    if (!warningPayload) return;
-    const newPayload = {
-      products: items.map((item) => ({
-        otherProductDetailId: item.Id,
-        qty: item.Quantity,
-        PatientID: customerSalesId.patientId,
-        locationId: customerSalesId.locationId,
-        bypassWarnings: true,
-      })),
-    };
-    try {
-      await saveAccessory({
-        orderId: customerSalesId.orderId,
-        payload: newPayload,
-      }).unwrap();
-      toast.success("Accessories saved with warnings bypassed.");
-      setShowConfirmModal(false);
-      goToSalesStep(4);
-    } catch (err) {
-      setShowConfirmModal(false);
-      toast.error("Failed to save after confirming warnings.");
-    }
-  };
-
   const calculateStockGST = (item) => {
     if (!item) return 0;
-    if (customerStock.inState === 0) {
-      const detail = item.Tax.Details[0];
-      return { gstAmount: 0, slabNo: detail.Id, gstPercent: 0 }; // no GST for out of state
-    }
 
     const tax = item.Tax;
     if (!tax || !Array.isArray(tax.Details)) {
@@ -424,25 +448,28 @@ const AccessoryFrame = () => {
     console.log("items", items);
     try {
       const payload = {
-        STOutMainId: stockDraftData.ID || stockDraftData[0].ID,
+        STInMainId: stockTransferInDraftData.ID,
+        STOutMainId: customerStockTransferIn.mainId,
         products: items.map((item) => {
           return {
             ProductType: 2,
             detailId: item.Id,
             BatchCode: null,
-            STQtyOut: item.Quantity,
-            TransferPrice: parseFloat(item.BuyingPrice),
+            STQtyIn: item.tiq,
+            STQtyOut: item.STQtyOut,
+            transferPrice: parseFloat(item.BuyingPrice),
             gstPercentage: calculateStockGST(item).gstPercent,
-            mrp: item.MRP,
+            srp: parseFloat(item.MRP),
           };
         }),
       };
+
       console.log(payload);
       await saveStockTransfer({ payload }).unwrap();
-      toast.success("Accessory Stock transfer out successfully added");
-      goToStockStep(4);
+      toast.success("Accessory transfer in successfully added");
+      goToStockTransferInStep(4);
     } catch (error) {
-      toast.error(error?.data.error);
+      console.log(error);
     }
   };
 
@@ -461,7 +488,8 @@ const AccessoryFrame = () => {
             <div>
               <div className="flex items-center gap-4 mb-4"></div>
               <h1 className="text-2xl font-bold text-gray-900">
-                Step {currentStockStep}: {selectedStockProduct.label}
+                Step {currentStockTransferInStep}:{" "}
+                {selectedStockTransferInProduct.label}
               </h1>
               <p className="text-sm text-gray-500 mt-1">
                 {searchMode
@@ -471,7 +499,7 @@ const AccessoryFrame = () => {
             </div>
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <Button
-                onClick={prevStockStep}
+                onClick={prevStockTransferInStep}
                 icon={FiArrowLeft}
                 variant="outline"
               >
@@ -499,20 +527,7 @@ const AccessoryFrame = () => {
                     Enter Barcode
                   </label>
 
-                  <div className="flex items-center gap-5">
-                    <Radio
-                      value="0"
-                      onChange={() => setSingleOrCombine(0)}
-                      checked={singleOrCombine === 0}
-                      label="Combine Entry"
-                    />
-                    <Radio
-                      value="1"
-                      onChange={() => setSingleOrCombine(1)}
-                      checked={singleOrCombine === 1}
-                      label="Separate Entry"
-                    />
-                  </div>
+                  
                 </div>
                 <div className="flex gap-2">
                   <div className="relative flex items-center">
@@ -552,20 +567,7 @@ const AccessoryFrame = () => {
                   >
                     Search by Brand & Model *
                   </label>
-                  <div className="flex items-center gap-5">
-                    <Radio
-                      value="0"
-                      onChange={() => setSingleOrCombine(0)}
-                      checked={singleOrCombine === 0}
-                      label="Combine Entry"
-                    />
-                    <Radio
-                      value="1"
-                      onChange={() => setSingleOrCombine(1)}
-                      checked={singleOrCombine === 1}
-                      label="Separate Entry"
-                    />
-                  </div>
+                  
                 </div>
                 <div className="flex gap-2">
                   <Autocomplete
@@ -631,14 +633,13 @@ const AccessoryFrame = () => {
               columns={[
                 "s.no",
                 "type",
-                "Product name",
-                "mrp",
+                "product name",
                 "transfer price",
+                "transfer out qty",
+                "transfer in qty",
                 "gst",
-                "stock out qty",
-                "Avl qty",
                 "total amount",
-                "Action",
+                "action",
               ]}
               data={items}
               renderRow={(item, index) => (
@@ -651,7 +652,6 @@ const AccessoryFrame = () => {
 
                     <div>Barcode: {item.Barcode}</div>
                   </TableCell>
-                  <TableCell>₹{formatINR(item.MRP)}</TableCell>
                   <TableCell>
                     {editMode[`${item.Barcode}-${index}`]?.BuyingPrice ? (
                       <div className="flex items-center gap-2">
@@ -712,15 +712,24 @@ const AccessoryFrame = () => {
                       </div>
                     )}
                   </TableCell>
+                  <TableCell>{item.STQtyOut}</TableCell>
                   <TableCell>
-                    ₹{formatINR(calculateStockGST(item).gstAmount)}({calculateStockGST(item).gstPercent}%)
+                    ₹{formatINR(calculateStockGST(item).gstAmount)}(
+                    {calculateStockGST(item).gstPercent}%)
+                  </TableCell>
+                  <TableCell>
+                    ₹
+                    {formatINR(
+                      parseFloat(item.BuyingPrice) * item.tiq +
+                        calculateStockGST(item).gstAmount * item.tiq
+                    )}
                   </TableCell>
                   <TableCell>
                     {editMode[`${item.Barcode}-${index}`]?.qty ? (
                       <div className="flex items-center gap-2">
                         <input
                           type="number"
-                          value={item.stkQty}
+                          value={item.tiq}
                           onChange={(e) =>
                             handleQtyChange(item.Barcode, e.target.value, index)
                           }
@@ -761,14 +770,7 @@ const AccessoryFrame = () => {
                       </div>
                     )}
                   </TableCell>
-                  <TableCell>{item.Quantity}</TableCell>
-                  <TableCell>
-                    ₹
-                    {formatINR(
-                      parseFloat(item.BuyingPrice) * item.stkQty +
-                        calculateStockGST(item).gstAmount * item.stkQty
-                    )}
-                  </TableCell>
+
                   <TableCell>
                     <button
                       onClick={() => handleDelete(item.Barcode, index)}
@@ -851,39 +853,6 @@ const AccessoryFrame = () => {
           </div>
         )}
       </div>
-      <ConfirmationModal
-        isOpen={showConfirmModal}
-        onClose={() => setShowConfirmModal(false)}
-        onConfirm={handleConfirmBypassWarnings}
-        title="Stock Warning"
-        message={
-          warningPayload && warningPayload.length > 0 ? (
-            <>
-              <p className="mb-2">Some accessories have stock issues:</p>
-              <ul className="list-disc pl-5">
-                {warningPayload.map((warning, idx) => {
-                  const indexInItems =
-                    items.findIndex(
-                      (item) => item.Id === warning.otherProductDetailId
-                    ) + 1;
-                  return (
-                    <li key={warning.otherProductDetailId}>
-                      Accessory #{indexInItems}: {warning.message}
-                    </li>
-                  );
-                })}
-              </ul>
-              <p className="mt-2">Do you want to proceed anyway?</p>
-            </>
-          ) : (
-            "Some accessories are out of stock. Do you want to proceed anyway?"
-          )
-        }
-        confirmText="Yes, Proceed"
-        cancelText="Cancel"
-        danger={false}
-        isLoading={isFrameSaving}
-      />
     </div>
   );
 };

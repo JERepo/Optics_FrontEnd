@@ -27,15 +27,13 @@ import Radio from "../../../components/Form/Radio";
 
 import { useLazyGetBatchDetailsQuery } from "../../../api/InvoiceApi";
 import { useSelector } from "react-redux";
-import {
-  useGetBatchBarCodeMutation,
-  useLazyGetBatchesForCLQuery,
-  useLazyGetInvoiceDetailsQuery,
-  useSaveProductsMutation,
-} from "../../../api/salesReturnApi";
+import { useGetBatchBarCodeMutation } from "../../../api/salesReturnApi";
 import { formatINR } from "../../../utils/formatINR";
 import Modal from "../../../components/ui/Modal";
-import { useSaveStockDetailsMutation } from "../../../api/stockTransfer";
+import {
+  useGetStockOutDetailsQuery,
+  useSaveStockDetailsMutation,
+} from "../../../api/stockTransfer";
 
 // Validation helpers
 const isMultipleOfQuarter = (value) => {
@@ -158,13 +156,12 @@ const getProductName = (order) => {
 
 const ContactLens = () => {
   const {
-    selectedStockProduct,
-    prevStockStep,
-    goToStockStep,
-    stockDraftData,
-    customerStock,
-    calculateGST,
-    currentStockStep,
+    customerStockTransferIn,
+    currentStockTransferInStep,
+    stockTransferInDraftData,
+    goToStockTransferInStep,
+    prevStockTransferInStep,
+    selectedStockTransferInProduct,
   } = useOrder();
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
   const [searchFethed, setSearchFetched] = useState(false);
@@ -202,6 +199,10 @@ const ContactLens = () => {
   });
 
   const [errors, setErrors] = useState({});
+  const { data: stockOutData } = useGetStockOutDetailsQuery({
+    mainId: customerStockTransferIn.mainId,
+    locationId: parseInt(hasMultipleLocations[0]),
+  });
 
   const { data: modalities, isLoading: modalitiesLoading } =
     useGetModalitiesQuery();
@@ -288,6 +289,7 @@ const ContactLens = () => {
     });
     setErrors({});
     setSearchFetched(false);
+    setDetailId(false);
   };
 
   const filteredBrands =
@@ -333,7 +335,7 @@ const ContactLens = () => {
       Axis: parseInt(newItem.axis) || null,
       Additional: parseInt(newItem.additional) || null,
       Colour: lensData.color || null,
-      locationId: customerStock.locationId,
+      locationId: customerStockTransferIn.locationId,
     };
 
     try {
@@ -356,24 +358,34 @@ const ContactLens = () => {
         if (data.CLBatchCode === 1) {
           try {
             await getCLBatches({
-            clBatchId: data.CLDetailId,
-            locationId: parseInt(hasMultipleLocations[0]),
-          }).unwrap();
-          setDetailId(true);
-          setOpenBatch(true);
+              clBatchId: data.CLDetailId,
+              locationId: parseInt(hasMultipleLocations[0]),
+            }).unwrap();
+            setDetailId(true);
+            setOpenBatch(true);
           } catch (error) {
-            toast.error(error?.data.error)
+            toast.error(error?.data.error);
             return;
           }
         } else if (data.CLBatchCode === 0) {
-          if (data.AvlQty <= 0) {
-            toast.error("Stock quantity must be greater than 0!");
+          const STOProduct = stockOutData?.data.details.find(
+            (item) => item.ContactLensDetailId === data.CLDetailId
+          );
+          if (!STOProduct) {
+            toast.error(
+              "Product is not present in the selected Stock Transfer"
+            );
             return;
           }
+          if (STOProduct.STQtyOut === STOProduct.STQtyIn) {
+            toast.error("No Pending Qty left for the given product");
+            return;
+          }
+
           const cc = {
             ...data,
-            stkQty: 1,
-            Quantity: parseInt(data.AvlQty),
+            ...STOProduct,
+            tiq: 1,
           };
           setMainClDetails((prev) => [...prev, cc]);
           handleRefresh();
@@ -414,7 +426,7 @@ const ContactLens = () => {
           [key]: {
             ...prev[key],
             [field]: !currentMode,
-            originalQty: item.stkQty, // Store original quantity
+            originalQty: item.tiq, // Store original quantity
           },
         };
       }
@@ -429,7 +441,7 @@ const ContactLens = () => {
         } else if (field === "qty") {
           setMainClDetails((prevItems) =>
             prevItems.map((i, idx) =>
-              idx === index ? { ...i, stkQty: prev[key].originalQty } : i
+              idx === index ? { ...i, tiq: prev[key].originalQty } : i
             )
           );
         }
@@ -448,13 +460,18 @@ const ContactLens = () => {
   };
   const handleQtyChange = (barcode, qty, index) => {
     const newQty = Number(qty);
-    const avlQty = Number(mainClDetails[index].Quantity);
-    if (newQty > avlQty) {
-      toast.error("Stock quantity cannot exceed available quantity!");
+    // const avlQty = Number(mainClDetails[index].Quantity);
+    // Find existing in our items (local scanned state)
+    const existing = mainClDetails[index];
+
+    // Determine current STQtyIn (from state if exists, else from backend)
+    const currentSTQtyIn = existing?.tiq;
+    if (newQty > currentSTQtyIn) {
+      toast.error("TransferIn qty cannot exceed transferOut qty!");
       return;
     }
     if (newQty < 0) {
-      toast.error("Stock quantity must be greater than 0!");
+      toast.error("TransferIn qty must be greater than 0!");
       return;
     }
     setMainClDetails((prev) =>
@@ -472,17 +489,30 @@ const ContactLens = () => {
       );
 
       if (isAvailable) {
-        if (parseInt(batchBarCodeDetails?.data?.data.AvlQty) <= 0) {
-          toast.error("Stock quantity must be greater than 0!");
+        // if (parseInt(batchBarCodeDetails?.data?.data.AvlQty) <= 0) {
+        //   toast.error("Stock quantity must be greater than 0!");
+        //   return;
+        // }
+        const STOProduct = stockOutData?.data.details.find(
+          (item) =>
+            item.ContactLensDetailId ===
+            batchBarCodeDetails?.data?.data.CLDetailId
+        );
+        if (!STOProduct) {
+          toast.error("Product is not present in the selected Stock Transfer");
+          return;
+        }
+        if (STOProduct.STQtyOut === STOProduct.STQtyIn) {
+          toast.error("No Pending Qty left for the given product");
           return;
         }
 
         const newItemCl = {
           ...isAvailable,
           ...newItem.powerData,
+          ...STOProduct,
           selectBatch,
-          stkQty: 1,
-          Quantity: parseInt(newItem.powerData.AvlQty),
+
           ...(detailId ? batchBarCodeDetails?.data?.data : {}),
         };
 
@@ -527,15 +557,25 @@ const ContactLens = () => {
       }).unwrap();
 
       if (response?.data.data.CLBatchCode === 0) {
-        if(response?.data.data.Quantity <= 0){
-          toast.error("Stock quantity must be greater than 0!")
+        // if (response?.data.data.Quantity <= 0) {
+        //   toast.error("Stock quantity must be greater than 0!");
+        //   return;
+        // }
+        const STOProduct = stockOutData?.data.details.find(
+          (item) => item.ContactLensDetailId === response?.data.data.CLDetailId
+        );
+        if (!STOProduct) {
+          toast.error("Product is not present in the selected Stock Transfer");
+          return;
+        }
+        if (STOProduct.STQtyOut === STOProduct.STQtyIn) {
+          toast.error("No Pending Qty left for the given product");
           return;
         }
         const cc = {
           ...response?.data.data,
-          stkQty: 1,
-          Quantity: response?.data.data.Quantity,
-          MRP: response?.data.data.MRP,
+          ...STOProduct,
+          tiq: 1,
         };
         setMainClDetails((prev) => [...prev, cc]);
         setProductCodeInput("");
@@ -556,24 +596,42 @@ const ContactLens = () => {
   const handleSaveBatchData = async () => {
     let sub;
     if ((!detailId || openBatch) && productSearch == 0) {
-      if (newItem.avlQty <= 0) {
-        toast.error("Stock quantity must be greater than 0!");
+      const STOProduct = stockOutData?.data.details.find(
+        (item) => item.ContactLensDetailId === newItem.CLDetailId
+      );
+      console.log("new Ire", newItem, STOProduct);
+      if (!STOProduct) {
+        toast.error("Product is not present in the selected Stock Transfer");
+        return;
+      }
+      if (STOProduct.STQtyOut === STOProduct.STQtyIn) {
+        toast.error("No Pending Qty left for the given product");
         return;
       }
       sub = {
         ...newItem.powerData,
         ...selectedBatchCode,
-        stkQty: 1,
-        Quantity: newItem.avlQty,
-        MRP: selectedBatchCode.CLMRP,
+        ...STOProduct,
+        tiq: 1,
       };
     } else if (detailId && productSearch == 1) {
+      const STOProduct = stockOutData?.data.details.find(
+        (item) =>
+          item.ContactLensDetailId === batchBarCodeDetails?.data.data.CLDetailId
+      );
+      if (!STOProduct) {
+        toast.error("Product is not present in the selected Stock Transfer");
+        return;
+      }
+      if (STOProduct.STQtyOut === STOProduct.STQtyIn) {
+        toast.error("No Pending Qty left for the given product");
+        return;
+      }
       sub = {
         ...batchBarCodeDetails?.data.data,
         ...selectedBatchCode,
-        stkQty: 1,
-        Quantity: batchBarCodeDetails?.data.data.Quantity,
-        MRP: selectedBatchCode.CLMRP,
+        ...STOProduct,
+        tiq: 1,
       };
     }
 
@@ -597,15 +655,6 @@ const ContactLens = () => {
   };
   const calculateStockGST = (item) => {
     if (!item) return { gstAmount: 0, slabNo: null, gstPercent: 0 };
-
-    if (customerStock.inState === 0) {
-      const detail = item.TaxDetails?.[0];
-      return {
-        gstAmount: 0,
-        slabNo: detail?.TaxDetailId ?? null,
-        gstPercent: 0,
-      };
-    }
 
     const tax = item.TaxDetails;
     if (!Array.isArray(tax) || tax.length === 0) {
@@ -665,23 +714,25 @@ const ContactLens = () => {
 
     try {
       const payload = {
-        STOutMainId: stockDraftData.ID || stockDraftData[0].ID,
+        STInMainId: stockTransferInDraftData.ID,
+        STOutMainId: parseInt(customerStockTransferIn.mainId),
         products: mainClDetails.map((item) => {
           return {
             ProductType: 3,
             detailId: item.CLDetailId,
             BatchCode: item.CLBatchCode || item.CLBatchBarCode,
-            STQtyOut: item.stkQty,
-            TransferPrice: parseFloat(item.BuyingPrice),
+            STQtyIn: item.tiq,
+            STQtyOut: item.STQtyOut,
+            transferPrice: parseFloat(item.BuyingPrice),
             gstPercentage: calculateStockGST(item).gstPercent,
-            mrp: parseFloat(item.MRP),
+            srp: parseFloat(item.MRP),
           };
         }),
       };
       console.log(payload);
       await saveStockTransfer({ payload }).unwrap();
-      toast.success("Frame Stock transfer out successfully added");
-      goToStockStep(4);
+      toast.success("Contact Lens stock transferin successfully added");
+      goToStockTransferInStep(4);
     } catch (error) {
       toast.error(error?.data.error.message);
     }
@@ -708,7 +759,7 @@ const ContactLens = () => {
   // if (newItem.CLDetailId && !searchFethed) {
   //   inputTableColumns.push("Avl.Qty", "Order Qty", "Action");
   // }
-console.log(mainClDetails)
+  console.log(mainClDetails);
   return (
     <div className="max-w-8xl h-auto">
       <div className="bg-white rounded-xl shadow-sm p-2">
@@ -718,13 +769,14 @@ console.log(mainClDetails)
               <div>
                 <div className="flex items-center gap-4 mb-4"></div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  Step {currentStockStep}: {selectedStockProduct.label}
+                  Step {currentStockTransferInStep}:{" "}
+                  {selectedStockTransferInProduct.label}
                 </h1>
               </div>
             </div>
             <div className="flex gap-3">
               <Button
-                onClick={() => prevStockStep()}
+                onClick={() => prevStockTransferInStep()}
                 icon={FiArrowLeft}
                 variant="outline"
               >
@@ -740,16 +792,16 @@ console.log(mainClDetails)
             <div className="p-6">
               <Table
                 columns={[
+                 
                   "s.no",
                   "type",
-                  "Product name",
-                  "mrp",
+                  "product name",
                   "transfer price",
+                  "transfer out qty",
+                  "transfer in qty",
                   "gst",
-                  "stock out qty",
-                  "Avl qty",
                   "total amount",
-                  "Action",
+                  "action",
                 ]}
                 data={mainClDetails || []}
                 renderRow={(item, index) => (
@@ -759,7 +811,7 @@ console.log(mainClDetails)
                     <TableCell className="whitespace-pre-wrap">
                       {getProductName(item)}
                     </TableCell>
-                    <TableCell>₹{item.MRP}</TableCell>
+
                     <TableCell>
                       {editMode[`${item.Barcode}-${index}`]?.BuyingPrice ? (
                         <div className="flex items-center gap-2">
@@ -820,15 +872,13 @@ console.log(mainClDetails)
                         </div>
                       )}
                     </TableCell>
-                    <TableCell>
-                      ₹{formatINR(calculateStockGST(item).gstAmount)}({calculateStockGST(item).gstPercent}%)
-                    </TableCell>
+                    <TableCell>{item.STQtyOut}</TableCell>
                     <TableCell>
                       {editMode[`${item.Barcode}-${index}`]?.qty ? (
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
-                            value={item.stkQty}
+                            value={item.tiq}
                             onChange={(e) =>
                               handleQtyChange(
                                 item.Barcode,
@@ -860,7 +910,7 @@ console.log(mainClDetails)
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          {item.stkQty}
+                          {item.tiq}
                           <button
                             onClick={() =>
                               toggleEditMode(item.Barcode, index, "qty")
@@ -873,14 +923,19 @@ console.log(mainClDetails)
                         </div>
                       )}
                     </TableCell>
-                    <TableCell>{item.Quantity}</TableCell>
+                    <TableCell>
+                      ₹{formatINR(calculateStockGST(item).gstAmount)}(
+                      {calculateStockGST(item).gstPercent}%)
+                    </TableCell>
+
                     <TableCell>
                       ₹
                       {formatINR(
-                        parseFloat(item.BuyingPrice) * item.stkQty +
-                          calculateStockGST(item).gstAmount * item.stkQty
+                        parseFloat(item.BuyingPrice) * item.tiq +
+                          calculateStockGST(item).gstAmount * item.tiq
                       )}
                     </TableCell>
+
                     <TableCell>
                       <button
                         onClick={() => handleDelete(item.Barcode, index)}

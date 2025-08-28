@@ -68,6 +68,7 @@ import StockTransferView from "../pages/StockTransfer/MainStockTransferOut/Stock
 import TotalPurchaseReturn from "../pages/PurchaseReturn";
 import PurchaseReturn from "../pages/PurchaseReturn/MainPurchaseReturn/PurchaseReturn";
 import PurchaseReturnView from "../pages/PurchaseReturn/MainPurchaseReturn/PurchaseReturnView";
+import TotalStockTransferIn from "../pages/StockTransferIn";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -730,13 +731,14 @@ export const router = createBrowserRouter([
         element: <TotalPurchaseReturn />,
       },
       {
-        path :"purchase-return",
-        element : <PurchaseReturn />
+        path: "purchase-return",
+        element: <PurchaseReturn />,
       },
-       {
-        path :"purchase-return/view",
-        element : <PurchaseReturnView />
-      }
+      {
+        path: "purchase-return/view",
+        element: <PurchaseReturnView />,
+      },
+      { path: "stock-transferin/create", element: <TotalStockTransferIn /> },
     ],
   },
   {

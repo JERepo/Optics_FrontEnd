@@ -46,7 +46,7 @@ const SelectLocation = () => {
         userId: user.Id,
       }).unwrap();
 
-      const draft = res?.data?.records[0] || res?.data.draft;
+      const draft = res?.data?.records[0];
       const existDraft =
         draft?.Status === 0 &&
         draft?.FromCompanyId === customerStock.companyId &&

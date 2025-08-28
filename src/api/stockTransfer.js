@@ -4,7 +4,7 @@ import { customBaseQuery } from "./customBaseQuery";
 export const stockTransferApi = createApi({
   reducerPath: "stockTransferApi",
   baseQuery: customBaseQuery,
-  tagTypes: ["StockTransfer"],
+  tagTypes: ["StockTransfer", "StockTransferIn"],
   endpoints: (builder) => ({
     saveStockTransferDraft: builder.mutation({
       query: ({ toCompanyId, fromCompanyId, userId }) => ({
@@ -62,11 +62,50 @@ export const stockTransferApi = createApi({
       }),
       providesTags: ["StockTransfer"],
     }),
-    getStockTransferOutById:builder.query({
-      query:({mainId,locationId}) => ({
-        url :  `/api/v1/stock-transfer/out/getbyid/${mainId}?locationId=${locationId}`
-      })
-    })
+    getStockTransferOutById: builder.query({
+      query: ({ mainId, locationId }) => ({
+        url: `/api/v1/stock-transfer/out/getbyid/${mainId}?locationId=${locationId}`,
+      }),
+    }),
+
+    // Stock transfer In APIs
+
+    getSelectStock: builder.query({
+      query: ({ locationId }) => ({
+        url: `/api/v1/stock-transfer/openstocktransfer?locationId=${locationId}`,
+      }),
+    }),
+    saveSTKIDraft: builder.mutation({
+      query: ({ locationId, mainId, userId }) => ({
+        url: `/api/v1/stock-transfer/in/draft?locationId=${locationId}&STOutMainId=${mainId}&applicationUserId=${userId}`,
+        method: "POST",
+      }),
+    }),
+    getSTKIDraftData: builder.query({
+      query: ({ locationId, mainId, userId }) => ({
+        url: `/api/v1/stock-transfer/in/getallmain?CompanyId=${locationId}&STOutMainId=${mainId}&ApplicationUserId=${userId}`,
+      }),
+    }),
+    saveSTI: builder.mutation({
+      query: ({ payload }) => ({
+        url: `/api/v1/stock-transfer/in/stockdetails`,
+        method: "POST",
+        body: payload,
+      }),
+      invalidatesTags: ["StockTransferIn"],
+    }),
+    getStockInDetails: builder.query({
+      query: ({ mainId, locationId }) => ({
+        url: `/api/v1/stock-transfer/in/details?STInMainID=${mainId}&locationId=${locationId}`,
+      }),
+    }),
+    deleteUpdateSTKIn: builder.mutation({
+      query: ({ payload }) => ({
+        url: `/api/v1/stock-transfer/completestockintransfer`,
+        method: "PUT",
+        body: payload,
+      }),
+    }),
   }),
 });
 
@@ -80,5 +119,13 @@ export const {
   useLazyGetOLByBarcodeQuery,
   useGetOlDetailsByOlDetailIdMutation,
   useGetAllStockOutDetailsQuery,
-  useGetStockTransferOutByIdQuery
+  useGetStockTransferOutByIdQuery,
+
+  // Stock transfer In APIs
+  useGetSelectStockQuery,
+  useSaveSTKIDraftMutation,
+  useLazyGetSTKIDraftDataQuery,
+  useSaveSTIMutation,
+  useGetStockInDetailsQuery,
+  useDeleteUpdateSTKInMutation
 } = stockTransferApi;

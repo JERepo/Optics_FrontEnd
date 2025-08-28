@@ -470,7 +470,7 @@ const FrameSunglass = () => {
       )
     );
   };
-
+  console.log("draft data", stockDraftData);
   const handleSaveData = async () => {
     if (!Array.isArray(items) || items.length === 0) {
       console.warn("No details to save");
@@ -482,7 +482,6 @@ const FrameSunglass = () => {
         STOutMainId: stockDraftData.ID || stockDraftData[0].ID,
         products: items.map((item) => {
           return {
-           
             ProductType: 1,
             detailId: item.Id,
             BatchCode: null,
@@ -490,7 +489,6 @@ const FrameSunglass = () => {
             TransferPrice: parseFloat(item.BuyingPrice),
             gstPercentage: calculateStockGST(item).gstPercent,
             mrp: item.MRP,
-            
           };
         }),
       };
@@ -499,7 +497,7 @@ const FrameSunglass = () => {
       toast.success("Frame Stock transfer out successfully added");
       goToStockStep(4);
     } catch (error) {
-     console.log(error)
+      console.log(error);
     }
   };
 
@@ -827,8 +825,8 @@ const FrameSunglass = () => {
                     <TableCell>
                       ₹
                       {formatINR(
-                        (parseFloat(item.BuyingPrice) * item.stkQty) +
-                          (calculateStockGST(item).gstAmount * item.stkQty)
+                        parseFloat(item.BuyingPrice) * item.stkQty +
+                          calculateStockGST(item).gstAmount * item.stkQty
                       )}
                     </TableCell>
                     <TableCell>
