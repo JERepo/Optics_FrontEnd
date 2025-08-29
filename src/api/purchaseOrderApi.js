@@ -86,6 +86,12 @@ export const purchaseOrderApi = createApi({
                 method: 'POST',
                 body: payload
             })
+        }),
+        getPOview: builder.query({
+            query: (po) => ({
+                url: `/api/v1/purchase-order/getpo?po=`,
+                method: 'GET'
+            })
         }) 
     })
 });
@@ -103,5 +109,6 @@ export const {
     useUpdatePoMainMutation,
     useLazyGetOlByBarcodeQuery,
     useGetOlByDetailIdMutation,
-    useGetAllPoDetailsForNewOrderMutation
+    useGetAllPoDetailsForNewOrderMutation,
+    useGetPOviewQuery
 } = purchaseOrderApi;

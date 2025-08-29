@@ -21,7 +21,7 @@ import {
 import { MdOutlineAdminPanelSettings } from "react-icons/md";
 
 export const menuItems = [
-   {
+  {
     name: "Product Master",
     icon: IoOptionsSharp,
     module: "Product Master",
@@ -202,4 +202,17 @@ export const menuItems = [
       },
     ],
   },
+  {
+    name: "GRN",
+    icon: FiBox,
+    module: "GRN",
+    subItems: [
+      {
+        name: "Add GRN",
+        path: "/grn/create",
+        module: "GRN",
+        icon: IoConstructOutline, // Suggests building/setup
+      }
+    ],
+  }
 ];

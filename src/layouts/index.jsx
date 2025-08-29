@@ -62,6 +62,12 @@ import InvoiceView from "../pages/Invoice/InvoiceView";
 import SalesList from "../pages/SalesReturn/MainSalesReturn/SalesList";
 import TotalSales from "../pages/SalesReturn";
 import SalesView from "../pages/SalesReturn/MainSalesReturn/SalesView";
+import { GRNProvider } from "../features/GRNContext";
+import GRNMain from "../pages/GRN/GRNMain";
+import GRNStep1 from "../pages/GRN/GRNStep1";
+import GRNStep2 from "../pages/GRN/GRNStep2";
+import { PurchaseOrderMainPage } from "../pages/PurchaseOrder/POMainPage";
+import { POViewPage } from "../pages/PurchaseOrder/POViewPage";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -672,6 +678,22 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: "purchase-order/",
+        element: (
+          <PermissionRoute module="Purchase Order" action="view">
+            <PurchaseOrderMainPage />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "purchase-order/view",
+        element: (
+          <PermissionRoute module="Purchase Order" action="view">
+            <POViewPage />
+          </PermissionRoute>
+        ),
+      },
+      {
         path: "invoice",
         element: <InvoiceList />,
       },
@@ -695,6 +717,16 @@ export const router = createBrowserRouter([
         path: "sales-return/create",
         element: <TotalSales />,
       },
+      {
+        path: "grn/create",
+        element: (
+          // <PermissionRoute module="GRN" action="view">
+          <GRNProvider>
+            <GRNMain />
+          </GRNProvider>
+          // </PermissionRoute>
+        )
+      }
     ],
   },
   {
