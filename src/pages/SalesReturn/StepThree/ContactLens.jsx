@@ -581,7 +581,30 @@ const ContactLens = () => {
             returnPrice: parseFloat(data.SellingPrice),
             returnQty: 1,
           };
-          setMainClDetails((prev) => [...prev, cc]);
+          if (newItem.avlQty <= 0) {
+            toast.error("Stock quantity not available for this product!");
+            return;
+          }
+          const existingIndex = mainClDetails.findIndex(
+            (item) => item.Barcode == data.Barcode
+          );
+          if (existingIndex !== -1) {
+            const item = mainClDetails[existingIndex];
+            const newQty = item.returnQty + 1;
+            if (newQty > item.Quantity) {
+              toast.error("Stock quantity cannot exceed available quantity!");
+              return;
+            }
+            setMainClDetails((prev) =>
+              prev.map((it, idx) =>
+                idx === existingIndex
+                  ? { ...it, returnQty: it.returnQty + 1 }
+                  : it
+              )
+            );
+          } else {
+            setMainClDetails((prev) => [...prev, cc]);
+          }
           handleRefresh();
         } else if (data.CLBatchCode === 1 && referenceApplicable === 1) {
           const response = await getCLBatches({
@@ -622,7 +645,6 @@ const ContactLens = () => {
   const handleDeleteYes = (index) => {
     setMainClDetails((prev) => prev.filter((item, i) => i !== index));
   };
-  console.log(productSearch);
   const handleGetBatchBarCodeDetails = async () => {
     if (!batchCodeInput) {
       return;
@@ -635,6 +657,10 @@ const ContactLens = () => {
 
       if (isAvailable && referenceApplicable === 0) {
         console.log("inside", batchBarCodeDetails?.data?.data);
+        if (batchBarCodeDetails?.data?.data.Quantity <= 0) {
+          toast.error("Stock quantity not available for this batchbarcode!");
+          return;
+        }
         const newItemCl = {
           ...isAvailable,
           selectBatch,
@@ -727,14 +753,42 @@ const ContactLens = () => {
       }).unwrap();
 
       if (response?.data.data.CLBatchCode === 0 && referenceApplicable === 0) {
+        if (response?.data.data.Quantity <= 0) {
+          toast.error("Stock quantity not available for this barcode!");
+          return;
+        }
         const cc = {
           ...response?.data.data,
-          returnPrice: parseFloat(response?.data.data.pSellingPrice),
+          returnPrice:
+            response?.data.data.CLBatchCode === 0
+              ? parseFloat(response?.data.data.price.SellingPrice)
+              : parseFloat(response?.data.data.stock.SellingPrice),
           returnQty: 1,
-          MRP: parseFloat(response?.data.data.pMRP),
+          MRP:
+            response?.data.data.CLBatchCode === 0
+              ? parseFloat(response?.data.data.price.MRP)
+              : parseFloat(response?.data.data.stock.MRP),
         };
-
-        setMainClDetails((prev) => [...prev, cc]);
+        const existingIndex = mainClDetails.findIndex(
+          (item) => item.Barcode == response?.data.data.Barcode
+        );
+        if (existingIndex !== -1) {
+          const item = mainClDetails[existingIndex];
+          const newQty = item.returnQty + 1;
+          if (newQty > item.Quantity) {
+            toast.error("Stock quantity cannot exceed available quantity!");
+            return;
+          }
+          setMainClDetails((prev) =>
+            prev.map((it, idx) =>
+              idx === existingIndex
+                ? { ...it, returnQty: it.returnQty + 1 }
+                : it
+            )
+          );
+        } else {
+          setMainClDetails((prev) => [...prev, cc]);
+        }
         setProductCodeInput("");
       } else if (
         response?.data.data.CLBatchCode === 1 &&
@@ -801,9 +855,14 @@ const ContactLens = () => {
           returnQty: 1,
         };
       }
+
+      if (sub?.Quantity <= 0) {
+        toast.error("Stock quantity not available for this batchcode!");
+        return;
+      }
       const existingIndex = mainClDetails.findIndex(
         (item) =>
-          item.Barcode == sub.Barcode && item.CLBatchCode == sub.CLBatchCode
+          item.Barcode == sub.Barcode || item.CLBatchCode == sub.CLBatchCode
       );
       if (existingIndex !== -1) {
         const item = mainClDetails[existingIndex];

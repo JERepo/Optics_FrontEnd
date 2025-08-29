@@ -22,6 +22,10 @@ const getProductName = (order) => {
     fittingGSTPercentage,
     batchCode,
     expiry,
+    Spherical,
+    Cylinder,
+    Diameter,
+    AddOnData,
   } = order;
 
   const detail = Array.isArray(productDetails)
@@ -60,7 +64,8 @@ const getProductName = (order) => {
         line2 && `Size: ${line2}`,
         cat && `Category: ${cat}`,
         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
-        clean(detail.hsncode || detail.hSN) && `HSN: ${clean(detail.hsncode || detail.hSN)}`,
+        clean(detail.hsncode || detail.hSN) &&
+          `HSN: ${clean(detail.hsncode || detail.hSN)}`,
       ],
       "\n"
     );
@@ -74,7 +79,8 @@ const getProductName = (order) => {
         clean(detail.Variation?.Variation || detail.variationName) &&
           `Variation: ${detail.Variation?.Variation || detail.variationName}`,
         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
-        clean(detail.hsncode || detail.hSN) && `HSN: ${clean(detail.hsncode || detail.hSN)}`,
+        clean(detail.hsncode || detail.hSN) &&
+          `HSN: ${clean(detail.hsncode || detail.hSN)}`,
       ],
       "\n"
     );
@@ -116,7 +122,11 @@ const getProductName = (order) => {
   // Ophthalmic Lenses (ProductType 0)
   if (productType === 0) {
     const olLine = clean(`${detail.brandName} ${detail.productName}`);
-
+    // AddOns
+    console.log("add",AddOnData)
+    const addonNames = Array.isArray(AddOnData) ? AddOnData?.map((item) =>
+      clean(item.name?.split(" - ₹")[0])
+    ).filter(Boolean) : "";
     const formatPower = (eye) =>
       joinNonEmpty(
         [
@@ -152,10 +162,11 @@ const getProductName = (order) => {
         powerLine,
         clean(detail.colour) && `Color: ${detail.colour}`,
         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
-        
+
         fittingLine,
-        clean(detail.hSN || detail.hsncode) &&
-          `HSN: ${clean(detail.hSN) || clean(detail.hsncode)}`,
+        clean(detail.hSN || detail.hsncode || detail.HSN) &&
+          `HSN: ${clean(detail.hSN) || clean(detail.hsncode) || clean(detail.HSN)}`,
+         
       ],
       "\n"
     );
@@ -196,7 +207,7 @@ const CompleteSalesReturn = () => {
     );
   const [completeSales, { isLoading: isCompleteSalesLoading }] =
     useCompleteSaleReturnMutation();
-console.log(finalProducts)
+  console.log("final r",finalProducts);
   // Calculate totals
   const totals = finalProducts?.data?.reduce(
     (acc, item) => {
@@ -349,7 +360,8 @@ console.log(finalProducts)
                     {item.InvoiceMain && (
                       <div>
                         {item.InvoiceMain.InvoicePrefix}/
-                        {item.InvoiceMain.InvoiceNo}/{item.ProductDetails[0].slNo}
+                        {item.InvoiceMain.InvoiceNo}/
+                        {item.ProductDetails[0].slNo}
                       </div>
                     )}
                   </TableCell>

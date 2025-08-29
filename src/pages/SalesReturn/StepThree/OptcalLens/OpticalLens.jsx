@@ -4,6 +4,7 @@ import {
   useCheckTintQuery,
   useGetAddOnQuery,
   useGetCoatingsQuery,
+  useGetDIaDetailsMutation,
   useGetFamilyQuery,
   useGetFocalityQuery,
   useGetIndexValuesQuery,
@@ -41,6 +42,8 @@ const Textarea = lazy(() => import("../../../../components/Form/Textarea"));
 const Button = lazy(() => import("../../../../components/ui/Button"));
 import { isValidNumericInput } from "../../../../utils/isValidNumericInput";
 import { formatINR } from "../../../../utils/formatINR";
+import { useGetOlDetailsByOlDetailIdMutation } from "../../../../api/stockTransfer";
+import { ErrorDisplayModal } from "../../../../components/ErrorsDisplay";
 const productTypes = [
   { value: 0, lable: "Stock" },
   { value: 1, lable: "Rx" },
@@ -117,8 +120,19 @@ const getProductNameYes = (item) => {
   return lines.filter(Boolean).join("\n");
 };
 
-const getProductName = (order) => {
-  const { ProductType, productName, ProductName, tintName, AddOnData } = order;
+const getProductName = (order, allBrandsData, lensData) => {
+  const {
+    ProductType,
+    productName,
+    ProductName,
+    tintName,
+    AddOnData = [],
+    Spherical,
+    Cylinder,
+    Diameter,
+    Barcode,
+    hsncode,
+  } = order;
 
   const clean = (val) => {
     if (
@@ -133,16 +147,33 @@ const getProductName = (order) => {
     return String(val).trim();
   };
 
-  if (ProductType === 0 || true) {
+  if (ProductType === 0) {
     const name = clean(productName || ProductName);
-    const addonNames = AddOnData.map((item) => item.name.split(" - ₹")[0]);
+    const brand = clean(
+      allBrandsData?.find((b) => b.Id === lensData?.brandId)?.BrandName || ""
+    );
+
+    // Power line
+    const powers = [];
+    if (clean(Spherical)) powers.push(`Sph: ${clean(Spherical)}`);
+    if (clean(Cylinder)) powers.push(`Cyl: ${clean(Cylinder)}`);
+    if (clean(Diameter)) powers.push(`Dia: ${clean(Diameter)}`);
+    const powerLine = powers.length > 0 ? powers.join(", ") : "";
+
+    // AddOns
+    const addonNames = AddOnData.map((item) =>
+      clean(item.name?.split(" - ₹")[0])
+    ).filter(Boolean);
 
     const tint = clean(tintName);
 
     return [
-      name,
-      tint && `Tint : ${tint.split(" - ₹")[0]}`,
-      addonNames.length > 0 && `Add On : ${addonNames}`,
+      [brand, name].filter(Boolean).join(" "), // brand + product
+      powerLine, // Sph, Cyl, Dia
+      clean(Barcode) ? `Barcode: ${Barcode}` : "",
+      tint ? `Tint: ${tint.split(" - ₹")[0]}` : "",
+      addonNames.length > 0 ? `Add On: ${addonNames.join(", ")}` : "",
+      clean(hsncode) ? `HSN: ${hsncode}` : "",
     ]
       .filter(Boolean)
       .join("\n");
@@ -198,6 +229,7 @@ const OpticalLens = () => {
     selectedPrescription: null,
     rimType: null,
     tintName: null,
+    olStockBarcode: null,
   });
 
   // API calls
@@ -424,7 +456,7 @@ const OpticalLens = () => {
       returnQty: 1,
     });
     setEditMode({});
-    setMainOLDetails([]);
+    // setMainOLDetails([]);
     setSelectedInvoice(null);
   };
 
@@ -605,16 +637,17 @@ const OpticalLens = () => {
       toast.error("Invoice already exist please choose another");
       return;
     }
-    if(!isValidNumericInput(parseFloat(editReturnFittingPrice))){
-      toast.error("Please enter valid return fitting price")
+    if (!isValidNumericInput(parseFloat(editReturnFittingPrice))) {
+      toast.error("Please enter valid return fitting price");
       return;
     }
-   
+
     const newItem = {
       ...selectedInvoice,
       ReturnPricePerUnit:
-        (parseInt(selectedInvoice?.InvoiceQty) *
-        parseFloat(selectedInvoice?.ActualSellingPrice)) + parseFloat(editReturnFittingPrice),
+        parseInt(selectedInvoice?.InvoiceQty) *
+          parseFloat(selectedInvoice?.ActualSellingPrice) +
+        parseFloat(editReturnFittingPrice),
       ReturnQty: selectedInvoice?.InvoiceQty,
     };
     setMainOLDetails((prev) => [...prev, newItem]);
@@ -746,7 +779,273 @@ const OpticalLens = () => {
       console.error("Error saving detail:", error);
     }
   };
-console.log(selectedInvoice)
+  // -----------------------------------------------------------------------------------
+  const [selectedEyes, setSelectedEyes] = useState([]);
+  const [diaOptions, setDiaOptions] = useState([]);
+  const [addFieldError, setAddFieldError] = useState(false);
+  const [showGetDiaButton, setShowGetDiaButton] = useState(true);
+  const [isDiaFetched, setIsDiaFetched] = useState(false);
+  const [isPriceFetched, setIsPriceFetched] = useState(false);
+  const [errors, setErrors] = useState(null);
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const [isEditable, setIsEditable] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
+
+  const [formValues, setFormValues] = useState({
+    R: {
+      SPH: "",
+      CYLD: "",
+      Dia: null,
+      transferQty: "",
+      Id: null,
+    },
+    L: {
+      SPH: "",
+      CYLD: "",
+      Dia: null,
+      transferQty: "",
+      Id: null,
+    },
+  });
+  const [getDIADetails, { isLoading: isDiaLoading }] =
+    useGetDIaDetailsMutation();
+  const [getPowerByOl, { isLoading: isPowerDetailsLoading }] =
+    useGetOlDetailsByOlDetailIdMutation();
+
+  useEffect(() => {
+    setSelectedEyes(["R"]);
+  }, []);
+
+  const handleReset = () => {
+    setSelectedEyes(["R"]);
+    setIsEditable(false);
+    setFormValues({
+      R: {
+        SPH: "",
+        CYLD: "",
+        Dia: null,
+        transferQty: "",
+      },
+      L: {
+        SPH: "",
+        CYLD: "",
+        Dia: null,
+        transferQty: "",
+      },
+    });
+    setAddFieldError(false);
+    setShowGetDiaButton(true);
+    setIsDiaFetched(false);
+    setDiaOptions([]);
+  };
+  const isFieldDisabled = (eye, field) => {
+    if (field === "Dia") {
+      return (
+        !isDiaFetched ||
+        isPriceFetched ||
+        !isEditable ||
+        (lensData.powerSingleORboth !== 1 && !selectedEyes.includes(eye))
+      );
+    }
+    if (field === "transferQty") {
+      return (
+        !isDiaFetched ||
+        !formValues[eye].Dia ||
+        !isEditable ||
+        (lensData.powerSingleORboth !== 1 && !selectedEyes.includes(eye))
+      );
+    }
+    return (
+      isDiaFetched ||
+      !isEditable ||
+      (lensData.powerSingleORboth !== 1 && !selectedEyes.includes(eye))
+    );
+  };
+  const handleCheckboxChange = (eye) => {
+    setSelectedEyes([eye]);
+    const otherEye = eye === "R" ? "L" : "R";
+    setFormValues((prev) => ({
+      ...prev,
+      [otherEye]: {
+        SPH: "",
+        CYLD: "",
+        Dia: null,
+      },
+    }));
+  };
+  const handleInputChange = (eye, field, value) => {
+    if (field === "transferQty") {
+      // allow only positive numbers
+      if (!/^[1-9]\d*$/.test(value)) {
+        return;
+      }
+    }
+
+    setFormValues((prev) => ({
+      ...prev,
+      [eye]: { ...prev[eye], [field]: value },
+    }));
+  };
+  console.log(lensData.powerSingleORboth);
+  const handleGetDia = async () => {
+    const isRSelected = selectedEyes.includes("R");
+    const isLSelected = selectedEyes.includes("L");
+
+    const safeParse = (value) => {
+      const parsed = typeof value === "string" ? value.trim() : value;
+      return parsed !== "" && !isNaN(parsed) ? Number(parsed) : null;
+    };
+
+    const payload = {
+      RSPH: isRSelected ? safeParse(formValues.R.SPH) : null,
+      RCYLD: isRSelected ? safeParse(formValues.R.CYLD) : null,
+      selectedTypeRight: isRSelected ? 1 : 0,
+      LSPH: isLSelected ? safeParse(formValues.L.SPH) : null,
+      LCYLD: isLSelected ? safeParse(formValues.L.CYLD) : null,
+      selectedTypeLeft: isLSelected ? 1 : 0,
+      OpticalLensMasterId: lensData.masterId,
+      CoatingComboId: lensData.coatingComboId,
+    };
+
+    try {
+      const res = await getDIADetails({ payload }).unwrap();
+      const { diameters, details } = res.data || {};
+
+      if (res.status === "failure" || res.success === false) {
+        const errors = res.error || res.errors;
+        setErrors(
+          Array.isArray(errors)
+            ? errors
+            : typeof errors === "string"
+            ? [errors]
+            : []
+        );
+        setErrorModalOpen(true);
+        return;
+      }
+
+      const updatedForm = { ...formValues };
+      ["R", "L"].forEach((eye) => {
+        if ((eye === "R" && isRSelected) || (eye === "L" && isLSelected)) {
+          const dia = diameters?.find((d) => d.side === eye);
+          const detail = details?.find((d) => d.side === eye);
+
+          updatedForm[eye].Dia = dia || null;
+          updatedForm[eye].transferQty = dia ? 1 : "";
+          updatedForm[eye].Id = dia?.Id || null;
+          updatedForm[eye].detailId = detail?.OpticalLensDetailsId || null;
+        }
+      });
+
+      setFormValues(updatedForm);
+      setDiaOptions(diameters || []);
+      setIsDiaFetched(true);
+      setShowAdd(true);
+      setShowGetDiaButton(false);
+    } catch (err) {
+      console.error("Error fetching Dia:", err);
+      const errors = err.data?.error || err.data?.errors;
+      setErrors(
+        Array.isArray(errors)
+          ? errors
+          : typeof errors === "string"
+          ? [errors]
+          : []
+      );
+      setErrorModalOpen(true);
+    }
+  };
+
+  const handleAddPowerData = async (eye) => {
+    try {
+      const payload = {
+        olDetailId: formValues[eye]?.detailId,
+        locationId: parseInt(customerSalesId.locationId),
+      };
+
+      if (!payload.olDetailId) {
+        console.warn(`No detailId found for eye: ${eye}`);
+        return;
+      }
+
+      const res = await getPowerByOl({ payload }).unwrap();
+
+      if (res?.data) {
+        if ((res.data.Quantity || 0) <= 0) {
+          toast.error("No stock available for this barcode");
+          return;
+        }
+        if (!lensData.productName) {
+          toast.error("Please select all required fields before adding.");
+          return;
+        }
+        if (lensData.tintvalue === 1 && !lensData.tintId) {
+          toast.error("Please select all required fields before adding.");
+          return;
+        }
+
+        const addonsTotal = Array.isArray(lensData?.AddOnData)
+          ? lensData.AddOnData.reduce(
+              (sum, item) =>
+                sum + (parseFloat(item.price.replace(/[^0-9.-]+/g, "")) || 0),
+              0
+            )
+          : 0;
+        setMainOLDetails((prev) => [
+          ...prev,
+          {
+            ...lensData,
+            ...priceDetails?.data,
+            CLMRP: parseFloat(priceDetails?.data.SellingPrice),
+            ...res.data,
+            returnPrice:
+              (parseFloat(priceDetails?.data?.SellingPrice) || 0) +
+              addonsTotal +
+              (parseFloat(lensData?.tintPrice) || 0),
+
+            returnQty: 1,
+            ProductType: 0,
+          },
+        ]);
+
+        setShowAdd(false);
+        setLensData({
+          orderReference: null,
+          brandId: null,
+          productType: null,
+          focality: null,
+          family: null,
+          design: null,
+          indexValues: null,
+          masterId: null,
+          coatingId: null,
+          coatingComboId: null,
+          treatmentId: null,
+          treatmentComboId: null,
+          productName: null,
+          tintvalue: 0,
+          tintId: null,
+          tintPrice: null,
+          AddOnData: [],
+          powerSingleORboth: 1,
+          withFitting: 1,
+          prescriptionId: null,
+          selectedPrescription: null,
+          rimType: null,
+          CLMRP: 0,
+          returnPrice: 0,
+          returnQty: 1,
+        });
+      } else {
+        toast.error("Barcode doesn't exist!");
+      }
+    } catch (error) {
+      console.log(error?.data?.error);
+    }
+  };
+  const inputTableColumns = ["SPH", "CYLD", "Dia"];
+
+  console.log(mainOLDetails);
   return (
     <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-sm">
@@ -809,7 +1108,7 @@ console.log(selectedInvoice)
                   <TableCell></TableCell>
                   <TableCell>OL</TableCell>
                   <TableCell className="whitespace-pre-line">
-                    {getProductName(item)}
+                    {getProductName(item, allBrandsData, lensData)}
                   </TableCell>
                   <TableCell>₹{item.CLMRP}</TableCell>
                   <TableCell>
@@ -1071,6 +1370,7 @@ console.log(selectedInvoice)
                       setLensData((prev) => ({
                         ...prev,
                         brandId: newValue?.Id || null,
+                        olStockBarcode: newValue.OLStockBarcode || null,
                       }))
                     }
                     renderInput={(params) => (
@@ -1363,18 +1663,160 @@ console.log(selectedInvoice)
                   </div>
                 )}
               </div>
+              {lensData.treatmentId &&
+                lensData.productType === 0 &&
+                lensData.olStockBarcode === 1 && (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <div></div>
+                      <div className="flex items-center gap-4">
+                        <Button
+                          variant="outline"
+                          onClick={() => setIsEditable(true)}
+                        >
+                          Edit
+                        </Button>
+                        <Button onClick={handleReset}>Reset</Button>
+                      </div>
+                    </div>
 
-              {lensData.treatmentId && (
-                <Button
-                  onClick={handleAddToTable}
-                  icon={FiPlus}
-                  className="bg-green-600 hover:bg-green-700 mt-5"
-                >
-                  Add
-                </Button>
-              )}
+                    <table className="w-full bg-white shadow rounded-lg mt-3 border-collapse">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="p-3 text-left text-gray-600 font-medium">
+                            Eye
+                          </th>
+                          {inputTableColumns.map((col) => (
+                            <th
+                              key={col}
+                              className="p-3 text-left text-gray-600 font-medium uppercase"
+                            >
+                              {col}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {["R", "L"].map((eye) => (
+                          <tr key={eye} className="hover:bg-gray-50">
+                            <td className="p-3 font-medium text-gray-700 flex items-center gap-2">
+                              {eye}
+                              <input
+                                type="checkbox"
+                                checked={selectedEyes.includes(eye)}
+                                onChange={() => handleCheckboxChange(eye)}
+                                // disabled={lensData.powerSingleORboth === 1}
+                                className="w-5 h-5 accent-blue-500 cursor-pointer"
+                              />
+                            </td>
+                            {inputTableColumns.map((field) => (
+                              <td key={field} className="p-3 align-top">
+                                {field === "Dia" &&
+                                isDiaFetched &&
+                                (lensData.powerSingleORboth === 0 ||
+                                  selectedEyes.includes(eye)) ? (
+                                  <select
+                                    className={`w-24 px-2 py-1 border rounded-md ${
+                                      isFieldDisabled(eye, field)
+                                        ? "bg-gray-100 border-gray-200 text-gray-400"
+                                        : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    }`}
+                                    value={
+                                      formValues[eye].Dia?.DiameterSize || ""
+                                    }
+                                    onChange={(e) => {
+                                      const selectedDia = diaOptions.find(
+                                        (d) =>
+                                          d.side === eye &&
+                                          d.DiameterSize === e.target.value
+                                      );
+                                      setFormValues((prev) => ({
+                                        ...prev,
+                                        [eye]: {
+                                          ...prev[eye],
+                                          Dia: selectedDia || null,
+                                        },
+                                      }));
+                                    }}
+                                    disabled={isFieldDisabled(eye, field)}
+                                  >
+                                    <option value="">Select</option>
+                                    {diaOptions
+                                      .filter((d) => d.side === eye)
+                                      .map((d) => (
+                                        <option
+                                          key={d.Id}
+                                          value={d.DiameterSize}
+                                        >
+                                          {d.DiameterSize}
+                                        </option>
+                                      ))}
+                                  </select>
+                                ) : (
+                                  <input
+                                    type={
+                                      field === "transferQty"
+                                        ? "number"
+                                        : "text"
+                                    }
+                                    value={formValues[eye][field] || ""}
+                                    onChange={(e) =>
+                                      handleInputChange(
+                                        eye,
+                                        field,
+                                        e.target.value
+                                      )
+                                    }
+                                    disabled={isFieldDisabled(eye, field)}
+                                    className={`w-24 px-2 py-1 border rounded-md ${
+                                      isFieldDisabled(eye, field)
+                                        ? "bg-gray-100 border-gray-200 text-gray-400"
+                                        : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    }`}
+                                  />
+                                )}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="mt-4 flex justify-end gap-4 items-center">
+                      {showGetDiaButton && (
+                        <Button onClick={handleGetDia} disabled={isDiaLoading}>
+                          {isDiaLoading ? "Loading..." : "Fetch Dia"}
+                        </Button>
+                      )}
+                      {showAdd && (
+                        <Button
+                          isLoading={isPowerDetailsLoading}
+                          disabled={isPowerDetailsLoading}
+                          onClick={() => handleAddPowerData(selectedEyes[0])}
+                        >
+                          Add
+                        </Button>
+                      )}
+                    </div>
+                  </>
+                )}
+              {lensData.treatmentId &&
+                lensData.productType === 1 &&
+                 (
+                  <Button
+                    onClick={handleAddToTable}
+                    icon={FiPlus}
+                    className="bg-green-600 hover:bg-green-700 mt-5"
+                  >
+                    Add
+                  </Button>
+                )}
             </div>
           )}
+          <ErrorDisplayModal
+            errors={errors}
+            open={errorModalOpen}
+            onClose={() => setErrorModalOpen(false)}
+          />
           {referenceApplicable === 1 && (
             <div>
               <div className="space-y-1 w-1/3">

@@ -9,6 +9,9 @@ import {
   FiRepeat,
   FiPackage,
   FiFilePlus,
+  FiArrowRightCircle,
+  FiCornerUpLeft,
+  FiFileMinus,
 } from "react-icons/fi";
 import {
   IoPeopleOutline,
@@ -227,7 +230,7 @@ export const menuItems = [
   },
   {
     name: "GRN",
-    icon: FiBox,
+    icon: FiArrowRightCircle,
     module: "GRN",
     subItems: [
       {
@@ -237,5 +240,11 @@ export const menuItems = [
         icon: IoConstructOutline, // Suggests building/setup
       }
     ],
-  }
+  },
+  {
+    name: "Purchase Return",
+    icon: FiFileMinus,
+    module: "Purchase-Return",
+    path: "/purchase-return",
+  },
 ];
