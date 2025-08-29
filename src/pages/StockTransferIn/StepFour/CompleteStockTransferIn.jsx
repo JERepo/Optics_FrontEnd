@@ -60,7 +60,7 @@ const getProductName = (item) => {
   // For Frame (typeid = 1)
   if (ProductType === 1) {
     const lines = [
-      productName,
+      productName || brandName ? `${brandName} ${productName}` : "",
       Size ? `Size: ${Size.Size}` : "",
       Category === 0 ? "Category: Optical Frame" : "Category: Sunglasses",
       barcode ? `Barcode: ${barcode}` : "",
@@ -72,7 +72,7 @@ const getProductName = (item) => {
   // For Accessories (ProductType = 2)
   if (ProductType === 2) {
     const lines = [
-      ProductName || productName,
+      productName || brandName ? `${brandName} ${productName}` : "",
       Variation ? `Variation: ${Variation.Variation}` : "",
       barcode ? `Barcode: ${barcode}` : "",
       clean(hsncode) ? `HSN: ${hsncode}` : "",
@@ -94,8 +94,8 @@ const getProductName = (item) => {
       : "";
 
     const lines = [
-      ProductName || productName,
-      specs ? `Power: ${specs}` : "",
+      productName || brandName ? `${brandName} ${productName}` : "",
+      specs ? `${specs}` : "",
       clean(colour) ? `Colour: ${clean(colour)}` : "",
       barcode ? `Barcode: ${barcode}` : "",
       clean(hsncode) ? `HSN: ${hsncode}` : "",
@@ -160,22 +160,66 @@ const getShortTypeName = (id) => {
 };
 
 const getStockOutPrice = (item) => {
-  if (!item.Stock) {
+  if (!item) {
     return 0;
   }
 
   if (item.ProductType === 3) {
     if (item.CLBatchCode === 0) {
-      return item.STQtyOut * parseFloat(item.price?.BuyingPrice || 0);
+      return parseFloat(item.price?.BuyingPrice || 0);
+    } else if (item.CLBatchCode === 1) {
+      if (Array.isArray(item.Stock)) {
+        return item.Stock.reduce(
+          (sum, s) => sum + parseFloat(s.BuyingPrice || 0),
+          0
+        );
+      } else if (item.Stock && typeof item.Stock === "object") {
+        return parseFloat(item.Stock.BuyingPrice || 0);
+      }
     }
 
-    return item.Stock?.reduce(
-      (sum, s) => sum + item.STQtyOut * parseFloat(s.BuyingPrice || 0),
-      0
-    );
+    return parseFloat(item.Stock?.BuyingPrice || 0);
+  }
+  if (item.ProductType === 1) {
+    if (Array.isArray(item.Stock)) {
+      return item.Stock.reduce(
+        (sum, s) => sum + parseFloat(s.BuyingPrice || 0),
+        0
+      );
+    } else if (item.Stock && typeof item.Stock === "object") {
+      return parseFloat(item.Stock.BuyingPrice || 0);
+    }
+    return 0;
+  }
+  if (item.ProductType === 2) {
+    if (Array.isArray(item.Stock)) {
+      return item.Stock.reduce(
+        (sum, s) => sum + parseFloat(s.BuyingPrice || 0),
+        0
+      );
+    } else if (item.Stock && typeof item.Stock === "object") {
+      return parseFloat(item.Stock.BuyingPrice || 0);
+    }
+    return 0;
+  }
+  if (item.ProductType === 0) {
+    if (item.CLBatchCode === 0) {
+      return parseFloat(item.price?.BuyingPrice || 0);
+    } else if (item.CLBatchCode === 1) {
+      if (Array.isArray(item.Stock)) {
+        return item.Stock.reduce(
+          (sum, s) => sum + parseFloat(s.BuyingPrice || 0),
+          0
+        );
+      } else if (item.Stock && typeof item.Stock === "object") {
+        return parseFloat(item.Stock.BuyingPrice || 0);
+      }
+    }
+
+    return parseFloat(item.Stock?.BuyingPrice || 0);
   }
 
-  return item.STQtyOut * parseFloat(item.Stock?.BuyingPrice || 0);
+  return 0;
 };
 
 const CompleteStockTransferIn = () => {
@@ -192,18 +236,13 @@ const CompleteStockTransferIn = () => {
     prevStockTransferInStep,
     selectedStockTransferInProduct,
   } = useOrder();
-  // const { data: stockDetails, isLoading: isStockDetailsLoading } =
-  //   useGetStockOutDetailsQuery({
-  // mainId: stockTransferInDraftData.ID || stockTransferInDraftData[0].ID,
-  // locationId: customerStock.locationId,
-  //   });
 
-  const { stockDetails, isLoading: isStockDetailsLoading } =
+  const { data: stockDetails, isLoading: isStockDetailsLoading } =
     useGetStockInDetailsQuery({
       mainId: stockTransferInDraftData.ID,
       locationId: customerStockTransferIn.locationId,
     });
-
+  console.log("stock data", stockDetails);
   const [updateStockTI, { isLoading: isUpdating }] =
     useDeleteUpdateSTKInMutation();
 
@@ -213,7 +252,8 @@ const CompleteStockTransferIn = () => {
       const payload = {
         STOutMainId:
           stockTransferInDraftData.ID || stockTransferInDraftData[0].ID,
-        FromCompanyId: customerStockTransferIn.locationId,
+          ApplicationUserID:user.Id,
+        companyId: customerStockTransferIn.locationId,
         Comment: comment,
         delete: [id],
       };
@@ -224,9 +264,9 @@ const CompleteStockTransferIn = () => {
     }
   };
 
-  const totals = (stockDetails?.data?.details || []).reduce(
+  const totals = (stockDetails?.data?.StockTransferInDetails || []).reduce(
     (acc, item) => {
-      const qty = item.STQtyOut || 0;
+      const qty = item.STQtyIn || 0;
       const basicValue = getStockOutPrice(item);
       const gst =
         (basicValue * parseFloat(item.ProductTaxPercentage || 0)) / 100;
@@ -269,7 +309,7 @@ const CompleteStockTransferIn = () => {
       toast.error(error?.data.error);
     }
   };
-  console.log(stockTransferInDraftData, customerStockTransferIn);
+  console.log(stockDetails);
   return (
     <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -297,16 +337,6 @@ const CompleteStockTransferIn = () => {
         <div className="p-6">
           <Table
             columns={[
-              // "s.no",
-              // "type",
-              // "Product name",
-              // "mrp",
-              // "transfer price",
-              // "gst",
-              // "stock out qty",
-              // "Avl qty",
-              // "total amount",
-              // "Action",
               "s.no",
               "type",
               "product name",
@@ -317,7 +347,7 @@ const CompleteStockTransferIn = () => {
               "total amount",
               "action",
             ]}
-            data={stockDetails?.data?.details || []}
+            data={stockDetails?.data?.StockTransferInDetails}
             renderRow={(item, index) => (
               <TableRow key={item.ID}>
                 <TableCell>{index + 1}</TableCell>
@@ -325,8 +355,10 @@ const CompleteStockTransferIn = () => {
                 <TableCell className="whitespace-pre-wrap">
                   {getProductName(item)}
                 </TableCell>
-                <TableCell>₹{formatINR(item.SRP)}</TableCell>
                 <TableCell>₹{formatINR(getStockOutPrice(item))}</TableCell>
+                <TableCell>{item.STQtyOut}</TableCell>
+                <TableCell>{item.STQtyIn}</TableCell>
+
                 <TableCell>
                   ₹
                   {formatINR(
@@ -336,17 +368,12 @@ const CompleteStockTransferIn = () => {
                   ({parseFloat(item.ProductTaxPercentage)}%)
                 </TableCell>
 
-                <TableCell>{item.STQtyOut}</TableCell>
-
                 <TableCell>
                   ₹
                   {formatINR(
-                    [1, 2, 3].includes(item.ProductType)
-                      ? parseFloat(item.Stock.BuyingPrice) * item.STQtyOut +
-                          getStockOutPrice(item) *
-                            ((parseFloat(item.ProductTaxPercentage) / 100) *
-                              item.STQtyOut)
-                      : 0
+                    getStockOutPrice(item) * item.STQtyIn +
+                      getStockOutPrice(item) *
+                        (parseFloat(item.ProductTaxPercentage) / 100)
                   )}
                 </TableCell>
                 <TableCell>
@@ -368,7 +395,7 @@ const CompleteStockTransferIn = () => {
             }
           />
         </div>
-        {stockDetails?.data?.details?.length > 0 && (
+        {stockDetails?.data?.StockTransferInDetails?.length > 0 && (
           <div className="flex gap-10 justify-end mt-5 p-6 border-t border-gray-200 bg-gray-50">
             <div className="flex gap-6">
               <span className="text-lg font-semibold">
@@ -386,7 +413,7 @@ const CompleteStockTransferIn = () => {
             </div>
           </div>
         )}
-        {stockDetails?.data?.details?.length > 0 && (
+        {stockDetails?.data?.StockTransferInDetails?.length > 0 && (
           <div>
             {/* Comment Section */}
             <div className="p-4">
@@ -414,7 +441,7 @@ const CompleteStockTransferIn = () => {
                 isLoading={isUpdating}
                 disabled={isUpdating}
               >
-                Save & Next
+                Complete StockTransferIn
               </Button>
             </div>
           </div>

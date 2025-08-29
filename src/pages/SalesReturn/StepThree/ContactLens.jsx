@@ -232,6 +232,43 @@ const getProductNameYes = (order) => {
     .join("\n");
 };
 
+const getSRPrice = (item) => {
+  if (!item) {
+    return 0;
+  }
+
+  if (item.CLBatchCode === 0) {
+    return parseFloat(item.price?.SellingPrice || 0);
+  } else if (item.CLBatchCode === 1) {
+    if (Array.isArray(item.Stock)) {
+      return item.Stock.reduce(
+        (sum, s) => sum + parseFloat(s.SellingPrice || 0),
+        0
+      );
+    } else if (item.Stock && typeof item.Stock === "object") {
+      return parseFloat(item.Stock.SellingPrice || 0);
+    }
+  }
+
+  return parseFloat(item.Stock?.SellingPrice || 0);
+};
+const getSROutMRP = (item) => {
+  if (!item) {
+    return 0;
+  }
+
+  if (item.CLBatchCode === 0) {
+    return parseFloat(item.price?.MRP || 0);
+  } else if (item.CLBatchCode === 1) {
+    if (Array.isArray(item.Stock)) {
+      return item.Stock.reduce((sum, s) => sum + parseFloat(s.MRP || 0), 0);
+    } else if (item.Stock && typeof item.Stock === "object") {
+      return parseFloat(item.Stock.MRP || 0);
+    }
+  }
+
+  return parseFloat(item.Stock?.MRP || 0);
+};
 const ContactLens = () => {
   const {
     prevSalesStep,
@@ -244,7 +281,7 @@ const ContactLens = () => {
     referenceApplicable,
     selectedPatient,
     currentSalesStep,
-    selectedSalesProduct
+    selectedSalesProduct,
   } = useOrder();
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
   const [searchFethed, setSearchFetched] = useState(false);
@@ -321,7 +358,7 @@ const ContactLens = () => {
   useEffect(() => {
     setEditMode((prev) => {
       const newEditMode = { ...prev };
-      mainClDetails.forEach((_, index) => {
+      mainClDetails?.forEach((_, index) => {
         if (!newEditMode[index]) {
           newEditMode[index] = { returnPrice: false, returnQty: false };
         }
@@ -583,9 +620,9 @@ const ContactLens = () => {
   };
 
   const handleDeleteYes = (index) => {
-    console.log("yes");
     setMainClDetails((prev) => prev.filter((item, i) => i !== index));
   };
+  console.log(productSearch);
   const handleGetBatchBarCodeDetails = async () => {
     if (!batchCodeInput) {
       return;
@@ -595,17 +632,41 @@ const ContactLens = () => {
       const isAvailable = batches?.find(
         (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
       );
-      console.log("isavaila", isAvailable);
+
       if (isAvailable && referenceApplicable === 0) {
+        console.log("inside", batchBarCodeDetails?.data?.data);
         const newItemCl = {
           ...isAvailable,
           selectBatch,
-          returnPrice: parseFloat(newItem.sellingPrice),
-          returnQty: newItem.orderQty,
+          returnPrice:
+            productSearch === 0
+              ? parseFloat(newItem.sellingPrice)
+              : parseFloat(batchBarCodeDetails?.data?.data.pSellingPrice),
+          returnQty: 1,
           ...(detailId ? batchBarCodeDetails?.data?.data : {}),
         };
-
-        setMainClDetails((prev) => [...prev, newItemCl]);
+        const existingIndex = mainClDetails.findIndex(
+          (item) =>
+            item.Barcode == newItemCl.Barcode &&
+            item.CLBatchBarCode == newItemCl.CLBatchBarCode
+        );
+        if (existingIndex !== -1) {
+          const item = mainClDetails[existingIndex];
+          const newQty = item.returnQty + 1;
+          if (newQty > item.Quantity) {
+            toast.error("Stock quantity cannot exceed available quantity!");
+            return;
+          }
+          setMainClDetails((prev) =>
+            prev.map((it, idx) =>
+              idx === existingIndex
+                ? { ...it, returnQty: it.returnQty + 1 }
+                : it
+            )
+          );
+        } else {
+          setMainClDetails((prev) => [...prev, newItemCl]);
+        }
         setLensData({
           orderReference: null,
           brandId: null,
@@ -670,8 +731,9 @@ const ContactLens = () => {
           ...response?.data.data,
           returnPrice: parseFloat(response?.data.data.pSellingPrice),
           returnQty: 1,
-          MRP :parseFloat(response?.data.data.pMRP)
+          MRP: parseFloat(response?.data.data.pMRP),
         };
+
         setMainClDetails((prev) => [...prev, cc]);
         setProductCodeInput("");
       } else if (
@@ -717,9 +779,9 @@ const ContactLens = () => {
       );
     }
   };
+
   const handleSaveBatchData = async () => {
     if (referenceApplicable === 0) {
-      console.log("inside save",batchBarCodeDetails?.data.data.SellingPrice)
       let sub;
       if ((!detailId || openBatch) && productSearch == 0) {
         sub = {
@@ -739,8 +801,26 @@ const ContactLens = () => {
           returnQty: 1,
         };
       }
+      const existingIndex = mainClDetails.findIndex(
+        (item) =>
+          item.Barcode == sub.Barcode && item.CLBatchCode == sub.CLBatchCode
+      );
+      if (existingIndex !== -1) {
+        const item = mainClDetails[existingIndex];
+        const newQty = item.returnQty + 1;
+        if (newQty > item.Quantity) {
+          toast.error("Stock quantity cannot exceed available quantity!");
+          return;
+        }
+        setMainClDetails((prev) =>
+          prev.map((it, idx) =>
+            idx === existingIndex ? { ...it, returnQty: it.returnQty + 1 } : it
+          )
+        );
+      } else {
+        setMainClDetails((prev) => [...prev, sub]);
+      }
 
-      setMainClDetails((prev) => [...prev, sub]);
       handleRefresh();
     } else if (referenceApplicable === 1) {
       try {
@@ -802,7 +882,7 @@ const ContactLens = () => {
     };
 
     setMainClDetails((prev) => [...prev, newItemCL]);
-    setDetailAccId(null)
+    setDetailAccId(null);
     setOpenReferenceYes(false);
     setIsInvoiceSelected(false);
     setSelectedInvoiceReturnQty(0);
@@ -832,7 +912,6 @@ const ContactLens = () => {
     setProductCodeInput("");
     handleRefresh();
   };
-  console.log("mainCl", mainClDetails);
   const handleSaveData = async () => {
     if (!Array.isArray(mainClDetails) || mainClDetails.length === 0) {
       console.warn("No details to save");
@@ -902,13 +981,12 @@ const ContactLens = () => {
         <div className="p-6 border-b border-gray-100">
           <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
             <div>
-                <div>
-              <div className="flex items-center gap-4 mb-4"></div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Step {currentSalesStep}: {selectedSalesProduct.label}
-              </h1>
-             
-            </div>
+              <div>
+                <div className="flex items-center gap-4 mb-4"></div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Step {currentSalesStep}: {selectedSalesProduct.label}
+                </h1>
+              </div>
             </div>
             <div className="flex gap-3">
               <Button

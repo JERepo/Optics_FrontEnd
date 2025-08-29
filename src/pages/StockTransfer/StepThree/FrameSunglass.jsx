@@ -167,12 +167,16 @@ const FrameSunglass = () => {
             if (index !== -1) {
               const newStkQty = Number(prev[index].stkQty) + 1;
               const qty = Number(prev[index].Quantity);
+              if (newStkQty > qty) {
+                toast.error("Stock quantity cannot exceed available quantity!");
+                return prev;
+              }
               return prev.map((item, idx) =>
                 idx === index
                   ? {
                       ...item,
                       stkQty: newStkQty,
-                      Quantity: qty + data.Quantity,
+                      // Quantity: qty + 1,
                     }
                   : item
               );
@@ -262,14 +266,17 @@ const FrameSunglass = () => {
           if (index !== -1) {
             const newStkQty = Number(updated[index].stkQty) + 1;
             const qty = Number(prev[index].Quantity);
+            if (newStkQty > qty) {
+              toast.error("Stock quantity cannot exceed available quantity!");
+              return prev;
+            }
             if (!validateStockQty(updated[index], newStkQty)) {
               return; // Skip this item if stkQty exceeds AvlQty
             }
             updated = updated.map((item, idx) =>
-              idx === index
-                ? { ...item, stkQty: newStkQty, Quantity: qty + index.Quantity }
-                : item
+              idx === index ? { ...item, stkQty: newStkQty } : item
             );
+            //  Quantity: qty + 1
           } else {
             updated = [{ ...selected, stkQty: 1 }, ...updated];
           }
@@ -498,6 +505,7 @@ const FrameSunglass = () => {
       goToStockStep(4);
     } catch (error) {
       console.log(error);
+      // toast.error("Error saving STK")
     }
   };
 
@@ -679,7 +687,66 @@ const FrameSunglass = () => {
             </form>
           )}
         </div>
-
+        {!searchMode && searchResults.length > 0 && (
+          <div className="p-6">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="font-semibold">Select Frames</h3>
+              <div className="">
+                {selectedRows.length > 0 ? (
+                  <Button
+                    onClick={handleAddSelectedItems}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    Add Selected Items
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => setSearchResults([])}
+                    variant="outline"
+                    icon={FiX}
+                  >
+                    Close
+                  </Button>
+                )}
+              </div>
+            </div>
+            <Table
+              columns={[
+                "",
+                "Barcode",
+                "Name",
+                "Frame Size",
+                "S/O",
+                "Product Details",
+                "MRP",
+                "Buying Price",
+              ]}
+              data={searchResults}
+              renderRow={(item, index) => (
+                <TableRow key={item.Barcode}>
+                  <TableCell>
+                    <input
+                      type="checkbox"
+                      checked={selectedRows.some(
+                        (i) => i.Barcode === item.Barcode
+                      )}
+                      onChange={() => handleCheckboxChange(item)}
+                    />
+                  </TableCell>
+                  <TableCell>{item.Barcode}</TableCell>
+                  <TableCell>{item.Name}</TableCell>
+                  <TableCell>{item.Size}</TableCell>
+                  <TableCell>
+                    {item.Category === 0 ? "Optical Frame" : "Sunglass"}
+                  </TableCell>
+                  <TableCell>{item.PO}</TableCell>
+                  <TableCell>{item.MRP}</TableCell>
+                  <TableCell>{item.BuyingPrice}</TableCell>
+                </TableRow>
+              )}
+            />
+          </div>
+        )}
         <div>
           {items.length > 0 && (
             <div className="p-6">
@@ -704,7 +771,10 @@ const FrameSunglass = () => {
                     <TableCell className="whitespace-pre-wrap">
                       <div>{item.Name}</div>
                       <div>Size: {item.Size}</div>
-
+                      <div>
+                        Category:{" "}
+                        {item.Category === 0 ? "Optical Frame" : "Sunglasses"}
+                      </div>
                       <div>Barcode: {item.Barcode}</div>
                     </TableCell>
                     <TableCell>₹{item.MRP}</TableCell>
@@ -854,67 +924,6 @@ const FrameSunglass = () => {
             </div>
           )}
         </div>
-
-        {!searchMode && searchResults.length > 0 && (
-          <div className="p-6">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-semibold">Select Frames</h3>
-              <div className="">
-                {selectedRows.length > 0 ? (
-                  <Button
-                    onClick={handleAddSelectedItems}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    Add Selected Items
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => setSearchResults([])}
-                    variant="outline"
-                    icon={FiX}
-                  >
-                    Close
-                  </Button>
-                )}
-              </div>
-            </div>
-            <Table
-              columns={[
-                "",
-                "Barcode",
-                "Name",
-                "Frame Size",
-                "S/O",
-                "Product Details",
-                "MRP",
-                "Buying Price",
-              ]}
-              data={searchResults}
-              renderRow={(item, index) => (
-                <TableRow key={item.Barcode}>
-                  <TableCell>
-                    <input
-                      type="checkbox"
-                      checked={selectedRows.some(
-                        (i) => i.Barcode === item.Barcode
-                      )}
-                      onChange={() => handleCheckboxChange(item)}
-                    />
-                  </TableCell>
-                  <TableCell>{item.Barcode}</TableCell>
-                  <TableCell>{item.Name}</TableCell>
-                  <TableCell>{item.Size}</TableCell>
-                  <TableCell>
-                    {item.Category === 0 ? "Optical Frame" : "Sunglass"}
-                  </TableCell>
-                  <TableCell>{item.PO}</TableCell>
-                  <TableCell>{item.MRP}</TableCell>
-                  <TableCell>{item.BuyingPrice}</TableCell>
-                </TableRow>
-              )}
-            />
-          </div>
-        )}
       </div>
       <ConfirmationModal
         isOpen={showConfirmModal}

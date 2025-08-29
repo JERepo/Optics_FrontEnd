@@ -6,6 +6,9 @@ import {
   FiFileText,
   FiClipboard,
   FiBox,
+  FiRepeat,
+  FiPackage,
+  FiFilePlus,
 } from "react-icons/fi";
 import {
   IoPeopleOutline,
@@ -21,7 +24,7 @@ import {
 import { MdOutlineAdminPanelSettings } from "react-icons/md";
 
 export const menuItems = [
-   {
+  {
     name: "Product Master",
     icon: IoOptionsSharp,
     module: "Product Master",
@@ -167,7 +170,7 @@ export const menuItems = [
   },
   {
     name: "Prescription",
-    icon: FiFileText,
+    icon: FiFilePlus,
     module: "Prescription",
     path: "/prescription",
   },
@@ -185,7 +188,7 @@ export const menuItems = [
   },
   {
     name: "Purchase Order",
-    icon: FiBox,
+    icon: FiPackage,
     module: "Purchase Order",
     subItems: [
       {
@@ -202,10 +205,24 @@ export const menuItems = [
       },
     ],
   },
+
   {
     name: "Stock Transfer",
-    icon: FiClipboard,
+    icon: FiRepeat,
     module: "StockTransfer",
-    path: "/stock-transfer",
+    subItems: [
+      {
+        name: "Stock Transfer Out",
+        path: "/stock-transfer",
+        module: "StockTransfer",
+        icon: IoConstructOutline,
+      },
+      {
+        name: "Stock Transfer In",
+        path: "/stock-transferin/create",
+        module: "StockTransfer",
+        icon: IoConstructOutline,
+      },
+    ],
   },
 ];

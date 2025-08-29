@@ -49,6 +49,7 @@ const getProductDetailsText = (order) => {
     templeLength,
     category,
     modelNo,
+    productDescName,
   } = order;
 
   const clean = (val) => {
@@ -67,7 +68,7 @@ const getProductDetailsText = (order) => {
   };
 
   const brand = clean(brandName || BrandName);
-  const name = clean(productName);
+  const name = clean(productName || productDescName);
   const hsn = clean(HSN || hSN);
   const barcodeVal = clean(Barcode || barcode);
   const clr = clean(Colour || color);
@@ -82,8 +83,8 @@ const getProductDetailsText = (order) => {
   };
 
   return [
-    brand && name ? `Brand: ${brand} - ${name}` : brand || name,
-    mo && `Model No:${mo}`,
+    brand && name ? `${brand} ${name}` : brand || name,
+    // mo && `Model No:${mo}`,
     sizeVal && `Size: ${sizeVal}-${dBL}-${templeLength}`,
     getCategoryName(category) && `Category: ${getCategoryName(category)}`,
     clr && `Color: ${clr}`,
@@ -309,7 +310,6 @@ const FrameSunglass = () => {
   };
 
   const handleQtyChange = (barcode, qty, index) => {
-   
     setItems((prev) =>
       prev.map((i, idx) =>
         i.Barcode === barcode && idx === index
@@ -741,8 +741,11 @@ const FrameSunglass = () => {
                         {item.Category === "O" ? "Optical Frame" : "Sunglass"}
                       </TableCell>
                       <TableCell>
-                        {item.PO == 1 ? "Photochromatic" : ""}
-                        {item.Ph == 1 ? "Polarised" : ""}
+                        <div className="whitespace-pre-wrap">
+                          <div>{item.PO == 1 ? "Photochromatic" : ""}</div>
+                          <div>{item.Ph == 1 ? "Polarised" : ""}</div>
+                          <div>{item.Cl === 0 ? "" : `No of clips: ${item.Cl}`}</div>
+                        </div>
                       </TableCell>
                       <TableCell>₹{item.MRP}</TableCell>
                       <TableCell>

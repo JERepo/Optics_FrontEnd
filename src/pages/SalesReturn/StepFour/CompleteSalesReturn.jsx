@@ -60,7 +60,7 @@ const getProductName = (order) => {
         line2 && `Size: ${line2}`,
         cat && `Category: ${cat}`,
         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
-        clean(detail.hsncode) && `HSN: ${clean(detail.hsncode)}`,
+        clean(detail.hsncode || detail.hSN) && `HSN: ${clean(detail.hsncode || detail.hSN)}`,
       ],
       "\n"
     );
@@ -71,10 +71,10 @@ const getProductName = (order) => {
     return joinNonEmpty(
       [
         clean(`${detail.brandName} ${detail.productName}`),
-        clean(detail.Variation?.Variation) &&
-          `Variation: ${detail.Variation?.Variation}`,
+        clean(detail.Variation?.Variation || detail.variationName) &&
+          `Variation: ${detail.Variation?.Variation || detail.variationName}`,
         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
-        clean(detail.hsncode) && `HSN: ${clean(detail.hsncode)}`,
+        clean(detail.hsncode || detail.hSN) && `HSN: ${clean(detail.hsncode || detail.hSN)}`,
       ],
       "\n"
     );
@@ -152,9 +152,10 @@ const getProductName = (order) => {
         powerLine,
         clean(detail.colour) && `Color: ${detail.colour}`,
         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+        
+        fittingLine,
         clean(detail.hSN || detail.hsncode) &&
           `HSN: ${clean(detail.hSN) || clean(detail.hsncode)}`,
-        fittingLine,
       ],
       "\n"
     );
@@ -195,7 +196,7 @@ const CompleteSalesReturn = () => {
     );
   const [completeSales, { isLoading: isCompleteSalesLoading }] =
     useCompleteSaleReturnMutation();
-
+console.log(finalProducts)
   // Calculate totals
   const totals = finalProducts?.data?.reduce(
     (acc, item) => {
@@ -348,7 +349,7 @@ const CompleteSalesReturn = () => {
                     {item.InvoiceMain && (
                       <div>
                         {item.InvoiceMain.InvoicePrefix}/
-                        {item.InvoiceMain.InvoiceNo}
+                        {item.InvoiceMain.InvoiceNo}/{item.ProductDetails[0].slNo}
                       </div>
                     )}
                   </TableCell>

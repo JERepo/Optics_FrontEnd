@@ -440,7 +440,7 @@ const FrameSunglass = () => {
         STOutMainId: customerStockTransferIn.mainId,
         products: items.map((item) => {
           return {
-            ProductType: 2,
+            ProductType: 1,
             detailId: item.Id,
             BatchCode: null,
             STQtyIn: item.tiq,

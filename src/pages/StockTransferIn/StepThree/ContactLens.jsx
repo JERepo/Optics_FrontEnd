@@ -32,6 +32,7 @@ import { formatINR } from "../../../utils/formatINR";
 import Modal from "../../../components/ui/Modal";
 import {
   useGetStockOutDetailsQuery,
+  useSaveSTIMutation,
   useSaveStockDetailsMutation,
 } from "../../../api/stockTransfer";
 
@@ -230,7 +231,7 @@ const ContactLens = () => {
   // const [getCLBatches, { data: CLBatches }] = useLazyGetBatchesForCLQuery();
 
   const [saveStockTransfer, { isLoading: isStockTransferLoading }] =
-    useSaveStockDetailsMutation();
+    useSaveSTIMutation();
 
   useEffect(() => {
     setEditMode((prev) => {
@@ -387,7 +388,24 @@ const ContactLens = () => {
             ...STOProduct,
             tiq: 1,
           };
-          setMainClDetails((prev) => [...prev, cc]);
+          const existingIndex = mainClDetails.findIndex(
+            (item) => item.Barcode == data.Barcode
+          );
+          if (existingIndex !== -1) {
+            const item = mainClDetails[existingIndex];
+            const newQty = item.tiq + 1;
+            if (newQty > item.STQtyOut) {
+              toast.error("Stock quantity cannot exceed available quantity!");
+              return;
+            }
+            setMainClDetails((prev) =>
+              prev.map((it, idx) =>
+                idx === existingIndex ? { ...it, tiq: it.tiq + 1 } : it
+              )
+            );
+          } else {
+            setMainClDetails((prev) => [...prev, cc]);
+          }
           handleRefresh();
         }
       } else {
@@ -489,10 +507,6 @@ const ContactLens = () => {
       );
 
       if (isAvailable) {
-        // if (parseInt(batchBarCodeDetails?.data?.data.AvlQty) <= 0) {
-        //   toast.error("Stock quantity must be greater than 0!");
-        //   return;
-        // }
         const STOProduct = stockOutData?.data.details.find(
           (item) =>
             item.ContactLensDetailId ===
@@ -515,8 +529,27 @@ const ContactLens = () => {
 
           ...(detailId ? batchBarCodeDetails?.data?.data : {}),
         };
-
-        setMainClDetails((prev) => [...prev, newItemCl]);
+        console.log("new item", newItemCl);
+        const existingIndex = mainClDetails.findIndex(
+          (item) =>
+            item.Barcode == newItemCl.Barcode ||
+            item.CLBatchBarCode == newItemCl.CLBatchBarCode
+        );
+        if (existingIndex !== -1) {
+          const item = mainClDetails[existingIndex];
+          const newQty = item.tiq + 1;
+          if (newQty > STOProduct.STQtyOut) {
+            toast.error("Stock quantity cannot exceed available quantity!");
+            return;
+          }
+          setMainClDetails((prev) =>
+            prev.map((it, idx) =>
+              idx === existingIndex ? { ...it, tiq: it.tiq + 1 } : it
+            )
+          );
+        } else {
+          setMainClDetails((prev) => [...prev, newItemCl]);
+        }
         setLensData({
           orderReference: null,
           brandId: null,
@@ -557,10 +590,6 @@ const ContactLens = () => {
       }).unwrap();
 
       if (response?.data.data.CLBatchCode === 0) {
-        // if (response?.data.data.Quantity <= 0) {
-        //   toast.error("Stock quantity must be greater than 0!");
-        //   return;
-        // }
         const STOProduct = stockOutData?.data.details.find(
           (item) => item.ContactLensDetailId === response?.data.data.CLDetailId
         );
@@ -575,9 +604,30 @@ const ContactLens = () => {
         const cc = {
           ...response?.data.data,
           ...STOProduct,
+          BuyingPrice:
+            response?.data.data.CLBatchCode === 0
+              ? parseFloat(response?.data.data.price.BuyingPrice)
+              : parseFloat(response?.data.data.stock.BuyingPrice),
           tiq: 1,
         };
-        setMainClDetails((prev) => [...prev, cc]);
+        const existingIndex = mainClDetails.findIndex(
+          (item) => item.Barcode == response?.data.data.Barcode
+        );
+        if (existingIndex !== -1) {
+          const item = mainClDetails[existingIndex];
+          const newQty = item.tiq + 1;
+          if (newQty > STOProduct.STQtyOut) {
+            toast.error("Stock quantity cannot exceed available quantity!");
+            return;
+          }
+          setMainClDetails((prev) =>
+            prev.map((it, idx) =>
+              idx === existingIndex ? { ...it, tiq: it.tiq + 1 } : it
+            )
+          );
+        } else {
+          setMainClDetails((prev) => [...prev, cc]);
+        }
         setProductCodeInput("");
       } else if (response?.data.data.CLBatchCode === 1) {
         const batchCodeData = await getCLBatches({
@@ -599,7 +649,6 @@ const ContactLens = () => {
       const STOProduct = stockOutData?.data.details.find(
         (item) => item.ContactLensDetailId === newItem.CLDetailId
       );
-      console.log("new Ire", newItem, STOProduct);
       if (!STOProduct) {
         toast.error("Product is not present in the selected Stock Transfer");
         return;
@@ -634,8 +683,27 @@ const ContactLens = () => {
         tiq: 1,
       };
     }
+    const existingIndex = mainClDetails.findIndex(
+      (item) =>
+        item.Barcode == sub.Barcode || item.CLBatchCode == sub.CLBatchCode
+    );
+    if (existingIndex !== -1) {
+      const item = mainClDetails[existingIndex];
+      const newQty = item.tiq + 1;
+      if (newQty > item.STQtyOut) {
+        toast.error("Stock quantity cannot exceed available quantity!");
+        return;
+      }
 
-    setMainClDetails((prev) => [...prev, sub]);
+      setMainClDetails((prev) =>
+        prev.map((it, idx) =>
+          idx === existingIndex ? { ...it, tiq: it.tiq + 1 } : it
+        )
+      );
+    } else {
+      setMainClDetails((prev) => [...prev, sub]);
+    }
+
     handleRefresh();
   };
   const handleSellingPriceChange = (barcode, price, index) => {
@@ -792,7 +860,6 @@ const ContactLens = () => {
             <div className="p-6">
               <Table
                 columns={[
-                 
                   "s.no",
                   "type",
                   "product name",

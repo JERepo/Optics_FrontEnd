@@ -752,7 +752,7 @@ const OpticalLens = () => {
       };
       console.log(payload);
       await saveStockTransfer({ payload }).unwrap();
-      toast.success("Frame Stock transfer out successfully added");
+      toast.success("Optical Lens transfer out successfully added");
       goToStockStep(4);
     } catch (error) {
       toast.error(error?.data.error.message);

@@ -356,13 +356,13 @@ const ContactLens = () => {
         if (data.CLBatchCode === 1) {
           try {
             await getCLBatches({
-            clBatchId: data.CLDetailId,
-            locationId: parseInt(hasMultipleLocations[0]),
-          }).unwrap();
-          setDetailId(true);
-          setOpenBatch(true);
+              clBatchId: data.CLDetailId,
+              locationId: parseInt(hasMultipleLocations[0]),
+            }).unwrap();
+            setDetailId(true);
+            setOpenBatch(true);
           } catch (error) {
-            toast.error(error?.data.error)
+            toast.error(error?.data.error);
             return;
           }
         } else if (data.CLBatchCode === 0) {
@@ -375,7 +375,25 @@ const ContactLens = () => {
             stkQty: 1,
             Quantity: parseInt(data.AvlQty),
           };
-          setMainClDetails((prev) => [...prev, cc]);
+          const existingIndex = mainClDetails.findIndex(
+            (item) => item.Barcode == data.Barcode
+          );
+          if (existingIndex !== -1) {
+            const item = mainClDetails[existingIndex];
+            const newQty = item.stkQty + 1;
+            if (newQty > item.Quantity) {
+              toast.error("Stock quantity cannot exceed available quantity!");
+              return;
+            }
+            setMainClDetails((prev) =>
+              prev.map((it, idx) =>
+                idx === existingIndex ? { ...it, stkQty: it.stkQty + 1 } : it
+              )
+            );
+          } else {
+            setMainClDetails((prev) => [...prev, cc]);
+          }
+
           handleRefresh();
         }
       } else {
@@ -482,11 +500,36 @@ const ContactLens = () => {
           ...newItem.powerData,
           selectBatch,
           stkQty: 1,
-          Quantity: parseInt(newItem.powerData.AvlQty),
+          BuyingPrice:
+            batchBarCodeDetails?.data.data.CLBatchCode === 0
+              ? parseFloat(batchBarCodeDetails?.data.data.price.BuyingPrice)
+              : parseFloat(batchBarCodeDetails?.data.data.stock.BuyingPrice),
+          Quantity:
+            parseInt(newItem?.powerData?.AvlQty) ||
+            parseInt(batchBarCodeDetails?.data?.data.Quantity),
           ...(detailId ? batchBarCodeDetails?.data?.data : {}),
         };
-
-        setMainClDetails((prev) => [...prev, newItemCl]);
+        console.log("new item", newItemCl);
+        const existingIndex = mainClDetails.findIndex(
+          (item) =>
+            item.Barcode == newItemCl.Barcode ||
+            item.CLBatchBarCode == newItemCl.CLBatchBarCode
+        );
+        if (existingIndex !== -1) {
+          const item = mainClDetails[existingIndex];
+          const newQty = item.stkQty + 1;
+          if (newQty > item.Quantity) {
+            toast.error("Stock quantity cannot exceed available quantity!");
+            return;
+          }
+          setMainClDetails((prev) =>
+            prev.map((it, idx) =>
+              idx === existingIndex ? { ...it, stkQty: it.stkQty + 1 } : it
+            )
+          );
+        } else {
+          setMainClDetails((prev) => [...prev, newItemCl]);
+        }
         setLensData({
           orderReference: null,
           brandId: null,
@@ -527,17 +570,41 @@ const ContactLens = () => {
       }).unwrap();
 
       if (response?.data.data.CLBatchCode === 0) {
-        if(response?.data.data.Quantity <= 0){
-          toast.error("Stock quantity must be greater than 0!")
+        if (response?.data.data.Quantity <= 0) {
+          toast.error("Stock quantity must be greater than 0!");
           return;
         }
         const cc = {
           ...response?.data.data,
           stkQty: 1,
           Quantity: response?.data.data.Quantity,
-          MRP: response?.data.data.MRP,
+          MRP:
+            response?.data.data.CLBatchCode === 0
+              ? parseFloat(response?.data.data.price.MRP)
+              : parseFloat(response?.data.data.stock.MRP),
+          BuyingPrice:
+            response?.data.data.CLBatchCode === 0
+              ? parseFloat(response?.data.data.price.BuyingPrice)
+              : parseFloat(response?.data.data.stock.BuyingPrice),
         };
-        setMainClDetails((prev) => [...prev, cc]);
+        const existingIndex = mainClDetails.findIndex(
+          (item) => item.Barcode == response?.data.data.Barcode
+        );
+        if (existingIndex !== -1) {
+          const item = mainClDetails[existingIndex];
+          const newQty = item.stkQty + 1;
+          if (newQty > item.Quantity) {
+            toast.error("Stock quantity cannot exceed available quantity!");
+            return;
+          }
+          setMainClDetails((prev) =>
+            prev.map((it, idx) =>
+              idx === existingIndex ? { ...it, stkQty: it.stkQty + 1 } : it
+            )
+          );
+        } else {
+          setMainClDetails((prev) => [...prev, cc]);
+        }
         setProductCodeInput("");
       } else if (response?.data.data.CLBatchCode === 1) {
         const batchCodeData = await getCLBatches({
@@ -573,11 +640,36 @@ const ContactLens = () => {
         ...selectedBatchCode,
         stkQty: 1,
         Quantity: batchBarCodeDetails?.data.data.Quantity,
-        MRP: selectedBatchCode.CLMRP,
+        BuyingPrice:
+          batchBarCodeDetails?.data.data.CLBatchCode === 0
+            ? parseFloat(batchBarCodeDetails?.data.data.price.BuyingPrice)
+            : parseFloat(batchBarCodeDetails?.data.data.stock.BuyingPrice),
+        MRP:
+          batchBarCodeDetails?.data.data.CLBatchCode === 0
+            ? parseFloat(batchBarCodeDetails?.data.data.price.MRP)
+            : parseFloat(batchBarCodeDetails?.data.data.stock.MRP),
       };
     }
-
-    setMainClDetails((prev) => [...prev, sub]);
+    console.log("sub", sub);
+    const existingIndex = mainClDetails.findIndex(
+      (item) =>
+        item.Barcode == sub.Barcode || item.CLBatchCode == sub.CLBatchCode
+    );
+    if (existingIndex !== -1) {
+      const item = mainClDetails[existingIndex];
+      const newQty = item.stkQty + 1;
+      if (newQty > item.Quantity) {
+        toast.error("Stock quantity cannot exceed available quantity!");
+        return;
+      }
+      setMainClDetails((prev) =>
+        prev.map((it, idx) =>
+          idx === existingIndex ? { ...it, stkQty: it.stkQty + 1 } : it
+        )
+      );
+    } else {
+      setMainClDetails((prev) => [...prev, sub]);
+    }
     handleRefresh();
   };
   const handleSellingPriceChange = (barcode, price, index) => {
@@ -595,11 +687,12 @@ const ContactLens = () => {
       )
     );
   };
+  console.log(mainClDetails);
   const calculateStockGST = (item) => {
     if (!item) return { gstAmount: 0, slabNo: null, gstPercent: 0 };
 
     if (customerStock.inState === 0) {
-      const detail = item.TaxDetails?.[0];
+      const detail = item.TaxDetails[0];
       return {
         gstAmount: 0,
         slabNo: detail?.TaxDetailId ?? null,
@@ -680,7 +773,7 @@ const ContactLens = () => {
       };
       console.log(payload);
       await saveStockTransfer({ payload }).unwrap();
-      toast.success("Frame Stock transfer out successfully added");
+      toast.success("Contact lens transfer out successfully added");
       goToStockStep(4);
     } catch (error) {
       toast.error(error?.data.error.message);
@@ -708,7 +801,7 @@ const ContactLens = () => {
   // if (newItem.CLDetailId && !searchFethed) {
   //   inputTableColumns.push("Avl.Qty", "Order Qty", "Action");
   // }
-console.log(mainClDetails)
+  console.log(mainClDetails);
   return (
     <div className="max-w-8xl h-auto">
       <div className="bg-white rounded-xl shadow-sm p-2">
@@ -821,7 +914,8 @@ console.log(mainClDetails)
                       )}
                     </TableCell>
                     <TableCell>
-                      ₹{formatINR(calculateStockGST(item).gstAmount)}({calculateStockGST(item).gstPercent}%)
+                      ₹{formatINR(calculateStockGST(item).gstAmount)}(
+                      {calculateStockGST(item).gstPercent}%)
                     </TableCell>
                     <TableCell>
                       {editMode[`${item.Barcode}-${index}`]?.qty ? (

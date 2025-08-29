@@ -54,6 +54,7 @@ const SalesView = () => {
         val == null ||
         val === "undefined" ||
         val === "null" ||
+        val === "N/A"||
         (typeof val === "string" && val.trim() === "")
       )
         return "";
@@ -267,7 +268,10 @@ const SalesView = () => {
                       parseFloat(s.ReturnPricePerUnit),
                       parseFloat(s.GSTPercentage)
                     ).gstAmount
-                  )}
+                  )}({ calculateGST(
+                      parseFloat(s.ReturnPricePerUnit),
+                      parseFloat(s.GSTPercentage)
+                    ).taxPercentage}%)
                 </TableCell>
                 <TableCell>{s.ReturnQty}</TableCell>
                 <TableCell>₹{formatINR(s.FittingCharges ?? 0)}</TableCell>
