@@ -117,7 +117,7 @@ export const store = configureStore({
       salesReturnApi.middleware,
       stockTransferApi.middleware,
       purchaseReturnApi.middleware,
-      salesReturnApi.middleware,
+      // salesReturnApi.middleware,
       grnApi.middleware
     ),
 });
