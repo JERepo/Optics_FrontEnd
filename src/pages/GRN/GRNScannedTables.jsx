@@ -1,0 +1,99 @@
+
+
+
+import { Trash2 } from "lucide-react";
+import { Table, TableRow, TableCell } from "../../components/Table";
+
+export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateScannedItemQuantity, removeScannedItem, productType }) {
+    return (
+        <>
+            {productType === 1 && (
+                <Table
+                    columns={["Barcode", "Name", "S/O", "Polarised", "Photochromatic", "Clip No", "MRP", "Buying Price", "PO QTY", "Action"]}
+                    data={scannedItems}
+                    renderRow={(item, index) => (
+                        <TableRow key={item.Id || index}>
+                            <TableCell>{item.Barcode}</TableCell>
+                            <TableCell>{item.Name}{item.Size && <br />}{item.Size}</TableCell>
+                            <TableCell>
+                                {item.Category === 0 ? 'Sunglass' : 'Optical Frame'}
+                            </TableCell>
+                            <TableCell className="text-center">{item.PO ? "Yes" : "No"}</TableCell>
+                            <TableCell className="text-center">{item.Ph ? "Yes" : "No"}</TableCell>
+                            <TableCell className="text-center">{item.Cl}</TableCell>
+                            <TableCell>₹{item.MRP}</TableCell>
+                            <TableCell>₹{" "}
+                                <input
+                                    type="number"
+                                    value={item.price || 0}
+                                    onChange={(e) => updateScannedItemPrice(item.Id, e.target.value)}
+                                    className="w-20 px-2 py-1 border rounded"
+                                />
+                            </TableCell>
+                            <TableCell>
+                                <input
+                                    type="number"
+                                    value={item.quantity || 1}
+                                    onChange={(e) => updateScannedItemQuantity(item.Id, e.target.value)}
+                                    className="w-16 px-2 py-1 border rounded"
+                                    min="1"
+                                />
+                            </TableCell>
+                            <TableCell className="px-6 py-4 whitespace-nowrap">
+                                <button
+                                    onClick={() => removeScannedItem(item.Id)}
+                                    className="p-1 text-red-600 hover:text-red-800"
+                                    aria-label="Delete item"
+                                >
+                                    <Trash2 className="h-5 w-5" />
+                                </button>
+                            </TableCell>
+                        </TableRow>
+                    )}
+                />
+            )}
+
+            {productType === 2 && (
+                <Table
+                    columns={["Barcode", "Name", "Variation", "SKU Code", "MRP", "Buying Price", "QTY", "Action"]}
+                    data={scannedItems}
+                    renderRow={(item, index) => (
+                        <TableRow key={item.Barcode || index}>
+                            <TableCell>{item.Barcode}</TableCell>
+                            <TableCell>{item.Name}{item.Size && <br />}{item.Size}</TableCell>
+                            <TableCell>{item.Variation}</TableCell>
+                            <TableCell>{item.SKU}</TableCell>
+                            <TableCell>₹{item.MRP}</TableCell>
+                            <TableCell>₹{" "}
+                                <input
+                                    type="number"
+                                    value={item.price || 0}
+                                    onChange={(e) => updateScannedItemPrice(item.Id, e.target.value)}
+                                    className="w-20 px-2 py-1 border rounded"
+                                />
+                            </TableCell>
+                            <TableCell>
+                                <input
+                                    type="number"
+                                    value={item.quantity || 1}
+                                    onChange={(e) => updateScannedItemQuantity(item.Id, e.target.value)}
+                                    className="w-16 px-2 py-1 border rounded"
+                                    min="1"
+                                />
+                            </TableCell>
+                            <TableCell className="px-6 py-4 whitespace-nowrap">
+                                <button
+                                    onClick={() => removeScannedItem(item.Id)}
+                                    className="p-1 text-red-600 hover:text-red-800"
+                                    aria-label="Delete item"
+                                >
+                                    <Trash2 className="h-5 w-5" />
+                                </button>
+                            </TableCell>
+                        </TableRow>
+                    )}
+                />
+            )}
+        </>
+    )
+}

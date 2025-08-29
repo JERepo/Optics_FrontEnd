@@ -69,6 +69,12 @@ import TotalPurchaseReturn from "../pages/PurchaseReturn";
 import PurchaseReturn from "../pages/PurchaseReturn/MainPurchaseReturn/PurchaseReturn";
 import PurchaseReturnView from "../pages/PurchaseReturn/MainPurchaseReturn/PurchaseReturnView";
 import TotalStockTransferIn from "../pages/StockTransferIn";
+import { GRNProvider } from "../features/GRNContext";
+import GRNMain from "../pages/GRN/GRNMain";
+import GRNStep1 from "../pages/GRN/GRNStep1";
+import GRNStep2 from "../pages/GRN/GRNStep2";
+import { PurchaseOrderMainPage } from "../pages/PurchaseOrder/POMainPage";
+import { POViewPage } from "../pages/PurchaseOrder/POViewPage";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -679,6 +685,22 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: "purchase-order/",
+        element: (
+          <PermissionRoute module="Purchase Order" action="view">
+            <PurchaseOrderMainPage />
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: "purchase-order/view",
+        element: (
+          <PermissionRoute module="Purchase Order" action="view">
+            <POViewPage />
+          </PermissionRoute>
+        ),
+      },
+      {
         path: "invoice",
         element: <InvoiceList />,
       },
@@ -739,6 +761,16 @@ export const router = createBrowserRouter([
         element: <PurchaseReturnView />,
       },
       { path: "stock-transferin/create", element: <TotalStockTransferIn /> },
+      {
+        path: "grn/create",
+        element: (
+          // <PermissionRoute module="GRN" action="view">
+          <GRNProvider>
+            <GRNMain />
+          </GRNProvider>
+          // </PermissionRoute>
+        )
+      }
     ],
   },
   {

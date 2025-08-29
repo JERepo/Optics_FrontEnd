@@ -13,7 +13,8 @@ import {
     PenLineIcon,
     SearchIcon,
     RefreshCcw,
-    HardDriveDownload
+    HardDriveDownload,
+    Plus
 } from "lucide-react";
 import { Table, TableRow, TableCell } from "../../components/Table";
 import Input from "../../components/Form/Input";
@@ -54,6 +55,11 @@ import {
 } from "../../api/orderApi";
 import { useGetContactLensDetailsMutation } from "../../api/clBatchDetailsApi";
 import { useGetAllBrandsQuery } from "../../api/brandsApi";
+import { PurchaseOrderStep2 } from "./PurchaseOrderStep2";
+import { POAgainstOrderTableComponent, PurchaseOrderVendorSection } from "./PurchaseOrderStep3";
+import { POAccessoriesScannedTable, POCLScannedTable, POFrameScannedTable, POLensScannedTable } from "./POScannedTables";
+import { set } from "react-hook-form";
+import { POCLpowerSearchTable, POFrameSearchTable, POolSearchTable } from "./POSearchTable";
 
 export default function SavePurchaseOrder() {
     const navigate = useNavigate();
@@ -96,7 +102,7 @@ export default function SavePurchaseOrder() {
     const [searchTerm2, setSearchTerm2] = useState('');
     const [brandInput, setBrandInput] = useState(""); // for user typing
     const [brandId, setBrandId] = useState(null); // selected BrandGroupID
-    const [modelNo, setModelNo] = useState(null);
+    const [modelNo, setModelNo] = useState("");
     const [productName, setProductName] = useState("");
     const [modalityInput, setModalityInput] = useState("");
     const [modalityId, setModalityId] = useState(null);
@@ -269,15 +275,17 @@ export default function SavePurchaseOrder() {
     const [getPowerDetails, { isLoading: isPowerDetailsLoading }] = useGetPowerDetailsMutation();
 
     const { data: allBrands } = useGetAllBrandsQuery();
+
     // Filter brand based on the selected option type : Dont dare to change anything 😠
     useEffect(() => {
         if (allBrands) {
+            console.log("allBrands", allBrands);
             if (formState.selectedOption === "Frame/Sunglass") {
                 const frameBrands = allBrands?.filter(
                     (b) =>
                         b.FrameActive === 1 &&
                         b.IsActive === 1 &&
-                        b.BrandName.toLowerCase().includes(brandInput.toLowerCase())
+                        b.BrandName.toLowerCase().includes(brandInput?.toLowerCase())
                 );
                 setFilteredBrands(frameBrands);
             }
@@ -286,7 +294,7 @@ export default function SavePurchaseOrder() {
                     (b) =>
                         b.OthersProductsActive === 1 &&
                         b.IsActive === 1 &&
-                        b.BrandName.toLowerCase().includes(brandInput.toLowerCase())
+                        b.BrandName.toLowerCase().includes(brandInput?.toLowerCase())
                 );
                 setFilteredBrands(accessoriesBrands);
             }
@@ -295,7 +303,7 @@ export default function SavePurchaseOrder() {
                     (b) =>
                         b.ContactLensActive === 1 &&
                         b.IsActive === 1 &&
-                        b.BrandName.toLowerCase().includes(brandInput.toLowerCase())
+                        b.BrandName.toLowerCase().includes(brandInput?.toLowerCase())
                 );
                 setFilteredBrands(contactLensBrands);
             }
@@ -304,12 +312,13 @@ export default function SavePurchaseOrder() {
                     (b) =>
                         b.OpticalLensActive === 1 &&
                         b.IsActive === 1 &&
-                        b.BrandName.toLowerCase().includes(brandInput.toLowerCase())
+                        b.BrandName.toLowerCase().includes(brandInput?.toLowerCase())
                 );
                 setFilteredBrands(OlBrands);
             }
+            console.log(filteredBrands);
         }
-    }, [formState.selectedOption]);
+    }, [formState.selectedOption, formState, currentStep]);
 
     // console.log("brandData ------------- ", filteredBrands);
 
@@ -498,18 +507,28 @@ export default function SavePurchaseOrder() {
                 }
             } else if (selectedLocation && formState.vendorId && currentStep === 4) {                       // Step 4 fetch PO order 
                 // Inside step 3 where you make the API call
+
+                console.log("I'm called")
                 try {
                     const payload = {
-                        locationId: selectedLocation,
-                        ApplicationUserId: user.Id,
-                        vendorId: selectedVendor,
-                        againstOrder: formState.shiptoAddress === "against" ? 1 : 0
+                        locationId: Number(selectedLocation),
+                        ApplicationUserId: Number(user.Id),
+                        vendorId: Number(selectedVendor),
+                        againstOrder: formState.shiptoAddress === "against" ? "1" : "0"
                     };
 
-                    const response = await getAllPoDetails(payload).unwrap();
-                    console.log("getAllPoDetails response -------------- ", response);
+                    if (formState.shiptoAddress === "against") {
 
-                    setPoreviewDetails(response);
+                        const response = await getAllPoDetails(payload).unwrap();
+                        // console.log("getAllPoDetails response -------------- ", response);
+                        setPoreviewDetails(response);
+
+                    } else if (formState.shiptoAddress === "new") {
+
+                        const poDetailsResponse = await getAllPoDetailsForNewOrder(payload).unwrap();
+                        setPoreviewDetails(poDetailsResponse.data);
+
+                    }
 
                 } catch (error) {
                     console.error("Error fetching PO details:", error);
@@ -529,7 +548,9 @@ export default function SavePurchaseOrder() {
 
     // Handle refreshing the form state in step 3
     const handleRefreshForm = () => {
-        setBrandId("");
+        // setBrandId(null);
+        setBrandInput(null);
+        setModelNo("");
         setOlItemStack({
             productType: "Stocks",
             focality: null,
@@ -543,11 +564,25 @@ export default function SavePurchaseOrder() {
             coatingCombo: null,
             olDetailId: null
         });
+        setSearchResults([]);
+        setModalityId(null);
+        setProductId(null);
         setNewItem({
+            barcode: null,
+            CLDetailId: null,
+            OpticalLensDetailId: null,
             sphericalPower: null,
             cylindricalPower: null,
-            diameter: null
-        })
+            diameter: null,
+            axis: null,
+            additional: null,
+            avlQty: null,
+            orderQty: null,
+            quantity: null,
+            buyingPrice: null,
+        });
+        setSearchFetched(false);
+        setProductName("");
     };
 
 
@@ -597,7 +632,10 @@ export default function SavePurchaseOrder() {
                         ...result.data.data,
                         quantity: 1, // Default quantity
                         price: result?.data?.data?.BuyingPrice, // Default price
-                        cLDetailId: result?.data?.data?.CLDetailId
+                        cLDetailId: result?.data?.data?.CLDetailId,
+                        Id: formState.EntryType === "seperate"
+                            ? `cl-${data.OpticalLensDetailId}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
+                            : data.OpticalLensDetailId || Date.now()
                     };
                 } else {
                     newItem = {
@@ -760,6 +798,7 @@ export default function SavePurchaseOrder() {
         }
     };
 
+    // Function to handle search in Contact lens
     const handleSearch = async () => {
         // Enhanced validation
         if (!newItem.sphericalPower || isNaN(parseFloat(newItem.sphericalPower))) {
@@ -803,58 +842,53 @@ export default function SavePurchaseOrder() {
             // Create updated item with response data
             const updatedItem = {
                 ...newItem,
-                barcode: data.Barcode,
-                CLDetailId: data.CLDetailId,
-                sphericalPower: data.SphericalPower,
-                cylindricalPower: data.CylindricalPower,
-                axis: data.Axis,
-                additional: data.Additional,
+                Barcode: data.Barcode,
+                CLDetailId: data?.CLDetailId,
+                SphericalPower: data.SphericalPower,
+                CylindricalPower: data.CylindricalPower,
+                Axis: data.Axis,
+                Additional: data.Additional,
                 avlQty: parseInt(data.AvlQty) || 0,
                 orderQty: data.DefaultOrderQty || 1,
-                quantity: data.quantity || 1,
-                buyingPrice: data?.BuyingPrice || 0,
+                quantity: 1,
+                BuyingPrice: data?.BuyingPrice || 0,
+                // Add truly unique ID for separate entries
+                Id: formState.EntryType === "seperate"
+                    ? `cl-${data.CLDetailId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+                    : data.CLDetailId || Date.now()
             };
 
             console.log("updatedItem ------------ ", updatedItem);
 
-            if (formState.EntryType === "combined") {
-                const existingItemIndex = selectedRows.findIndex(
-                    item => item.barcode === updatedItem.barcode
-                );
+            // Use functional update to work with latest state
+            setScannedItems(prevItems => {
+                if (formState.EntryType === "seperate") {
+                    // SEPARATE ENTRY: Always add as new individual entry
+                    return [...prevItems, updatedItem];
+                } else {
+                    // COMBINED ENTRY: Find existing item with same barcode in the current state
+                    const existingItemIndex = prevItems.findIndex(
+                        item => item.Barcode === updatedItem.Barcode
+                    );
 
-                console.log("existingItemIndex --- ", existingItemIndex);
+                    console.log("existingItemIndex --- ", existingItemIndex);
 
-                if (existingItemIndex >= 0) {
-                    // Increment quantity for existing item
-                    setSelectedRows(updatedItem =>
-                        updatedItem.map((item, index) =>
+                    if (existingItemIndex >= 0) {
+                        // Increment quantity for existing item
+                        return prevItems.map((item, index) =>
                             index === existingItemIndex
                                 ? { ...item, quantity: item.quantity + 1 }
                                 : item
-                        )
-                    );
-                } else {
-                    // Add new item
-                    setSelectedRows(prevItems => [...prevItems, updatedItem]);
+                        );
+                    } else {
+                        // Add new item
+                        return [...prevItems, updatedItem];
+                    }
                 }
-            } else {
-                setSelectedRows(prevItems => [...prevItems, updatedItem]);
-            }
+            });
 
-            console.log("selectedRows ---------------- ", selectedRows);
-
-            // Update items array more efficiently
-            // setSelectedRows(prevItems => {
-            //     const existingIndex = prevItems.findIndex(
-            //         item => item.CLDetailId === data.CLDetailId
-            //     );
-
-            //     return existingIndex >= 0
-            //         ? prevItems.map((item, index) =>
-            //             index === existingIndex ? updatedItem : item)
-            //         : [...prevItems, updatedItem];
-            // });
-
+            const entryType = formState.EntryType === "seperate" ? "separate" : "combined";
+            toast.success(`Added as ${entryType} entry`);
             setSearchFetched(true);
 
         } catch (error) {
@@ -864,13 +898,13 @@ export default function SavePurchaseOrder() {
         }
     };
 
+    // Search function to handle OL search
     const handleOlSearch = async () => {
         // Enhanced validation
         if (!olItemsStack.olDetailId || !selectedLocation) {
             toast.error("Mandatory field is required. Try again!");
             return;
         }
-        // getOlDetails
 
         const payload = {
             olDetailId: parseInt(olItemsStack.olDetailId),
@@ -888,7 +922,7 @@ export default function SavePurchaseOrder() {
                 return;
             }
 
-            const data = response?.data?.[0];
+            const data = response?.data;
             toast.success(response?.message || "Optical lens details found");
 
             console.log("data ----- ", data);
@@ -896,53 +930,48 @@ export default function SavePurchaseOrder() {
             // Create updated item with response data
             const updatedItem = {
                 ...newItem,
-                OpticalLensDetailId: data.OpticalLensDetailId,
-                barcode: data.Barcode,
-                sphericalPower: data?.Spherical,
-                cylindricalPower: data?.Cylinder,
-                diameter: data.Diameter,
+                OpticalLensDetailId: data?.OpticalLensDetailId,
+                Barcode: data.Barcode,
+                Spherical: data?.Spherical,
+                Cylinder: data?.Cylinder,
                 quantity: data.quantity || 1,
-                buyingPrice: data?.BuyingPrice || 0,
+                BuyingPrice: data?.BuyingPrice || 0,
+                // Add unique ID for separate entries tracking
+                Id: formState.EntryType === "seperate"
+                    ? `ol-${data.OpticalLensDetailId}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
+                    : data.OpticalLensDetailId || Date.now()
             };
-
 
             console.log("updatedItem ------------ ", updatedItem);
 
-
-
-            const existingItemIndex = selectedRows.findIndex(
-                item => item.barcode === updatedItem.barcode
-            );
-
-            console.log("existingItemIndex --- ", existingItemIndex);
-
-            if (existingItemIndex >= 0) {
-                // Increment quantity for existing item
-                setSelectedRows(updatedItem =>
-                    updatedItem.map((item, index) =>
-                        index === existingItemIndex
-                            ? { ...item, quantity: item.quantity + 1 }
-                            : item
-                    )
-                );
+            if (formState.EntryType === "seperate") {
+                // SEPARATE ENTRY: Always add as new individual entry
+                setScannedItems(prevItems => [...prevItems, updatedItem]);
+                toast.success("Added as separate entry");
             } else {
-                // Add new item
-                setSelectedRows(prevItems => [...prevItems, updatedItem]);
+                // COMBINED ENTRY: Combine quantities for same barcode
+                const existingItemIndex = scannedItems.findIndex(
+                    item => item.Barcode === updatedItem.Barcode
+                );
+
+                console.log("existingItemIndex --- ", existingItemIndex);
+
+                if (existingItemIndex >= 0) {
+                    // Increment quantity for existing item
+                    setScannedItems(prevItems =>
+                        prevItems.map((item, index) =>
+                            index === existingItemIndex
+                                ? { ...item, quantity: item.quantity + 1 }
+                                : item
+                        )
+                    );
+                    toast.success("Quantity increased for existing item");
+                } else {
+                    // Add new item
+                    setScannedItems(prevItems => [...prevItems, updatedItem]);
+                    toast.success("Added new item");
+                }
             }
-
-            console.log("selectedRows ---------------- ", selectedRows);
-
-            // Update items array more efficiently
-            // setSelectedRows(prevItems => {
-            //     const existingIndex = prevItems.findIndex(
-            //         item => item.CLDetailId === data.CLDetailId
-            //     );
-
-            //     return existingIndex >= 0
-            //         ? prevItems.map((item, index) =>
-            //             index === existingIndex ? updatedItem : item)
-            //         : [...prevItems, updatedItem];
-            // });
 
             setSearchFetched(true);
 
@@ -999,7 +1028,56 @@ export default function SavePurchaseOrder() {
         }
     }
 
+    // Add selected items from search results to scanned items
+    const addSelectedItemsToScanned = () => {
+        if (selectedRows.length === 0) {
+            toast.error("Please select at least one item");
+            return;
+        }
 
+        setScannedItems(prevItems => {
+            const updatedItems = [...prevItems];
+
+            selectedRows.forEach(newItem => {
+                // Prepare the item with default values
+                const itemToAdd = {
+                    ...newItem,
+                    quantity: 1,
+                    price: newItem.BuyingPrice || 0,
+                    // Generate truly unique ID for separate entries, use existing ID for combined
+                    Id: formState.EntryType === "seperate"
+                        ? `sep-${newItem.Id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+                        : newItem.Id || Date.now()
+                };
+
+                if (formState.EntryType === "seperate") {
+                    // SEPARATE ENTRY LOGIC: Always add as new entry even if barcode exists
+                    updatedItems.push(itemToAdd);
+                } else {
+                    // COMBINED ENTRY LOGIC: Combine quantities for same barcode
+                    const existingItemIndex = updatedItems.findIndex(
+                        item => item.Barcode === newItem.Barcode
+                    );
+
+                    if (existingItemIndex >= 0) {
+                        // Increment quantity for existing item
+                        updatedItems[existingItemIndex] = {
+                            ...updatedItems[existingItemIndex],
+                            quantity: updatedItems[existingItemIndex].quantity + 1
+                        };
+                    } else {
+                        // Add new item
+                        updatedItems.push(itemToAdd);
+                    }
+                }
+            });
+
+            return updatedItems;
+        });
+
+        toast.success(`Added ${selectedRows.length} item(s) to GRN`);
+        setSelectedRows([]);
+    };
 
     const handleRefresh = () => {
         setNewItem({
@@ -1080,20 +1158,26 @@ export default function SavePurchaseOrder() {
 
     // Handle update of values such as price and qty in step 3.     fieldType: 1 [Price]    &&   fieldType: 2 [Qty]
     // Replace your current updateScannedItemPrice function with this:
-    const updateScannedItemPrice = (itemId, newPrice) => {
+    const updateScannedItemPrice = (index, newPrice) => {
+        console.log("index --- ", index);
+        console.log("scannedItems ----- // -0", scannedItems);
         setScannedItems(prevItems =>
-            prevItems.map(item =>
-                item.Id === itemId ? { ...item, price: parseFloat(newPrice) } : item
+            prevItems.map((item, i) =>
+                i === index ? { ...item, price: parseFloat(newPrice) } : item
             )
         );
     };
 
-    const updateScannedItemQuantity = (itemId, newQuantity) => {
+    const updateScannedItemQuantity = (index, newQuantity) => {
         setScannedItems(prevItems =>
-            prevItems.map(item =>
-                item.Id === itemId ? { ...item, quantity: parseInt(newQuantity) } : item
+            prevItems.map((item, i) =>
+                i === index ? { ...item, quantity: parseInt(newQuantity) } : item
             )
         );
+    };
+
+    const handleDeleteScannedItem = (index) => {
+        setScannedItems(prevItems => prevItems.filter((_, i) => i !== index));
     };
 
     const handleNext = () => {
@@ -1157,6 +1241,13 @@ export default function SavePurchaseOrder() {
 
     const handleBack = () => {
         setCurrentStep(currentStep === 1 ? 1 : currentStep - 1);
+        setScannedItems([]);
+        setSelectedOrders([]);
+        setSelectAll(false);
+        setFilteredOrderDetails([]);
+        setPoreviewDetails([]);
+        setShowSearchInputs(false);
+        handleRefreshForm();
     };
 
     const handleOrderSelection = (orderId) => {
@@ -1253,11 +1344,11 @@ export default function SavePurchaseOrder() {
 
             if (formState.shiptoAddress === "against") {
                 poDetailsResponse = await getAllPoDetails(checkPayload).unwrap();
-            } else {
+            } else if (formState.shiptoAddress === "new") {
                 const response = await getAllPoDetailsForNewOrder(checkPayload).unwrap();
                 poDetailsResponse = response?.data;
-                console.log("poDetailsResponse ---------------- ", poDetailsResponse);
             }
+            console.log("poDetailsResponse ---------------- ", poDetailsResponse);
             // Check existing PO details
 
             // console.log("poDetailsResponse ----------", poDetailsResponse);
@@ -1323,6 +1414,13 @@ export default function SavePurchaseOrder() {
                 throw new Error("Purchase order main ID not found");
             }
 
+            let payload = {
+                locationId: selectedLocation,
+                ApplicationUserId: user.Id,
+                vendorId: selectedVendor,
+                againstOrder: formState.shiptoAddress === "against" ? "1" : "0"
+            };
+
             // For against orders - use selected orders from the table
             if (formState.shiptoAddress === "against") {
                 if (selectedOrders.length === 0) {
@@ -1372,123 +1470,46 @@ export default function SavePurchaseOrder() {
                     });
                     setShowAlert(true);
                     setTimeout(() => setShowAlert(false), 3000);
-                    setCurrentStep(4);
+                    // setCurrentStep(4);
+
+                    // fetch updated PO details
+                    const allPOres = await getAllPoDetails(payload).unwrap();
+                    setPoreviewDetails(allPOres);
                 }
             }
             // For new orders - use the frameData from barcode scanning
             else if (formState.shiptoAddress === "new") {
 
                 let poDetails;
-                if (!showSearchInputs) {
-                    if (scannedItems.length === 0) {
-                        setAlertMessage({
-                            type: "error",
-                            message: "Please scan at least one item"
-                        });
-                        setShowAlert(true);
-                        setTimeout(() => setShowAlert(false), 3000);
-                        return;
-                    }
-
-                    console.log("scannedItems in po details ", scannedItems);
-
-                    // Prepare PO details payload for new orders
-                    if (formState.selectedOption === "Frame/Sunglass") {
-                        poDetails = scannedItems.map((item, index) => ({
-                            poMainId: createdPOMainId,
-                            poslNo: index + 1,
-                            productType: formState.selectedOption === 'Frame/Sunglass' ? 1
-                                : formState.selectedOption === 'Lens' ? 0
-                                    : formState.selectedOption === 'Accessories' ? 2
-                                        : formState.selectedOption === 'Contact Lens' ? 3
-                                            : null,
-                            detailId: item.Id,
-                            poQty: item.quantity || 1,
-                            poPrice: item.price || item.BuyingPrice,
-                            taxPercentage: 0,
-                            Status: 0,
-                            ApplicationUserId: user.Id
-                        }));
-                    } else if (formState.selectedOption == "Accessories") {
-                        poDetails = scannedItems.map((item, index) => ({
-                            poMainId: createdPOMainId,
-                            poslNo: index + 1,
-                            productType: formState.selectedOption === 'Frame/Sunglass' ? 1
-                                : formState.selectedOption === 'Lens' ? 0
-                                    : formState.selectedOption === 'Accessories' ? 2
-                                        : formState.selectedOption === 'Contact Lens' ? 3
-                                            : null,
-                            detailId: item.Id,
-                            poQty: item.quantity || 1,
-                            poPrice: item.price || item.BuyingPrice,
-                            taxPercentage: 0,
-                            Status: 0,
-                            ApplicationUserId: user.Id
-                        }));
-                    } else if (formState.selectedOption == "Contact Lens") {
-                        poDetails = scannedItems.map((item, index) => ({
-                            poMainId: createdPOMainId,
-                            poslNo: index + 1,
-                            productType: formState.selectedOption === 'Frame/Sunglass' ? 1
-                                : formState.selectedOption === 'Lens' ? 0
-                                    : formState.selectedOption === 'Accessories' ? 2
-                                        : formState.selectedOption === 'Contact Lens' ? 3
-                                            : null,
-                            detailId: item.cLDetailId,
-                            poQty: item.quantity || 1,
-                            poPrice: item.price || item.BuyingPrice,
-                            taxPercentage: 0,
-                            Status: 0,
-                            ApplicationUserId: user.Id
-                        }));
-                    } else if (formState.selectedOption == "Lens") {
-                        poDetails = scannedItems.map((item, index) => ({
-                            poMainId: createdPOMainId,
-                            poslNo: index + 1,
-                            productType: formState.selectedOption === 'Frame/Sunglass' ? 1
-                                : formState.selectedOption === 'Lens' ? 0
-                                    : formState.selectedOption === 'Accessories' ? 2
-                                        : formState.selectedOption === 'Contact Lens' ? 3
-                                            : null,
-                            detailId: item.OpticalLensDetailId,
-                            poQty: item.quantity || 1,
-                            poPrice: item.price || item.BuyingPrice,
-                            taxPercentage: 0,
-                            Status: 0,
-                            ApplicationUserId: user.Id
-                        }));
-                    }
-                } else {
-                    if (selectedRows.length === 0) {
-                        setAlertMessage({
-                            type: "error",
-                            message: "Please scan at least one item"
-                        });
-                        setShowAlert(true);
-                        setTimeout(() => setShowAlert(false), 3000);
-                        return;
-                    }
-
-                    console.log("selectedRows ---------- ", selectedRows);
-
-
-                    // Prepare PO details payload for new orders 
-                    poDetails = selectedRows.map((item, index) => ({
-                        poMainId: createdPOMainId,
-                        poslNo: index + 1,
-                        productType: formState.selectedOption === 'Frame/Sunglass' ? 1
-                            : formState.selectedOption === 'Lens' ? 0
-                                : formState.selectedOption === 'Accessories' ? 2
-                                    : formState.selectedOption === 'Contact Lens' ? 3
-                                        : null,
-                        detailId: formState.selectedOption === "Contact Lens" ? item.CLDetailId : formState.selectedOption === "Lens" ? item.OpticalLensDetailId : item.Id,
-                        poQty: item.quantity || 1,
-                        poPrice: item.price || item.BuyingPrice || item.buyingPrice,
-                        taxPercentage: 0,
-                        Status: 0,
-                        ApplicationUserId: user.Id
-                    }));
+                // if (!showSearchInputs) {
+                if (scannedItems.length === 0) {
+                    setAlertMessage({
+                        type: "error",
+                        message: "Please scan at least one item"
+                    });
+                    setShowAlert(true);
+                    setTimeout(() => setShowAlert(false), 3000);
+                    return;
                 }
+
+                // console.log("scannedItems in po details ", scannedItems);
+
+                // Prepare PO details payload for new orders
+                poDetails = scannedItems.map((item, index) => ({
+                    poMainId: createdPOMainId,
+                    poslNo: index + 1,
+                    productType: formState.selectedOption === 'Frame/Sunglass' ? 1
+                        : formState.selectedOption === 'Lens' ? 0
+                            : formState.selectedOption === 'Accessories' ? 2
+                                : formState.selectedOption === 'Contact Lens' ? 3
+                                    : null,
+                    detailId: formState.selectedOption === "Contact Lens" ? item.CLDetailId : formState.selectedOption === "Lens" ? item.OpticalLensDetailId : item.Id,
+                    poQty: item.quantity || 1,
+                    poPrice: item.price || item.BuyingPrice,
+                    taxPercentage: 0,
+                    Status: 0,
+                    ApplicationUserId: user.Id
+                }));
 
                 // Call API to save PO details
                 const response = await SavePurchaseOrderDetails(poDetails).unwrap();
@@ -1500,21 +1521,22 @@ export default function SavePurchaseOrder() {
                     });
                     setShowAlert(true);
                     setTimeout(() => setShowAlert(false), 3000);
+
+                    const poDetailsResponse = await getAllPoDetailsForNewOrder(payload).unwrap();
+                    setPoreviewDetails(poDetailsResponse.data);
                     // setCurrentStep(4);
                 }
             }
 
-            // Refresh PO details after saving
-            const payload = {
-                locationId: Number(selectedLocation),
-                ApplicationUserId: Number(user.Id),
-                vendorId: Number(selectedVendor),
-                againstOrder: formState.shiptoAddress === "against" ? "1" : "0"
-            };
-
-            const poDetailsResponse = await getAllPoDetailsForNewOrder(payload).unwrap();
-            setPoreviewDetails(poDetailsResponse.data);
+            setScannedItems([]);
+            setSelectedOrders([]);
+            setSelectAll(false);
+            setFilteredOrderDetails([]);
+            // setPoreviewDetails([]);
+            handleRefreshForm();
+            // Move to step 4
             setCurrentStep(4);
+
 
 
         } catch (error) {
@@ -1546,7 +1568,7 @@ export default function SavePurchaseOrder() {
                 setShowAlert(true);
                 setTimeout(() => setShowAlert(false), 3000);
                 // Optionally navigate to another page
-                navigate('/');
+                navigate('/purchase-order/');
             } else {
                 setAlertMessage({
                     type: "error",
@@ -1565,6 +1587,60 @@ export default function SavePurchaseOrder() {
             setTimeout(() => setShowAlert(false), 3000);
         }
     };
+
+
+    const handleAdvSearch = () => {
+        if (allBrands) {
+            console.log("allBrands ------------ ", allBrands);
+            console.log(formState.selectedOption);
+            if (formState.selectedOption === "Frame/Sunglass") {
+                const frameBrands = allBrands?.filter(
+                    (b) =>
+                        b.FrameActive === 1 &&
+                        b.IsActive === 1 
+                        // b.BrandName.toLowerCase().includes(brandInput?.toLowerCase())
+                );
+                console.log(frameBrands);
+
+                setFilteredBrands(frameBrands);
+            }
+            if (formState.selectedOption == "Accessories") {
+                const accessoriesBrands = allBrands?.filter(
+                    (b) =>
+                        b.OthersProductsActive === 1 &&
+                        b.IsActive === 1 
+                        // b.BrandName.toLowerCase().includes(brandInput?.toLowerCase())
+                );
+                console.log(accessoriesBrands);
+
+                setFilteredBrands(accessoriesBrands);
+            }
+            if (formState.selectedOption === "Contact Lens") {
+                const contactLensBrands = allBrands?.filter(
+                    (b) =>
+                        b.ContactLensActive === 1 &&
+                        b.IsActive === 1 
+                        // b.BrandName.toLowerCase().includes(brandInput?.toLowerCase())
+                );
+                console.log(contactLensBrands);
+
+                setFilteredBrands(contactLensBrands);
+            }
+            if (formState.selectedOption === "Lens") {
+                const OlBrands = allBrands?.filter(
+                    (b) =>
+                        b.OpticalLensActive === 1 &&
+                        b.IsActive === 1 
+                        // b.BrandName.toLowerCase().includes(brandInput?.toLowerCase())
+                );
+                console.log(OlBrands);
+
+                setFilteredBrands(OlBrands);
+            }
+            console.log(filteredBrands);
+        }
+        setShowSearchInputs(true);
+    }
 
     const calculateTotalAmount = () => {
         return poreviewDetails.reduce((total, order) => {
@@ -1804,6 +1880,7 @@ export default function SavePurchaseOrder() {
                     )}
                 </AnimatePresence>
 
+                {/* Header and Step Indicators */}
                 <header className="">
                     <motion.div
                         initial={{ y: -20, opacity: 0 }}
@@ -1812,7 +1889,10 @@ export default function SavePurchaseOrder() {
                         className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 p-4"
                     >
                         <div className="">
-                            <button className="text-[#000060] hover:text-[#0000a0] transition-colors flex items-center mb-3">
+                            <button
+                                className="text-[#000060] hover:text-[#0000a0] transition-colors flex items-center mb-3"
+                                onClick={() => navigate('/purchase-order')}
+                            >
                                 <ArrowLeft className="w-5 h-5 mr-2" />
                                 Back to dashboard
                             </button>
@@ -1907,31 +1987,10 @@ export default function SavePurchaseOrder() {
                             <div className="bg-white rounded-2xl shadow-xl p-6 space-y-10">
                                 <h2 className="text-xl font-bold text-[#000060] mb-6">Step 1</h2>
 
-                                {vendors
-                                    .filter(vendor => vendor.Id === parseInt(selectedVendor))
-                                    .map((vendor) => (
-                                        <div key={vendor.Id} className="mb-4">
-                                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                                <p className="text-gray-700 ">
-                                                    <span className="font-bold flex">Vendor Name </span>
-                                                    <span>{vendor.VendorName}</span>
-                                                </p>
-                                                <p className="text-gray-700">
-                                                    <span className="font-bold flex">Mobile Number</span>
-                                                    <span>{vendor.MobNumber}</span>
-                                                </p>
-                                                <p className="text-gray-700">
-                                                    <span className="font-bold flex">Address</span>
-                                                    <span className="flex">{vendor.Address1} {vendor.Address2}</span>
-                                                    <span>{vendor.City}</span>
-                                                </p>
-                                                <p className="text-gray-700">
-                                                    <span className="font-medium flex">GST Number</span>
-                                                    <span className="font-bold">{vendor.TAXNo}</span>
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
+                                <PurchaseOrderVendorSection
+                                    vendors={vendors}
+                                    selectedVendor={selectedVendor}
+                                />
 
                                 <div className="grid grid-cols-2 gap-8  bg-white text-gray-600">
                                     {/* Ship to Address Section */}
@@ -2032,105 +2091,30 @@ export default function SavePurchaseOrder() {
                     </motion.div>
                 )}
 
-                {/* Step 2: Options Selection for Against Order */}
-                {(currentStep === 2 && formState.shiptoAddress === "against") && (
-                    <motion.div
-                        initial={{ y: -20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ duration: 0.5, delay: 0.2 }}
-                        className="bg-white rounded-2xl shadow-xl p-6"
-                    >
-                        <h2 className="text-xl font-bold text-[#000060] mb-6">Step 2</h2>
+                {/* Step 2: Options Selection */}
+                {(currentStep === 2) && (
+                    formState.shiptoAddress === "against" ? (
+                        <PurchaseOrderStep2
+                            productOptions={["Frame/Sunglass", "Lens", "Contact Lens", "Accessories"]}
+                            formState={formState}
+                            handleInputChange={handleInputChange}
+                            handleOptionChange={handleOptionChange}
+                            handleNext={handleNext}
+                            handleBack={handleBack}
+                        />
 
-                        <div className="flex justify-start gap-12">
-                            {['Frame/Sunglass', 'Lens', 'Contact Lens', 'Accessories'].map((option) => (
-                                <label
-                                    key={option}
-                                    htmlFor={`option-${option}`}
-                                    className="flex items-center gap-2 cursor-pointer group"
-                                >
-                                    <input
-                                        id={`option-${option}`}
-                                        name="option"
-                                        type="radio"
-                                        checked={formState.selectedOption === option}
-                                        onChange={() => handleOptionChange(option)}
-                                        className="h-4 w-4 text-[#000060] focus:ring-[#000060] border-gray-300 cursor-pointer"
-                                    />
-                                    <span className="text-sm font-medium text-gray-700 group-hover:text-[#000060] transition-colors">
-                                        {option}
-                                    </span>
-                                </label>
-                            ))}
-                        </div>
-
-                        <div className="flex justify-between items-center mt-8">
-                            <button
-                                onClick={handleBack}
-                                className="px-4 py-2 border border-[#000060] text-[#000060] rounded-lg hover:bg-gray-100 transition-colors"
-                            >
-                                Back
-                            </button>
-                            <button
-                                onClick={handleNext}
-                                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
-                                disabled={!formState.selectedOption}
-                            >
-                                Next
-                            </button>
-                        </div>
-                    </motion.div>
+                    ) : formState.shiptoAddress === "new" ? (
+                        <PurchaseOrderStep2
+                            productOptions={["Frame/Sunglass", "Lens", "Contact Lens", "Accessories", "Bulk Process"]}
+                            formState={formState}
+                            handleInputChange={handleInputChange}
+                            handleOptionChange={handleOptionChange}
+                            handleNext={handleNext}
+                            handleBack={handleBack}
+                        />
+                    ) : null
                 )}
 
-                {/* Step 2: Options Selection for New Order */}
-                {(currentStep === 2 && formState.shiptoAddress === "new") && (
-                    <motion.div
-                        initial={{ y: -20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ duration: 0.5, delay: 0.2 }}
-                        className="bg-white rounded-2xl shadow-xl p-6"
-                    >
-                        <h2 className="text-xl font-bold text-[#000060] mb-6">Step 2</h2>
-
-                        <div className="flex justify-start gap-12">
-                            {['Frame/Sunglass', 'Lens', 'Contact Lens', 'Accessories', 'Bulk Process'].map((option) => (
-                                <label
-                                    key={option}
-                                    htmlFor={`option-${option}`}
-                                    className="flex items-center gap-2 cursor-pointer group"
-                                >
-                                    <input
-                                        id={`option-${option}`}
-                                        name="option"
-                                        type="radio"
-                                        checked={formState.selectedOption === option}
-                                        onChange={() => handleOptionChange(option)}
-                                        className="h-4 w-4 text-[#000060] focus:ring-[#000060] border-gray-300 cursor-pointer"
-                                    />
-                                    <span className="text-sm font-medium text-gray-700 group-hover:text-[#000060] transition-colors">
-                                        {option}
-                                    </span>
-                                </label>
-                            ))}
-                        </div>
-
-                        <div className="flex justify-between items-center mt-8">
-                            <button
-                                onClick={handleBack}
-                                className="px-4 py-2 border border-[#000060] text-[#000060] rounded-lg hover:bg-gray-100 transition-colors"
-                            >
-                                Back
-                            </button>
-                            <button
-                                onClick={handleNext}
-                                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
-                                disabled={!formState.selectedOption}
-                            >
-                                Next
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
 
                 {/* Step 3: Order Selection for Against Order */}
                 {(currentStep === 3 && formState.shiptoAddress === "against") && (
@@ -2150,233 +2134,21 @@ export default function SavePurchaseOrder() {
                                 Back
                             </button>
                         </div>
-                        <div className="flex justify-start gap-12 mb-6">
-                            {vendors
-                                .filter(vendor => vendor.Id === parseInt(selectedVendor))
-                                .map((vendor) => (
-                                    <div key={vendor.Id} className="mb-4">
-                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                            <p className="text-gray-700 ">
-                                                <span className="font-bold flex">Vendor Name </span>
-                                                <span>{vendor.VendorName}</span>
-                                            </p>
-                                            <p className="text-gray-700">
-                                                <span className="font-bold flex">Mobile Number</span>
-                                                <span>{vendor.MobNumber}</span>
-                                            </p>
-                                            <p className="text-gray-700">
-                                                <span className="font-bold flex">Address</span>
-                                                <span className="flex">{vendor.Address1} {vendor.Address2}</span>
-                                                <span>{vendor.City}</span>
-                                            </p>
-                                            <p className="text-gray-700">
-                                                <span className="font-medium flex">GST Number</span>
-                                                <span className="font-bold">{vendor.TAXNo}</span>
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
-                        </div>
+
+                        {/* Vendor Details Section */}
+                        <PurchaseOrderVendorSection
+                            vendors={vendors}
+                            selectedVendor={selectedVendor}
+                        />
 
                         <div className="overflow-auto rounded-lg shadow">
-                            <table className="min-w-full divide-y divide-neutral-200">
-                                <thead className="bg-blue-50"> {/* bg-blue-50 */}
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase flex justify-center space-x-3">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectAll}
-                                                onChange={handleSelectAll}
-                                                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                            />
-                                            <span className="text-neutral-600 font-semibold">Bill</span>
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">SL No.</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Order No.</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Product Details</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Buying Price</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Order Quantity</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">PO Quantity</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Avl Quantity</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Total Amount</th>
-                                    </tr>
-                                </thead>
-                                {console.log("filteredOrderDetails ------------- ", filteredOrderDetails)}
-                                <tbody className="bg-white divide-y divide-neutral-200">
-                                    {filteredOrderDetails.length > 0 ? (
-                                        filteredOrderDetails.map((order, index) => (
-                                            <tr key={order.orderDetailId} className={selectedOrders.includes(order.orderDetailId) ? "bg-neutral-50" : ""}>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedOrders.includes(order.orderDetailId)}
-                                                        onChange={() => handleOrderSelection(order.orderDetailId)}
-                                                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                    />
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">{index + 1}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">{order.orderPrefix}/{order.orderNo}/{order.slNo}</td>
-                                                {formState.selectedOption === 'Lens' &&
-                                                    <td className="px-6 py-4 whitespace-wrap">{order?.productDescName}
-                                                        {/* R Row */}
-                                                        {(order?.specs?.powerDetails?.right?.sphericalPower ||
-                                                            order?.specs?.powerDetails?.right?.cylindricalPower ||
-                                                            order?.specs?.powerDetails?.right?.axis ||
-                                                            order?.specs?.powerDetails?.right?.additional) && (
-                                                                <>
-                                                                    <br />
-                                                                    R: {order?.specs?.powerDetails?.right?.sphericalPower &&
-                                                                        `SPH: ${order?.specs?.powerDetails?.right?.sphericalPower > 0
-                                                                            ? `+${order?.specs?.powerDetails?.right?.sphericalPower}`
-                                                                            : order?.specs?.powerDetails?.right?.sphericalPower}`}
-                                                                    {order?.specs?.powerDetails?.right?.cylindricalPower &&
-                                                                        ` CYL: ${order?.specs?.powerDetails?.right?.cylindricalPower > 0
-                                                                            ? `+${order?.specs?.powerDetails?.right?.cylindricalPower}`
-                                                                            : order?.specs?.powerDetails?.right?.cylindricalPower}`}
-                                                                    {order?.specs?.powerDetails?.right?.axis &&
-                                                                        ` Axis: ${order?.specs?.powerDetails?.right?.axis}`}
-                                                                    {order?.specs?.powerDetails?.right?.additional &&
-                                                                        ` Add: ${order?.specs?.powerDetails?.right?.additional > 0
-                                                                            ? `+${order?.specs?.powerDetails?.right?.additional}`
-                                                                            : order?.specs?.powerDetails?.right?.additional}`}
-                                                                </>
-                                                            )}
-
-                                                        {/* L Row */}
-                                                        {(order?.specs?.powerDetails?.left?.sphericalPower ||
-                                                            order?.specs?.powerDetails?.left?.cylindricalPower ||
-                                                            order?.specs?.powerDetails?.left?.axis ||
-                                                            order?.specs?.powerDetails?.left?.additional) && (
-                                                                <>
-                                                                    <br />
-                                                                    L: {order?.specs?.powerDetails?.left?.sphericalPower &&
-                                                                        `SPH: ${order?.specs?.powerDetails?.left?.sphericalPower > 0
-                                                                            ? `+${order?.specs?.powerDetails?.left?.sphericalPower}`
-                                                                            : order?.specs?.powerDetails?.left?.sphericalPower}`}
-                                                                    {order?.specs?.powerDetails?.left?.cylindricalPower &&
-                                                                        ` CYL: ${order?.specs?.powerDetails?.left?.cylindricalPower > 0
-                                                                            ? `+${order?.specs?.powerDetails?.left?.cylindricalPower}`
-                                                                            : order?.specs?.powerDetails?.left?.cylindricalPower}`}
-                                                                    {order?.specs?.powerDetails?.left?.axis &&
-                                                                        ` Axis: ${order?.specs?.powerDetails?.left?.axis}`}
-                                                                    {order?.specs?.powerDetails?.left?.additional &&
-                                                                        ` Add: ${order?.specs?.powerDetails?.left?.additional > 0
-                                                                            ? `+${order?.specs?.powerDetails?.left?.additional}`
-                                                                            : order?.specs?.powerDetails?.left?.additional}`}
-                                                                </>
-                                                            )}
-
-                                                        {order?.specs?.addOn?.addOnId && (<><br /> <span className="font-medium">AddOn: {order?.specs?.addOn?.addOnName}</span></>)}
-                                                        {order?.specs?.tint?.tintCode && (<><br /><span className="font-medium">Tint: {order?.specs?.tint?.tintName}</span></>)}
-                                                        {order?.hSN && (<><br /><span className="font-medium">HSN: {order?.hSN}</span></>)}
-                                                    </td>
-                                                }
-                                                {formState.selectedOption === 'Frame/Sunglass' &&
-                                                    <td className="px-6 py-4 whitespace-wrap">{order?.productDescName}
-                                                        <br></br>{order?.size}-{order?.dBL}-{order?.templeLength}
-                                                        <br></br>{order?.category === 0 ? `Sunglass` : `OpticalFrame`}
-                                                        <br></br>{order?.barcode && `Barcode: ` + order?.barcode}
-                                                        <br></br>{order?.hSN && `HSN: ` + order?.hSN}
-                                                    </td>
-                                                }
-                                                {formState.selectedOption === 'Accessories' &&
-                                                    <td className="px-6 py-4 whitespace-wrap">{order?.productDescName}
-                                                        {order?.variationName && (<><br />Variation: {order?.variationName}</>)}
-                                                        {order?.barcode && (<><br />Barcode: {order?.barcode}</>)}
-                                                        {order?.hSN && (<><br />HSN: {order?.hSN}</>)}
-                                                    </td>
-                                                }
-                                                {formState.selectedOption === 'Contact Lens' &&
-                                                    <td className="px-6 py-4 whitespace-wrap">{order?.productDescName}
-                                                        <br></br>{order?.sphericalPower && (`Sph: ` + (order?.sphericalPower > 0 ? `+` + order?.sphericalPower : order?.sphericalPower))}
-                                                        {order?.cylindricalPower && (` Cyld: ` + (order?.cylindricalPower > 0 ? `+` + order?.cylindricalPower : order?.cylindricalPower))}
-                                                        {order?.axis && (` Axis: ` + (order?.axis))}
-                                                        {order?.additional && (` Add: ` + (order?.additional > 0 ? `+` + order?.additional : order?.additional))}
-                                                        {order?.color && (<><br />Clr: {order?.color > 0}</>)}
-                                                        {order?.barcode && (<><br />Barcode: {order?.barcode}</>)}
-                                                        {order?.hSN && (<><br />HSN: {order?.hSN}</>)}
-                                                    </td>
-                                                }
-                                                {order.productType == 3 ?
-                                                    <td className="px-6 py-4 whitespace-nowrap">{order.poPrice ?? order?.priceMaster?.buyingPrice}</td>
-                                                    :
-                                                    <td className="px-6 py-4 whitespace-nowrap">{order.poPrice ?? order?.pricing?.buyingPrice}</td>
-
-                                                }
-                                                <td className="px-6 py-4 whitespace-nowrap text-center">{order?.orderQty}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-center">{order.poQty ?? order?.orderQty - order?.billedQty - order?.cancelledQty}</td>
-                                                {order.productType == 3 ?
-                                                    // logic for sum of quantities in stock
-                                                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                        {order?.stock.reduce((total, item) => total + item.quantity, 0)}
-                                                    </td>
-                                                    :
-                                                    <td className="px-6 py-4 whitespace-nowrap text-center">{order?.pricing?.quantity}</td>
-                                                }
-                                                {/* <td className="px-6 py-4 whitespace-nowrap">{((order?.pricing?.buyingPrice * order?.orderQty) + (order?.pricing?.buyingPrice * order?.orderQty * (order?.taxPercentage / 100))).toFixed(2)}</td> */}
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {order.productType == 0 ? (
-                                                        // Optical Lens calculation
-                                                        (() => {
-                                                            const bothLens = order?.specs?.powerDetails?.bothLens === 1;
-                                                            const buyingPrice = parseFloat(order?.pricing?.buyingPrice || 0);
-                                                            const orderQty = parseInt(order?.orderQty || 0, 10);
-
-                                                            // Tint buying price
-                                                            const tintBuying =
-                                                                parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) || 0;
-
-                                                            // Sum of addon buying prices
-                                                            const addonBuying = Array.isArray(order?.specs?.addOn)
-                                                                ? order.specs.addOn.reduce(
-                                                                    (sum, add) => sum + (parseFloat(add?.addOnBuyingPrice || 0) || 0),
-                                                                    0
-                                                                )
-                                                                : parseFloat(order?.specs?.addOn?.addOnBuyingPrice || 0) || 0;
-
-                                                            // Calculate base
-                                                            let total;
-                                                            if (bothLens) {
-                                                                total = buyingPrice * orderQty + tintBuying + addonBuying;
-                                                            } else {
-                                                                total =
-                                                                    buyingPrice * orderQty + tintBuying / 2 + addonBuying / 2;
-                                                            }
-
-                                                            // Add tax
-                                                            const totalWithTax =
-                                                                total + total * (parseFloat(order?.taxPercentage) / 100 || 0);
-
-                                                            return totalWithTax.toFixed(2);
-                                                        })()
-                                                    ) : order.productType === 3 ? (
-                                                        (
-                                                            (order?.priceMaster?.buyingPrice * (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty)) +
-                                                            (order?.priceMaster?.buyingPrice *
-                                                                (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty) *
-                                                                (order?.taxPercentage / 100))
-                                                        ).toFixed(2)
-                                                    ) : (
-                                                        // Default calculation
-                                                        (
-                                                            (order?.pricing?.buyingPrice * (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty)) +
-                                                            (order?.pricing?.buyingPrice *
-                                                                (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty) *
-                                                                (order?.taxPercentage / 100))
-                                                        ).toFixed(2)
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan="9" className="px-6 py-4 text-center text-gray-500">
-                                                No orders found
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
+                            {console.log("filteredOrderDetails ------------- ", filteredOrderDetails)}
+                            <POAgainstOrderTableComponent
+                                filteredOrderDetails={filteredOrderDetails}
+                                formState={formState}
+                                selectedOrders={selectedOrders}
+                                handleOrderSelection={handleOrderSelection}
+                            />
                         </div>
 
                         <div className="flex justify-between items-center mt-8">
@@ -2411,6 +2183,7 @@ export default function SavePurchaseOrder() {
                         transition={{ duration: 0.5, delay: 0.2 }}
                         className="bg-white rounded-2xl shadow-xl p-6"
                     >
+
                         <div className="flex justify-between items-center">
                             <h2 className="text-xl font-bold text-[#000060] mb-6">Step 3:
                                 {formState.selectedOption == "Frame/Sunglass" && " Frame/Sunglass"}
@@ -2438,7 +2211,9 @@ export default function SavePurchaseOrder() {
                                 )}
                             </div>
                         </div>
+
                         <div className=" items-center my-10 w-full gap-6">
+
                             <div className="flex justify-start gap-12 mb-6">
                                 <div className="flex space-x-4">
                                     <label className="flex items-center space-x-2 cursor-pointer">
@@ -2530,7 +2305,7 @@ export default function SavePurchaseOrder() {
                                         )}
                                     </button>
                                     <button
-                                        onClick={() => setShowSearchInputs(true)}
+                                        onClick={handleAdvSearch}
                                         className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors whitespace-nowrap flex items-center"
                                     >
                                         <SearchIcon className="h-4 w-4 mr-1" />
@@ -2538,7 +2313,6 @@ export default function SavePurchaseOrder() {
                                     </button>
                                 </div>
                             ) : (
-                                // <div className="flex-1">
                                 <div className="flex flex-col md:flex-row items-start md:items-center gap-4 flex-wrap">
 
                                     {/* Search Brand */}
@@ -2573,7 +2347,7 @@ export default function SavePurchaseOrder() {
                                         />
                                     </div>
 
-
+                                    {/* For Frame/Sunglass */}
                                     {formState.selectedOption === "Frame/Sunglass" && (
                                         <div className="flex-1 min-w-[250px]">
                                             <input
@@ -2589,6 +2363,7 @@ export default function SavePurchaseOrder() {
                                         </div>
                                     )}
 
+                                    {/* For Accessories */}
                                     {formState.selectedOption === "Accessories" && (
                                         <div className="flex-1 min-w-[250px]">
                                             <input
@@ -2604,8 +2379,7 @@ export default function SavePurchaseOrder() {
                                         </div>
                                     )}
 
-                                    {/* {console.log("modalities --------- ", modalities)} */}
-
+                                    {/* Contact Lens */}
                                     {(formState.selectedOption === "Contact Lens") && (
                                         <>
                                             <div className="flex-1 min-w-[300px]">
@@ -2675,36 +2449,217 @@ export default function SavePurchaseOrder() {
                                     )}
 
                                     {/* Optical Lens */}
-                                    {(formState.selectedOption === "Lens" && brandId) && (
-                                        <div className="flex space-x-4">
-                                            <label>Product Type :</label>
-                                            <label className="flex items-center space-x-2 cursor-pointer">
-                                                <input
-                                                    type="radio"
-                                                    name="productType"
-                                                    value="Stocks"
-                                                    checked={olItemsStack.productType === "Stocks"}
-                                                    onChange={handleOlItemStackChange}
-                                                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                />
-                                                <span className="text-gray-700 font-medium">Stocks</span>
-                                            </label>
-                                            <label className="flex items-center space-x-2 cursor-pointer">
-                                                <input
-                                                    type="radio"
-                                                    name="productType"
-                                                    value="Rx"
-                                                    checked={olItemsStack.productType === "Rx"}
-                                                    onChange={handleOlItemStackChange}
-                                                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                    disabled={true}
-                                                />
-                                                <span className="text-gray-700 font-medium">Rx</span>
-                                            </label>
-                                        </div>
+                                    {(formState.selectedOption === "Lens" && brandInput) && (
+                                        <>
+                                            <div className="flex space-x-4">
+                                                <label>Product Type :</label>
+                                                <label className="flex items-center space-x-2 cursor-pointer">
+                                                    <input
+                                                        type="radio"
+                                                        name="productType"
+                                                        value="Stocks"
+                                                        checked={olItemsStack.productType === "Stocks"}
+                                                        onChange={handleOlItemStackChange}
+                                                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    />
+                                                    <span className="text-gray-700 font-medium">Stocks</span>
+                                                </label>
+                                                <label className="flex items-center space-x-2 cursor-pointer">
+                                                    <input
+                                                        type="radio"
+                                                        name="productType"
+                                                        value="Rx"
+                                                        checked={olItemsStack.productType === "Rx"}
+                                                        onChange={handleOlItemStackChange}
+                                                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                        disabled={true}
+                                                    />
+                                                    <span className="text-gray-700 font-medium">Rx</span>
+                                                </label>
+                                            </div>
+
+                                            {(formState.productType === "Stocks" && focalityData && brandInput) && (
+                                                <>
+                                                    <div className="w-full flex flex-col md:flex-row gap-4 mt-4">
+
+                                                        {/* Focality */}
+                                                        <div className="flex-1">
+                                                            <AutocompleteField
+                                                                label="Focality"
+                                                                options={deduplicateOptions(
+                                                                    focalityData?.data?.filter((b) => b.IsActive === 1) || [],
+                                                                    "OpticalLensFocality.Id"
+                                                                )}
+                                                                valueField="OpticalLensFocality.Id"
+                                                                labelField="OpticalLensFocality.Focality"
+                                                                value={olItemsStack.focality}
+                                                                onChange={(val) =>
+                                                                    setOlItemStack((prev) => ({ ...prev, focality: val }))
+                                                                }
+                                                                loading={isLoadingFocality}
+                                                                disabled={!!(olItemsStack.family || olItemsStack.design)}
+                                                            />
+                                                        </div>
+
+                                                        {/* Product Family */}
+                                                        {olItemsStack.focality && (
+                                                            <div className="flex-1">
+                                                                <AutocompleteField
+                                                                    label="Product Family"
+                                                                    options={deduplicateOptions(
+                                                                        familyData?.data?.filter((b) => b.IsActive === 1) || [],
+                                                                        "OpticalLensProductFamily.Id"
+                                                                    )}
+                                                                    valueField="OpticalLensProductFamily.Id"
+                                                                    labelField="OpticalLensProductFamily.FamilyName"
+                                                                    value={olItemsStack.family}
+                                                                    onChange={(val) =>
+                                                                        setOlItemStack((prev) => ({ ...prev, family: val }))
+                                                                    }
+                                                                    loading={isLoadingFamily}
+                                                                    disabled={!!olItemsStack.design}
+                                                                />
+                                                            </div>
+                                                        )}
+
+                                                        {/* Product Design */}
+                                                        {olItemsStack.family && (
+                                                            <div className="flex-1">
+                                                                <AutocompleteField
+                                                                    label="Product Design"
+                                                                    options={deduplicateOptions(
+                                                                        productDesignData?.data?.filter((b) => b.IsActive === 1) || [],
+                                                                        "OpticalLensProductDesign.Id"
+                                                                    )}
+                                                                    valueField="OpticalLensProductDesign.Id"
+                                                                    labelField="OpticalLensProductDesign.DesignName"
+                                                                    value={olItemsStack.design}
+                                                                    onChange={(val) =>
+                                                                        setOlItemStack((prev) => ({ ...prev, design: val }))
+                                                                    }
+                                                                    loading={isLoadingProductDesign}
+                                                                    disabled={!!olItemsStack.index}
+                                                                />
+                                                            </div>
+                                                        )}
+
+                                                    </div>
+
+                                                    {olItemsStack.design && (
+                                                        <div className="w-full flex flex-col md:flex-row gap-4 mt-4">
+
+                                                            {/* Index Value */}
+                                                            <div className="flex-1">
+                                                                <AutocompleteField
+                                                                    label="Index Values"
+                                                                    options={deduplicateOptions(
+                                                                        indexValuesData?.data?.filter((b) => b.IsActive === 1) ||
+                                                                        [],
+                                                                        "OpticalLensIndex.Id"
+                                                                    )}
+                                                                    valueField="OpticalLensIndex.Id"
+                                                                    labelField="OpticalLensIndex.Index"
+                                                                    value={olItemsStack.index}
+                                                                    onChange={(val, item) =>
+                                                                        setOlItemStack((prev) => ({
+                                                                            ...prev,
+                                                                            index: val,
+                                                                            masterId: item?.MasterId || null,
+                                                                        }))
+                                                                    }
+                                                                    loading={isLoadingIndexValues}
+                                                                    disabled={!!(olItemsStack.masterId && olItemsStack.coating)}
+                                                                />
+                                                            </div>
+
+                                                            {/* Coating */}
+                                                            {olItemsStack.masterId && (
+                                                                <div className="flex-1">
+                                                                    <AutocompleteField
+                                                                        label="Coating"
+                                                                        options={deduplicateOptions(
+                                                                            coatingsData?.data?.filter((b) => b.IsActive === 1) || [],
+                                                                            "OpticalLensCoating.Id"
+                                                                        )}
+                                                                        valueField="OpticalLensCoating.Id"
+                                                                        labelField="OpticalLensCoating.CoatingName"
+                                                                        value={olItemsStack.coating}
+                                                                        onChange={(val, item) => {
+                                                                            if (!item) {
+                                                                                setOlItemStack((prev) => ({
+                                                                                    ...prev,
+                                                                                    coating: null,
+                                                                                }));
+                                                                                return;
+                                                                            }
+                                                                            setOlItemStack((prev) => ({
+                                                                                ...prev,
+                                                                                coating: item.OpticalLensCoating?.Id || null,
+                                                                            }));
+                                                                        }}
+                                                                        loading={isLoadingCoatings}
+                                                                        disabled={!!olItemsStack.treatment}
+                                                                    />
+                                                                </div>
+                                                            )}
+
+                                                            {/* Treatment */}
+                                                            {olItemsStack.coating && (
+                                                                <div className="flex-1">
+                                                                    <AutocompleteField
+                                                                        label="Treatment"
+                                                                        options={deduplicateOptions(
+                                                                            treatmentsData?.data?.filter((b) => b.IsActive === 1) || [],
+                                                                            "OpticalLensTreatment.Id"
+                                                                        )}
+                                                                        valueField="OpticalLensTreatment.Id"
+                                                                        labelField="OpticalLensTreatment.TreatmentName"
+                                                                        value={olItemsStack.treatment}
+                                                                        onChange={(val, item) => {
+                                                                            if (!item) {
+                                                                                setOlItemStack((prev) => ({
+                                                                                    ...prev,
+                                                                                    coatingCombo: null,
+                                                                                    treatment: null,
+                                                                                }));
+                                                                                return;
+                                                                            }
+                                                                            setOlItemStack((prev) => ({
+                                                                                ...prev,
+                                                                                coatingCombo: item.CoatingComboId,
+                                                                                treatment: item.OpticalLensTreatment?.Id,
+                                                                            }));
+                                                                        }}
+                                                                        loading={isLoadingTreatments}
+                                                                    />
+                                                                </div>
+                                                            )}
+
+                                                        </div>
+                                                    )}
+
+                                                    {/* Product Name */}
+                                                    {olItemsStack.treatment && (
+                                                        <div className="w-full flex flex-col md:flex-row gap-4 mt-4">
+                                                            <div className="flex-1">
+                                                                <Input
+                                                                    label="Product Name"
+                                                                    value={olItemsStack.productName || ""}
+                                                                    onChange={(e) =>
+                                                                        setOlItemStack({ ...olItemsStack, productName: e.target.value })
+                                                                    }
+                                                                    placeholder="Enter product name"
+                                                                    className="w-full"
+                                                                    disabled
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            )}
+                                        </>
                                     )}
 
-                                    {console.log("focalityData --------------- ", focalityData)}
 
                                     {(formState.selectedOption === "Frame/Sunglass" || formState.selectedOption === "Accessories") ? (
                                         <button
@@ -2727,646 +2682,67 @@ export default function SavePurchaseOrder() {
                                         Back to Barcode
                                     </button>
 
-
-                                    {(formState.selectedOption === "Lens" && formState.productType === "Stocks" && focalityData) && (
-                                        <>
-                                            <div className="w-full flex flex-col md:flex-row gap-4 mt-4">
-                                                <div className="flex-1">
-                                                    <AutocompleteField
-                                                        label="Focality"
-                                                        options={deduplicateOptions(
-                                                            focalityData?.data?.filter((b) => b.IsActive === 1) || [],
-                                                            "OpticalLensFocality.Id"
-                                                        )}
-                                                        valueField="OpticalLensFocality.Id"
-                                                        labelField="OpticalLensFocality.Focality"
-                                                        value={olItemsStack.focality}
-                                                        onChange={(val) =>
-                                                            setOlItemStack((prev) => ({ ...prev, focality: val }))
-                                                        }
-                                                        loading={isLoadingFocality}
-                                                        disabled={!!(olItemsStack.family || olItemsStack.design)}
-                                                    />
-                                                </div>
-
-                                                {olItemsStack.focality && (
-                                                    <div className="flex-1">
-                                                        <AutocompleteField
-                                                            label="Product Family"
-                                                            options={deduplicateOptions(
-                                                                familyData?.data?.filter((b) => b.IsActive === 1) || [],
-                                                                "OpticalLensProductFamily.Id"
-                                                            )}
-                                                            valueField="OpticalLensProductFamily.Id"
-                                                            labelField="OpticalLensProductFamily.FamilyName"
-                                                            value={olItemsStack.family}
-                                                            onChange={(val) =>
-                                                                setOlItemStack((prev) => ({ ...prev, family: val }))
-                                                            }
-                                                            loading={isLoadingFamily}
-                                                            disabled={!!olItemsStack.design}
-                                                        />
-                                                    </div>
-                                                )}
-
-                                                {olItemsStack.family && (
-                                                    <div className="flex-1">
-                                                        <AutocompleteField
-                                                            label="Product Design"
-                                                            options={deduplicateOptions(
-                                                                productDesignData?.data?.filter((b) => b.IsActive === 1) || [],
-                                                                "OpticalLensProductDesign.Id"
-                                                            )}
-                                                            valueField="OpticalLensProductDesign.Id"
-                                                            labelField="OpticalLensProductDesign.DesignName"
-                                                            value={olItemsStack.design}
-                                                            onChange={(val) =>
-                                                                setOlItemStack((prev) => ({ ...prev, design: val }))
-                                                            }
-                                                            loading={isLoadingProductDesign}
-                                                            disabled={!!olItemsStack.index}
-                                                        />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            {olItemsStack.design && (
-                                                <div className="w-full flex flex-col md:flex-row gap-4 mt-4">
-                                                    <div className="flex-1">
-                                                        <AutocompleteField
-                                                            label="Index Values"
-                                                            options={deduplicateOptions(
-                                                                indexValuesData?.data?.filter((b) => b.IsActive === 1) ||
-                                                                [],
-                                                                "OpticalLensIndex.Id"
-                                                            )}
-                                                            valueField="OpticalLensIndex.Id"
-                                                            labelField="OpticalLensIndex.Index"
-                                                            value={olItemsStack.index}
-                                                            onChange={(val, item) =>
-                                                                setOlItemStack((prev) => ({
-                                                                    ...prev,
-                                                                    index: val,
-                                                                    masterId: item?.MasterId || null,
-                                                                }))
-                                                            }
-                                                            loading={isLoadingIndexValues}
-                                                            disabled={!!(olItemsStack.masterId && olItemsStack.coating)}
-                                                        />
-                                                    </div>
-                                                    {olItemsStack.masterId && (
-                                                        <div className="flex-1">
-                                                            <AutocompleteField
-                                                                label="Coating"
-                                                                options={deduplicateOptions(
-                                                                    coatingsData?.data?.filter((b) => b.IsActive === 1) || [],
-                                                                    "OpticalLensCoating.Id"
-                                                                )}
-                                                                valueField="OpticalLensCoating.Id"
-                                                                labelField="OpticalLensCoating.CoatingName"
-                                                                value={olItemsStack.coating}
-                                                                onChange={(val, item) => {
-                                                                    if (!item) {
-                                                                        setOlItemStack((prev) => ({
-                                                                            ...prev,
-                                                                            coating: null,
-                                                                        }));
-                                                                        return;
-                                                                    }
-                                                                    setOlItemStack((prev) => ({
-                                                                        ...prev,
-                                                                        coating: item.OpticalLensCoating?.Id || null,
-                                                                    }));
-                                                                }}
-                                                                loading={isLoadingCoatings}
-                                                                disabled={!!olItemsStack.treatment}
-                                                            />
-                                                        </div>
-                                                    )}
-
-                                                    {olItemsStack.coating && (
-                                                        <div className="flex-1">
-                                                            <AutocompleteField
-                                                                label="Treatment"
-                                                                options={deduplicateOptions(
-                                                                    treatmentsData?.data?.filter((b) => b.IsActive === 1) || [],
-                                                                    "OpticalLensTreatment.Id"
-                                                                )}
-                                                                valueField="OpticalLensTreatment.Id"
-                                                                labelField="OpticalLensTreatment.TreatmentName"
-                                                                value={olItemsStack.treatment}
-                                                                onChange={(val, item) => {
-                                                                    if (!item) {
-                                                                        setOlItemStack((prev) => ({
-                                                                            ...prev,
-                                                                            coatingCombo: null,
-                                                                            treatment: null,
-                                                                        }));
-                                                                        return;
-                                                                    }
-                                                                    setOlItemStack((prev) => ({
-                                                                        ...prev,
-                                                                        coatingCombo: item.CoatingComboId,
-                                                                        treatment: item.OpticalLensTreatment?.Id,
-                                                                    }));
-                                                                }}
-                                                                loading={isLoadingTreatments}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                            {olItemsStack.treatment && (
-                                                <div className="w-full flex flex-col md:flex-row gap-4 mt-4">
-                                                    <div className="flex-1">
-                                                        <Input
-                                                            label="Product Name"
-                                                            value={olItemsStack.productName || ""}
-                                                            onChange={(e) =>
-                                                                setOlItemStack({ ...olItemsStack, productName: e.target.value })
-                                                            }
-                                                            placeholder="Enter product name"
-                                                            className="w-full"
-                                                            disabled
-                                                        />
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
                                 </div>
-                                // </div>
                             )}
                         </div>
 
-
-                        {(olItemsStack.treatment !== null && brandId) && (
-                            <Table
-                                columns={["Spherical Power", "Cylindrical Power", "Diameter", "Action"]}
-                                data={[{}]}
-                                renderRow={() => (
-                                    <TableRow key="input-row items-center">
-                                        <TableCell>
-                                            <Input
-                                                name="sphericalPower"
-                                                value={newItem.sphericalPower ?? ""}
-                                                onChange={handlePowerSearchInputChange}
-                                                error={errors.sphericalPower}
-                                                grayOut={searchFethed}
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Input
-                                                name="cylindricalPower"
-                                                value={newItem.cylindricalPower ?? ""}
-                                                onChange={handlePowerSearchInputChange}
-                                                error={errors.cylindricalPower}
-                                                grayOut={searchFethed}
-                                            />
-                                        </TableCell>
-                                        <TableCell className="">
-                                            {(olPowerDia.length > 0) ? (
-                                                <select
-                                                    value={newItem.diameter}
-                                                    onChange={(e) => setNewItem((prev) => ({ ...prev, diameter: e.target.value }))}
-                                                    className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                >
-                                                    <option value="">Select a Diameter</option>
-                                                    {olPowerDia.map((dia) => (
-                                                        <option key={dia.Id} value={dia.Id}>
-                                                            {dia.DiameterSize}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            ) : (
-                                                <div className="flex items-center justify-center">
-                                                    <Button
-                                                        size="sm"
-                                                        onClick={handleSearchDia}
-                                                        disabled={!newItem.sphericalPower || isGetDiameterLoading}
-                                                        variant="outline"
-                                                    >
-                                                        {isGetDiameterLoading ? "Fetching..." : <HardDriveDownload />}
-                                                    </Button>
-                                                </div>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="flex gap-2">
-                                            <Button
-                                                size="sm"
-                                                onClick={handleOlSearch}
-                                                disabled={isPowerDetailsLoading || !newItem.sphericalPower || !newItem.diameter}
-                                                variant="outline"
-                                            >
-                                                {isPowerDetailsLoading ? "Searching..." : <SearchIcon />}
-                                            </Button>
-
-                                            <Button
-                                                size="sm"
-                                                onClick={handleRefresh}
-                                                disabled={isPowerDetailsLoading}
-                                                variant="outline"
-                                            >
-                                                {isPowerDetailsLoading ? "Refreshing..." : <RefreshCcw />}
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                )}
+                        {/* Optical Lens Search */}
+                        {(showSearchInputs && olItemsStack.treatment && brandId) && (
+                            <POolSearchTable
+                                newItem={newItem}
+                                handlePowerSearchInputChange={handlePowerSearchInputChange}
+                                errors={errors}
+                                searchFethed={searchFethed}
+                                setNewItem={setNewItem}
+                                olPowerDia={olPowerDia}
+                                handleSearchDia={handleSearchDia}
+                                isGetDiameterLoading={isGetDiameterLoading}
+                                handleOlSearch={handleOlSearch}
+                                isPowerDetailsLoading={isPowerDetailsLoading}
+                                handleRefresh={handleRefresh}
                             />
                         )}
 
-                        {/* Contact Lens */}
-                        {productId && (
-                            <Table
-                                columns={["Spherical Power", "Cylindrical Power", "Axis", "Additional", "Action"]}
-                                data={[{}]}
-                                renderRow={() => (
-                                    <TableRow key="input-row">
-                                        <TableCell>
-                                            <Input
-                                                name="sphericalPower"
-                                                value={newItem.sphericalPower ?? ""}
-                                                onChange={handlePowerSearchInputChange}
-                                                error={errors.sphericalPower}
-                                                // className={`${searchFethed ? "bg-neutral-400 pointer-events-none" : ""}`}
-                                                grayOut={searchFethed}
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Input
-                                                name="cylindricalPower"
-                                                value={newItem.cylindricalPower ?? ""}
-                                                onChange={handlePowerSearchInputChange}
-                                                error={errors.cylindricalPower}
-                                                grayOut={searchFethed}
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Input
-                                                name="axis"
-                                                value={newItem.axis ?? ""}
-                                                onChange={handlePowerSearchInputChange}
-                                                error={errors.axis}
-                                                grayOut={searchFethed}
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Input
-                                                name="additional"
-                                                value={newItem.additional ?? ""}
-                                                onChange={handlePowerSearchInputChange}
-                                                error={errors.additional}
-                                                grayOut={searchFethed}
-                                            />
-                                        </TableCell>
-                                        <TableCell className="flex gap-2">
-                                            <Button
-                                                size="sm"
-                                                onClick={handleSearch}
-                                                disabled={isPowerDetailsLoading}
-                                                variant="outline"
-                                            >
-                                                {isPowerDetailsLoading ? "Searching..." : <SearchIcon />}
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                onClick={handleRefresh}
-                                                disabled={isPowerDetailsLoading}
-                                                variant="outline"
-                                            >
-                                                {isPowerDetailsLoading ? "Refreshing..." : <RefreshCcw />}
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                )}
+                        {/* Contact Lens Search */}
+                        {(showSearchInputs && productId) && (
+                            <POCLpowerSearchTable
+                                headerItems={["Spherical Power", "Cylindrical Power", "Axis", "Additional", "Action"]}
+                                newItem={newItem}
+                                handlePowerSearchInputChange={handlePowerSearchInputChange}
+                                handleSearch={handleSearch}
+                                handleRefresh={handleRefresh}
+                                isPowerDetailsLoading={isPowerDetailsLoading}
+                                errors={errors}
+                                searchFethed={searchFethed}
                             />
+
                         )}
 
-                        {/* {console.log("items --------------- ", selectedRows)} */}
 
-                        {/* Contact Lens */}
-                        {(selectedRows.length > 0 && formState.selectedOption === "Contact Lens") && (
-                            <div className="p-6">
-                                <Table
-                                    columns={[
-                                        "Barcode",
-                                        "Spherical power",
-                                        "Cylindrical power",
-                                        "Axis",
-                                        "Additional",
-                                        "Buying Price",
-                                        "PO Qty",
-                                        "Action"
-                                    ]}
-                                    data={selectedRows}
-                                    renderRow={(item, index) => (
-                                        <TableRow key={index}>
-                                            <TableCell>{item.barcode}</TableCell>
-                                            <TableCell>{item.sphericalPower}</TableCell>
-                                            <TableCell>{item.cylindricalPower}</TableCell>
-                                            <TableCell>{item.axis}</TableCell>
-                                            <TableCell>{item.additional}</TableCell>
-                                            {/* <TableCell>₹{item.buyingPrice}</TableCell> */}
-                                            <TableCell>₹{" "}
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    step="0.01"
-                                                    value={selectedRows.find(a => a.barcode === item.barcode)?.price || item.buyingPrice}
-                                                    onChange={(e) => updateScannedItemPrice(acc.Id, e.target.value)}
-                                                    className="w-30 px-2 py-1 border rounded"
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    value={selectedRows.find(a => a.barcode === item.barcode)?.quantity || 1}
-                                                    onChange={(e) => updateScannedItemQuantity(item.Id, e.target.value)}
-                                                    className="w-20 px-2 py-1 border rounded"
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                <button
-                                                    onClick={() => handleDelete(index)}
-                                                    className="p-1 text-red-600 hover:text-red-800 "
-                                                    aria-label="Delete item"
-                                                >
-                                                    <Trash2 className="h-5 w-5" />
-                                                </button>
-                                            </TableCell>
-                                        </TableRow>
+                        {/* Search result table */}
+                        {showSearchInputs && searchResults.length > 0 && (
+                            <>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg font-semibold">Search Results</h3>
+                                    {selectedRows.length > 0 && (
+                                        <button
+                                            onClick={addSelectedItemsToScanned}
+                                            className="flex gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                        >
+                                            <Plus />
+                                            Add Selected ({selectedRows.length})
+                                        </button>
                                     )}
-                                />
-
-                                {/* <DisplayInformation
-                                    items={items}
-                                onSave={handleSaveOrder}
-                                isContactLensCreating={isContactLensCreating}
-                                /> */}
-                            </div>
-                        )}
-
-                        {(selectedRows.length > 0 && formState.selectedOption === "Lens") && (
-                            <div className="p-6">
-                                <Table
-                                    columns={[
-                                        "Barcode",
-                                        "Spherical Power",
-                                        "Cylindrical Power",
-                                        "Buying Price",
-                                        "PO QTY",
-                                        "Action"
-                                    ]}
-                                    data={selectedRows}
-                                    renderRow={(item, index) => (
-                                        <TableRow key={index}>
-                                            <TableCell>{item.barcode}</TableCell>
-                                            <TableCell>{item.sphericalPower}</TableCell>
-                                            <TableCell>{item.cylindricalPower}</TableCell>
-                                            <TableCell>₹{" "}
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    step="0.01"
-                                                    value={selectedRows.find(a => a.barcode === item.barcode)?.price || item.buyingPrice}
-                                                    onChange={(e) => updateScannedItemPrice(acc.Id, e.target.value)}
-                                                    className="w-30 px-2 py-1 border rounded"
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    value={selectedRows.find(a => a.barcode === item.barcode)?.quantity || 1}
-                                                    onChange={(e) => updateScannedItemQuantity(item.Id, e.target.value)}
-                                                    className="w-20 px-2 py-1 border rounded"
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                <button
-                                                    onClick={() => handleDelete(index)}
-                                                    className="p-1 text-red-600 hover:text-red-800 "
-                                                    aria-label="Delete item"
-                                                >
-                                                    <Trash2 className="h-5 w-5" />
-                                                </button>
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                />
-                            </div>
-                        )}
-
-                        {/* {console.log("AccessoriesData ---------------", AccessoriesData)}; */}
-                        {/* Frame search result */}
-                        {frameData && (
-                            <Table
-                                columns={["Barcode", "Name", "S/O", "Polarised", "Photochromatic", "Clip No", "MRP", "Buying Price", "PO QTY", "Action"]}
-                                data={scannedItems}
-                                renderRow={(frame, index) => (
-                                    <TableRow key={index}>
-                                        <TableCell>{frame.Barcode}</TableCell>
-                                        <TableCell>{frame.Name}{<br />}{frame.Size}</TableCell>
-                                        <TableCell>
-                                            {frame.Category === 0 ? 'Sunglass' : 'Optical Frame'}
-                                        </TableCell>
-                                        <TableCell className="text-center">{frame.PO ? "Yes" : "No"}</TableCell>
-                                        <TableCell className="text-center">{frame.Ph ? "Yes" : "No"}</TableCell>
-                                        <TableCell className="text-center">{frame.Cl}</TableCell>
-                                        <TableCell>₹{frame.MRP}</TableCell>
-                                        <TableCell>₹{" "}
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                step="0.01"
-                                                value={scannedItems.find(a => a.Id === frame.Id)?.price || frame.BuyingPrice}
-                                                onChange={(e) => updateScannedItemPrice(frame.Id, e.target.value)}
-                                                className="w-30 px-2 py-1 border rounded"
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                value={scannedItems.find(a => a.Id === frame.Id)?.quantity || 1}
-                                                onChange={(e) => updateScannedItemQuantity(frame.Id, e.target.value)}
-                                                className="w-20 px-2 py-1 border rounded"
-                                            />
-                                        </TableCell>
-                                        <TableCell className="px-6 py-4 whitespace-nowrap">
-                                            <button
-                                                className="p-1 text-red-600 hover:text-red-800 "
-                                                aria-label="Delete item"
-                                            >
-                                                <Trash2 className="h-5 w-5" />
-                                            </button>
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            />
-                        )}
-
-                        {/* Frame search result */}
-                        {OLData && (
-                            <Table
-                                columns={["Barcode", "Spherical Power", "Cylindrical Power", "Buying Price", "PO QTY", "Action"]}
-                                data={scannedItems}
-                                renderRow={(ol, index) => (
-                                    <TableRow key={index}>
-                                        <TableCell>{ol.Barcode}</TableCell>
-                                        <TableCell>{ol.Spherical}</TableCell>
-                                        <TableCell>{ol.Cylinder}</TableCell>
-                                        <TableCell>₹{" "}
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                step="0.01"
-                                                value={scannedItems.find(a => a.Id === ol.Id)?.price || ol.BuyingPrice}
-                                                onChange={(e) => updateScannedItemPrice(ol.Id, e.target.value)}
-                                                className="w-30 px-2 py-1 border rounded"
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                value={scannedItems.find(a => a.Id === ol.Id)?.quantity || 1}
-                                                onChange={(e) => updateScannedItemQuantity(ol.Id, e.target.value)}
-                                                className="w-20 px-2 py-1 border rounded"
-                                            />
-                                        </TableCell>
-                                        <TableCell className="px-6 py-4 whitespace-nowrap">
-                                            <button
-                                                className="p-1 text-red-600 hover:text-red-800 "
-                                                aria-label="Delete item"
-                                            >
-                                                <Trash2 className="h-5 w-5" />
-                                            </button>
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            />
-                        )}
-
-                        {/* Accessory search result */}
-                        {AccessoriesData && (
-                            <Table
-                                columns={["Barcode", "Name", "Variation", "SKU Code", "MRP", "Buying Price", "PO QTY", "Action"]}
-                                data={scannedItems}
-                                renderRow={(acc, index) => (
-                                    <TableRow key={index}>
-                                        <TableCell>{acc.Barcode}</TableCell>
-                                        <TableCell>{acc.Name}</TableCell>
-                                        <TableCell>{acc.Variation}</TableCell>
-                                        <TableCell>{acc.SKU}</TableCell>
-                                        <TableCell>₹{acc.MRP}</TableCell>
-                                        <TableCell>₹{" "}
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                step="0.01"
-                                                value={scannedItems.find(item => item.Id === acc.Id)?.price || acc.BuyingPrice}
-                                                onChange={(e) => updateScannedItemPrice(acc.Id, e.target.value)}
-                                                className="w-30 px-2 py-1 border rounded"
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                value={scannedItems.find(item => item.Id === acc.Id)?.quantity || 1}
-                                                onChange={(e) => updateScannedItemQuantity(acc.Id, e.target.value)}
-                                                className="w-20 px-2 py-1 border rounded"
-                                            />
-                                        </TableCell>
-                                        <TableCell className="px-6 py-4 whitespace-nowrap">
-                                            <button
-                                                className="p-1 text-red-600 hover:text-red-800 "
-                                                aria-label="Delete item"
-                                            >
-                                                <Trash2 className="h-5 w-5" />
-                                            </button>
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            />
-                        )}
-
-                        {console.log("scannedItems ----------------- ", scannedItems)}
-                        {/* Accessory search result */}
-                        {CLData && (
-                            <Table
-                                columns={["Barcode", "Spherical power", "Cylindrical power", "Axis", "Additional", "Buying Price", "PO QTY", "Action"]}
-                                data={scannedItems}
-                                renderRow={(cl, index) => (
-                                    <TableRow key={index}>
-                                        <TableCell>{cl.Barcode}</TableCell>
-                                        <TableCell>{cl.SphericalPower}</TableCell>
-                                        <TableCell>{cl.CylindricalPower}</TableCell>
-                                        <TableCell>{cl.Axis}</TableCell>
-                                        <TableCell>{cl.Additional}</TableCell>
-                                        <TableCell>₹{" "}
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                step="0.01"
-                                                value={scannedItems.find(item => item.CLDetailId === cl.CLDetailId)?.price || cl.BuyingPrice}
-                                                onChange={(e) => updateScannedItemPrice(cl.CLDetailId, e.target.value)}
-                                                className="w-30 px-2 py-1 border rounded"
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                value={scannedItems.find(item => item.CLDetailId === cl.CLDetailId)?.quantity || 1}
-                                                onChange={(e) => updateScannedItemQuantity(cl.CLDetailId, e.target.value)}
-                                                className="w-20 px-2 py-1 border rounded"
-                                            />
-                                        </TableCell>
-                                        <TableCell className="px-6 py-4 whitespace-nowrap">
-                                            <button
-                                                className="p-1 text-red-600 hover:text-red-800 "
-                                                aria-label="Delete item"
-                                            >
-                                                <Trash2 className="h-5 w-5" />
-                                            </button>
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            />
-                        )}
-
-
-                        {/* {console.log("searchResults ------------- ", searchResults)} */}
-                        {(showSearchInputs && searchResults.length > 0 && formState.selectedOption === "Frame/Sunglass") && (
-                            <Table
-                                columns={["", "Barcode", "Name", "S/O", "Polarised", "Photochromatic", "Clip No", "MRP", "Buying Price"]}
-                                data={searchResults}
-                                renderRow={(frame, index) => (
-                                    <TableRow key={frame.barcode}>
-                                        <TableCell>
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedRows.some(
-                                                    (i) => i.Barcode === frame.Barcode
-                                                )}
-                                                onChange={() => handleCheckboxChange(frame)}
-                                            />
-                                        </TableCell>
-                                        <TableCell>{frame.Barcode}</TableCell>
-                                        <TableCell>{frame.Name}{<br />}{frame.Size}</TableCell>
-                                        <TableCell>
-                                            {frame.Category === 0 ? 'Sunglass' : 'Optical Frame'}
-                                        </TableCell>
-                                        <TableCell className="text-center">{frame.PO ? "Yes" : "No"}</TableCell>
-                                        <TableCell className="text-center">{frame.Ph ? "Yes" : "No"}</TableCell>
-                                        <TableCell className="text-center">{frame.Cl}</TableCell>
-                                        <TableCell>₹{frame.MRP}</TableCell>
-                                        <TableCell>{frame.BuyingPrice}</TableCell>
-                                    </TableRow>
-                                )}
-                            />
+                                </div>
+                                {formState.selectedOption === "Frame/Sunglass" ? (
+                                    <POFrameSearchTable
+                                        headerItems={["", "Barcode", "Name", "S/O", "Polarised", "Photochromatic", "Clip No", "MRP", "Buying Price"]}
+                                        searchResults={searchResults}
+                                        selectedRows={selectedRows}
+                                        handleCheckboxChange={handleCheckboxChange}
+                                    />
+                                ) : null}
+                            </>
                         )}
 
                         {(showSearchInputs && searchResults.length > 0 && formState.selectedOption === "Accessories") && (
@@ -3392,6 +2768,50 @@ export default function SavePurchaseOrder() {
                                     </TableRow>
                                 )}
                             />
+                        )}
+
+                        {/* Scanned Table for all products types */}
+                        {(scannedItems.length > 0) && (
+                            <div className="mt-6">
+                                <h3 className="text-lg font-semibold mb-4">Purchase Order Items</h3>
+                                {formState.selectedOption === "Frame/Sunglass" ? (
+                                    <POFrameScannedTable
+                                        headerItems={["Barcode", "Name", "S/O", "Polarised", "Photochromatic", "Clip No", "MRP", "Buying Price", "PO QTY", "Action"]}
+                                        scannedItems={scannedItems}
+                                        updateScannedItemQuantity={updateScannedItemQuantity}
+                                        updateScannedItemPrice={updateScannedItemPrice}
+                                        handleDeleteScannedItem={handleDeleteScannedItem}
+                                    />
+                                ) :
+                                    formState.selectedOption === "Lens" ? (
+                                        <POLensScannedTable
+                                            headerItems={["Barcode", "Spherical Power", "Cylindrical Power", "Buying Price", "PO QTY", "Action"]}
+                                            scannedItems={scannedItems}
+                                            updateScannedItemQuantity={updateScannedItemQuantity}
+                                            updateScannedItemPrice={updateScannedItemPrice}
+                                            handleDeleteScannedItem={handleDeleteScannedItem}
+
+                                        />
+                                    ) :
+                                        formState.selectedOption === "Accessories" ? (
+                                            <POAccessoriesScannedTable
+                                                headerItems={["Barcode", "Name", "Variation", "SKU Code", "MRP", "Buying Price", "PO QTY", "Action"]}
+                                                scannedItems={scannedItems}
+                                                updateScannedItemQuantity={updateScannedItemQuantity}
+                                                updateScannedItemPrice={updateScannedItemPrice}
+                                                handleDeleteScannedItem={handleDeleteScannedItem}
+                                            />
+                                        ) : formState.selectedOption === "Contact Lens" && (
+                                            <POCLScannedTable
+                                                headerItems={["Barcode", "Spherical power", "Cylindrical power", "Axis", "Additional", "Buying Price", "PO Qty", "Action"]}
+                                                scannedItems={scannedItems}
+                                                updateScannedItemQuantity={updateScannedItemQuantity}
+                                                updateScannedItemPrice={updateScannedItemPrice}
+                                                handleDeleteScannedItem={handleDeleteScannedItem}
+                                            />
+                                        )}
+                            </div>
+
                         )}
 
                         <div className="flex justify-between items-center mt-8">
@@ -3430,42 +2850,14 @@ export default function SavePurchaseOrder() {
                                 >
                                     Add PO
                                 </button>
-                                {/* <button
-                                    onClick={handleBack}
-                                    className="px-4 bg-[#000060] text-white rounded-lg hover:bg-[#0000a0] transition-colors disabled:opacity-50"
-                                >
-                                    Back
-                                </button> */}
                             </div>
                         </div>
 
-                        <div className="flex justify-start gap-12 mb-6">
-                            {vendors
-                                .filter(vendor => vendor.Id === parseInt(selectedVendor))
-                                .map((vendor) => (
-                                    <div key={vendor.Id} className="mb-4">
-                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                            <p className="text-gray-700 ">
-                                                <span className="font-bold flex">Vendor Name </span>
-                                                <span>{vendor.VendorName}</span>
-                                            </p>
-                                            <p className="text-gray-700">
-                                                <span className="font-bold flex">Mobile Number</span>
-                                                <span>{vendor.MobNumber}</span>
-                                            </p>
-                                            <p className="text-gray-700">
-                                                <span className="font-bold flex">Address</span>
-                                                <span className="flex">{vendor.Address1} {vendor.Address2}</span>
-                                                <span>{vendor.City}</span>
-                                            </p>
-                                            <p className="text-gray-700">
-                                                <span className="font-medium flex">GST Number</span>
-                                                <span className="font-bold">{vendor.TAXNo}</span>
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
-                        </div>
+                        {/* Vendor details section */}
+                        <PurchaseOrderVendorSection
+                            vendors={vendors}
+                            selectedVendor={selectedVendor}
+                        />
 
                         <div className="overflow-auto rounded-lg shadow">
                             {formState.shiptoAddress === "against" ? (
@@ -3484,6 +2876,8 @@ export default function SavePurchaseOrder() {
                                             <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Action</th>
                                         </tr>
                                     </thead>
+
+                                    {/* {console.log("poreviewDetails ------------------ ", poreviewDetails)} */}
                                     <tbody className="bg-white divide-y divide-gray-200">
                                         {poreviewDetails
                                             .map((order, index) => (
@@ -3678,7 +3072,7 @@ export default function SavePurchaseOrder() {
                                             ))}
                                     </tbody>
                                 </table>
-                            ) : (
+                            ) : formState.shiptoAddress === "new" ? (
                                 <table className="min-w-full divide-y divide-neutral-200">
                                     <thead className="bg-blue-50"> {/* bg-blue-50 */}
                                         <tr>
@@ -3769,7 +3163,7 @@ export default function SavePurchaseOrder() {
                                             ))}
                                     </tbody>
                                 </table>
-                            )}
+                            ) : null}
                         </div>
 
                         {/* Calculation Summary Section */}
@@ -3794,6 +3188,10 @@ export default function SavePurchaseOrder() {
                                                     const price = order.productType === 3
                                                         ? parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0
                                                         : parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
+
+                                                    // const addOn = order.productType === 3 
+                                                    //     ? (order?.specs?.addOn ? (Array.isArray(order?.specs?.addOn)
+
 
                                                     // Ensure both price and quantity are valid numbers
                                                     if (price && !isNaN(price) && !isNaN(quantity)) {
@@ -3906,9 +3304,9 @@ export default function SavePurchaseOrder() {
                                 </div>)
                         }
 
-                        <div className="flex items-center justify-between mt-10 mb-5 w-full">
+                        <div className="flex items-center justify-between w-full mt-7">
                             {/* Remarks Section - takes available space */}
-                            <div className=" flex gap-5 items-center">
+                            <div className=" flex gap-5 items-center flex-1">
                                 <label htmlFor="remarks" className="block text-sm font-medium text-gray-700 whitespace-nowrap">
                                     Remarks
                                 </label>
@@ -3917,13 +3315,15 @@ export default function SavePurchaseOrder() {
                                     name="remarks"
                                     value={formState.remarks}
                                     onChange={handleInputChange}
-                                    className="w-4xl px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060]"
+                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060]"
                                     placeholder="Any additional remarks..."
                                 />
                             </div>
 
+                            {/* {console.log("createdPOMainId ", createdPOMainId)} */}
+
                             {/* Button container - fixed width */}
-                            <div className="flex-shrink-0">
+                            <div className="flex-shrink-0 ml-4">
                                 <button
                                     onClick={handleCompletePO}
                                     className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50 whitespace-nowrap"

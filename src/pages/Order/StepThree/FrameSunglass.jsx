@@ -381,7 +381,7 @@ const FrameSunglass = () => {
                       }
                     }}
                     value={
-                      filteredBrands.find((b) => b.BrandName === brandInput) ||
+                      filteredBrands.find((b) => b.BrandName === z) ||
                       null
                     }
                     isOptionEqualToValue={(option, value) =>
