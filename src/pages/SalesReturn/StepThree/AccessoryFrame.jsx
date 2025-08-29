@@ -47,6 +47,7 @@ const getProductDetailsText = (order) => {
     brandName,
     size,
     category,
+    variationName
   } = order;
 
   const clean = (val) => {
@@ -80,11 +81,13 @@ const getProductDetailsText = (order) => {
 
   return [
     brand && name ? `Brand: ${brand} - ${name}` : brand || name,
-    hsn && `HSN: ${hsn}`,
+    
     sizeVal && `Size: ${sizeVal}`,
+    variationName && `Variation: ${variationName}`,
     getCategoryName(category) && `Category: ${getCategoryName(category)}`,
     clr && `Color: ${clr}`,
     barcodeVal && `Barcode: ${barcodeVal}`,
+    hsn && `HSN: ${hsn}`,
   ]
     .filter(Boolean)
     .join("\n");
@@ -378,41 +381,53 @@ const AccessoryFrame = () => {
       )
     );
   };
-const toggleEditMode = (id, index, field) => {
-  setEditMode((prev) => {
-    const key = `${id}-${index}`;
-    const currentMode = prev[key]?.[field];
+  const toggleEditMode = (id, index, field) => {
+    setEditMode((prev) => {
+      const key = `${id}-${index}`;
+      const currentMode = prev[key]?.[field];
 
-    if (currentMode && field === "sellingPrice" && referenceApplicable === 0) {
-      // Revert to original price or MRP if canceling
-      setItems((prevItems) =>
-        prevItems.map((i, idx) =>
-          i.Barcode === id && idx === index
-            ? { ...i, SellingPrice: prev[key].originalPrice || i.MRP }
-            : i
-        )
-      );
-    } else if (currentMode && field === "returnPrice" && referenceApplicable === 1) {
-      // Revert to original price or ActualSellingPrice if canceling
-      setItems((prevItems) =>
-        prevItems.map((i, idx) =>
-          i.Id === id && idx === index
-            ? { ...i, ReturnPricePerUnit: prev[key].originalPrice || i.ActualSellingPrice }
-            : i
-        )
-      );
-    }
+      if (
+        currentMode &&
+        field === "sellingPrice" &&
+        referenceApplicable === 0
+      ) {
+        // Revert to original price or MRP if canceling
+        setItems((prevItems) =>
+          prevItems.map((i, idx) =>
+            i.Barcode === id && idx === index
+              ? { ...i, SellingPrice: prev[key].originalPrice || i.MRP }
+              : i
+          )
+        );
+      } else if (
+        currentMode &&
+        field === "returnPrice" &&
+        referenceApplicable === 1
+      ) {
+        // Revert to original price or ActualSellingPrice if canceling
+        setItems((prevItems) =>
+          prevItems.map((i, idx) =>
+            i.Id === id && idx === index
+              ? {
+                  ...i,
+                  ReturnPricePerUnit:
+                    prev[key].originalPrice || i.ActualSellingPrice,
+                }
+              : i
+          )
+        );
+      }
 
-    return {
-      ...prev,
-      [key]: {
-        ...prev[key],
-        [field]: !currentMode,
-        originalPrice: prev[key]?.originalPrice, // Preserve original price
-      },
-    };
-  });
-};
+      return {
+        ...prev,
+        [key]: {
+          ...prev[key],
+          [field]: !currentMode,
+          originalPrice: prev[key]?.originalPrice, // Preserve original price
+        },
+      };
+    });
+  };
 
   const handleConfirmBypassWarnings = async () => {
     if (!warningPayload) return;
@@ -479,7 +494,7 @@ const toggleEditMode = (id, index, field) => {
     setSelectedInvoiceReturnQty(0);
     setSelectedInvoice(null);
   };
-
+console.log("items",items)
   const handleSaveData = async () => {
     if (referenceApplicable === 0) {
       if (!Array.isArray(items) || items.length === 0) {
@@ -494,8 +509,9 @@ const toggleEditMode = (id, index, field) => {
           SRMasterID: salesDraftData.Id ?? null,
           ProductType: detail.ProductType ?? 2,
           ContactLensDetailId: detail.CLDetailId ?? null,
-          AccessoryDetailId: detail.AccessoryDetailId ?? null,
-          FrameDetailId: detail.Acc ?? detail.Id ?? null,
+          AccessoryDetailId:
+            referenceApplicable === 0 ? detail.Id : detail.Acc ?? null,
+          FrameDetailId: null,
           OpticalLensDetailId: detail.OpticalLensDetailId ?? null,
           BatchCode: detail.CLBatchCode ?? null,
           CNQty:
@@ -895,19 +911,19 @@ const toggleEditMode = (id, index, field) => {
                     `${item.InvoiceMain?.InvoiceNo}/${item.InvoiceSlNo}/${index}`
                   }
                 >
-                  <TableCell className="text-center">{index + 1}</TableCell>
+                  <TableCell className="">{index + 1}</TableCell>
                   <TableCell>
                     {item["InvoiceMain.InvoicePrefix"]}/
                     {item["InvoiceMain.InvoiceNo"]}/{item.InvoiceSlNo}
                   </TableCell>
-                  <TableCell className="text-center">ACC</TableCell>
+                  <TableCell className="">ACC</TableCell>
                   <TableCell className="whitespace-pre-line">
                     {getProductDetailsText(item.ProductDetails[0])}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="">
                     ₹{formatINR(parseFloat(item.SRP || 0))}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="">
                     {editMode[`${item.Id}-${index}`]?.returnPrice ? (
                       <div className="flex items-center gap-2">
                         <input
@@ -944,9 +960,8 @@ const toggleEditMode = (id, index, field) => {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-700">
-                          ₹{formatINR(parseFloat(item.ReturnPricePerUnit || 0))}
-                        </span>
+                       
+                         ₹{formatINR(parseFloat(item.ReturnPricePerUnit || 0))}
                         <button
                           onClick={() =>
                             toggleEditMode(item.Id, index, "returnPrice")
@@ -959,7 +974,7 @@ const toggleEditMode = (id, index, field) => {
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="">
                     ₹
                     {formatINR(
                       calculateGST(
@@ -969,10 +984,10 @@ const toggleEditMode = (id, index, field) => {
                       ).gstAmount
                     )}
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="">
                     {item.ReturnQty || 0}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="">
                     ₹{formatINR(parseFloat(item.TotalAmount || 0))}
                   </TableCell>
                   <TableCell>
@@ -1043,6 +1058,7 @@ const toggleEditMode = (id, index, field) => {
                       </TableCell>
                       <TableCell>
                         <button
+                        className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                           onClick={() => {
                             setSelectedInvoice(item);
                             setIsInvoiceSelected(true);

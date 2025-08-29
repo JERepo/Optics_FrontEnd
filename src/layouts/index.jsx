@@ -62,6 +62,13 @@ import InvoiceView from "../pages/Invoice/InvoiceView";
 import SalesList from "../pages/SalesReturn/MainSalesReturn/SalesList";
 import TotalSales from "../pages/SalesReturn";
 import SalesView from "../pages/SalesReturn/MainSalesReturn/SalesView";
+import StockTransfer from "../pages/StockTransfer";
+import StockTransferOut from "../pages/StockTransfer/MainStockTransferOut/StockTransferOut";
+import StockTransferView from "../pages/StockTransfer/MainStockTransferOut/StockTransferView";
+import TotalPurchaseReturn from "../pages/PurchaseReturn";
+import PurchaseReturn from "../pages/PurchaseReturn/MainPurchaseReturn/PurchaseReturn";
+import PurchaseReturnView from "../pages/PurchaseReturn/MainPurchaseReturn/PurchaseReturnView";
+import TotalStockTransferIn from "../pages/StockTransferIn";
 import { GRNProvider } from "../features/GRNContext";
 import GRNMain from "../pages/GRN/GRNMain";
 import GRNStep1 from "../pages/GRN/GRNStep1";
@@ -717,6 +724,43 @@ export const router = createBrowserRouter([
         path: "sales-return/create",
         element: <TotalSales />,
       },
+      {
+        path: "stock-transfer",
+        element: (
+          <ErrorBoundary>
+            <StockTransferOut />
+          </ErrorBoundary>
+        ),
+      },
+      {
+        path: "stock-transfer/view",
+        element: (
+          <ErrorBoundary>
+            <StockTransferView />
+          </ErrorBoundary>
+        ),
+      },
+      {
+        path: "stock-transfer/create",
+        element: (
+          <ErrorBoundary>
+            <StockTransfer />
+          </ErrorBoundary>
+        ),
+      },
+      {
+        path: "purchase-return/create",
+        element: <TotalPurchaseReturn />,
+      },
+      {
+        path: "purchase-return",
+        element: <PurchaseReturn />,
+      },
+      {
+        path: "purchase-return/view",
+        element: <PurchaseReturnView />,
+      },
+      { path: "stock-transferin/create", element: <TotalStockTransferIn /> },
       {
         path: "grn/create",
         element: (

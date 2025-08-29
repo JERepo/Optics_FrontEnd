@@ -296,17 +296,21 @@ const PowerDetailsFetch = ({
       console.error("Error fetching Dia:", err);
       const errors = err.data?.error || err.data?.errors;
       setErrors(
-          Array.isArray(errors)
-            ? errors
-            : typeof errors === "string"
-            ? [errors]
-            : []
-        );
-        setErrorModalOpen(true);
+        Array.isArray(errors)
+          ? errors
+          : typeof errors === "string"
+          ? [errors]
+          : []
+      );
+      setErrorModalOpen(true);
     }
   };
 
   const handleGetPrice = async (bypass = false) => {
+    if (lensData.tintvalue === 1 && !lensData.tintId) {
+      toast.error("Please add Tint!");
+      return;
+    }
     const isBothSelected = lensData.powerSingleORboth === 1;
     const isRSelected = isBothSelected || selectedEyes.includes("R");
     const isLSelected = isBothSelected || selectedEyes.includes("L");
@@ -362,7 +366,7 @@ const PowerDetailsFetch = ({
 
       if (res.status === "failure" || res.success === false) {
         const errors = res.error || res.errors;
-         setErrors(
+        setErrors(
           Array.isArray(errors)
             ? errors
             : typeof errors === "string"
@@ -414,14 +418,14 @@ const PowerDetailsFetch = ({
     } catch (err) {
       console.error("Error fetching Price:", err);
       const errors = err.data?.error || err.data?.errors;
-       setErrors(
-          Array.isArray(errors)
-            ? errors
-            : typeof errors === "string"
-            ? [errors]
-            : []
-        );
-        setErrorModalOpen(true);
+      setErrors(
+        Array.isArray(errors)
+          ? errors
+          : typeof errors === "string"
+          ? [errors]
+          : []
+      );
+      setErrorModalOpen(true);
     }
   };
 
@@ -509,7 +513,7 @@ const PowerDetailsFetch = ({
       index: lensData.indexValues,
       companyId: customerId.companyId || customerId.locationId,
     };
-    
+
     if (selectedProduct.value === 6) {
       payload.identifier = Identifiers?.identifier || null;
     }

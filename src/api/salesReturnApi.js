@@ -54,9 +54,9 @@ export const salesReturnApi = createApi({
       }),
       providesTags: ["SalesReturn"],
     }),
-    completeSaleRetun: builder.mutation({
-      query: ({ id, payload }) => ({
-        url: `/api/v1/sales-Return/deleteupdate?SRMasterID=${id}`,
+    completeSaleReturn: builder.mutation({
+      query: ({ id, userId, locationId, payload }) => ({
+        url: `/api/v1/sales-Return/deleteupdate?SRMasterID=${id}&ApplicationUserId=${userId}&locationID=${locationId}`,
         method: "PUT",
         body: payload,
       }),
@@ -73,8 +73,8 @@ export const salesReturnApi = createApi({
       }),
     }),
     getMainSalesById: builder.query({
-      query: ({ id }) => ({
-        url: `/api/v1/sales-Return/getsalesdetails/${id}`,
+      query: ({ id, locationId }) => ({
+        url: `/api/v1/sales-Return/getsalesdetails/${id}?locationid=${locationId}`,
       }),
     }),
     getDraftDataById: builder.query({
@@ -114,7 +114,7 @@ export const {
   useGetPriceByCoatingComboIdQuery,
   useSaveProductsMutation,
   useGetSavedSalesReturnQuery,
-  useCompleteSaleRetunMutation,
+  useCompleteSaleReturnMutation,
   useGetAllSalesReturnQuery,
   useGetSalesReturnByIdQuery,
   useGetMainSalesByIdQuery,
@@ -122,5 +122,5 @@ export const {
   useLazyGetInvoiceDetailsQuery,
   useLazyGetBatchesForCLQuery,
   useGetOlInvoiceDetailsQuery,
-  useLazyGetDraftDetailsQuery
+  useLazyGetDraftDetailsQuery,
 } = salesReturnApi;

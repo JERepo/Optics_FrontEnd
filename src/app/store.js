@@ -30,6 +30,8 @@ import { companySettingsApi } from "../api/companySettingsApi";
 import { companiesApi } from "../api/companiesApi";
 import { InvoiceApi } from "../api/InvoiceApi";
 import { salesReturnApi } from "../api/salesReturnApi";
+import { stockTransferApi } from "../api/stockTransfer";
+import { purchaseReturnApi } from "../api/purchaseReturn";
 import { grnApi } from "../api/grnApi";
 
 const persistConfig = {
@@ -78,6 +80,8 @@ export const store = configureStore({
     [companiesApi.reducerPath]: companiesApi.reducer,
     [InvoiceApi.reducerPath]: InvoiceApi.reducer,
     [salesReturnApi.reducerPath]: salesReturnApi.reducer,
+    [stockTransferApi.reducerPath]: stockTransferApi.reducer,
+    [purchaseReturnApi.reducerPath]:purchaseReturnApi.reducer,
     [grnApi.reducerPath]: grnApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
@@ -110,6 +114,9 @@ export const store = configureStore({
       companySettingsApi.middleware,
       companiesApi.middleware,
       InvoiceApi.middleware,
+      salesReturnApi.middleware,
+      stockTransferApi.middleware,
+      purchaseReturnApi.middleware,
       salesReturnApi.middleware,
       grnApi.middleware
     ),

@@ -9,7 +9,8 @@ import {
   useGetSalesReturnByIdQuery,
 } from "../../../api/salesReturnApi";
 import { useOrder } from "../../../features/OrderContext";
-import {formatINR} from '../../../utils/formatINR'
+import { formatINR } from "../../../utils/formatINR";
+import { useSelector } from "react-redux";
 
 const formatNumber = (num) => {
   return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "0";
@@ -17,13 +18,14 @@ const formatNumber = (num) => {
 
 const SalesView = () => {
   const { calculateGST } = useOrder();
+  const { hasMultipleLocations } = useSelector((state) => state.auth);
   const navigate = useNavigate();
   const { search } = useLocation();
   const params = new URLSearchParams(search);
   const salesId = params.get("salesId");
 
   const { data: salesDetails, isLoading } = useGetMainSalesByIdQuery(
-    { id: salesId },
+    { id: salesId, locationId: parseInt(hasMultipleLocations[0]) },
     { skip: !salesId }
   );
   const { data: customerDataById, isLoading: isViewLoading } =
@@ -34,18 +36,18 @@ const SalesView = () => {
     return types[id] || "OL";
   };
 
-  const formatValue = (val) =>
-    val !== null && val !== undefined && val !== "" ? val : "N/A";
-
   const getProductName = (item) => {
     const typeid = item.ProductType;
-    const details = item.ProductDetails || {};
-    const ProductName = details.productName;
+    const details = Array.isArray(item.ProductDetails)
+      ? item.ProductDetails[0]
+      : item.ProductDetails || {};
+    const brandName = details.brandName;
+    const ProductName = details.productName || details.productDescName || "";
     const Barcode = details.barcode;
-    const Hsncode = details.hsncode;
+    const Hsncode = details.hSN;
     const Colour = details.colour;
-    const Tint = details.Tint;
-    const PatientName = details.PatientName; // May not be present
+    const Tint = details.tint?.tintName;
+    const addOn = details.addOn?.addOnName;
 
     const clean = (val) => {
       if (
@@ -69,13 +71,18 @@ const SalesView = () => {
     const lines = [];
 
     // Add Product Name
-    if (clean(ProductName)) lines.push(clean(ProductName));
+    if (clean(ProductName)) lines.push(`${brandName} ${ProductName}`);
 
     // Common fields for all types
     if (typeid === 1) {
       // Frame
-      const Size = details.Size;
-      if (clean(Size)) lines.push(`Size: ${clean(Size)}`);
+      const Size = details.size;
+      if (clean(Size))
+        lines.push(
+          `Size: ${clean(Size)}-${clean(details.dBL)}-${clean(
+            details.templeLength
+          )}`
+        );
     } else if (typeid === 2) {
       // Accessories
       const Variation = details.Variation;
@@ -94,35 +101,56 @@ const SalesView = () => {
         specsParts.push(`Add: ${cleanPower(PowerSpecs.Add)}`);
       if (specsParts.length) lines.push(specsParts.join(" "));
     } else if (typeid === 0) {
-      // Lenses
-      const Specs = details.Specs || [];
-      if (Specs.length > 0) {
-        const specsLines = Specs.map((spec) => {
-          const side = clean(spec.side);
-          const sph = cleanPower(spec.sph);
-          const cyl = cleanPower(spec.cyl);
-          const axis = clean(spec.axis);
-          const addition = cleanPower(spec.addition);
-          const parts = [];
-          if (side) parts.push(side);
-          if (sph) parts.push(`SPH: ${sph}`);
-          if (cyl) parts.push(`CYL: ${cyl}`);
-          if (axis) parts.push(`Axis: ${axis}`);
-          if (addition) parts.push(`Add: ${addition}`);
-          return parts.join(" ");
-        }).filter(Boolean);
-        if (specsLines.length) lines.push(...specsLines);
-      }
-      const AddOns = details.AddOns || [];
-      if (AddOns.length) lines.push(`AddOns: ${AddOns.map(clean).join(", ")}`);
+      // Optical Lenses
+      const powerDetails = details.specs?.powerDetails || {};
+      const specsLines = [];
+
+      const formatLens = (side, data) => {
+        if (!data) return "";
+        const parts = [];
+        if (side) parts.push(side);
+        if (data.sphericalPower)
+          parts.push(`SPH: ${cleanPower(data.sphericalPower)}`);
+        if (data.cylinder) parts.push(`CYL: ${cleanPower(data.cylinder)}`);
+        if (data.axis) parts.push(`Axis: ${clean(data.axis)}`);
+        if (data.addition) parts.push(`Add: ${cleanPower(data.addition)}`);
+        if (data.diameter) parts.push(`Dia: ${clean(data.diameter)}`);
+        return parts.join(" ");
+      };
+
+      if (powerDetails.right)
+        specsLines.push(formatLens("Right", powerDetails.right));
+      if (powerDetails.left)
+        specsLines.push(formatLens("Left", powerDetails.left));
+
+      if (specsLines.length) lines.push(...specsLines);
+
+      // Add coating/treatment/family etc.
+      const family = clean(details.familyName);
+      const design = clean(details.designName);
+      const coating = clean(details.coatingName);
+      const treatment = clean(details.treatmentName);
+      const extra = [family, design, coating, treatment]
+        .filter(Boolean)
+        .join(" ");
+      if (extra) lines.push(extra);
+
+      // Add tint & add-on
+      const tint =
+        details.specs?.tint?.tintName || clean(details.tint?.tintName);
+      if (tint) lines.push(`Tint: ${tint}`);
+
+      const addOnName =
+        details.specs?.addOn?.addOnName || clean(details.addOn?.addOnName);
+      if (addOnName) lines.push(`AddOn: ${addOnName}`);
     }
 
     // Add common fields: Barcode, HSN, Colour, Tint, PatientName
+    // if(clean(productName))
     if (clean(Barcode)) lines.push(`Barcode: ${clean(Barcode)}`);
     if (clean(Hsncode)) lines.push(`HSN: ${clean(Hsncode)}`);
     if (clean(Colour)) lines.push(`Colour: ${clean(Colour)}`);
     if (clean(Tint)) lines.push(`Tint: ${clean(Tint)}`);
-    if (clean(PatientName)) lines.push(`Patient: ${clean(PatientName)}`);
 
     return lines.join("\n");
   };
@@ -220,19 +248,26 @@ const SalesView = () => {
             renderRow={(s, index) => (
               <TableRow>
                 <TableCell>{index + 1}</TableCell>
-                <TableCell>{s.InvoiceNo ?? "-"}</TableCell>
+                <TableCell>
+                  {s.InvoiceMain && (
+                    <div>
+                      {s.InvoiceMain?.InvoicePrefix}/{s.InvoiceMain?.InvoiceNo}
+                    </div>
+                  )}
+                </TableCell>
                 <TableCell>{getTypeName(s.ProductType)}</TableCell>
                 <TableCell>
-                  <div className="whitespace-pre-wrap break-words max-w-xs">
-                    {getProductName(s)}
-                  </div>
+                  <div className="whitespace-pre-wrap">{getProductName(s)}</div>
                 </TableCell>
                 <TableCell>₹{formatINR(s.ReturnPricePerUnit)}</TableCell>
                 <TableCell>
-                  ₹{formatINR(calculateGST(
-                    parseFloat(s.ReturnPricePerUnit),
-                    parseFloat(s.GSTPercentage)
-                  ).gstAmount)}
+                  ₹
+                  {formatINR(
+                    calculateGST(
+                      parseFloat(s.ReturnPricePerUnit),
+                      parseFloat(s.GSTPercentage)
+                    ).gstAmount
+                  )}
                 </TableCell>
                 <TableCell>{s.ReturnQty}</TableCell>
                 <TableCell>₹{formatINR(s.FittingCharges ?? 0)}</TableCell>

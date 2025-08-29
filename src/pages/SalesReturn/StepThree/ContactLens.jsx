@@ -139,13 +139,12 @@ const getProductName = (order) => {
       .join(", ");
 
     return [
-      name,
-      brand && `Brand Name : ${brand}`,
+      brand && `${brand} ${name}`,
       specsList,
       clr && `Color: ${clr}`,
       barcodeVal && `Barcode: ${barcodeVal}`,
-      (batchIsOne || batchIsZero || batchBar) &&
-        `Batch Code: ${batchBar || batchIsOne || batchIsZero || "-"}`,
+      (batchIsZero || batchBar) &&
+        `Batch Code: ${batchBar || batchIsZero || "-"}`,
       expiry && `Expiry : ${expiry.split("-").reverse().join("/")}`,
       hsn && `HSN: ${hsn}`,
     ]
@@ -669,8 +668,9 @@ const ContactLens = () => {
       if (response?.data.data.CLBatchCode === 0 && referenceApplicable === 0) {
         const cc = {
           ...response?.data.data,
-          returnPrice: parseFloat(response?.data.data.SellingPrice),
+          returnPrice: parseFloat(response?.data.data.pSellingPrice),
           returnQty: 1,
+          MRP :parseFloat(response?.data.data.pMRP)
         };
         setMainClDetails((prev) => [...prev, cc]);
         setProductCodeInput("");
@@ -727,7 +727,7 @@ const ContactLens = () => {
           ...selectedBatchCode,
           MRP: selectedBatchCode.CLMRP,
 
-          returnPrice: parseFloat(batchBarCodeDetails?.data.data.SellingPrice),
+          returnPrice: parseFloat(newItem.powerData.SellingPrice),
           returnQty: 1,
         };
       } else if (detailId && productSearch == 1) {

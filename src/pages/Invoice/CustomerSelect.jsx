@@ -564,7 +564,7 @@ const CustomerSelect = () => {
     ) {
       return order.pricing?.mrp || 0;
     } else if (order.productType === 3) {
-      if (order.cLBatchCode === 0) {
+      if (order.cLBatchCode === 1) {
         return order.priceMaster?.mrp || 0;
       }
 
@@ -737,7 +737,7 @@ const CustomerSelect = () => {
     (sum, payment) => sum + (parseFloat(payment.Amount) || 0),
     0
   );
-  console.log("sele", filteredProducts);
+
   const totalBalance =
     totalPaid > 0
       ? totalAmount - totalPaid - totalAdvance
@@ -753,6 +753,50 @@ const CustomerSelect = () => {
     if (!validateCLStockEntries()) {
       toast.error("Stock entry does not exist. Please do GRN first");
       return;
+    }
+    // Validate identifiers across all products, not just selected
+    const identifiers = localProductData
+      .map((x) => x.identifier)
+      .filter(Boolean);
+
+     for (const id of identifiers) {
+      const groupItems = localProductData.filter((x) => x.identifier === id);
+      const selectedGroupItems = groupItems.filter((x) =>
+        selectedProducts.includes(x.orderDetailId)
+      );
+
+      if (
+        selectedGroupItems.length > 0 &&
+        selectedGroupItems.length < groupItems.length
+      ) {
+        // Find first missing item’s row number
+        const missingItem = groupItems.find(
+          (x) => !selectedProducts.includes(x.orderDetailId)
+        );
+
+        const idx = filteredProducts.findIndex(
+          (x) => x.orderDetailId === missingItem.orderDetailId
+        );
+        console.log("idx", idx);
+        if (idx === -1) {
+          continue;
+        }
+
+        const missingIndex = idx + 1;
+
+        if (groupItems.some((x) => x.productType === 1)) {
+          // Frame + Lens case
+          toast.error(
+            `Frame in Item No ${missingIndex} should also be invoiced along with the lens`
+          );
+        } else {
+          // Optical Lens split case
+          toast.error(
+            `Both the lens should be invoiced together (missing Item No ${missingIndex})`
+          );
+        }
+        return;
+      }
     }
     const payload = {
       CompanyId: customerId.companyId,
@@ -853,17 +897,13 @@ const CustomerSelect = () => {
         selectedPatient.CustomerMaster.CustomerCreditLimit.CreditLimitAvl
       ) < totalAmount
     ) {
-      setShowConfirmModal(true);
+      setShowConfirmInvoiceModal(true);
       return;
     } else {
       handleGenerateInvoice();
     }
   };
-  const sameIdentifiersAvail = localProductData
-    .filter((item) => selectedProducts.includes(item.orderDetailId))
-    .filter((item) => item.identifier !== null);
 
-  console.log("identifiers", sameIdentifiersAvail);
   const handleGenerateInvoice = async () => {
     if (!validateBatchCodes()) {
       toast.error(
@@ -891,14 +931,20 @@ const CustomerSelect = () => {
         selectedGroupItems.length > 0 &&
         selectedGroupItems.length < groupItems.length
       ) {
-        // Find first missing item’s row number (index + 1)
+        // Find first missing item’s row number
         const missingItem = groupItems.find(
           (x) => !selectedProducts.includes(x.orderDetailId)
         );
-        const missingIndex =
-          filteredProducts.findIndex(
-            (x) => x.orderDetailId === missingItem.orderDetailId
-          ) + 1;
+
+        const idx = filteredProducts.findIndex(
+          (x) => x.orderDetailId === missingItem.orderDetailId
+        );
+        console.log("idx", idx);
+        if (idx === -1) {
+          continue;
+        }
+
+        const missingIndex = idx + 1;
 
         if (groupItems.some((x) => x.productType === 1)) {
           // Frame + Lens case
@@ -1053,7 +1099,8 @@ const CustomerSelect = () => {
                     <div className="flex gap-1">
                       <strong>Credit Limit Available:</strong>
                       {parseFloat(
-                        customerData?.data?.data?.CreditLimit
+                        customerData?.data?.data?.CustomerCreditLimit
+                          .CreditLimitAvl
                       ).toLocaleString()}
                     </div>
                   </>
@@ -1482,7 +1529,7 @@ const CustomerSelect = () => {
             isOpen={showConfirmModalInvoice}
             onClose={() => setShowConfirmInvoiceModal(false)}
             onConfirm={() => {
-              setShowConfirmModal(false);
+              setShowConfirmInvoiceModal(false);
               handleGenerateInvoice();
             }}
             title="Credit Limit Warning!"

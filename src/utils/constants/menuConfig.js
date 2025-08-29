@@ -203,6 +203,12 @@ export const menuItems = [
     ],
   },
   {
+    name: "Stock Transfer",
+    icon: FiClipboard,
+    module: "StockTransfer",
+    path: "/stock-transfer",
+  },
+  {
     name: "GRN",
     icon: FiBox,
     module: "GRN",

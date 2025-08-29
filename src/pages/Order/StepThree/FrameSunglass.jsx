@@ -203,8 +203,8 @@ const FrameSunglass = () => {
   const handleConfirmBypassWarnings = async () => {
     if (!warningPayload) return;
     const warnedIds = warningPayload.map((w) => w.frameDetailId);
-    console.log("warning pa",warnedIds)
-    console.log("items",items)
+    console.log("warning pa", warnedIds);
+    console.log("items", items);
     const finalItems = items.filter((item) => warnedIds.includes(item.Id));
     const newPayload = {
       products: finalItems.map((item) => ({
@@ -449,7 +449,13 @@ const FrameSunglass = () => {
                   <TableCell>
                     {item.Category == "O" ? "Optical Frame" : "Sunglass"}
                   </TableCell>
-                  <TableCell>{item.PO == 0 ? "No" : "Yes"}</TableCell>
+                  <TableCell>
+                    <div className="whitespace-pre-wrap">
+                      <div>{item.PO === 1 ? "Photochromatic" : ""}</div>
+                      <div>{item.Ph === 1 ? "Polarised" : ""}</div>
+                      {/* <div>{item.Cl && }</div> */}
+                    </div>
+                  </TableCell>
                   <TableCell>{item.MRP}</TableCell>
                   <TableCell>{item.SellingPrice}</TableCell>
                   <TableCell>
