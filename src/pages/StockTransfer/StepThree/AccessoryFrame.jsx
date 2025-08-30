@@ -420,7 +420,7 @@ const AccessoryFrame = () => {
       gstPercent: lastDetail?.PurTaxPerct || 0,
     };
   };
-
+console.log("draft data",stockDraftData)
   const handleSaveData = async () => {
     if (!Array.isArray(items) || items.length === 0) {
       console.warn("No details to save");
@@ -429,7 +429,7 @@ const AccessoryFrame = () => {
     console.log("items", items);
     try {
       const payload = {
-        STOutMainId: stockDraftData[0].ID || stockDraftData.ID ,
+        STOutMainId: stockDraftData.ID ?? null,
         products: items.map((item) => {
           return {
             ProductType: 2,

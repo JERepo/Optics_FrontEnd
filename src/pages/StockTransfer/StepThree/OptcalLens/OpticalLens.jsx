@@ -737,7 +737,7 @@ const OpticalLens = () => {
     console.log("barcodeData", barcodeData);
     try {
       const payload = {
-        STOutMainId: stockDraftData.ID || stockDraftData[0].ID,
+        STOutMainId: stockDraftData.ID ?? null,
         products: barcodeData.map((item) => {
           return {
             ProductType: 0,

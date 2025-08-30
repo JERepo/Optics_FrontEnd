@@ -36,6 +36,8 @@ const getProductName = (item) => {
     hsncode,
     colour,
     brandName,
+    HSN,
+    BatchCode
   } = item;
 
   const clean = (val) => {
@@ -60,11 +62,11 @@ const getProductName = (item) => {
   // For Frame (typeid = 1)
   if (ProductType === 1) {
     const lines = [
-      productName || brandName ? `${brandName} ${productName}` : "",
+      productName,
       Size ? `Size: ${Size.Size}` : "",
       Category === 0 ? "Category: Optical Frame" : "Category: Sunglasses",
       barcode ? `Barcode: ${barcode}` : "",
-      clean(hsncode) ? `HSN: ${hsncode}` : "",
+      clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
     return lines.filter(Boolean).join("\n");
   }
@@ -72,10 +74,10 @@ const getProductName = (item) => {
   // For Accessories (ProductType = 2)
   if (ProductType === 2) {
     const lines = [
-      productName || brandName ? `${brandName} ${productName}` : "",
+      ProductName || productName,
       Variation ? `Variation: ${Variation.Variation}` : "",
       barcode ? `Barcode: ${barcode}` : "",
-      clean(hsncode) ? `HSN: ${hsncode}` : "",
+      clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
     return lines.filter(Boolean).join("\n");
   }
@@ -94,11 +96,13 @@ const getProductName = (item) => {
       : "";
 
     const lines = [
-      productName || brandName ? `${brandName} ${productName}` : "",
+      ProductName || productName,
       specs ? `${specs}` : "",
       clean(colour) ? `Colour: ${clean(colour)}` : "",
+
       barcode ? `Barcode: ${barcode}` : "",
-      clean(hsncode) ? `HSN: ${hsncode}` : "",
+      clean(item.BatchCode) ? `BatchCode: ${item.BatchCode}` : "",
+      clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
 
     return lines.filter(Boolean).join("\n");
@@ -138,7 +142,7 @@ const getProductName = (item) => {
       ),
       specsLines,
       clean(barcode) && `Color: ${colour}`,
-      clean(hsncode) && `HSN: ${hsncode}`,
+      clean(hsncode || HSN) && `HSN: ${hsncode || HSN}`,
       tintName ? `Tint: ${tintName}` : "",
       addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
       clean(FittingPrice) ? `Fitting Price: ${FittingPrice}` : "",
@@ -169,10 +173,7 @@ const getStockOutPrice = (item) => {
       return parseFloat(item.price?.BuyingPrice || 0);
     } else if (item.CLBatchCode === 1) {
       if (Array.isArray(item.Stock)) {
-        return item.Stock.reduce(
-          (sum, s) => sum + parseFloat(s.BuyingPrice || 0),
-          0
-        );
+        return item.Stock[0].BuyingPrice || 0;
       } else if (item.Stock && typeof item.Stock === "object") {
         return parseFloat(item.Stock.BuyingPrice || 0);
       }
@@ -181,36 +182,17 @@ const getStockOutPrice = (item) => {
     return parseFloat(item.Stock?.BuyingPrice || 0);
   }
   if (item.ProductType === 1) {
-    if (Array.isArray(item.Stock)) {
-      return item.Stock.reduce(
-        (sum, s) => sum + parseFloat(s.BuyingPrice || 0),
-        0
-      );
-    } else if (item.Stock && typeof item.Stock === "object") {
-      return parseFloat(item.Stock.BuyingPrice || 0);
-    }
-    return 0;
+    return parseFloat(item.Stock?.BuyingPrice || 0);
   }
   if (item.ProductType === 2) {
-    if (Array.isArray(item.Stock)) {
-      return item.Stock.reduce(
-        (sum, s) => sum + parseFloat(s.BuyingPrice || 0),
-        0
-      );
-    } else if (item.Stock && typeof item.Stock === "object") {
-      return parseFloat(item.Stock.BuyingPrice || 0);
-    }
-    return 0;
+    return parseFloat(item.Stock?.BuyingPrice || 0);
   }
   if (item.ProductType === 0) {
     if (item.CLBatchCode === 0) {
       return parseFloat(item.price?.BuyingPrice || 0);
     } else if (item.CLBatchCode === 1) {
       if (Array.isArray(item.Stock)) {
-        return item.Stock.reduce(
-          (sum, s) => sum + parseFloat(s.BuyingPrice || 0),
-          0
-        );
+        return item.Stock[0].BuyingPrice || 0
       } else if (item.Stock && typeof item.Stock === "object") {
         return parseFloat(item.Stock.BuyingPrice || 0);
       }
@@ -218,9 +200,8 @@ const getStockOutPrice = (item) => {
 
     return parseFloat(item.Stock?.BuyingPrice || 0);
   }
-
-  return 0;
-};
+  return 0
+}
 
 const CompleteStockTransferIn = () => {
   const { user } = useSelector((state) => state.auth);
@@ -267,15 +248,17 @@ const CompleteStockTransferIn = () => {
   const totals = (stockDetails?.data?.StockTransferInDetails || []).reduce(
     (acc, item) => {
       const qty = item.STQtyIn || 0;
-      const basicValue = getStockOutPrice(item);
-      const gst =
-        (basicValue * parseFloat(item.ProductTaxPercentage || 0)) / 100;
-      const total = basicValue + gst;
+      const unitPrice = getStockOutPrice(item)
+      const gstRate = parseFloat(item.ProductTaxPercentage) / 100
 
-      acc.totalQty += qty;
+     const basicValue  = unitPrice * qty;
+      const gst = unitPrice * qty * gstRate
+      const returnTotal = basicValue + gst;
+
+       acc.totalQty += qty;
       acc.totalGST += gst;
       acc.totalBasicValue += basicValue;
-      acc.totalReturnValue += total;
+      acc.totalReturnValue += returnTotal;
 
       return acc;
     },

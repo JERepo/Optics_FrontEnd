@@ -33,6 +33,7 @@ const getProductName = (item) => {
     hsncode,
     colour,
     brandName,
+    HSN,
   } = detail;
 
   const clean = (val) => {
@@ -61,7 +62,7 @@ const getProductName = (item) => {
       Size ? `Size: ${Size.Size}` : "",
       Category === 0 ? "Category: Optical Frame" : "Category: Sunglasses",
       barcode ? `Barcode: ${barcode}` : "",
-      clean(hsncode) ? `HSN: ${hsncode}` : "",
+      clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
     return lines.filter(Boolean).join("\n");
   }
@@ -72,7 +73,7 @@ const getProductName = (item) => {
       ProductName || productName,
       Variation ? `Variation: ${Variation.Variation}` : "",
       barcode ? `Barcode: ${barcode}` : "",
-      clean(hsncode) ? `HSN: ${hsncode}` : "",
+      clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
     return lines.filter(Boolean).join("\n");
   }
@@ -95,7 +96,7 @@ const getProductName = (item) => {
       specs ? `Power: ${specs}` : "",
       clean(colour) ? `Colour: ${clean(colour)}` : "",
       barcode ? `Barcode: ${barcode}` : "",
-      clean(hsncode) ? `HSN: ${hsncode}` : "",
+      clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
 
     return lines.filter(Boolean).join("\n");
@@ -135,7 +136,7 @@ const getProductName = (item) => {
       ),
       specsLines,
       clean(barcode) && `Color: ${colour}`,
-      clean(hsncode) && `HSN: ${hsncode}`,
+      clean(hsncode || HSN) && `HSN: ${hsncode || HSN}`,
       tintName ? `Tint: ${tintName}` : "",
       addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
       clean(FittingPrice) ? `Fitting Price: ${FittingPrice}` : "",
@@ -154,16 +155,31 @@ const getStockOutPrice = (item) => {
     }
 
     const stockCheck = Array.isArray(item.ProductDetails.Stock)
-      ? item.ProductDetails.Stock.reduce(
-          (sum, item) => sum + parseFloat(item.MRP),
-          0
-        )
+      ? item.ProductDetails.Stock[0].MRP
       : item.ProductDetails.Stock.MRP;
     return stockCheck;
   } else if (item.ProductType === 1) {
     return parseFloat(item.ProductDetails.Stock.FrameSRP);
   } else if (item.ProductType === 2) {
     return parseFloat(item.ProductDetails.Stock.OPMRP);
+  }
+
+  return 0;
+};
+const getPurchaseValue = (item) => {
+  if (item.ProductType === 3) {
+    if (item.ProductDetails.CLBatchCode === 0) {
+      return parseFloat(item.ProductDetails.price?.BuyingPrice || 0);
+    }
+
+    const stockCheck = Array.isArray(item.ProductDetails.Stock)
+      ? item.ProductDetails.Stock[0].BuyingPrice
+      : item.ProductDetails.Stock.BuyingPrice;
+    return stockCheck;
+  } else if (item.ProductType === 1) {
+    return parseFloat(item.ProductDetails.Stock.BuyingPrice);
+  } else if (item.ProductType === 2) {
+    return parseFloat(item.ProductDetails.Stock.BuyingPrice);
   }
 
   return 0;
@@ -196,21 +212,22 @@ const PurchaseReturnView = () => {
   const totals = (PRMainDetails?.details || []).reduce(
     (acc, item) => {
       const qty = item.DNQty || 0;
-      const basicValue = getStockOutPrice(item);
-      const gst =
-        (basicValue * parseFloat(item.ProductTaxPercentage || 0)) / 100;
-      const total = basicValue + gst;
-      console.log(basicValue);
+      const unitPrice = getPurchaseValue(item);
+      const gstRate = parseFloat(item.ProductTaxPercentage) / 100;
+
+      const basicValue = unitPrice * qty;
+      const gst = unitPrice * qty * gstRate;
+      const returnTotal = basicValue + gst;
+
       acc.totalQty += qty;
       acc.totalGST += gst;
       acc.totalBasicValue += basicValue;
-      acc.totalReturnValue += total;
+      acc.totalReturnValue += returnTotal;
 
       return acc;
     },
     { totalQty: 0, totalGST: 0, totalBasicValue: 0, totalReturnValue: 0 }
   );
-  console.log(totals);
   const formattedTotals = {
     totalQty: totals.totalQty,
     totalGST: formatINR(totals.totalGST),
@@ -285,7 +302,7 @@ const PurchaseReturnView = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    getStockOutPrice(item) *
+                    getPurchaseValue(item) *
                       (parseFloat(item.ProductTaxPercentage) / 100)
                   )}
                   ({parseFloat(item.ProductTaxPercentage)}%)
@@ -294,8 +311,8 @@ const PurchaseReturnView = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    parseFloat(getStockOutPrice(item) * item.DNQty) +
-                      getStockOutPrice(item) *
+                    parseFloat(getPurchaseValue(item) * item.DNQty) +
+                      getPurchaseValue(item) *
                         ((parseFloat(item.ProductTaxPercentage) / 100) *
                           item.DNQty)
                   )}

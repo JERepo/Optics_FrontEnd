@@ -33,7 +33,6 @@ import Modal from "../../../components/ui/Modal";
 import {
   useGetStockOutDetailsQuery,
   useSaveSTIMutation,
-  useSaveStockDetailsMutation,
 } from "../../../api/stockTransfer";
 
 // Validation helpers
@@ -71,7 +70,9 @@ const getProductName = (order) => {
     Additional,
     BrandName,
     selectBatch,
+    sbatchCode,
     CLBatchBarCode,
+    sbatchbarCode,
   } = order;
 
   const clean = (val) => {
@@ -103,9 +104,8 @@ const getProductName = (order) => {
     const brand = clean(BrandName);
     const barcodeVal = clean(barcode || Barcode);
     const expiry = clean(ExpiryDate);
-    const batchIsOne = clean(CLBatchCode);
-    const batchIsZero = clean(batchCode || BatchCode);
-    const batchBar = clean(CLBatchBarCode);
+    const batchc = clean(sbatchCode);
+    const batchBar = clean(sbatchbarCode);
 
     let specsObj = {};
     if (typeof specs === "string") {
@@ -143,8 +143,10 @@ const getProductName = (order) => {
       specsList,
       clr && `Color: ${clr}`,
       barcodeVal && `Barcode: ${barcodeVal}`,
-      (batchIsOne || batchIsZero || batchBar) &&
-        `Batch Code: ${batchBar || batchIsOne || batchIsZero || "-"}`,
+      // (batchc || batchBar) &&
+      //   `Batch Code: ${batchBar || batchc || "-"}`,
+      batchc && `BatchCode: ${batchc}`,
+      batchBar && `BatchBarCode: ${batchBar}`,
       expiry && `Expiry : ${expiry.split("-").reverse().join("/")}`,
       hsn && `HSN: ${hsn}`,
     ]
@@ -369,6 +371,10 @@ const ContactLens = () => {
             return;
           }
         } else if (data.CLBatchCode === 0) {
+          if (data.AvlQty <= 0 || data.Quantity <= 0) {
+            toast.error("Stock quantity must be greater than 0!");
+            return;
+          }
           const STOProduct = stockOutData?.data.details.find(
             (item) => item.ContactLensDetailId === data.CLDetailId
           );
@@ -522,19 +528,27 @@ const ContactLens = () => {
         }
 
         const newItemCl = {
-          ...isAvailable,
+          sbatchbarCode: isAvailable.CLBatchBarCode,
+          sMRP: isAvailable.CLMRP,
           ...newItem.powerData,
           ...STOProduct,
           selectBatch,
-
+          tiq: 1,
           ...(detailId ? batchBarCodeDetails?.data?.data : {}),
         };
-        console.log("new item", newItemCl);
-        const existingIndex = mainClDetails.findIndex(
-          (item) =>
-            item.Barcode == newItemCl.Barcode ||
-            item.CLBatchBarCode == newItemCl.CLBatchBarCode
-        );
+        let existingIndex;
+        if (productSearch === 0 && selectBatch === 0) {
+          existingIndex = mainClDetails.findIndex(
+            (item) => item.Barcode == newItemCl.Barcode
+          );
+        } else {
+          existingIndex = mainClDetails.findIndex(
+            (item) =>
+              item.Barcode == newItemCl.Barcode &&
+              item.sbatchbarCode == newItemCl.sbatchbarCode
+          );
+        }
+        console.log("existing index", existingIndex, newItemCl);
         if (existingIndex !== -1) {
           const item = mainClDetails[existingIndex];
           const newQty = item.tiq + 1;
@@ -573,6 +587,9 @@ const ContactLens = () => {
         setDetailId(false);
         setProductCodeInput("");
         setbatchCodeInput("");
+      } else {
+        toast.error("Selected batchbarcode doesn't exist");
+        return;
       }
     } catch (error) {
       console.log(error);
@@ -659,9 +676,12 @@ const ContactLens = () => {
       }
       sub = {
         ...newItem.powerData,
-        ...selectedBatchCode,
+        sbatchCode: selectedBatchCode.CLBatchCode,
+        sMRP: selectedBatchCode.CLMRP,
         ...STOProduct,
         tiq: 1,
+        MRP: parseFloat(selectedBatchCode.CLMRP),
+        BuyingPrice: parseFloat(selectedBatchCode.BuyingPrice),
       };
     } else if (detailId && productSearch == 1) {
       const STOProduct = stockOutData?.data.details.find(
@@ -678,15 +698,26 @@ const ContactLens = () => {
       }
       sub = {
         ...batchBarCodeDetails?.data.data,
-        ...selectedBatchCode,
+        sbatchCode: selectedBatchCode.CLBatchCode,
+        sMRP: selectedBatchCode.CLMRP,
         ...STOProduct,
         tiq: 1,
+        BuyingPrice: parseFloat(selectedBatchCode.BuyingPrice),
+        MRP: parseFloat(selectedBatchCode.CLMRP),
       };
     }
-    const existingIndex = mainClDetails.findIndex(
-      (item) =>
-        item.Barcode == sub.Barcode || item.CLBatchCode == sub.CLBatchCode
-    );
+
+    let existingIndex;
+    if (productSearch === 0 && selectBatch === 0) {
+      existingIndex = mainClDetails.findIndex(
+        (item) => item.Barcode == sub.Barcode
+      );
+    } else {
+      existingIndex = mainClDetails.findIndex(
+        (item) =>
+          item.Barcode == sub.Barcode && item.sbatchCode == sub.sbatchCode
+      );
+    }
     if (existingIndex !== -1) {
       const item = mainClDetails[existingIndex];
       const newQty = item.tiq + 1;
@@ -788,7 +819,7 @@ const ContactLens = () => {
           return {
             ProductType: 3,
             detailId: item.CLDetailId,
-            BatchCode: item.CLBatchCode || item.CLBatchBarCode,
+            BatchCode: item.sbatchCode || item.sbatchbarCode,
             STQtyIn: item.tiq,
             STQtyOut: item.STQtyOut,
             transferPrice: parseFloat(item.BuyingPrice),

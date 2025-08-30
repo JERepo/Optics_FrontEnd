@@ -35,7 +35,11 @@ const getProductName = (order) => {
   if (!detail) return "";
 
   const clean = (val) =>
-    val == null || val === "undefined" || val === "null" || val === ""
+    val == null ||
+    val === "undefined" ||
+    val === "null" ||
+    val === "" ||
+    val === "N/A"
       ? ""
       : String(val).trim();
 
@@ -90,13 +94,14 @@ const getProductName = (order) => {
   if (productType === 3) {
     const specsList = joinNonEmpty(
       [
-        cleanPower(detail.specs?.sphericalPower) &&
-          `SPH: ${cleanPower(detail.specs?.sphericalPower)}`,
-        cleanPower(detail.specs?.cylindricalPower) &&
-          `CYL: ${cleanPower(detail.specs?.cylindricalPower)}`,
-        clean(detail.specs?.axis) && `Axis: ${clean(detail.specs?.axis)}`,
-        cleanPower(detail.specs?.additional) &&
-          `Add: ${cleanPower(detail.specs?.additional)}`,
+        cleanPower(detail.PowerSpecs?.Sph) &&
+          `SPH: ${cleanPower(detail.PowerSpecs?.Sph)}`,
+        cleanPower(detail.PowerSpecs?.cylindricalPower) &&
+          `CYL: ${cleanPower(detail.PowerSpecs?.cylindricalPower)}`,
+        clean(detail.PowerSpecs?.axis) &&
+          `Axis: ${clean(detail.PowerSpecs?.axis)}`,
+        cleanPower(detail.PowerSpecs?.additional) &&
+          `Add: ${cleanPower(detail.PowerSpecs?.additional)}`,
       ],
       ", "
     );
@@ -105,15 +110,16 @@ const getProductName = (order) => {
       [
         joinNonEmpty([clean(detail.brandName), clean(detail.productName)]),
         specsList,
-        clean(detail.specs?.color) && `Color: ${clean(detail.specs?.color)}`,
+        clean(detail.specs?.color || detail.colour) &&
+          `Color: ${clean(detail.specs?.color || detail.colour)}`,
         clean(detail.specs?.barcode || detail.barcode) &&
           `Barcode: ${clean(detail.specs?.barcode || detail.barcode)}`,
         (batchCode || expiry) &&
           `Batch Code: ${batchCode || "-"} | Expiry: ${
             expiry ? expiry.split("-").reverse().join("/") : "-"
           }`,
-        clean(detail.hSN || detail.hsncode) &&
-          `HSN: ${clean(detail.hSN || detail.hsncode)}`,
+        clean(detail.hSN || detail.hsncode || detail.HSN) &&
+          `HSN: ${clean(detail.hSN || detail.hsncode || detail.HSN)}`,
       ],
       "\n"
     );
@@ -123,10 +129,12 @@ const getProductName = (order) => {
   if (productType === 0) {
     const olLine = clean(`${detail.brandName} ${detail.productName}`);
     // AddOns
-    console.log("add",AddOnData)
-    const addonNames = Array.isArray(AddOnData) ? AddOnData?.map((item) =>
-      clean(item.name?.split(" - ₹")[0])
-    ).filter(Boolean) : "";
+    console.log("add", AddOnData);
+    const addonNames = Array.isArray(AddOnData)
+      ? AddOnData?.map((item) => clean(item.name?.split(" - ₹")[0])).filter(
+          Boolean
+        )
+      : "";
     const formatPower = (eye) =>
       joinNonEmpty(
         [
@@ -165,8 +173,9 @@ const getProductName = (order) => {
 
         fittingLine,
         clean(detail.hSN || detail.hsncode || detail.HSN) &&
-          `HSN: ${clean(detail.hSN) || clean(detail.hsncode) || clean(detail.HSN)}`,
-         
+          `HSN: ${
+            clean(detail.hSN) || clean(detail.hsncode) || clean(detail.HSN)
+          }`,
       ],
       "\n"
     );
@@ -207,7 +216,7 @@ const CompleteSalesReturn = () => {
     );
   const [completeSales, { isLoading: isCompleteSalesLoading }] =
     useCompleteSaleReturnMutation();
-  console.log("final r",finalProducts);
+  console.log("final r", finalProducts);
   // Calculate totals
   const totals = finalProducts?.data?.reduce(
     (acc, item) => {
@@ -224,7 +233,7 @@ const CompleteSalesReturn = () => {
         totalGST: acc.totalGST + (parseFloat(gst.gstAmount) || 0),
 
         totalReturnValue:
-          acc.totalReturnValue + (parseFloat(item.TotalAmount) || 0),
+          acc.totalReturnValue + (parseFloat(item.TotalAmount) || 0) + parseFloat(gst.gstAmount),
       };
     },
     { totalQty: 0, totalGST: 0, totalReturnValue: 0 }
@@ -385,11 +394,28 @@ const CompleteSalesReturn = () => {
                         parseFloat(item.GSTPercentage || 0)
                       ).gstAmount
                     }
+                    (
+                    {
+                      calculateGST(
+                        item.ReturnPricePerUnit * item.ReturnQty,
+                        parseFloat(item.GSTPercentage || 0)
+                      ).taxPercentage
+                    }
+                    % )
                   </TableCell>
                   <TableCell className="text-center">
                     {item.ReturnQty || 0}
                   </TableCell>
-                  <TableCell>₹{parseFloat(item.TotalAmount || 0)}</TableCell>
+                  <TableCell>
+                    ₹
+                    {parseFloat(
+                      (item.TotalAmount || 0) +
+                        parseFloat(calculateGST(
+                          item.ReturnPricePerUnit * item.ReturnQty,
+                          parseFloat(item.GSTPercentage || 0)
+                        ).gstAmount)
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Button
                       isLoading={deletingId === item.id}

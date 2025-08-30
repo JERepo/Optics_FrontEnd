@@ -41,20 +41,25 @@ const SalesView = () => {
     const details = Array.isArray(item.ProductDetails)
       ? item.ProductDetails[0]
       : item.ProductDetails || {};
-    const brandName = details.brandName;
-    const ProductName = details.productName || details.productDescName || "";
-    const Barcode = details.barcode;
-    const Hsncode = details.hSN;
-    const Colour = details.colour;
-    const Tint = details.tint?.tintName;
+    const brandName = details?.brandName;
+    const ProductName = details?.productName || details?.productDescName || "";
+    const Barcode = details?.barcode;
+    const Hsncode = details?.hSN || details.HSN;
+    const Colour = details?.colour;
+    const Tint = details.tint?.tintName || "";
     const addOn = details.addOn?.addOnName;
-
+    const batchcode = Array.isArray(details.Stock)
+      ? details.Stock[0].BatchCode
+      : details.Stock.BatchCode;
+    const expiry = Array.isArray(details.Stock)
+      ? details.Stock[0].Expiry
+      : details.Stock.Expiry;
     const clean = (val) => {
       if (
         val == null ||
         val === "undefined" ||
         val === "null" ||
-        val === "N/A"||
+        val === "N/A" ||
         (typeof val === "string" && val.trim() === "")
       )
         return "";
@@ -101,6 +106,13 @@ const SalesView = () => {
       if (PowerSpecs.Add != null)
         specsParts.push(`Add: ${cleanPower(PowerSpecs.Add)}`);
       if (specsParts.length) lines.push(specsParts.join(" "));
+      if (clean(batchcode && expiry))
+        lines.push(
+          `BatchCode: ${batchcode} | Expiry: ${expiry
+            .split("-")
+            .reverse()
+            .join("/")}`
+        );
     } else if (typeid === 0) {
       // Optical Lenses
       const powerDetails = details.specs?.powerDetails || {};
@@ -164,7 +176,11 @@ const SalesView = () => {
   const grandTotal = salesDetails?.data.reduce((sum, item) => {
     const price = parseFloat(item.TotalAmount || 0);
     const fittingPrice = parseFloat(item.FittingCharges || 0);
-    return sum + price + fittingPrice;
+    const gstPercentage = parseFloat(item.GSTPercentage) || 0;
+    const returnQty = parseInt(item.ReturnQty) || 0;
+    const returnPrice = parseFloat(item.ReturnPricePerUnit) || 0;
+    const gst = calculateGST(returnPrice * returnQty, gstPercentage);
+    return sum + price + fittingPrice + parseFloat(gst.gstAmount);
   }, 0);
 
   if (isViewLoading || isLoading) {
@@ -209,7 +225,11 @@ const SalesView = () => {
               </div>
               <Info
                 label="Customer Address"
-                value={`${customerDataById?.data?.CustomerMaster?.BillAddress1} ${customerDataById?.data?.CustomerMaster?.BillAddress2} ${customerDataById?.data?.CustomerMaster?.BillCity}`}
+                value={`${
+                  customerDataById?.data?.CustomerMaster?.BillAddress1 ?? ""
+                } ${
+                  customerDataById?.data?.CustomerMaster?.BillAddress2 ?? ""
+                } ${customerDataById?.data?.CustomerMaster?.BillCity ?? ""}`}
               />
             </>
           )}
@@ -268,14 +288,30 @@ const SalesView = () => {
                       parseFloat(s.ReturnPricePerUnit),
                       parseFloat(s.GSTPercentage)
                     ).gstAmount
-                  )}({ calculateGST(
+                  )}
+                  (
+                  {
+                    calculateGST(
                       parseFloat(s.ReturnPricePerUnit),
                       parseFloat(s.GSTPercentage)
-                    ).taxPercentage}%)
+                    ).taxPercentage
+                  }
+                  %)
                 </TableCell>
                 <TableCell>{s.ReturnQty}</TableCell>
                 <TableCell>₹{formatINR(s.FittingCharges ?? 0)}</TableCell>
-                <TableCell>₹{formatINR(s.TotalAmount)}</TableCell>
+                <TableCell>
+                  ₹
+                  {parseFloat(
+                    (s.TotalAmount || 0) +
+                      parseFloat(
+                        calculateGST(
+                          s.ReturnPricePerUnit * s.ReturnQty,
+                          parseFloat(s.GSTPercentage || 0)
+                        ).gstAmount
+                      )
+                  )}
+                </TableCell>
               </TableRow>
             )}
             emptyMessage={isLoading ? "Loading..." : "No data available"}

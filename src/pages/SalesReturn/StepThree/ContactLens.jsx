@@ -71,7 +71,9 @@ const getProductName = (order) => {
     Additional,
     BrandName,
     selectBatch,
+    sbatchCode,
     CLBatchBarCode,
+    sbatchbarCode,
   } = order;
 
   const clean = (val) => {
@@ -103,10 +105,8 @@ const getProductName = (order) => {
     const brand = clean(BrandName);
     const barcodeVal = clean(barcode || Barcode);
     const expiry = clean(ExpiryDate);
-    const batchIsOne = clean(CLBatchCode);
-    const batchIsZero = clean(batchCode || BatchCode);
-    const batchBar = clean(CLBatchBarCode);
-
+    const batchc = clean(sbatchCode);
+    const batchBar = clean(sbatchbarCode);
     let specsObj = {};
     if (typeof specs === "string") {
       specs.split(",").forEach((pair) => {
@@ -143,8 +143,8 @@ const getProductName = (order) => {
       specsList,
       clr && `Color: ${clr}`,
       barcodeVal && `Barcode: ${barcodeVal}`,
-      (batchIsZero || batchBar) &&
-        `Batch Code: ${batchBar || batchIsZero || "-"}`,
+      batchc && `BatchCode: ${batchc}`,
+      batchBar && `BatchBarCode: ${batchBar}`,
       expiry && `Expiry : ${expiry.split("-").reverse().join("/")}`,
       hsn && `HSN: ${hsn}`,
     ]
@@ -576,15 +576,16 @@ const ContactLens = () => {
           setDetailId(true);
           setOpenBatch(true);
         } else if (data.CLBatchCode === 0 && referenceApplicable === 0) {
+          if (data.AvlQty <= 0 || data.Quantity <= 0) {
+            toast.error("Stock quantity must be greater than 0!");
+            return;
+          }
           const cc = {
             ...data,
             returnPrice: parseFloat(data.SellingPrice),
             returnQty: 1,
           };
-          if (newItem.avlQty <= 0) {
-            toast.error("Stock quantity not available for this product!");
-            return;
-          }
+
           const existingIndex = mainClDetails.findIndex(
             (item) => item.Barcode == data.Barcode
           );
@@ -656,13 +657,15 @@ const ContactLens = () => {
       );
 
       if (isAvailable && referenceApplicable === 0) {
-        console.log("inside", batchBarCodeDetails?.data?.data);
         if (batchBarCodeDetails?.data?.data.Quantity <= 0) {
           toast.error("Stock quantity not available for this batchbarcode!");
           return;
         }
         const newItemCl = {
-          ...isAvailable,
+          ...newItem.powerData,
+          sbatchbarCode: isAvailable.CLBatchBarCode,
+          ExpiryDate :isAvailable.CLBatchExpiry,
+
           selectBatch,
           returnPrice:
             productSearch === 0
@@ -671,11 +674,18 @@ const ContactLens = () => {
           returnQty: 1,
           ...(detailId ? batchBarCodeDetails?.data?.data : {}),
         };
-        const existingIndex = mainClDetails.findIndex(
-          (item) =>
-            item.Barcode == newItemCl.Barcode &&
-            item.CLBatchBarCode == newItemCl.CLBatchBarCode
-        );
+        let existingIndex;
+        if (productSearch === 0 && selectBatch === 0) {
+          existingIndex = mainClDetails.findIndex(
+            (item) => item.Barcode == newItemCl.Barcode
+          );
+        } else {
+          existingIndex = mainClDetails.findIndex(
+            (item) =>
+              item.Barcode == newItemCl.Barcode &&
+              item.sbatchbarCode == newItemCl.sbatchbarCode
+          );
+        }
         if (existingIndex !== -1) {
           const item = mainClDetails[existingIndex];
           const newQty = item.returnQty + 1;
@@ -838,19 +848,27 @@ const ContactLens = () => {
     if (referenceApplicable === 0) {
       let sub;
       if ((!detailId || openBatch) && productSearch == 0) {
+        if (newItem.avlQty <= 0) {
+          toast.error("Stock quantity must be greater than 0!");
+          return;
+        }
         sub = {
           ...newItem.powerData,
-          ...selectedBatchCode,
+          sbatchCode: selectedBatchCode.CLBatchCode,
+          sMRP: selectedBatchCode.CLMRP,
           MRP: selectedBatchCode.CLMRP,
-
+          ExpiryDate: selectedBatchCode.CLBatchExpiry,
           returnPrice: parseFloat(newItem.powerData.SellingPrice),
           returnQty: 1,
         };
       } else if (detailId && productSearch == 1) {
         sub = {
           ...batchBarCodeDetails?.data.data,
-          ...selectedBatchCode,
+          sbatchCode: selectedBatchCode.CLBatchCode,
+          sMRP: selectedBatchCode.CLMRP,
           MRP: selectedBatchCode.CLMRP,
+          ExpiryDate: selectedBatchCode.CLBatchExpiry,
+
           returnPrice: parseFloat(batchBarCodeDetails?.data.data.SellingPrice),
           returnQty: 1,
         };
@@ -860,9 +878,13 @@ const ContactLens = () => {
         toast.error("Stock quantity not available for this batchcode!");
         return;
       }
+      // const existingIndex = mainClDetails.findIndex(
+      //   (item) =>
+      //     item.Barcode == sub.Barcode || item.CLBatchCode == sub.CLBatchCode
+      // );
       const existingIndex = mainClDetails.findIndex(
         (item) =>
-          item.Barcode == sub.Barcode || item.CLBatchCode == sub.CLBatchCode
+          item.Barcode == sub.Barcode && item.sbatchCode == sub.sbatchCode
       );
       if (existingIndex !== -1) {
         const item = mainClDetails[existingIndex];
@@ -985,7 +1007,7 @@ const ContactLens = () => {
           AccessoryDetailId: detail.AccessoryDetailId ?? null,
           FrameDetailId: detail.FrameDetailId ?? null,
           OpticalLensDetailId: detail.OpticalLensDetailId ?? null,
-          BatchCode: detail.CLBatchCode ?? null,
+          BatchCode: (detail.sbatchCode || detail.sbatchbarCode) ?? null,
           CNQty:
             referenceApplicable === 0
               ? detail.returnQty

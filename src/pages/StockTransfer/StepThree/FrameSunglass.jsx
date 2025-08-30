@@ -31,63 +31,6 @@ import {
   validateStockQty,
 } from "../../../utils/isValidNumericInput";
 
-const getProductDetailsText = (order) => {
-  const {
-    productName,
-    BrandName,
-
-    HSN,
-    hSN,
-    barcode,
-    color,
-    Barcode,
-    ProductType,
-    Colour,
-    brandName,
-    size,
-    category,
-  } = order;
-
-  const clean = (val) => {
-    if (
-      val === null ||
-      val === undefined ||
-      val === "undefined" ||
-      val === "null" ||
-      val === "N/A" ||
-      val === "" ||
-      val === 0
-    ) {
-      return "";
-    }
-    return String(val).trim();
-  };
-
-  const brand = clean(brandName || BrandName);
-  const name = clean(productName);
-  const hsn = clean(HSN || hSN);
-  const barcodeVal = clean(Barcode || barcode);
-  const clr = clean(Colour || color);
-  const sizeVal = clean(size);
-
-  // map category
-  const getCategoryName = (cat) => {
-    if (cat === 0 || cat === "0") return "Optical Frame";
-    if (cat === 1 || cat === "1") return "Sunglass";
-    return "";
-  };
-
-  return [
-    brand && name ? `Brand: ${brand} - ${name}` : brand || name,
-    hsn && `HSN: ${hsn}`,
-    sizeVal && `Size: ${sizeVal}`,
-    getCategoryName(category) && `Category: ${getCategoryName(category)}`,
-    clr && `Color: ${clr}`,
-    barcodeVal && `Barcode: ${barcodeVal}`,
-  ]
-    .filter(Boolean)
-    .join("\n");
-};
 
 const FrameSunglass = () => {
   const {
@@ -477,7 +420,6 @@ const FrameSunglass = () => {
       )
     );
   };
-  console.log("draft data", stockDraftData);
   const handleSaveData = async () => {
     if (!Array.isArray(items) || items.length === 0) {
       console.warn("No details to save");
@@ -486,7 +428,7 @@ const FrameSunglass = () => {
     console.log("items", items);
     try {
       const payload = {
-        STOutMainId: stockDraftData.ID || stockDraftData[0].ID,
+        STOutMainId: stockDraftData.ID ?? null,
         products: items.map((item) => {
           return {
             ProductType: 1,

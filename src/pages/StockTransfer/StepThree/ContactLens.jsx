@@ -27,12 +27,7 @@ import Radio from "../../../components/Form/Radio";
 
 import { useLazyGetBatchDetailsQuery } from "../../../api/InvoiceApi";
 import { useSelector } from "react-redux";
-import {
-  useGetBatchBarCodeMutation,
-  useLazyGetBatchesForCLQuery,
-  useLazyGetInvoiceDetailsQuery,
-  useSaveProductsMutation,
-} from "../../../api/salesReturnApi";
+import { useGetBatchBarCodeMutation } from "../../../api/salesReturnApi";
 import { formatINR } from "../../../utils/formatINR";
 import Modal from "../../../components/ui/Modal";
 import { useSaveStockDetailsMutation } from "../../../api/stockTransfer";
@@ -72,7 +67,9 @@ const getProductName = (order) => {
     Additional,
     BrandName,
     selectBatch,
+    sbatchCode,
     CLBatchBarCode,
+    sbatchbarCode,
   } = order;
 
   const clean = (val) => {
@@ -104,9 +101,8 @@ const getProductName = (order) => {
     const brand = clean(BrandName);
     const barcodeVal = clean(barcode || Barcode);
     const expiry = clean(ExpiryDate);
-    const batchIsOne = clean(CLBatchCode);
-    const batchIsZero = clean(batchCode || BatchCode);
-    const batchBar = clean(CLBatchBarCode);
+    const batchc = clean(sbatchCode);
+    const batchBar = clean(sbatchbarCode);
 
     let specsObj = {};
     if (typeof specs === "string") {
@@ -144,8 +140,8 @@ const getProductName = (order) => {
       specsList,
       clr && `Color: ${clr}`,
       barcodeVal && `Barcode: ${barcodeVal}`,
-      (batchIsOne || batchIsZero || batchBar) &&
-        `Batch Code: ${batchBar || batchIsOne || batchIsZero || "-"}`,
+      batchc && `BatchCode: ${batchc}`,
+      batchBar && `BatchBarCode: ${batchBar}`,
       expiry && `Expiry : ${expiry.split("-").reverse().join("/")}`,
       hsn && `HSN: ${hsn}`,
     ]
@@ -366,7 +362,7 @@ const ContactLens = () => {
             return;
           }
         } else if (data.CLBatchCode === 0) {
-          if (data.AvlQty <= 0) {
+          if (data.AvlQty <= 0 || data.Quantity <= 0) {
             toast.error("Stock quantity must be greater than 0!");
             return;
           }
@@ -488,33 +484,46 @@ const ContactLens = () => {
       const isAvailable = batches?.find(
         (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
       );
-
       if (isAvailable) {
-        if (parseInt(batchBarCodeDetails?.data?.data.AvlQty) <= 0) {
+        if (
+          parseInt(batchBarCodeDetails?.data?.data?.AvlQty || newItem.avlQty) <=
+          0
+        ) {
           toast.error("Stock quantity must be greater than 0!");
           return;
         }
-
         const newItemCl = {
-          ...isAvailable,
           ...newItem.powerData,
+          sbatchbarCode: isAvailable.CLBatchBarCode,
+          sMRP: isAvailable.CLMRP,
+          ExpiryDate: isAvailable.CLBatchExpiry,
           selectBatch,
           stkQty: 1,
-          BuyingPrice:
-            batchBarCodeDetails?.data.data.CLBatchCode === 0
-              ? parseFloat(batchBarCodeDetails?.data.data.price.BuyingPrice)
-              : parseFloat(batchBarCodeDetails?.data.data.stock.BuyingPrice),
-          Quantity:
-            parseInt(newItem?.powerData?.AvlQty) ||
-            parseInt(batchBarCodeDetails?.data?.data.Quantity),
+          // BuyingPrice:
+          //   batchBarCodeDetails?.data.data.CLBatchCode === 0
+          //     ? parseFloat(batchBarCodeDetails?.data.data.price.BuyingPrice)
+          //     : parseFloat(batchBarCodeDetails?.data.data.stock.BuyingPrice),
+          // Quantity:
+          //   parseInt(newItem?.powerData?.AvlQty) ||
+          //   parseInt(batchBarCodeDetails?.data?.data.Quantity),
+          MRP: parseFloat(isAvailable.CLMRP),
+          BuyingPrice: parseFloat(isAvailable.BuyingPrice),
+          Quantity: isAvailable.Quantity,
           ...(detailId ? batchBarCodeDetails?.data?.data : {}),
         };
-        console.log("new item", newItemCl);
-        const existingIndex = mainClDetails.findIndex(
-          (item) =>
-            item.Barcode == newItemCl.Barcode ||
-            item.CLBatchBarCode == newItemCl.CLBatchBarCode
-        );
+        let existingIndex;
+        if (productSearch === 0 && selectBatch === 0) {
+          existingIndex = mainClDetails.findIndex(
+            (item) => item.Barcode == newItemCl.Barcode
+          );
+        } else {
+          existingIndex = mainClDetails.findIndex(
+            (item) =>
+              item.Barcode == newItemCl.Barcode &&
+              item.sbatchbarCode == newItemCl.sbatchbarCode
+          );
+        }
+
         if (existingIndex !== -1) {
           const item = mainClDetails[existingIndex];
           const newQty = item.stkQty + 1;
@@ -553,6 +562,9 @@ const ContactLens = () => {
         setDetailId(false);
         setProductCodeInput("");
         setbatchCodeInput("");
+      } else {
+        toast.error("Selected batchbarcode doesn't exist");
+        return;
       }
     } catch (error) {
       console.log(error);
@@ -629,31 +641,30 @@ const ContactLens = () => {
       }
       sub = {
         ...newItem.powerData,
-        ...selectedBatchCode,
+        sbatchCode: selectedBatchCode.CLBatchCode,
+        sMRP: selectedBatchCode.CLMRP,
+        ExpiryDate: selectedBatchCode.CLBatchExpiry,
+
         stkQty: 1,
         Quantity: newItem.avlQty,
-        MRP: selectedBatchCode.CLMRP,
+        MRP: parseFloat(selectedBatchCode.CLMRP),
+        BuyingPrice: parseFloat(selectedBatchCode.BuyingPrice),
       };
     } else if (detailId && productSearch == 1) {
       sub = {
         ...batchBarCodeDetails?.data.data,
-        ...selectedBatchCode,
+        sbatchCode: selectedBatchCode.CLBatchCode,
+        sMRP: selectedBatchCode.CLMRP,
+        ExpiryDate: selectedBatchCode.CLBatchExpiry,
+
         stkQty: 1,
         Quantity: batchBarCodeDetails?.data.data.Quantity,
-        BuyingPrice:
-          batchBarCodeDetails?.data.data.CLBatchCode === 0
-            ? parseFloat(batchBarCodeDetails?.data.data.price.BuyingPrice)
-            : parseFloat(batchBarCodeDetails?.data.data.stock.BuyingPrice),
-        MRP:
-          batchBarCodeDetails?.data.data.CLBatchCode === 0
-            ? parseFloat(batchBarCodeDetails?.data.data.price.MRP)
-            : parseFloat(batchBarCodeDetails?.data.data.stock.MRP),
+        BuyingPrice: parseFloat(selectedBatchCode.BuyingPrice),
+        MRP: parseFloat(selectedBatchCode.CLMRP),
       };
     }
-    console.log("sub", sub);
     const existingIndex = mainClDetails.findIndex(
-      (item) =>
-        item.Barcode == sub.Barcode || item.CLBatchCode == sub.CLBatchCode
+      (item) => item.Barcode == sub.Barcode && item.sbatchCode == sub.sbatchCode
     );
     if (existingIndex !== -1) {
       const item = mainClDetails[existingIndex];
@@ -758,12 +769,12 @@ const ContactLens = () => {
 
     try {
       const payload = {
-        STOutMainId: stockDraftData.ID || stockDraftData[0].ID,
+        STOutMainId: stockDraftData.ID ?? null,
         products: mainClDetails.map((item) => {
           return {
             ProductType: 3,
             detailId: item.CLDetailId,
-            BatchCode: item.CLBatchCode || item.CLBatchBarCode,
+            BatchCode: item.sbatchCode || item.sbatchbarCode,
             STQtyOut: item.stkQty,
             TransferPrice: parseFloat(item.BuyingPrice),
             gstPercentage: calculateStockGST(item).gstPercent,
