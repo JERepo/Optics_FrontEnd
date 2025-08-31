@@ -12,6 +12,10 @@ import { useGetCompanySettingsQuery } from "../../api/companySettingsApi";
 import { useCheckDocNoUniqueQuery, useGetGRNDetailsMutation } from "../../api/grnApi";
 import { useSaveGRNMainMutation } from "../../api/grnApi";
 import { useGRN } from "../../features/GRNContext";
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+
 
 
 export default function GRNStep1() {
@@ -42,7 +46,8 @@ export default function GRNStep1() {
         documentNo: grnData.step1.documentNo,
         documentDate: grnData.step1.documentDate,
         billingMethod: grnData.step1.billingMethod || "invoice",
-        againstPO: grnData.step1.againstPO || 1
+        againstPO: String(grnData.step1.againstPO || 1),
+        grnMainId: grnData.step1.GrnMainId
     });
     const [grnViewDetails, setGrnViewDetails] = useState([]);
 
@@ -69,7 +74,7 @@ export default function GRNStep1() {
     );
 
     const { data: isUniqueResponse, refetch: checkDocNoUnique } = useCheckDocNoUniqueQuery(
-        { docNo: formState.documentNo, vendorId: formState.vendorDetails?.Id, companyId: selectedLocation },
+        { docNo: formState.documentNo, vendorId: formState.vendorDetails?.Id, companyId: selectedLocation, grnMainId: (grnData?.step1?.GrnMainId || null)  },
         {
             skip: (!formState.documentNo || !formState.vendorDetails?.Id || !selectedLocation),
             refetchOnMountOrArgChange: true  // Always refetch to get latest data
@@ -131,6 +136,15 @@ export default function GRNStep1() {
             setError(prev => ({ ...prev, documentNo: null }));
         }
     };
+    const handleDateChange = (newDate) => {
+        setFormState(prev => ({
+            ...prev,
+            documentDate: newDate
+        }));
+
+        // Clear error when date is selected
+        setError(prev => ({ ...prev, documentDate: null }));
+    };
 
 
     const handleSubmitGRNMain = async () => {
@@ -138,6 +152,11 @@ export default function GRNStep1() {
 
         // 1. Check if GRN main and detail entry exists
         try {
+            if(grnData.step1.GrnMainId) {
+                // setCurrentStep(4);
+                nextStep();
+                return;
+            }
             const payload = {
                 companyId: selectedLocation,
                 vendorId: formState?.vendorDetails?.Id,
@@ -161,7 +180,7 @@ export default function GRNStep1() {
                         documentNo: formState.documentNo,
                         documentDate: formState.documentDate,
                         billingMethod: formState.billingMethod,
-                        againstPO: formState.againstPO
+                        againstPO: formState?.againstPO
                     }
                 }));
                 setCurrentStep(4);
@@ -204,7 +223,7 @@ export default function GRNStep1() {
             documentNo: formState.documentNo,
             documentDate: formState.documentDate,
             billingMethod: formState.billingMethod,
-            againstPO: formState.againstPO
+            againstPO: formState?.againstPO
         });
 
         // 3. Save the GRN main entry in db
@@ -215,8 +234,8 @@ export default function GRNStep1() {
             vendorDocNo: formState.documentNo,
             vendorDocDate: formState.documentDate,
             grnByMethod: 1,         // GRN by Order 1 : 0 (DC)
-            grnType: formState.billingMethod === "invoice" ? 0 : 1,
-            againstPO: formState.againstPO,
+            grnType: formState.billingMethod === "invoice" ? 0 : 1,             // GRN Type 0 : Invoice and 1 : DC
+            againstPO: formState?.againstPO,
             applicationUserId: user.Id
         }
 
@@ -417,13 +436,25 @@ export default function GRNStep1() {
                                         />
                                     </div>
                                     <div className="flex items-center mt-6 space-x-20">
-                                        <Input
-                                            label="Document Date *"
-                                            name="documentDate"
-                                            onChange={handleInputChange}
-                                            value={formState.documentDate || ""}
-                                            error={error.documentDate || ""}
-                                        />
+                                        <LocalizationProvider dateAdapter={AdapterDateFns}>
+                                            <DatePicker
+                                                label="Document Date *"
+                                                value={formState.documentDate}
+                                                onChange={handleDateChange}
+                                                name="documentDate"
+                                                // minDate={fromDate}
+                                                maxDate={new Date()}
+                                                inputFormat="dd/MM/yyyy"
+                                                renderInput={(params) => (
+                                                    <TextField
+                                                        {...params}
+                                                        size="small"
+                                                        fullWidth
+                                                        variant="outlined"
+                                                    />
+                                                )}
+                                            />
+                                        </LocalizationProvider>
                                     </div>
                                     <div className="flex items-center space-x-10">
                                         <div className="flex space-x-4">
@@ -462,8 +493,8 @@ export default function GRNStep1() {
                                                 <input
                                                     type="radio"
                                                     name="againstPO"
-                                                    value={1}
-                                                    checked={formState.againstPO === 1}
+                                                    value="1"
+                                                    checked={formState.againstPO === "1"}
                                                     onChange={handleInputChange}
                                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                                 />
@@ -474,8 +505,8 @@ export default function GRNStep1() {
                                                 <input
                                                     type="radio"
                                                     name="againstPO"
-                                                    value={0}
-                                                    checked={formState.againstPO === 0}
+                                                    value="0"
+                                                    checked={formState.againstPO === "0"}
                                                     onChange={handleInputChange}
                                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                                 />

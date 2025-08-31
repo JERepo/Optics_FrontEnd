@@ -7,8 +7,8 @@ export const grnApi = createApi({
     tagTypes: ['GRN'],
     endpoints: (builder) => ({
         checkDocNoUnique: builder.query({
-            query: ({ docNo, vendorId, companyId }) => ({
-                url: `/api/v1/grn/check-unique-doc/${docNo}/${vendorId}/${companyId}`,
+            query: ({ docNo, vendorId, companyId, grnMainId }) => ({
+                url: `/api/v1/grn/check-unique-doc/${docNo}/${vendorId}/${companyId}/${(grnMainId) ? `?grnMainId=${grnMainId}` : ''}`,
                 method: 'GET'
             }),
         }),
@@ -40,6 +40,12 @@ export const grnApi = createApi({
                 method: 'POST',
                 body: payload
             })
+        }),
+        getAllGRNmain: builder.query({
+            query: () => ({
+                url: `/api/v1/grn/get-all-grn`,
+                method: 'GET'
+            })
         })
     })
 });
@@ -52,5 +58,6 @@ export const {
     useSaveGRNMainMutation,
     useSaveGRNDetailsMutation,
     useGetGRNDetailsMutation,
-    useSaveCompleteGRNMutation
+    useSaveCompleteGRNMutation,
+    useGetAllGRNmainQuery
 } = grnApi;

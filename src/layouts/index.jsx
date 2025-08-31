@@ -75,6 +75,8 @@ import GRNStep1 from "../pages/GRN/GRNStep1";
 import GRNStep2 from "../pages/GRN/GRNStep2";
 import { PurchaseOrderMainPage } from "../pages/PurchaseOrder/POMainPage";
 import { POViewPage } from "../pages/PurchaseOrder/POViewPage";
+import { GRNListPage } from "../pages/GRN/GRNListPage";
+import { GRNViewPage } from "../pages/GRN/GRNViewPage";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -770,7 +772,10 @@ export const router = createBrowserRouter([
           </GRNProvider>
           // </PermissionRoute>
         )
-      }
+      },
+      {path: "grn/", element: <GRNListPage/>},
+      {path: "grn/view", element: <GRNViewPage/>}
+
     ],
   },
   {
