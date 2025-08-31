@@ -98,6 +98,7 @@ export const stockTransferApi = createApi({
       query: ({ mainId, locationId }) => ({
         url: `/api/v1/stock-transfer/in/details?STInMainID=${mainId}&locationId=${locationId}`,
       }),
+      providesTags:["StockTransferIn"]
     }),
     deleteUpdateSTKIn: builder.mutation({
       query: ({ payload }) => ({
@@ -105,6 +106,7 @@ export const stockTransferApi = createApi({
         method: "PUT",
         body: payload,
       }),
+      invalidatesTags: ["StockTransferIn"],
     }),
   }),
 });

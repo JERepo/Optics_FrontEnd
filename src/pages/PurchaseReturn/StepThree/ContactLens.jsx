@@ -68,7 +68,9 @@ const getProductName = (order) => {
     Additional,
     BrandName,
     selectBatch,
+    sbatchCode,
     CLBatchBarCode,
+    sbatchbarCode,
   } = order;
 
   const clean = (val) => {
@@ -100,9 +102,9 @@ const getProductName = (order) => {
     const brand = clean(BrandName);
     const barcodeVal = clean(barcode || Barcode);
     const expiry = clean(ExpiryDate);
-    const batchIsOne = clean(CLBatchCode);
-    const batchIsZero = clean(batchCode || BatchCode);
-    const batchBar = clean(CLBatchBarCode);
+    // const batchIsOne = clean(CLBatchCode);
+    const batchIsZero = clean(sbatchCode);
+    const batchBar = clean(sbatchbarCode);
 
     let specsObj = {};
     if (typeof specs === "string") {
@@ -140,8 +142,8 @@ const getProductName = (order) => {
       specsList,
       clr && `Color: ${clr}`,
       barcodeVal && `Barcode: ${barcodeVal}`,
-      (batchIsOne || batchIsZero || batchBar) &&
-        `Batch Code: ${batchBar || batchIsOne || batchIsZero || "-"}`,
+      (batchIsZero || batchBar) &&
+        `Batch Code: ${batchBar || batchIsZero || "-"}`,
       expiry && `Expiry : ${expiry.split("-").reverse().join("/")}`,
       hsn && `HSN: ${hsn}`,
     ]
@@ -223,9 +225,8 @@ const ContactLens = () => {
 
   // const [getCLBatches, { data: CLBatches }] = useLazyGetBatchesForCLQuery();
 
-
-      const [savePR, { isLoading: isPurchaseReturnLoading }] =
-        useSavePurchaseReturnProductMutation();
+  const [savePR, { isLoading: isPurchaseReturnLoading }] =
+    useSavePurchaseReturnProductMutation();
 
   useEffect(() => {
     setEditMode((prev) => {
@@ -350,12 +351,17 @@ const ContactLens = () => {
         });
         setSearchFetched(true);
         if (data.CLBatchCode === 1) {
-          await getCLBatches({
-            clBatchId: data.CLDetailId,
-            locationId: parseInt(hasMultipleLocations[0]),
-          }).unwrap();
-          setDetailId(true);
-          setOpenBatch(true);
+          try {
+            await getCLBatches({
+              clBatchId: data.CLDetailId,
+              locationId: parseInt(hasMultipleLocations[0]),
+            }).unwrap();
+            setDetailId(true);
+            setOpenBatch(true);
+          } catch (error) {
+            toast.error(error?.data.error);
+            return;
+          }
         } else if (data.CLBatchCode === 0) {
           if (data.AvlQty <= 0) {
             toast.error("Stock quantity must be greater than 0!");
@@ -366,7 +372,24 @@ const ContactLens = () => {
             stkQty: 1,
             Quantity: parseInt(data.AvlQty),
           };
-          setMainClDetails((prev) => [...prev, cc]);
+          const existingIndex = mainClDetails.findIndex(
+            (item) => item.Barcode == data.Barcode
+          );
+          if (existingIndex !== -1) {
+            const item = mainClDetails[existingIndex];
+            const newQty = item.stkQty + 1;
+            if (newQty > item.Quantity) {
+              toast.error("Stock quantity cannot exceed available quantity!");
+              return;
+            }
+            setMainClDetails((prev) =>
+              prev.map((it, idx) =>
+                idx === existingIndex ? { ...it, stkQty: it.stkQty + 1 } : it
+              )
+            );
+          } else {
+            setMainClDetails((prev) => [...prev, cc]);
+          }
           handleRefresh();
         }
       } else {
@@ -463,21 +486,60 @@ const ContactLens = () => {
       );
 
       if (isAvailable) {
-        if (parseInt(batchBarCodeDetails?.data?.data.AvlQty) <= 0) {
+        if (
+          parseInt(batchBarCodeDetails?.data?.data?.AvlQty || newItem.avlQty) <=
+          0
+        ) {
           toast.error("Stock quantity must be greater than 0!");
           return;
         }
-
         const newItemCl = {
-          ...isAvailable,
           ...newItem.powerData,
+          sbatchbarCode: isAvailable.CLBatchBarCode,
+          sMRP: isAvailable.CLMRP,
           selectBatch,
           stkQty: 1,
-          Quantity: parseInt(newItem.powerData.AvlQty),
+          // BuyingPrice:
+          //   batchBarCodeDetails?.data.data.CLBatchCode === 0
+          //     ? parseFloat(batchBarCodeDetails?.data.data.price.BuyingPrice)
+          //     : parseFloat(batchBarCodeDetails?.data.data.stock.BuyingPrice),
+          // Quantity:
+          //   parseInt(newItem?.powerData?.AvlQty) ||
+          //   parseInt(batchBarCodeDetails?.data?.data.Quantity),
+          MRP: parseFloat(isAvailable.CLMRP),
+          BuyingPrice: parseFloat(isAvailable.BuyingPrice),
+          Quantity: isAvailable.Quantity,
           ...(detailId ? batchBarCodeDetails?.data?.data : {}),
         };
 
-        setMainClDetails((prev) => [...prev, newItemCl]);
+        let existingIndex;
+        if (productSearch === 0 && selectBatch === 0) {
+          existingIndex = mainClDetails.findIndex(
+            (item) => item.Barcode == newItemCl.Barcode
+          );
+        } else {
+          existingIndex = mainClDetails.findIndex(
+            (item) =>
+              item.Barcode == newItemCl.Barcode &&
+              item.sbatchbarCode == newItemCl.sbatchbarCode
+          );
+        }
+
+        if (existingIndex !== -1) {
+          const item = mainClDetails[existingIndex];
+          const newQty = item.stkQty + 1;
+          if (newQty > item.Quantity) {
+            toast.error("Stock quantity cannot exceed available quantity!");
+            return;
+          }
+          setMainClDetails((prev) =>
+            prev.map((it, idx) =>
+              idx === existingIndex ? { ...it, stkQty: it.stkQty + 1 } : it
+            )
+          );
+        } else {
+          setMainClDetails((prev) => [...prev, newItemCl]);
+        }
         setLensData({
           orderReference: null,
           brandId: null,
@@ -501,6 +563,9 @@ const ContactLens = () => {
         setDetailId(false);
         setProductCodeInput("");
         setbatchCodeInput("");
+      } else {
+        toast.error("Selected batchbarcode doesn't exist");
+        return;
       }
     } catch (error) {
       console.log(error);
@@ -526,9 +591,33 @@ const ContactLens = () => {
           ...response?.data.data,
           stkQty: 1,
           Quantity: response?.data.data.Quantity,
-          MRP: response?.data.data.MRP,
+          MRP:
+            response?.data.data.CLBatchCode === 0
+              ? parseFloat(response?.data.data.price.MRP)
+              : parseFloat(response?.data.data.stock.MRP),
+          BuyingPrice:
+            response?.data.data.CLBatchCode === 0
+              ? parseFloat(response?.data.data.price.BuyingPrice)
+              : parseFloat(response?.data.data.stock.BuyingPrice),
         };
-        setMainClDetails((prev) => [...prev, cc]);
+        const existingIndex = mainClDetails.findIndex(
+          (item) => item.Barcode == response?.data.data.Barcode
+        );
+        if (existingIndex !== -1) {
+          const item = mainClDetails[existingIndex];
+          const newQty = item.stkQty + 1;
+          if (newQty > item.Quantity) {
+            toast.error("Stock quantity cannot exceed available quantity!");
+            return;
+          }
+          setMainClDetails((prev) =>
+            prev.map((it, idx) =>
+              idx === existingIndex ? { ...it, stkQty: it.stkQty + 1 } : it
+            )
+          );
+        } else {
+          setMainClDetails((prev) => [...prev, cc]);
+        }
         setProductCodeInput("");
       } else if (response?.data.data.CLBatchCode === 1) {
         const batchCodeData = await getCLBatches({
@@ -553,22 +642,42 @@ const ContactLens = () => {
       }
       sub = {
         ...newItem.powerData,
-        ...selectedBatchCode,
+        sbatchCode: selectedBatchCode.CLBatchCode,
+        sMRP: selectedBatchCode.CLMRP,
         stkQty: 1,
         Quantity: newItem.avlQty,
-        MRP: selectedBatchCode.CLMRP,
+        MRP: parseFloat(selectedBatchCode.CLMRP),
+        BuyingPrice: parseFloat(selectedBatchCode.BuyingPrice),
       };
     } else if (detailId && productSearch == 1) {
       sub = {
         ...batchBarCodeDetails?.data.data,
-        ...selectedBatchCode,
+        sbatchCode: selectedBatchCode.CLBatchCode,
+        sMRP: selectedBatchCode.CLMRP,
         stkQty: 1,
         Quantity: batchBarCodeDetails?.data.data.Quantity,
-        MRP: selectedBatchCode.CLMRP,
+        BuyingPrice: parseFloat(selectedBatchCode.BuyingPrice),
+        MRP: parseFloat(selectedBatchCode.CLMRP),
       };
     }
-
-    setMainClDetails((prev) => [...prev, sub]);
+    const existingIndex = mainClDetails.findIndex(
+      (item) => item.Barcode == sub.Barcode && item.sbatchCode == sub.sbatchCode
+    );
+    if (existingIndex !== -1) {
+      const item = mainClDetails[existingIndex];
+      const newQty = item.stkQty + 1;
+      if (newQty > item.Quantity) {
+        toast.error("Stock quantity cannot exceed available quantity!");
+        return;
+      }
+      setMainClDetails((prev) =>
+        prev.map((it, idx) =>
+          idx === existingIndex ? { ...it, stkQty: it.stkQty + 1 } : it
+        )
+      );
+    } else {
+      setMainClDetails((prev) => [...prev, sub]);
+    }
     handleRefresh();
   };
   const handleSellingPriceChange = (barcode, price, index) => {
@@ -644,20 +753,20 @@ const ContactLens = () => {
       console.warn("No details to save");
       return;
     }
-
+    console.log("items", mainClDetails);
     try {
       const payload = {
         products: mainClDetails.map((item) => {
           return {
-            PRMainId: purchaseDraftData.Id || purchaseDraftData[0].Id,
+            PRMainId: purchaseDraftData.Id,
             ProductType: 3,
             FrameDetailId: item.Id ?? null,
             AccessoryDetailId: null,
             ContactLensDetailId: item.CLDetailId ?? null,
             OpticalLensDetailId: null,
-            BatchCode: null,
+            BatchCode: item.sbatchCode || item.sbatchbarCode,
             DNQty: item.stkQty,
-            DNPrice: item.BuyingPrice,
+            DNPrice: parseFloat(item.BuyingPrice),
             ProductTaxPercentage: calculateStockGST(item).gstPercent,
             ApplicationUserId: user.Id,
           };
@@ -730,7 +839,7 @@ const ContactLens = () => {
                   "supplier order no",
                   "product details",
                   "srp",
-                  "qty",
+                  "return qty",
                   "return product price",
                   "gst/unit",
                   "total price",
@@ -746,6 +855,57 @@ const ContactLens = () => {
                       {getProductName(item)}
                     </TableCell>
                     <TableCell>₹{item.MRP}</TableCell>
+                    <TableCell>
+                      {editMode[`${item.Barcode}-${index}`]?.qty ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            value={item.stkQty}
+                            onChange={(e) =>
+                              handleQtyChange(
+                                item.Barcode,
+                                e.target.value,
+                                index
+                              )
+                            }
+                            className="w-20 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                            min="1"
+                          />
+                          <button
+                            onClick={() =>
+                              toggleEditMode(item.Barcode, index, "qty")
+                            }
+                            className="text-neutral-400 transition"
+                            title="Save"
+                          >
+                            <FiCheck size={18} />
+                          </button>
+                          <button
+                            onClick={() =>
+                              toggleEditMode(item.Barcode, index, "qty")
+                            }
+                            className="text-neutral-400 transition"
+                            title="Cancel"
+                          >
+                            <FiX size={18} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          {item.stkQty}
+                          <button
+                            onClick={() =>
+                              toggleEditMode(item.Barcode, index, "qty")
+                            }
+                            className="text-neutral-400 transition"
+                            title="Edit Quantity"
+                          >
+                            <FiEdit2 size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </TableCell>
+
                     <TableCell>
                       {editMode[`${item.Barcode}-${index}`]?.BuyingPrice ? (
                         <div className="flex items-center gap-2">
@@ -811,63 +971,16 @@ const ContactLens = () => {
                       {calculateStockGST(item).gstPercent}%)
                     </TableCell>
                     <TableCell>
-                      {editMode[`${item.Barcode}-${index}`]?.qty ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            value={item.stkQty}
-                            onChange={(e) =>
-                              handleQtyChange(
-                                item.Barcode,
-                                e.target.value,
-                                index
-                              )
-                            }
-                            className="w-20 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                            min="1"
-                          />
-                          <button
-                            onClick={() =>
-                              toggleEditMode(item.Barcode, index, "qty")
-                            }
-                            className="text-neutral-400 transition"
-                            title="Save"
-                          >
-                            <FiCheck size={18} />
-                          </button>
-                          <button
-                            onClick={() =>
-                              toggleEditMode(item.Barcode, index, "qty")
-                            }
-                            className="text-neutral-400 transition"
-                            title="Cancel"
-                          >
-                            <FiX size={18} />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          {item.stkQty}
-                          <button
-                            onClick={() =>
-                              toggleEditMode(item.Barcode, index, "qty")
-                            }
-                            className="text-neutral-400 transition"
-                            title="Edit Quantity"
-                          >
-                            <FiEdit2 size={14} />
-                          </button>
-                        </div>
-                      )}
-                    </TableCell>
-                    {/* <TableCell>{item.Quantity}</TableCell> */}
-                    <TableCell>
                       ₹
                       {formatINR(
-                        parseFloat(item.BuyingPrice) * item.Quantity +
-                          calculateStockGST(item).gstAmount * item.Quantity
+                        parseFloat(item.BuyingPrice) * item.stkQty +
+                          calculateStockGST(item).gstAmount * item.stkQty
                       )}
+                      ({calculateStockGST(item).gstPercent}%)
                     </TableCell>
+
+                    {/* <TableCell>{item.Quantity}</TableCell> */}
+
                     <TableCell>
                       <button
                         onClick={() => handleDelete(item.Barcode, index)}

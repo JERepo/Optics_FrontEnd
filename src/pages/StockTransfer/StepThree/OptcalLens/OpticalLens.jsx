@@ -737,7 +737,7 @@ const OpticalLens = () => {
     console.log("barcodeData", barcodeData);
     try {
       const payload = {
-        STOutMainId: stockDraftData.ID || stockDraftData[0].ID,
+        STOutMainId: stockDraftData.ID ?? null,
         products: barcodeData.map((item) => {
           return {
             ProductType: 0,
@@ -752,7 +752,7 @@ const OpticalLens = () => {
       };
       console.log(payload);
       await saveStockTransfer({ payload }).unwrap();
-      toast.success("Frame Stock transfer out successfully added");
+      toast.success("Optical Lens transfer out successfully added");
       goToStockStep(4);
     } catch (error) {
       toast.error(error?.data.error.message);

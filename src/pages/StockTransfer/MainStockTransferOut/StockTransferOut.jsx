@@ -19,7 +19,7 @@ import { formatINR } from "../../../utils/formatINR";
 const StockTransferOut = () => {
   const navigate = useNavigate();
   const { hasMultipleLocations } = useSelector((state) => state.auth);
-  const { goToSalesStep } = useOrder();
+  const { goToStockStep } = useOrder();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -197,7 +197,7 @@ const StockTransferOut = () => {
                 icon={FiPlus}
                 className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
                 onClick={() => {
-                  goToSalesStep(1);
+                  goToStockStep(1);
                   navigate("/stock-transfer/create");
                 }}
               >

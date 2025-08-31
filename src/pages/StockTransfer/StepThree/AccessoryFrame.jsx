@@ -30,8 +30,6 @@ import {
   validateStockQty,
 } from "../../../utils/isValidNumericInput";
 
-
-
 const AccessoryFrame = () => {
   const {
     selectedStockProduct,
@@ -111,12 +109,16 @@ const AccessoryFrame = () => {
             if (index !== -1) {
               const newStkQty = Number(prev[index].stkQty) + 1;
               const qty = Number(prev[index].Quantity);
+              if (newStkQty > qty) {
+                toast.error("Stock quantity cannot exceed available quantity!");
+                return prev;
+              }
               return prev.map((item, idx) =>
                 idx === index
                   ? {
                       ...item,
                       stkQty: newStkQty,
-                      Quantity: qty + data.Quantity,
+                      // Quantity: qty + 1,
                     }
                   : item
               );
@@ -212,11 +214,14 @@ const AccessoryFrame = () => {
             if (!validateStockQty(updated[index], newStkQty)) {
               return; // Skip this item if stkQty exceeds AvlQty
             }
+            if (newStkQty > qty) {
+              toast.error("Stock quantity cannot exceed available quantity!");
+              return prev;
+            }
             updated = updated.map((item, idx) =>
-              idx === index
-                ? { ...item, stkQty: newStkQty, Quantity: qty + index.Quantity }
-                : item
+              idx === index ? { ...item, stkQty: newStkQty } : item
             );
+            // index.Quantity index.Quantity
           } else {
             updated = [{ ...selected, stkQty: 1 }, ...updated];
           }
@@ -415,7 +420,7 @@ const AccessoryFrame = () => {
       gstPercent: lastDetail?.PurTaxPerct || 0,
     };
   };
-
+console.log("draft data",stockDraftData)
   const handleSaveData = async () => {
     if (!Array.isArray(items) || items.length === 0) {
       console.warn("No details to save");
@@ -424,7 +429,7 @@ const AccessoryFrame = () => {
     console.log("items", items);
     try {
       const payload = {
-        STOutMainId: stockDraftData.ID || stockDraftData[0].ID,
+        STOutMainId: stockDraftData.ID ?? null,
         products: items.map((item) => {
           return {
             ProductType: 2,
@@ -713,7 +718,8 @@ const AccessoryFrame = () => {
                     )}
                   </TableCell>
                   <TableCell>
-                    ₹{formatINR(calculateStockGST(item).gstAmount)}({calculateStockGST(item).gstPercent}%)
+                    ₹{formatINR(calculateStockGST(item).gstAmount)}(
+                    {calculateStockGST(item).gstPercent}%)
                   </TableCell>
                   <TableCell>
                     {editMode[`${item.Barcode}-${index}`]?.qty ? (

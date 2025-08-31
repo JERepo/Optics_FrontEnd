@@ -21,7 +21,7 @@ import { format } from "date-fns";
 const PurchaseReturn = () => {
   const navigate = useNavigate();
   const { hasMultipleLocations } = useSelector((state) => state.auth);
-  const { goToSalesStep } = useOrder();
+  const { goToPurchaseStep } = useOrder();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -188,7 +188,7 @@ const PurchaseReturn = () => {
                 icon={FiPlus}
                 className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
                 onClick={() => {
-                  goToSalesStep(1);
+                  goToPurchaseStep(1);
                   navigate("/purchase-return/create");
                 }}
               >

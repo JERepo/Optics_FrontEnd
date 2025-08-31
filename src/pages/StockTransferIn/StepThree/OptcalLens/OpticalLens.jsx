@@ -38,6 +38,7 @@ import {
   useGetOlDetailsByOlDetailIdMutation,
   useGetStockOutDetailsQuery,
   useLazyGetOLByBarcodeQuery,
+  useSaveSTIMutation,
   useSaveStockDetailsMutation,
 } from "../../../../api/stockTransfer";
 import toast from "react-hot-toast";
@@ -320,7 +321,7 @@ const OpticalLens = () => {
   const [getOLByBarcode, { data: BarcodeData, isLoading: isByBarcodeLoading }] =
     useLazyGetOLByBarcodeQuery();
   const [saveStockTransfer, { isLoading: isStockTransferLoading }] =
-    useSaveStockDetailsMutation();
+    useSaveSTIMutation();
   const { data: stockOutData } = useGetStockOutDetailsQuery({
     mainId: customerStockTransferIn.mainId,
     locationId: customerStockTransferIn.locationId,

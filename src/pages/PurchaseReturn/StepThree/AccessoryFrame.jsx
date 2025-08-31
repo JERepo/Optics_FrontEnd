@@ -107,12 +107,15 @@ const AccessoryFrame = () => {
             if (index !== -1) {
               const newStkQty = Number(prev[index].stkQty) + 1;
               const qty = Number(prev[index].Quantity);
+              if (newStkQty > qty) {
+                toast.error("Stock quantity cannot exceed available quantity!");
+                return prev;
+              }
               return prev.map((item, idx) =>
                 idx === index
                   ? {
                       ...item,
                       stkQty: newStkQty,
-                      Quantity: qty + data.Quantity,
                     }
                   : item
               );
@@ -205,13 +208,15 @@ const AccessoryFrame = () => {
           if (index !== -1) {
             const newStkQty = Number(updated[index].stkQty) + 1;
             const qty = Number(prev[index].Quantity);
+            if (newStkQty > qty) {
+              toast.error("Stock quantity cannot exceed available quantity!");
+              return prev;
+            }
             if (!validateStockQty(updated[index], newStkQty)) {
               return; // Skip this item if stkQty exceeds AvlQty
             }
             updated = updated.map((item, idx) =>
-              idx === index
-                ? { ...item, stkQty: newStkQty, Quantity: qty + index.Quantity }
-                : item
+              idx === index ? { ...item, stkQty: newStkQty } : item
             );
           } else {
             updated = [{ ...selected, stkQty: 1 }, ...updated];
@@ -393,7 +398,7 @@ const AccessoryFrame = () => {
       const payload = {
         products: items.map((item) => {
           return {
-            PRMainId: purchaseDraftData.Id || purchaseDraftData[0].Id,
+            PRMainId: purchaseDraftData.Id,
             ProductType: 2,
             FrameDetailId: null,
             AccessoryDetailId: item.Id,
@@ -599,22 +604,13 @@ const AccessoryFrame = () => {
           <div className="p-6">
             <Table
               columns={[
-                // "s.no",
-                // "type",
-                // "Product name",
-                // "mrp",
-                // "transfer price",
-                // "gst",
-                // "stock out qty",
-                // "Avl qty",
-                // "total amount",
-                // "Action",
+                
                 "s.no",
                 "Product type",
                 "supplier order no",
                 "product details",
                 "srp",
-                "qty",
+                "return qty",
                 "return product price",
                 "gst/unit",
                 "total price",
@@ -629,10 +625,55 @@ const AccessoryFrame = () => {
                   <TableCell className="whitespace-pre-wrap">
                     <div>{item.Name}</div>
                     <div>Variation: {item.Variation}</div>
-
                     <div>Barcode: {item.Barcode}</div>
                   </TableCell>
                   <TableCell>₹{formatINR(item.MRP)}</TableCell>
+                    <TableCell>
+                    {editMode[`${item.Barcode}-${index}`]?.qty ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          value={item.stkQty}
+                          onChange={(e) =>
+                            handleQtyChange(item.Barcode, e.target.value, index)
+                          }
+                          className="w-20 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                          min="1"
+                        />
+                        <button
+                          onClick={() =>
+                            toggleEditMode(item.Barcode, index, "qty")
+                          }
+                          className="text-neutral-400 transition"
+                          title="Save"
+                        >
+                          <FiCheck size={18} />
+                        </button>
+                        <button
+                          onClick={() =>
+                            toggleEditMode(item.Barcode, index, "qty")
+                          }
+                          className="text-neutral-400 transition"
+                          title="Cancel"
+                        >
+                          <FiX size={18} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        {item.stkQty}
+                        <button
+                          onClick={() =>
+                            toggleEditMode(item.Barcode, index, "qty")
+                          }
+                          className="text-neutral-400 transition"
+                          title="Edit Quantity"
+                        >
+                          <FiEdit2 size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell>
                     {editMode[`${item.Barcode}-${index}`]?.BuyingPrice ? (
                       <div className="flex items-center gap-2">
@@ -697,52 +738,7 @@ const AccessoryFrame = () => {
                     ₹{formatINR(calculateStockGST(item).gstAmount)}(
                     {calculateStockGST(item).gstPercent}%)
                   </TableCell>
-                  <TableCell>
-                    {editMode[`${item.Barcode}-${index}`]?.qty ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          value={item.stkQty}
-                          onChange={(e) =>
-                            handleQtyChange(item.Barcode, e.target.value, index)
-                          }
-                          className="w-20 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                          min="1"
-                        />
-                        <button
-                          onClick={() =>
-                            toggleEditMode(item.Barcode, index, "qty")
-                          }
-                          className="text-neutral-400 transition"
-                          title="Save"
-                        >
-                          <FiCheck size={18} />
-                        </button>
-                        <button
-                          onClick={() =>
-                            toggleEditMode(item.Barcode, index, "qty")
-                          }
-                          className="text-neutral-400 transition"
-                          title="Cancel"
-                        >
-                          <FiX size={18} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        {item.stkQty}
-                        <button
-                          onClick={() =>
-                            toggleEditMode(item.Barcode, index, "qty")
-                          }
-                          className="text-neutral-400 transition"
-                          title="Edit Quantity"
-                        >
-                          <FiEdit2 size={14} />
-                        </button>
-                      </div>
-                    )}
-                  </TableCell>
+                
                   {/* <TableCell>{item.Quantity}</TableCell> */}
                   <TableCell>
                     ₹

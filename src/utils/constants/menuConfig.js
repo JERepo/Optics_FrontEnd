@@ -6,6 +6,12 @@ import {
   FiFileText,
   FiClipboard,
   FiBox,
+  FiRepeat,
+  FiPackage,
+  FiFilePlus,
+  FiArrowRightCircle,
+  FiCornerUpLeft,
+  FiFileMinus,
 } from "react-icons/fi";
 import {
   IoPeopleOutline,
@@ -167,7 +173,7 @@ export const menuItems = [
   },
   {
     name: "Prescription",
-    icon: FiFileText,
+    icon: FiFilePlus,
     module: "Prescription",
     path: "/prescription",
   },
@@ -185,7 +191,7 @@ export const menuItems = [
   },
   {
     name: "Purchase Order",
-    icon: FiBox,
+    icon: FiPackage,
     module: "Purchase Order",
     subItems: [
       {
@@ -202,15 +208,29 @@ export const menuItems = [
       },
     ],
   },
+
   {
     name: "Stock Transfer",
-    icon: FiClipboard,
+    icon: FiRepeat,
     module: "StockTransfer",
-    path: "/stock-transfer",
+    subItems: [
+      {
+        name: "Stock Transfer Out",
+        path: "/stock-transfer",
+        module: "StockTransfer",
+        icon: IoConstructOutline,
+      },
+      {
+        name: "Stock Transfer In",
+        path: "/stock-transferin/create",
+        module: "StockTransfer",
+        icon: IoConstructOutline,
+      },
+    ],
   },
   {
     name: "GRN",
-    icon: FiBox,
+    icon: FiArrowRightCircle,
     module: "GRN",
     subItems: [
       {
@@ -220,5 +240,11 @@ export const menuItems = [
         icon: IoConstructOutline, // Suggests building/setup
       }
     ],
-  }
+  },
+  {
+    name: "Purchase Return",
+    icon: FiFileMinus,
+    module: "Purchase-Return",
+    path: "/purchase-return",
+  },
 ];

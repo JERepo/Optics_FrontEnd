@@ -145,22 +145,84 @@ const getProductName = (item) => {
 };
 
 const getStockOutPrice = (item) => {
-  if (!item.Stock) {
+  if (!item) {
     return 0;
   }
 
   if (item.ProductType === 3) {
     if (item.CLBatchCode === 0) {
       return parseFloat(item.price?.BuyingPrice || 0);
+    } else if (item.CLBatchCode === 1) {
+      if (Array.isArray(item.Stock)) {
+        return item.Stock[0].BuyingPrice || 0;
+      } else if (item.Stock && typeof item.Stock === "object") {
+        return parseFloat(item.Stock.BuyingPrice || 0);
+      }
     }
 
-    return item.Stock?.reduce(
-      (sum, s) => sum + parseFloat(s.BuyingPrice || 0),
-      0
-    );
+    return parseFloat(item.Stock?.BuyingPrice || 0);
+  }
+  if (item.ProductType === 1) {
+    return parseFloat(item.Stock?.BuyingPrice || 0);
+  }
+  if (item.ProductType === 2) {
+    return parseFloat(item.Stock?.BuyingPrice || 0);
+  }
+  if (item.ProductType === 0) {
+    if (item.CLBatchCode === 0) {
+      return parseFloat(item.price?.BuyingPrice || 0);
+    } else if (item.CLBatchCode === 1) {
+      if (Array.isArray(item.Stock)) {
+        return item.Stock[0].BuyingPrice || 0;
+      } else if (item.Stock && typeof item.Stock === "object") {
+        return parseFloat(item.Stock.BuyingPrice || 0);
+      }
+    }
+
+    return parseFloat(item.Stock?.BuyingPrice || 0);
   }
 
-  return item.STQtyOut * parseFloat(item.Stock?.BuyingPrice || 0);
+  return 0;
+};
+const getStockOutMRP = (item) => {
+  if (!item) {
+    return 0;
+  }
+
+  if (item.ProductType === 3) {
+    if (item.CLBatchCode === 0) {
+      return parseFloat(item.price?.MRP || 0);
+    } else if (item.CLBatchCode === 1) {
+      if (Array.isArray(item.Stock)) {
+        return item.Stock[0].MRP || 0;
+      } else if (item.Stock && typeof item.Stock === "object") {
+        return parseFloat(item.Stock.MRP || 0);
+      }
+    }
+
+    return parseFloat(item.Stock?.MRP || 0);
+  }
+  if (item.ProductType === 1) {
+    return parseFloat(item.Stock?.FrameSRP || 0);
+  }
+  if (item.ProductType === 2) {
+    return parseFloat(item.Stock?.OPMRP || 0);
+  }
+  if (item.ProductType === 0) {
+    if (item.CLBatchCode === 0) {
+      return parseFloat(item.price?.MRP || 0);
+    } else if (item.CLBatchCode === 1) {
+      if (Array.isArray(item.Stock)) {
+        return item.Stock[0].MRP || 0;
+      } else if (item.Stock && typeof item.Stock === "object") {
+        return parseFloat(item.Stock.MRP || 0);
+      }
+    }
+
+    return parseFloat(item.Stock?.MRP || 0);
+  }
+
+  return 0;
 };
 const StockTransferView = () => {
   const navigate = useNavigate();
@@ -251,7 +313,7 @@ const StockTransferView = () => {
                 <TableCell className="whitespace-pre-wrap">
                   {getProductName(item)}
                 </TableCell>
-                <TableCell>₹{formatINR(item.SRP)}</TableCell>
+                <TableCell>₹{formatINR(getStockOutMRP(item))}</TableCell>
                 <TableCell>₹{formatINR(getStockOutPrice(item))}</TableCell>
                 <TableCell>
                   ₹
@@ -264,24 +326,16 @@ const StockTransferView = () => {
 
                 <TableCell>{item.STQtyOut}</TableCell>
                 <TableCell>
-                  {[1, 2, 3].includes(item.ProductType)
-                    ? Array.isArray(item.Stock)
-                      ? item.Stock.reduce(
-                          (sum, s) => sum + (s.Quantity ?? 0),
-                          0
-                        )
-                      : item.Stock?.Quantity ?? 0
-                    : 0}
+                  {Array.isArray(item.Stock)
+                    ? item.Stock[0].Quantity
+                    : item.Stock.Quantity}
                 </TableCell>
                 <TableCell>
                   ₹
                   {formatINR(
-                    [1, 2, 3, 0].includes(item.ProductType)
-                      ? parseFloat(item.Stock.BuyingPrice) * item.STQtyOut +
-                          getStockOutPrice(item) *
-                            ((parseFloat(item.ProductTaxPercentage) / 100) *
-                              item.STQtyOut)
-                      : 0
+                    getStockOutPrice(item) * item.STQtyOut +
+                      getStockOutPrice(item) *
+                        (parseFloat(item.ProductTaxPercentage) / 100)
                   )}
                 </TableCell>
               </TableRow>
@@ -298,12 +352,10 @@ const StockTransferView = () => {
                   Total Qty
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
-                  {formatINR(
-                    stockDetails?.data?.result?.details.reduce(
-                      (sum, item) => sum + item.STQtyOut,
-                      0
-                    )
-                  ) || "0"}
+                  {stockDetails?.data?.result?.details.reduce(
+                    (sum, item) => sum + item.STQtyOut,
+                    0
+                  )}
                 </span>
               </div>
               <div className="flex flex-col">

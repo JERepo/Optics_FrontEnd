@@ -7,10 +7,7 @@ import Textarea from "../../../components/Form/Textarea";
 import { useNavigate } from "react-router";
 import { FiTrash2 } from "react-icons/fi";
 import { formatINR } from "../../../utils/formatINR";
-import {
-  useGetStockOutDetailsQuery,
-  useUpdateStockTransferOutMutation,
-} from "../../../api/stockTransfer";
+
 import toast from "react-hot-toast";
 import Loader from "../../../components/ui/Loader";
 import {
@@ -40,6 +37,7 @@ const getProductName = (item) => {
     hsncode,
     colour,
     brandName,
+    HSN,
   } = detail;
 
   const clean = (val) => {
@@ -68,7 +66,7 @@ const getProductName = (item) => {
       Size ? `Size: ${Size.Size}` : "",
       Category === 0 ? "Category: Optical Frame" : "Category: Sunglasses",
       barcode ? `Barcode: ${barcode}` : "",
-      clean(hsncode) ? `HSN: ${hsncode}` : "",
+      clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
     return lines.filter(Boolean).join("\n");
   }
@@ -79,7 +77,7 @@ const getProductName = (item) => {
       ProductName || productName,
       Variation ? `Variation: ${Variation.Variation}` : "",
       barcode ? `Barcode: ${barcode}` : "",
-      clean(hsncode) ? `HSN: ${hsncode}` : "",
+      clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
     return lines.filter(Boolean).join("\n");
   }
@@ -99,10 +97,11 @@ const getProductName = (item) => {
 
     const lines = [
       ProductName || productName,
-      specs ? `Power: ${specs}` : "",
+      specs ? `${specs}` : "",
       clean(colour) ? `Colour: ${clean(colour)}` : "",
       barcode ? `Barcode: ${barcode}` : "",
-      clean(hsncode) ? `HSN: ${hsncode}` : "",
+      clean(item.BatchCode) ? `BatchCode: ${item.BatchCode}` : "",
+      clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
 
     return lines.filter(Boolean).join("\n");
@@ -142,7 +141,7 @@ const getProductName = (item) => {
       ),
       specsLines,
       clean(barcode) && `Color: ${colour}`,
-      clean(hsncode) && `HSN: ${hsncode}`,
+      clean(hsncode || HSN) && `HSN: ${hsncode || HSN}`,
       tintName ? `Tint: ${tintName}` : "",
       addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
       clean(FittingPrice) ? `Fitting Price: ${FittingPrice}` : "",
@@ -170,16 +169,31 @@ const getStockOutPrice = (item) => {
     }
 
     const stockCheck = Array.isArray(item.ProductDetails.Stock)
-      ? item.ProductDetails.Stock.reduce(
-          (sum, item) => sum + parseFloat(item.MRP),
-          0
-        )
+      ? item.ProductDetails.Stock[0].MRP
       : item.ProductDetails.Stock.MRP;
     return stockCheck;
   } else if (item.ProductType === 1) {
     return parseFloat(item.ProductDetails.Stock.FrameSRP);
   } else if (item.ProductType === 2) {
     return parseFloat(item.ProductDetails.Stock.OPMRP);
+  }
+
+  return 0;
+};
+const getPurchaseValue = (item) => {
+  if (item.ProductType === 3) {
+    if (item.ProductDetails.CLBatchCode === 0) {
+      return parseFloat(item.ProductDetails.price?.BuyingPrice || 0);
+    }
+
+    const stockCheck = Array.isArray(item.ProductDetails.Stock)
+      ? item.ProductDetails.Stock[0].BuyingPrice
+      : item.ProductDetails.Stock.BuyingPrice;
+    return stockCheck;
+  } else if (item.ProductType === 1) {
+    return parseFloat(item.ProductDetails.Stock.BuyingPrice);
+  } else if (item.ProductType === 2) {
+    return parseFloat(item.ProductDetails.Stock.BuyingPrice);
   }
 
   return 0;
@@ -219,7 +233,7 @@ const CompleteStockTransfer = () => {
         delete: [id], // Array of PurchaseReturnDetail IDs to delete (optional)
       };
       await updatePR({
-        prId: purchaseDraftData.Id || purchaseDraftData[0].Id,
+        prId: purchaseDraftData.Id,
         userId: user.Id,
         locationId: customerPurchase.locationId,
         payload,
@@ -233,20 +247,23 @@ const CompleteStockTransfer = () => {
   const totals = (purchaseDetails?.details || []).reduce(
     (acc, item) => {
       const qty = item.DNQty || 0;
-      const basicValue = getStockOutPrice(item);
-      const gst =
-        (basicValue * parseFloat(item.ProductTaxPercentage || 0)) / 100;
-      const total = basicValue + gst;
-      console.log(basicValue);
+      const unitPrice = getPurchaseValue(item);
+      const gstRate = parseFloat(item.ProductTaxPercentage) / 100;
+
+      const basicValue = unitPrice * qty;
+      const gst = unitPrice * qty * gstRate;
+      const returnTotal = basicValue + gst;
+
       acc.totalQty += qty;
       acc.totalGST += gst;
       acc.totalBasicValue += basicValue;
-      acc.totalReturnValue += total;
+      acc.totalReturnValue += returnTotal;
 
       return acc;
     },
     { totalQty: 0, totalGST: 0, totalBasicValue: 0, totalReturnValue: 0 }
   );
+
   console.log(totals);
   const formattedTotals = {
     totalQty: totals.totalQty,
@@ -285,7 +302,7 @@ const CompleteStockTransfer = () => {
         <div className="p-6 border-b border-gray-200 bg-gray-50">
           <div className="flex justify-between">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              Stock Out Transfer Details
+              Purchase Return Details
             </h2>
             <div className="flex items-center gap-4">
               <Button onClick={() => goToPurchaseStep(2)}>Add Product</Button>
@@ -320,27 +337,37 @@ const CompleteStockTransfer = () => {
                 <TableCell className="whitespace-pre-wrap">
                   {getProductName(item)}
                 </TableCell>
-                <TableCell>₹{formatINR(getStockOutPrice(item))}</TableCell>
-                <TableCell>{item.DNQty}</TableCell>
-                <TableCell>₹{item.DNPrice}</TableCell>
                 <TableCell>
-                  ₹
-                  {formatINR(
-                    getStockOutPrice(item) *
-                      (parseFloat(item.ProductTaxPercentage) / 100)
-                  )}
-                  ({parseFloat(item.ProductTaxPercentage)}%)
+                  ₹{formatINR(getStockOutPrice(item))}{" "}
+                  
+                </TableCell>
+
+                <TableCell>{item.DNQty}</TableCell>
+
+                <TableCell>
+                  ₹{formatINR(getPurchaseValue(item) * item.DNQty)}{" "}
+                 
                 </TableCell>
 
                 <TableCell>
                   ₹
                   {formatINR(
-                    parseFloat(getStockOutPrice(item) * item.DNQty) +
-                      getStockOutPrice(item) *
-                        ((parseFloat(item.ProductTaxPercentage) / 100) *
-                          item.DNQty)
+                    getPurchaseValue(item) *
+                      (parseFloat(item.ProductTaxPercentage) / 100)
+                  )}{" "}
+                 ({parseFloat(item.ProductTaxPercentage)}%)
+                </TableCell>
+
+                <TableCell>
+                  ₹
+                  {formatINR(
+                    getPurchaseValue(item) * item.DNQty +
+                      getPurchaseValue(item) *
+                        item.DNQty *
+                        (parseFloat(item.ProductTaxPercentage) / 100)
                   )}
                 </TableCell>
+
                 <TableCell>
                   <button
                     onClick={() => handleDeleteItem(item.Id)}

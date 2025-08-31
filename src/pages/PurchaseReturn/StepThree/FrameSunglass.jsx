@@ -107,12 +107,16 @@ const FrameSunglass = () => {
             if (index !== -1) {
               const newStkQty = Number(prev[index].stkQty) + 1;
               const qty = Number(prev[index].Quantity);
+              if (newStkQty > qty) {
+                toast.error("Stock quantity cannot exceed available quantity!");
+                return prev;
+              }
               return prev.map((item, idx) =>
                 idx === index
                   ? {
                       ...item,
                       stkQty: newStkQty,
-                      Quantity: qty + data.Quantity,
+                      // Quantity: qty + data.Quantity,
                     }
                   : item
               );
@@ -202,12 +206,16 @@ const FrameSunglass = () => {
           if (index !== -1) {
             const newStkQty = Number(updated[index].stkQty) + 1;
             const qty = Number(prev[index].Quantity);
+            if (newStkQty > qty) {
+              toast.error("Stock quantity cannot exceed available quantity!");
+              return prev;
+            }
             if (!validateStockQty(updated[index], newStkQty)) {
               return; // Skip this item if stkQty exceeds AvlQty
             }
             updated = updated.map((item, idx) =>
               idx === index
-                ? { ...item, stkQty: newStkQty, Quantity: qty + index.Quantity }
+                ? { ...item, stkQty: newStkQty }
                 : item
             );
           } else {
@@ -604,7 +612,7 @@ const FrameSunglass = () => {
                   "supplier order no",
                   "product details",
                   "srp",
-                  "qty",
+                  "return qty",
                   "return product price",
                   "gst/unit",
                   "total price",
@@ -620,6 +628,7 @@ const FrameSunglass = () => {
                       <div>{item.Name}</div>
                       <div>Size: {item.Size}</div>
                       <div>Barcode: {item.Barcode}</div>
+                      <div>HSN: {item.HSN}</div>
                     </TableCell>
                     <TableCell>₹{item.MRP}</TableCell>
                     <TableCell>
@@ -739,8 +748,8 @@ const FrameSunglass = () => {
                     <TableCell>
                       ₹
                       {formatINR(
-                        parseFloat(item.BuyingPrice) * item.Quantity +
-                          calculateStockGST(item).gstAmount * item.Quantity
+                        (parseFloat(item.BuyingPrice) * item.stkQty) +
+                          calculateStockGST(item).gstAmount * item.stkQty
                       )}
                     </TableCell>
                     {/* <TableCell>{item.Quantity}</TableCell> */}

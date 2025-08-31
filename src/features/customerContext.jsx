@@ -114,7 +114,7 @@ export const CustomerProvider = ({ children }) => {
       TAXNo: formData.GSTNumber,
       BillingMethod: parseInt(billingMethod),
       FittingPrice: parseInt(fittingType),
-      LoyaltyEnrollment: parseInt(enableLoyalty),
+      // LoyaltyEnrollment: parseInt(enableLoyalty),
       CreditBilling: parseInt(enableCreditBilling),
       OpeningBalance: Number(creditDetails.openingBalance),
       CreditLimit: Number(creditDetails.creditLimit),

@@ -890,6 +890,7 @@ const CustomerSelect = () => {
     });
     return payments;
   };
+  console.log("ss",selectedPatient)
   const handleGenerateInvoiceCreditYes = () => {
     if (
       selectedPatient.CustomerMaster.CreditBilling === 1 &&

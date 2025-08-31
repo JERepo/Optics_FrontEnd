@@ -194,7 +194,7 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
   };
   const findGSTPercentage = (item) => {
     const price = parseFloat(item.returnPrice || 0);
-    console.log("dendjne", item);
+
     const gstPercent = (() => {
       if (!item.TaxDetails || item.TaxDetails.length === 0) {
         return 0; // no tax data
@@ -214,9 +214,10 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
 
       return matchingSlab ? parseFloat(matchingSlab.SalesTaxPerct) || 0 : 0;
     })();
-    console.log("sending before", price, gstPercent);
     return calculateGST(price, gstPercent);
   };
+
+
 
   // Stock Transfer
   const [customerStock, setCustomerStockOut] = useState({
