@@ -774,11 +774,23 @@ export const router = createBrowserRouter([
             <GRNMain />
           </GRNProvider>
           // </PermissionRoute>
-        )
+        ),
       },
-      {path: "grn/", element: <GRNListPage/>},
-      {path: "grn/view", element: <GRNViewPage/>}
+      { path: "grn/", element: <GRNListPage /> },
+      { path: "grn/view", element: <GRNViewPage /> },
 
+      {
+        path: "gift-voucher",
+        element: <NewGVMain />,
+      },
+      {
+        path: "newgv/create",
+        element: <NewGV />,
+      },
+      {
+        path: "activate-gv",
+        element: <ActiveteGV />,
+      },
     ],
   },
   {
