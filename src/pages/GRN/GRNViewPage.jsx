@@ -1,0 +1,346 @@
+import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { ArrowLeft, PenIcon, Trash2 } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { useGetAllPoDetailsForNewOrderMutation, useGetAllPoDetailsMutation } from "../../api/purchaseOrderApi";
+import { useGetGRNDetailsMutation } from "../../api/grnApi";
+import { Table, TableRow, TableCell } from "../../components/Table";
+
+
+
+export function GRNViewPage() {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const { user, hasMultipleLocations } = useSelector((state) => state.auth);
+
+    const [getAllPoDetails] = useGetAllPoDetailsMutation();
+    const [getAllPoDetailsForNewOrder] = useGetAllPoDetailsForNewOrderMutation();
+    const [getGRNDetails, {
+        isLoading: isLoadingGRNDetails,
+        error: errorGRNDetails
+    }] = useGetGRNDetailsMutation();
+
+
+
+    // Get parameters from navigation state
+    const {
+        grnData
+    } = location.state || {};
+
+    console.log("Get data ---------- ",
+        grnData);
+
+    const [poreviewDetails, setPoreviewDetails] = useState([]);
+    const [formState, setFormState] = useState({
+        shiptoAddress: "against",
+        remarks: "",
+        vendorId: null
+    });
+    const [selectedVendor, setSelectedVendor] = useState(null);
+    const [selectedLocation, setSelectedLocation] = useState(null);
+    const [currentStep, setCurrentStep] = useState(4);
+    const [showRemoveModal, setShowRemoveModal] = useState(false);
+    const [orderToRemove, setOrderToRemove] = useState(null);
+    const [createdPOMainId, setCreatedPOMainId] = useState(null);
+    const [grnViewDetails, setGrnViewDetails] = useState([]);
+
+
+    useEffect(() => {
+        const fetchGRNDetails = async () => {
+            const payload = {
+                companyId: grnData?.CompanyID,
+                vendorId: grnData?.vendor?.Id,
+                againstPo: String(grnData?.AgainstPO),
+                applicationUserId: grnData?.applicationUser,
+                status: 1
+            }
+
+            try {
+
+                console.log("fetchGRNDetails payload -------------- ", payload);
+                const response = await getGRNDetails(payload);
+
+                if (response?.data) {
+                    console.log("getAllGRNDetails response -------------- ", response?.data);
+
+                    setGrnViewDetails(response?.data?.data || []);
+                    // updateStep1Data({
+                    //     GrnMainId: response?.data?.data[0]?.GRNMainId || null,
+                    // });
+                }
+            } catch (error) {
+                console.error("Error fetching GRN details:", error);
+                toast.error("Failed to fetch GRN details. Please try again.");
+            }
+        }
+
+        fetchGRNDetails();
+    }, [grnData]);
+
+    console.log("poreviewDetails --------------------- ", poreviewDetails);
+
+
+    const calculateTotalAmount = () => {
+        if (grnData.againstOrder === 1) {
+            return poreviewDetails.reduce((total, order) => {
+                const quantity = order.poQty ?? (order.orderQty - order.billedQty - order.cancelledQty);
+                const price = order.productType === 3
+                    ? parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0
+                    : parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
+                const taxPercentage = parseFloat(order.taxPercentage) / 100 || 0;
+
+                return total + (price * quantity * (1 + taxPercentage));
+            }, 0);
+        } else {
+            return poreviewDetails.reduce((total, order) => {
+                const quantity = order.poQty ?? order.POQty;
+                const price = order?.ProductDetails?.ProductType === 3
+                    ? parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0
+                    : parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
+                const taxPercentage = parseFloat(order?.ProductDetails?.GSTPercentage) / 100 || 0;
+
+                return total + (price * quantity * (1 + taxPercentage));
+            }, 0);
+        }
+    };
+
+    const renderProductDetails = (order) => {
+        switch (order.productType) {
+            case 0: // Optical Lens
+                return (
+                    <td className="px-6 py-4 whitespace-wrap min-w-72">
+                        {order?.productDescName}
+                        {/* Lens specifications rendering */}
+                        {(order?.specs?.powerDetails?.right?.sphericalPower ||
+                            order?.specs?.powerDetails?.right?.cylindricalPower ||
+                            order?.specs?.powerDetails?.right?.axis ||
+                            order?.specs?.powerDetails?.right?.additional) && (
+                                <>
+                                    <br />
+                                    R: {order?.specs?.powerDetails?.right?.sphericalPower &&
+                                        `SPH: ${order?.specs?.powerDetails?.right?.sphericalPower > 0 ?
+                                            `+${order?.specs?.powerDetails?.right?.sphericalPower}` :
+                                            order?.specs?.powerDetails?.right?.sphericalPower}`}
+                                    {order?.specs?.powerDetails?.right?.cylindricalPower &&
+                                        ` CYL: ${order?.specs?.powerDetails?.right?.cylindricalPower > 0 ?
+                                            `+${order?.specs?.powerDetails?.right?.cylindricalPower}` :
+                                            order?.specs?.powerDetails?.right?.cylindricalPower}`}
+                                    {order?.specs?.powerDetails?.right?.axis && ` Axis: ${order?.specs?.powerDetails?.right?.axis}`}
+                                    {order?.specs?.powerDetails?.right?.additional &&
+                                        ` Add: ${order?.specs?.powerDetails?.right?.additional > 0 ?
+                                            `+${order?.specs?.powerDetails?.right?.additional}` :
+                                            order?.specs?.powerDetails?.right?.additional}`}
+                                </>
+                            )}
+                        {/* Left lens specifications */}
+                        {(order?.specs?.powerDetails?.left?.sphericalPower ||
+                            order?.specs?.powerDetails?.left?.cylindricalPower ||
+                            order?.specs?.powerDetails?.left?.axis ||
+                            order?.specs?.powerDetails?.left?.additional) && (
+                                <>
+                                    <br />
+                                    L: {order?.specs?.powerDetails?.left?.sphericalPower &&
+                                        `SPH: ${order?.specs?.powerDetails?.left?.sphericalPower > 0 ?
+                                            `+${order?.specs?.powerDetails?.left?.sphericalPower}` :
+                                            order?.specs?.powerDetails?.left?.sphericalPower}`}
+                                    {order?.specs?.powerDetails?.left?.cylindricalPower &&
+                                        ` CYL: ${order?.specs?.powerDetails?.left?.cylindricalPower > 0 ?
+                                            `+${order?.specs?.powerDetails?.left?.cylindricalPower}` :
+                                            order?.specs?.powerDetails?.left?.cylindricalPower}`}
+                                    {order?.specs?.powerDetails?.left?.axis && ` Axis: ${order?.specs?.powerDetails?.left?.axis}`}
+                                    {order?.specs?.powerDetails?.left?.additional &&
+                                        ` Add: ${order?.specs?.powerDetails?.left?.additional > 0 ?
+                                            `+${order?.specs?.powerDetails?.left?.additional}` :
+                                            order?.specs?.powerDetails?.left?.additional}`}
+                                </>
+                            )}
+                        {order?.specs?.addOn?.addOnId && (
+                            <><br /><span className="font-medium">AddOn: {order?.specs?.addOn?.addOnName}</span></>
+                        )}
+                        {order?.specs?.tint?.tintCode && (
+                            <><br /><span className="font-medium">Tint: {order?.specs?.tint?.tintName}</span></>
+                        )}
+                        {order?.hSN && <><br /><span className="font-medium">HSN: {order?.hSN}</span></>}
+                    </td>
+                );
+            case 1: // Frame
+                return (
+                    <td className="px-6 py-4 whitespace-wrap">
+                        {order?.productDescName}
+                        <br />{order?.size}-{order?.dBL}-{order?.templeLength}
+                        <br />{order?.category === 0 ? `Sunglass` : `OpticalFrame`}
+                        <br />{order?.barcode && `Barcode: ${order?.barcode}`}
+                        <br />{order?.hSN && `HSN: ${order?.hSN}`}
+                    </td>
+                );
+            case 2: // Accessory
+                return (
+                    <td className="px-6 py-4 whitespace-wrap">
+                        {order?.productDescName}
+                        {order?.variationName && <><br />Variation: {order?.variationName}</>}
+                        {order?.barcode && <><br />Barcode: {order?.barcode}</>}
+                        {order?.hSN && <><br />HSN: {order?.hSN}</>}
+                    </td>
+                );
+            case 3: // Contact Lens
+                return (
+                    <td className="px-6 py-4 whitespace-wrap">
+                        {order?.productDescName}
+                        <br />{order?.sphericalPower && `Sph: ${order?.sphericalPower > 0 ? `+${order?.sphericalPower}` : order?.sphericalPower}`}
+                        {order?.cylindricalPower && ` Cyld: ${order?.cylindricalPower > 0 ? `+${order?.cylindricalPower}` : order?.cylindricalPower}`}
+                        {order?.axis && ` Axis: ${order?.axis}`}
+                        {order?.additional && ` Add: ${order?.additional > 0 ? `+${order?.additional}` : order?.additional}`}
+                        {order?.color && <><br />Clr: {order?.color}</>}
+                        {order?.barcode && <><br />Barcode: {order?.barcode}</>}
+                        {order?.hSN && <><br />HSN: {order?.hSN}</>}
+                    </td>
+                );
+            default:
+                return <td className="px-6 py-4 whitespace-wrap">N/A</td>;
+        }
+    };
+
+    return (
+        <motion.div
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="bg-white rounded-2xl shadow-xl p-6"
+        >
+            <div className=" items-center mb-4">
+                <button
+                    className="text-[#000060] hover:text-[#0000a0] transition-colors flex items-center mb-3"
+                    onClick={() => { navigate('/grn') }}
+                >
+                    <ArrowLeft className="w-5 h-5 mr-2" />
+                    Back to dashboard
+                </button>
+                <h1 className="text-3xl lg:text-4xl font-bold text-[#000060] mb-2">
+                    Purchase Order
+                </h1>
+
+            </div>
+
+            <div key={grnData.vendor.Id} className=" gap-12 my-10">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <p className="text-gray-700 ">
+                        <span className="font-bold flex">Vendor Name </span>
+                        <span>{grnData.vendor.VendorName}</span>
+                    </p>
+                    <p className="text-gray-700">
+                        <span className="font-bold flex">Mobile Number</span>
+                        <span>{grnData.vendor.MobNumber}</span>
+                    </p>
+                    <p className="text-gray-700">
+                        <span className="font-bold flex">Address</span>
+                        <span className="flex">{grnData.vendor.Address1} {grnData.vendor.Address2}</span>
+                        <span>{grnData.vendor.City}</span>
+                    </p>
+                    <p className="text-gray-700">
+                        <span className="font-bold flex">GST Number</span>
+                        <span className="">{grnData.vendor.TAXNo}</span>
+                    </p>
+                </div>
+            </div>
+
+            <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-4">GRN Items</h3>
+                <Table
+                    columns={["Sl No.", "Order No.", "Supplier Order No.", "Type", "Barcode", "Product Name", "MRP", "GST", "QTY", "Buying Price", "Total Amount"]}
+                    data={grnViewDetails}
+                    renderRow={(item, index) => (
+                        <TableRow key={item.Barcode || index}>
+                            <TableCell>{index + 1}</TableCell>
+                            <TableCell>{item.OrderNo || null}</TableCell>
+                            <TableCell>{item.OrderNo || null}</TableCell>
+                            <TableCell>{item?.ProductDetails?.ProductType == 0 && `OL` || item?.ProductDetails?.ProductType == 1 && `F` || item?.ProductDetails?.ProductType == 2 && `Acc` || item?.ProductDetails?.ProductType == 3 && `CL`}</TableCell>
+                            <TableCell>{item?.ProductDetails?.barcode}</TableCell>
+                            <TableCell>{item?.ProductDetails?.productName}<br />
+                                Size: {item?.ProductDetails?.Size?.Size}<br />
+                                Category: {item?.category === 0 ? `Sunglass` : `OpticalFrame`} <br />
+                                HSN: {item?.ProductDetails?.HSN}
+                            </TableCell>
+                            <TableCell>{item.MRP || null}</TableCell>
+                            <TableCell>₹{" "} {parseFloat(parseInt(item?.GRNPrice) * (parseInt(item?.ProductDetails?.GSTPercentage) / 100))}</TableCell>
+                            <TableCell>{item.GRNQty}</TableCell>
+                            <TableCell>₹ {item.GRNPrice}</TableCell>
+                            <TableCell>₹{" "}{parseFloat(parseInt(item?.GRNPrice * item?.GRNQty) * (parseInt(item?.ProductDetails?.GSTPercentage) / 100)) + parseInt(item?.GRNPrice * item?.GRNQty)}
+                            </TableCell>
+                        </TableRow>
+                    )}
+                />
+            </div>
+
+            {/* Calculation Summary Section */}
+            <div className="flex mt-10 justify-between px-5 rounded-2xl shadow p-8">
+
+                <div className="flex justify-between gap-4">
+                    <span className="text-gray-600 font-bold text-lg">Total Quantity :</span>
+                    <span className="font-bold text-lg">
+                        {grnViewDetails
+                            .reduce((total, order) => total + (order.GRNQty), 0)}
+                    </span>
+                </div>
+
+                <div className="flex justify-between gap-4">
+                    <span className="text-gray-600 font-bold text-lg">Total Gross Value :</span>
+                    <span className="font-bold text-lg">
+                        ₹{
+                            grnViewDetails
+                                .reduce((total, order) => {
+                                    const quantity = order.GRNQty;
+                                    const price = parseFloat(order.GRNPrice) || 0;
+
+                                    // Ensure both price and quantity are valid numbers
+                                    if (price && !isNaN(price) && !isNaN(quantity)) {
+                                        return total + (price * quantity);
+                                    }
+                                    return total;
+                                }, 0)
+                                ?.toFixed?.(2) ?? '0.00'
+                        }
+                    </span>
+                </div>
+
+                <div className="flex justify-between gap-4">
+                    <span className="text-gray-600 font-bold text-lg">Total GST :</span>
+                    <span className="font-bold text-lg">
+                        ₹{grnViewDetails
+                            .reduce((total, order) => {
+                                const quantity = order.GRNQty;
+                                const price = parseFloat(order.GRNPrice) || 0;
+                                const taxPercentage = parseFloat(order?.ProductDetails?.GSTPercentage / 100) || 0;
+                                if (price && !isNaN(price) && !isNaN(quantity)) {
+                                    return total + (price * quantity * taxPercentage);
+                                }
+                                return total;
+                            }, 0)
+                            ?.toFixed?.(2) ?? '0.00'}
+                    </span>
+                </div>
+
+                <div className="flex justify-between gap-4">
+                    <span className="text-gray-600 font-bold text-lg">Total Net Value :</span>
+                    <span className="font-bold text-lg">
+                        ₹{grnViewDetails
+                            .reduce((total, item) => {
+                                const quantity = item.GRNQty || 0;
+                                const price = item.GRNPrice || 0;
+                                const gstPercentage = parseInt(item?.ProductDetails?.GSTPercentage) || 0;
+
+                                if (price && !isNaN(price) && !isNaN(quantity)) {
+                                    const subtotal = price * quantity;
+                                    const gstAmount = subtotal * (gstPercentage / 100);
+                                    return total + subtotal + gstAmount;
+                                }
+                                return total;
+                            }, 0)
+                            ?.toFixed?.(2) ?? '0.00'}
+
+                    </span>
+                </div>
+            </div>
+        </motion.div>
+    );
+}

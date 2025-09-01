@@ -16,7 +16,7 @@ export default function GRNStep2() {
         documentNo: grnData.step1.documentNo,
         documentDate: grnData.step1.documentDate,
         billingMethod: grnData.step1.billingMethod || "invoice",
-        againstPO: grnData.step1.againstPO || 1,
+        againstPO: String(grnData.step1.againstPO || 1),
         selectedOption: grnData.step2.productType || null
     });
 

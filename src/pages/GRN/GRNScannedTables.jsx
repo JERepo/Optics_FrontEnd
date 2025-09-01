@@ -41,7 +41,7 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                             </TableCell>
                             <TableCell className="px-6 py-4 whitespace-nowrap">
                                 <button
-                                    onClick={() => removeScannedItem(item.Id)}
+                                    onClick={() => removeScannedItem(index)}
                                     className="p-1 text-red-600 hover:text-red-800"
                                     aria-label="Delete item"
                                 >
@@ -83,7 +83,50 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                             </TableCell>
                             <TableCell className="px-6 py-4 whitespace-nowrap">
                                 <button
-                                    onClick={() => removeScannedItem(item.Id)}
+                                    onClick={() => removeScannedItem(index)}
+                                    className="p-1 text-red-600 hover:text-red-800"
+                                    aria-label="Delete item"
+                                >
+                                    <Trash2 className="h-5 w-5" />
+                                </button>
+                            </TableCell>
+                        </TableRow>
+                    )}
+                />
+            )}
+
+            {productType === 3 && (
+                <Table
+                    columns={["SL No.", "Order No.", "Supplier Order No.", "Barcode", "Product Name", "MRP", "Buying Price", "Qty", "Action"]}
+                    data={scannedItems}
+                    renderRow={(item, index) => (
+                        <TableRow key={item.Barcode || index}>
+                            <TableCell>{index + 1}</TableCell>
+                            <TableCell>{ }</TableCell>
+                            <TableCell>{ }</TableCell>
+                            <TableCell>{item.Barcode}</TableCell>
+                            <TableCell>{item.ProductName}{item.Size && <br />}{item.Size}</TableCell>
+                            <TableCell>₹{item.MRP}</TableCell>
+                            <TableCell>₹{" "}
+                                <input
+                                    type="number"
+                                    value={item.price || 0}
+                                    onChange={(e) => updateScannedItemPrice(index, e.target.value)}
+                                    className="w-20 px-2 py-1 border rounded"
+                                />
+                            </TableCell>
+                            <TableCell>
+                                <input
+                                    type="number"
+                                    value={item.quantity || 1}
+                                    onChange={(e) => updateScannedItemQuantity(index, e.target.value)}
+                                    className="w-16 px-2 py-1 border rounded"
+                                    min="1"
+                                />
+                            </TableCell>
+                            <TableCell className="px-6 py-4 whitespace-nowrap">
+                                <button
+                                    onClick={() => removeScannedItem(index)}
                                     className="p-1 text-red-600 hover:text-red-800"
                                     aria-label="Delete item"
                                 >
