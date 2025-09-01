@@ -329,7 +329,7 @@ const CompleteStockTransfer = () => {
       navigate("/stock-transfer");
       updateCurrentStockStep(1);
     } catch (error) {
-      toast.error(error?.data.error);
+      toast.error(error?.data.error?.message);
     }
   };
   console.log(stockDetails);

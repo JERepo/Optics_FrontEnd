@@ -1337,13 +1337,10 @@ const OpticalLens = () => {
                       {formatINR(
                         parseFloat(item.ReturnPricePerUnit * item.ReturnQty) +
                           parseFloat(
-                            calculateGST(
-                              parseFloat(item.FittingPriceEdit || 0),
-                              parseFloat(
-                                item.ProductDetails[0].fittingGSTPercentage || 0
-                              )
-                            ).gstAmount
-                          ) + parseFloat(item.FittingPriceEdit)
+                            (item.FittingPriceEdit *
+                              (parseFloat(item.FittingGSTPercentage || 0)) / 100)
+                          ) +
+                          parseFloat(item.FittingPriceEdit)
                       )}
                     </TableCell>
                     <TableCell>

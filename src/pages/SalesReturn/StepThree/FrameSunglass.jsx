@@ -83,7 +83,7 @@ const getProductDetailsText = (order) => {
   };
 
   return [
-    brand && name ? `${brand} ${name}` : brand || name,
+     name ? `${name}` : name,
     // mo && `Model No:${mo}`,
     sizeVal && `Size: ${sizeVal}-${dBL}-${templeLength}`,
     getCategoryName(category) && `Category: ${getCategoryName(category)}`,

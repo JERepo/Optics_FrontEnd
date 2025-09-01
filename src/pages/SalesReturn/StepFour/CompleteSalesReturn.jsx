@@ -108,7 +108,7 @@ const getProductName = (order) => {
 
     return joinNonEmpty(
       [
-        joinNonEmpty([clean(detail.productName)]),
+        joinNonEmpty([clean(detail?.brandName || detail?.BrandName),clean(detail.productName)]),
         specsList,
         clean(detail.specs?.color || detail.colour) &&
           `Color: ${clean(detail.specs?.color || detail.colour)}`,
@@ -130,7 +130,7 @@ const getProductName = (order) => {
 
   // Ophthalmic Lenses (ProductType 0)
   if (productType === 0) {
-    const olLine = clean(` ${detail.productName}`);
+    const olLine = clean(`${detail?.brandName || detail?.BrandName} ${detail.productName}`);
     // AddOns
     console.log("add", AddOnData);
     const addonNames = Array.isArray(AddOnData)
@@ -268,16 +268,21 @@ const CompleteSalesReturn = () => {
       const returnPrice = parseFloat(item.ReturnPricePerUnit) || 0;
       const gstPercentage = parseFloat(item.GSTPercentage) || 0;
 
+      const fittingPrice = parseFloat(item?.FittingCharges || 0)
+      const fittingGst = parseFloat(item?.FittingGSTPercentage || 0)
+      const fittingValue = fittingPrice * (fittingGst /100);
+
       const gst = calculateGST(returnPrice * returnQty, gstPercentage);
 
       return {
         totalQty: acc.totalQty + returnQty,
-        totalGST: acc.totalGST + (parseFloat(gst.gstAmount) || 0),
+        totalGST: acc.totalGST + (parseFloat(gst.gstAmount) || 0) + fittingValue,
 
         totalReturnValue:
           acc.totalReturnValue +
-          (parseFloat(item.TotalAmount) || 0) +
-          parseFloat(gst.gstAmount),
+          (parseFloat(item.TotalAmount) || 0) 
+          // +
+          // parseFloat(gst.gstAmount),
       };
     },
     { totalQty: 0, totalGST: 0, totalReturnValue: 0 }
@@ -291,7 +296,7 @@ const CompleteSalesReturn = () => {
       : "0.00",
     totalReturnValue: totals ? totals.totalReturnValue.toFixed(2) : "0.00",
   };
-console.log("patient",selectedPatient)
+  console.log("patient", selectedPatient);
   const handleDelete = async (id) => {
     try {
       setDeletingId(id);
@@ -460,7 +465,16 @@ console.log("patient",selectedPatient)
                         //       parseFloat(item.GSTPercentage || 0)
                         //     ).gstAmount
                         //   )
-                      )
+                      ) +
+                        parseFloat(
+                          item.ProductType === 0
+                            ? parseFloat(
+                                (item.FittingCharges || 0) *
+                                  ((item.FittingGSTPercentage || 0) / 100)
+                              )
+                            : 0
+                        )
+                        + parseFloat(item.FittingCharges || 0)
                     )}
                   </TableCell>
                   <TableCell>

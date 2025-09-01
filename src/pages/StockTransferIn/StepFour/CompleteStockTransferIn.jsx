@@ -289,7 +289,7 @@ const CompleteStockTransferIn = () => {
       await updateStockTI({ payload }).unwrap();
       console.log(payload);
       toast.success("Stock TransferIn successfully updated");
-      // navigate("/stock-transfer");
+      navigate("/stock-transferin");
     } catch (error) {
       toast.error(error?.data.error);
     }

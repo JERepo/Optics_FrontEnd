@@ -5,10 +5,11 @@ import { format } from "date-fns";
 import Button from "../../../components/ui/Button";
 import Loader from "../../../components/ui/Loader";
 import { formatINR } from "../../../utils/formatINR";
-import { useGetStockTransferOutByIdQuery } from "../../../api/stockTransfer";
+import { useGetStockInByIdQuery, useGetStockTransferOutByIdQuery } from "../../../api/stockTransfer";
 import { useSelector } from "react-redux";
 
-const getProductName = (item) => {
+const getProductName = (data) => {
+  const item = { ...data.ProductDetails, ...data };
   const {
     typeid,
     ProductName,
@@ -29,7 +30,8 @@ const getProductName = (item) => {
     hsncode,
     colour,
     brandName,
-    BatchCode,
+    HSN,
+    BatchCode
   } = item;
 
   const clean = (val) => {
@@ -58,7 +60,7 @@ const getProductName = (item) => {
       Size ? `Size: ${Size.Size}` : "",
       Category === 0 ? "Category: Optical Frame" : "Category: Sunglasses",
       barcode ? `Barcode: ${barcode}` : "",
-      clean(hsncode) ? `HSN: ${hsncode}` : "",
+      clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
     return lines.filter(Boolean).join("\n");
   }
@@ -69,7 +71,7 @@ const getProductName = (item) => {
       ProductName || productName,
       Variation ? `Variation: ${Variation.Variation}` : "",
       barcode ? `Barcode: ${barcode}` : "",
-      clean(hsncode) ? `HSN: ${hsncode}` : "",
+      clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
     return lines.filter(Boolean).join("\n");
   }
@@ -89,11 +91,12 @@ const getProductName = (item) => {
 
     const lines = [
       ProductName || productName,
-      specs ? `Power: ${specs}` : "",
+      specs ? `${specs}` : "",
       clean(colour) ? `Colour: ${clean(colour)}` : "",
+
       barcode ? `Barcode: ${barcode}` : "",
-      clean(BatchCode) && `BatchCode: ${BatchCode}`,
-      clean(hsncode) ? `HSN: ${hsncode}` : "",
+      clean(item.BatchCode) ? `BatchCode: ${item.BatchCode}` : "",
+      clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
 
     return lines.filter(Boolean).join("\n");
@@ -104,21 +107,23 @@ const getProductName = (item) => {
     const tintName = clean(Tint?.name) || "";
     const addOns = AddOns?.map((a) => clean(a.name)).filter(Boolean) || [];
 
-    const specsLines = (Array.isArray(PowerSpecs) ? PowerSpecs : [])
+    const specsLines = (Array.isArray(Specs) ? Specs : [{ ...Specs }])
       .map((spec) => {
         const side = clean(spec?.side);
-        const sph = clean(spec?.sph);
-        const cyl = clean(spec?.cyl);
+        const sph = clean(spec?.sph || spec.Spherical);
+        const cyl = clean(spec?.cyl || spec.Cylinder);
+        const dia = clean(spec.Diameter);
         const axis = clean(spec?.axis);
         const addition = clean(spec?.addition);
 
         const powerValues = [];
         if (sph) powerValues.push(`SPH ${formatPowerValue(sph)}`);
         if (cyl) powerValues.push(`CYL ${formatPowerValue(cyl)}`);
+        if (dia) powerValues.push(`Dia ${formatPowerValue(dia)}`);
         if (axis) powerValues.push(`Axis ${formatPowerValue(axis)}`);
         if (addition) powerValues.push(`Add ${formatPowerValue(addition)}`);
 
-        return powerValues.length ? `${side}: ${powerValues.join(", ")}` : "";
+        return powerValues.join(", ");
       })
       .filter(Boolean)
       .join("\n");
@@ -130,9 +135,8 @@ const getProductName = (item) => {
           `${brandName} ${productName}`
       ),
       specsLines,
-      clean(colour) && `Color: ${colour}`,
-      clean(barcode) && `Barcode: ${barcode}`,
-      clean(hsncode) && `HSN: ${hsncode}`,
+      clean(barcode) && `Color: ${colour}`,
+      clean(hsncode || HSN) && `HSN: ${hsncode || HSN}`,
       tintName ? `Tint: ${tintName}` : "",
       addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
       clean(FittingPrice) ? `Fitting Price: ${FittingPrice}` : "",
@@ -144,7 +148,8 @@ const getProductName = (item) => {
   return "";
 };
 
-const getStockOutPrice = (item) => {
+const getStockOutPrice = (data) => {
+  const item = { ...data.ProductDetails, ...data };
   if (!item) {
     return 0;
   }
@@ -173,7 +178,7 @@ const getStockOutPrice = (item) => {
       return parseFloat(item.price?.BuyingPrice || 0);
     } else if (item.CLBatchCode === 1) {
       if (Array.isArray(item.Stock)) {
-        return item.Stock[0].BuyingPrice || 0;
+        return item.Stock[0].BuyingPrice || 0
       } else if (item.Stock && typeof item.Stock === "object") {
         return parseFloat(item.Stock.BuyingPrice || 0);
       }
@@ -181,58 +186,17 @@ const getStockOutPrice = (item) => {
 
     return parseFloat(item.Stock?.BuyingPrice || 0);
   }
-
-  return 0;
-};
-const getStockOutMRP = (item) => {
-  if (!item) {
-    return 0;
-  }
-
-  if (item.ProductType === 3) {
-    if (item.CLBatchCode === 0) {
-      return parseFloat(item.price?.MRP || 0);
-    } else if (item.CLBatchCode === 1) {
-      if (Array.isArray(item.Stock)) {
-        return item.Stock[0].MRP || 0;
-      } else if (item.Stock && typeof item.Stock === "object") {
-        return parseFloat(item.Stock.MRP || 0);
-      }
-    }
-
-    return parseFloat(item.Stock?.MRP || 0);
-  }
-  if (item.ProductType === 1) {
-    return parseFloat(item.Stock?.FrameSRP || 0);
-  }
-  if (item.ProductType === 2) {
-    return parseFloat(item.Stock?.OPMRP || 0);
-  }
-  if (item.ProductType === 0) {
-    if (item.CLBatchCode === 0) {
-      return parseFloat(item.price?.MRP || 0);
-    } else if (item.CLBatchCode === 1) {
-      if (Array.isArray(item.Stock)) {
-        return item.Stock[0].MRP || 0;
-      } else if (item.Stock && typeof item.Stock === "object") {
-        return parseFloat(item.Stock.MRP || 0);
-      }
-    }
-
-    return parseFloat(item.Stock?.MRP || 0);
-  }
-
-  return 0;
-};
+  return 0
+}
 const StockTransferInView = () => {
   const navigate = useNavigate();
   const { search } = useLocation();
   const { hasMultipleLocations } = useSelector((state) => state.auth);
   const params = new URLSearchParams(search);
-  const stockOut = params.get("stockOutId");
+  const stockIn = params.get("stockInId");
 
-  const { data: stockDetails, isLoading } = useGetStockTransferOutByIdQuery({
-    mainId: stockOut,
+  const { data: stockDetails, isLoading } = useGetStockInByIdQuery({
+    mainId: stockIn,
     locationId: parseInt(hasMultipleLocations[0]),
   });
 
@@ -244,7 +208,32 @@ const StockTransferInView = () => {
     if (id === 0) return "OL";
     return "";
   };
+  const totals = (stockDetails?.data?.StockTransferInDetails || []).reduce(
+    (acc, item) => {
+      const qty = item.STQtyIn || 0;
+      const unitPrice = getStockOutPrice(item)
+      const gstRate = parseFloat(item.ProductTaxPercentage) / 100
 
+     const basicValue  = unitPrice * qty;
+      const gst = unitPrice * qty * gstRate
+      const returnTotal = basicValue + gst;
+
+       acc.totalQty += qty;
+      acc.totalGST += gst;
+      acc.totalBasicValue += basicValue;
+      acc.totalReturnValue += returnTotal;
+
+      return acc;
+    },
+    { totalQty: 0, totalGST: 0, totalBasicValue: 0, totalReturnValue: 0 }
+  );
+
+  const formattedTotals = {
+    totalQty: totals.totalQty,
+    totalGST: formatINR(totals.totalGST),
+    totalBasicValue: formatINR(totals.totalBasicValue),
+    totalReturnValue: formatINR(totals.totalReturnValue),
+  };
   if (isLoading) {
     return <Loader color="black" />;
   }
@@ -267,14 +256,14 @@ const StockTransferInView = () => {
         {/* Order Details */}
         <div className="grid grid-cols-3 gap-3">
           <Info
-            label="From Location Name"
-            value={stockDetails?.data?.result?.FromCompany?.LocationName}
+            label="Location Name"
+            value={stockDetails?.data?.CompanyId}
           />
           <Info
-            label="To Location Name"
-            value={stockDetails?.data?.result?.ToCompany?.LocationName}
+            label="Address"
+            value={`${stockDetails?.data?.result?.STOutPrefix}/${stockDetails?.data?.result?.STOutNo}`}
           />
-          <Info
+           <Info
             label="Date"
             value={
               stockDetails?.data?.result?.STOutCreateDate
@@ -285,27 +274,23 @@ const StockTransferInView = () => {
                 : ""
             }
           />
-          <Info
-            label="Stock Out No"
-            value={`${stockDetails?.data?.result?.STOutPrefix}/${stockDetails?.data?.result?.STOutNo}`}
-          />
         </div>
 
         {/* Product Table */}
-        <div className="mt-5">
+         <div className="p-6">
           <Table
             columns={[
               "s.no",
               "type",
-              "Product name",
-              "mrp",
+              "product name",
               "transfer price",
+              "transfer out qty",
+              "transfer in qty",
               "gst",
-              "stock out qty",
-              "Avl qty",
               "total amount",
+              "action",
             ]}
-            data={stockDetails?.data?.result.details || []}
+            data={stockDetails?.data?.StockTransferInDetails}
             renderRow={(item, index) => (
               <TableRow key={item.ID}>
                 <TableCell>{index + 1}</TableCell>
@@ -313,33 +298,31 @@ const StockTransferInView = () => {
                 <TableCell className="whitespace-pre-wrap">
                   {getProductName(item)}
                 </TableCell>
-                <TableCell>₹{formatINR(getStockOutMRP(item))}</TableCell>
                 <TableCell>₹{formatINR(getStockOutPrice(item))}</TableCell>
+                <TableCell>{item.STQtyOut}</TableCell>
+                <TableCell>{item.STQtyIn}</TableCell>
+
                 <TableCell>
                   ₹
                   {formatINR(
                     getStockOutPrice(item) *
                       (parseFloat(item.ProductTaxPercentage) / 100)
                   )}
-                  ({item.ProductTaxPercentage}%)
+                  ({parseFloat(item.ProductTaxPercentage)}%)
                 </TableCell>
 
-                <TableCell>{item.STQtyOut}</TableCell>
-                <TableCell>
-                  {Array.isArray(item.Stock)
-                    ? item.Stock[0].Quantity
-                    : item.Stock.Quantity}
-                </TableCell>
                 <TableCell>
                   ₹
                   {formatINR(
-                    getStockOutPrice(item) * item.STQtyOut +
+                    getStockOutPrice(item) * item.STQtyIn +
                       getStockOutPrice(item) *
                         (parseFloat(item.ProductTaxPercentage) / 100)
                   )}
                 </TableCell>
+               
               </TableRow>
             )}
+          
           />
         </div>
 

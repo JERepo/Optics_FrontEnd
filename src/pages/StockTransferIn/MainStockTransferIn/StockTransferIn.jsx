@@ -13,7 +13,7 @@ import { enGB } from "date-fns/locale";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { TextField } from "@mui/material";
-import { useGetAllStockOutDetailsQuery, useGetStockLocationsQuery } from "../../../api/stockTransfer";
+import { useGetAllStockInDataQuery, useGetStockLocationsQuery } from "../../../api/stockTransfer";
 import { formatINR } from "../../../utils/formatINR";
 
 const StockTransferIn = () => {
@@ -30,17 +30,18 @@ const StockTransferIn = () => {
     useGetStockLocationsQuery({
       locationId: parseInt(hasMultipleLocations[0]),
     });
+  
   useEffect(() => {
     setCurrentPage(1);
   }, [fromDate, toDate, searchQuery]);
 
-   const {data:allStockOut,isLoading:isStockLoading} = useGetAllStockOutDetailsQuery()
+   const {data:allStockIn,isLoading:isStockLoading} = useGetAllStockInDataQuery()
 
 
   const StockOut = useMemo(() => {
-    if (!allStockOut?.data) return [];
+    if (!allStockIn?.data) return [];
 
-    let filtered = allStockOut.data;
+    let filtered = allStockIn.data;
 
     if (fromDate) {
       filtered = filtered.filter(
@@ -63,23 +64,21 @@ const StockTransferIn = () => {
 
     return filtered.map((s) => ({
       id: s.ID,
-      ton: `${s.STOutPrefix}/${s.STOutNo}`,
+      ton: `${s.STInPrefix}/${s.STInNo}`,
       date: new Intl.DateTimeFormat("en-GB", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
-      }).format(new Date(s.STOutCreateDate)),
-      toCompany: allLocations?.data?.data.find(
-        (item) => item.Id === s.ToCompanyId
-      ).DisplayName,
+      }).format(new Date(s.STInCreateDate)),
+     
       fromCompany: allLocations?.data?.data.find(
-        (item) => item.Id === s.FromCompanyId
+        (item) => item.Id === s.CompanyId
       ).DisplayName,
-      totalQty: s.TotalQtyOut,
-      totalValue: s.TotalValueOut,
+      totalQty: s.TotalQtyIn,
+      totalValue: s.TotalValueIn,
     }));
     // .filter((order) => order.CompanyId == hasMultipleLocations[0]);
-  }, [allStockOut, fromDate, toDate, searchQuery,allLocations]);
+  }, [allStockIn, fromDate, toDate, searchQuery,allLocations]);
 
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedOrders = StockOut.slice(startIndex, startIndex + pageSize);
@@ -87,7 +86,7 @@ const StockTransferIn = () => {
   const today = new Date();
 
   const handleViewSalesReturn = (id) => {
-    navigate(`/stock-transfer/view?stockOutId=${id}`);
+    navigate(`/stock-transfer/view?stockInId=${id}`);
   };
 
   if (isStockLoading) {
@@ -213,7 +212,6 @@ const StockTransferIn = () => {
               "transfer out no",
               "date",
               "from company",
-              "to company",
               "total qty",
               "total value",
               "action",
@@ -225,7 +223,6 @@ const StockTransferIn = () => {
                 <TableCell>{item.ton}</TableCell>
                 <TableCell>{item.date}</TableCell>
                 <TableCell>{item.fromCompany}</TableCell>
-                <TableCell>{item.toCompany}</TableCell>
                 <TableCell>{item.totalQty}</TableCell>
                 <TableCell>₹{formatINR( item.totalValue)}</TableCell>
                 <TableCell>
@@ -241,8 +238,8 @@ const StockTransferIn = () => {
             )}
             emptyMessage={
               isStockLoading
-                ? "Loading stock out transfer..."
-                : "No stock out transfer out match the filters."
+                ? "Loading stock in transfer..."
+                : "No stock in transfer out match the filters."
             }
             pagination={true}
             currentPage={currentPage}
