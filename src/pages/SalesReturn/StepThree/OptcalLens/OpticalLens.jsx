@@ -108,7 +108,7 @@ const getProductNameYes = (item) => {
     .join("\n");
 
   const lines = [
-    `${clean(brandName)} ${clean(productDescName)}`,
+    `${clean()} ${clean(productDescName)}`,
     specsLines,
     clean(barcode) && `Barcode: ${barcode}`,
     tintName ? `Tint: ${tintName}` : "",
@@ -168,7 +168,7 @@ const getProductName = (order, allBrandsData, lensData) => {
     const tint = clean(tintName);
 
     return [
-      [brand, name].filter(Boolean).join(" "), // brand + product
+      [name].filter(Boolean).join(" "), // brand + product
       powerLine, // Sph, Cyl, Dia
       clean(Barcode) ? `Barcode: ${Barcode}` : "",
       tint ? `Tint: ${tint.split(" - ₹")[0]}` : "",
@@ -581,8 +581,8 @@ const OpticalLens = () => {
         CLMRP: parseFloat(priceDetails?.data.SellingPrice), // report to abhipsa srp is not coming
         returnPrice:
           (parseFloat(priceDetails?.data?.SellingPrice) || 0) +
-          addonsTotal +
-          (parseFloat(lensData?.tintPrice) || 0),
+          (addonsTotal/2) +
+          ((parseFloat(lensData?.tintPrice)/2) || 0),
 
         returnQty: 1,
         ProductType: 0,
@@ -1315,11 +1315,13 @@ const OpticalLens = () => {
                       ₹
                       {formatINR(
                         calculateGST(
-                          parseFloat(item.ReturnPricePerUnit || 0) *
-                            parseInt(item.ReturnQty || 0),
+                          parseFloat(item.ReturnPricePerUnit || 0),
                           parseFloat(item.ProductDetails[0].taxPercentage || 0)
                         ).gstAmount
-                      )}
+                      )}({calculateGST(
+                          parseFloat(item.ReturnPricePerUnit || 0),
+                          parseFloat(item.ProductDetails[0].taxPercentage || 0)
+                        ).taxPercentage}%)
                     </TableCell>
                     <TableCell className="text-center">
                       {item.ReturnQty || 0}

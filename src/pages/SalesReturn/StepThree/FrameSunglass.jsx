@@ -981,8 +981,7 @@ const FrameSunglass = () => {
                     ₹
                     {formatINR(
                       calculateGST(
-                        parseFloat(item.ReturnPricePerUnit || 0) *
-                          parseInt(item.ReturnQty || 0),
+                        parseFloat(item.ReturnPricePerUnit || 0),
                         parseFloat(item.GSTPercentage || 0)
                       ).gstAmount
                     )}

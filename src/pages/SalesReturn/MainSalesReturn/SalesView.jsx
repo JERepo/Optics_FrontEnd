@@ -48,12 +48,7 @@ const SalesView = () => {
     const Colour = details?.colour;
     const Tint = details.tint?.tintName || "";
     const addOn = details.addOn?.addOnName;
-    const batchcode = Array.isArray(details.Stock)
-      ? details.Stock[0].BatchCode
-      : details.Stock.BatchCode;
-    const expiry = Array.isArray(details.Stock)
-      ? details.Stock[0].Expiry
-      : details.Stock.Expiry;
+    
     const clean = (val) => {
       if (
         val == null ||
@@ -77,12 +72,12 @@ const SalesView = () => {
     const lines = [];
 
     // Add Product Name
-    if (clean(ProductName)) lines.push(`${brandName} ${ProductName}`);
+    if (clean(ProductName)) lines.push(`${ProductName}`);
 
     // Common fields for all types
     if (typeid === 1) {
       // Frame
-      const Size = details.size;
+      const Size = details.Size.Size;
       if (clean(Size))
         lines.push(
           `Size: ${clean(Size)}-${clean(details.dBL)}-${clean(
@@ -96,6 +91,12 @@ const SalesView = () => {
     } else if (typeid === 3) {
       // Contact Lens
       const PowerSpecs = details.PowerSpecs || {};
+      const batchcode = Array.isArray(details?.Stock)
+      ? details?.Stock[0].BatchCode
+      : details?.Stock.BatchCode;
+    const expiry = Array.isArray(details?.Stock)
+      ? details?.Stock[0].Expiry
+      : details?.Stock.Expiry;
       const specsParts = [];
       if (PowerSpecs.Sph != null)
         specsParts.push(`Sph: ${cleanPower(PowerSpecs.Sph)}`);
@@ -195,7 +196,7 @@ const SalesView = () => {
     <div className="max-w-8xl">
       <div className="bg-white rounded-sm shadow-sm overflow-hidden p-6">
         <div className="flex justify-between items-center mb-3">
-          <div></div>
+          <div className="text-2xl text-neutral-700 font-semibold">View Sales Return Details</div>
           <div>
             <Button variant="outline" onClick={() => navigate("/sales-return")}>
               Back
