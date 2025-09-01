@@ -651,27 +651,24 @@ const ContactLens = () => {
       return;
     }
     try {
-      const batches = CLBatches;
+      const batches = CLBatches?.data;
       const isAvailable = batches?.find(
         (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
       );
 
       if (isAvailable && referenceApplicable === 0) {
-        if (batchBarCodeDetails?.data?.data.Quantity <= 0) {
+        if (isAvailable.Quantity <= 0) {
           toast.error("Stock quantity not available for this batchbarcode!");
           return;
         }
         const newItemCl = {
           ...newItem.powerData,
           sbatchbarCode: isAvailable.CLBatchBarCode,
-          ExpiryDate :isAvailable.CLBatchExpiry,
-
+          ExpiryDate: isAvailable.CLBatchExpiry,
           selectBatch,
-          returnPrice:
-            productSearch === 0
-              ? parseFloat(newItem.sellingPrice)
-              : parseFloat(batchBarCodeDetails?.data?.data.pSellingPrice),
+          returnPrice:parseFloat(isAvailable.SellingPrice),
           returnQty: 1,
+          Quantity : isAvailable.Quantity,
           ...(detailId ? batchBarCodeDetails?.data?.data : {}),
         };
         let existingIndex;
@@ -848,17 +845,19 @@ const ContactLens = () => {
     if (referenceApplicable === 0) {
       let sub;
       if ((!detailId || openBatch) && productSearch == 0) {
-        if (newItem.avlQty <= 0) {
+        if (selectedBatchCode.Quantity <= 0) {
           toast.error("Stock quantity must be greater than 0!");
           return;
         }
+
         sub = {
           ...newItem.powerData,
           sbatchCode: selectedBatchCode.CLBatchCode,
           sMRP: selectedBatchCode.CLMRP,
           MRP: selectedBatchCode.CLMRP,
+          Quantity: selectedBatchCode.Quantity,
           ExpiryDate: selectedBatchCode.CLBatchExpiry,
-          returnPrice: parseFloat(newItem.powerData.SellingPrice),
+          returnPrice: parseFloat(selectedBatchCode.SellingPrice),
           returnQty: 1,
         };
       } else if (detailId && productSearch == 1) {
@@ -868,16 +867,12 @@ const ContactLens = () => {
           sMRP: selectedBatchCode.CLMRP,
           MRP: selectedBatchCode.CLMRP,
           ExpiryDate: selectedBatchCode.CLBatchExpiry,
-
-          returnPrice: parseFloat(batchBarCodeDetails?.data.data.SellingPrice),
+          Quantity: selectedBatchCode.Quantity,
+          returnPrice: parseFloat(selectedBatchCode.SellingPrice),
           returnQty: 1,
         };
       }
 
-      if (sub?.Quantity <= 0) {
-        toast.error("Stock quantity not available for this batchcode!");
-        return;
-      }
       // const existingIndex = mainClDetails.findIndex(
       //   (item) =>
       //     item.Barcode == sub.Barcode || item.CLBatchCode == sub.CLBatchCode
@@ -1724,10 +1719,10 @@ const ContactLens = () => {
                     Select by BatchCode
                   </label>
                   <Autocomplete
-                    options={CLBatches || []}
+                    options={CLBatches?.data || []}
                     getOptionLabel={(option) => option.CLBatchCode || ""}
                     value={
-                      CLBatches?.find(
+                      CLBatches?.data.find(
                         (batch) =>
                           batch.CLBatchCode === selectedBatchCode?.CLBatchCode
                       ) || null

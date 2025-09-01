@@ -92,6 +92,9 @@ const getProductName = (order) => {
 
   // Contact Lens (ProductType 3)
   if (productType === 3) {
+    const bc = detail.CLBatchCode === 1 ? detail.stock[0].BatchCode : null;
+    const ex = detail.CLBatchCode === 1 ? detail.stock[0].Expiry : null;
+
     const specsList = joinNonEmpty(
       [
         cleanPower(detail.PowerSpecs?.Sph) &&
@@ -114,9 +117,12 @@ const getProductName = (order) => {
           `Color: ${clean(detail.specs?.color || detail.colour)}`,
         clean(detail.specs?.barcode || detail.barcode) &&
           `Barcode: ${clean(detail.specs?.barcode || detail.barcode)}`,
-        (batchCode || expiry) &&
-          `Batch Code: ${batchCode || "-"} | Expiry: ${
-            expiry ? expiry.split("-").reverse().join("/") : "-"
+        (clean(bc || detail.BatchCode) || clean(ex || detail.ExpiryDate)) &&
+          `Batch Code: ${bc || detail.BatchCode || "-"} | Expiry: ${
+            ex || detail.ExpiryDate
+              ? ex.split("-").reverse().join("/") ||
+                detail.ExpiryDate.split("-").reverse().join("/")
+              : "-"
           }`,
         clean(detail.hSN || detail.hsncode || detail.HSN) &&
           `HSN: ${clean(detail.hSN || detail.hsncode || detail.HSN)}`,
@@ -192,7 +198,47 @@ const getShortTypeName = (id) => {
   if (id === 0) return "OL";
   return "";
 };
+const getStockOutMRP = (data) => {
+  const productType = data.ProductType;
+  const item = Array.isArray(data.ProductDetails)
+    ? data.ProductDetails[0]
+    : data.ProductDetails;
 
+  if (productType === 3) {
+    if (item.CLBatchCode === 0) {
+      return parseFloat(item.price?.MRP || 0);
+    } else if (item.CLBatchCode === 1) {
+      if (Array.isArray(item.stock)) {
+        return item.stock[0].MRP || 0;
+      } else if (item.Stock && typeof item.Stock === "object") {
+        return parseFloat(item.stock.MRP || 0);
+      }
+    }
+
+    return parseFloat(item.stock?.MRP || 0);
+  }
+  if (productType === 1) {
+    return parseFloat(item.stock?.FrameSRP || 0);
+  }
+  if (productType === 2) {
+    return parseFloat(item.stock?.OPMRP || 0);
+  }
+  if (productType === 0) {
+    if (item.CLBatchCode === 0) {
+      return parseFloat(item.price?.MRP || 0);
+    } else if (item.CLBatchCode === 1) {
+      if (Array.isArray(item.stock)) {
+        return item.stock[0].MRP || 0;
+      } else if (item.stock && typeof item.stock === "object") {
+        return parseFloat(item.stock.MRP || 0);
+      }
+    }
+
+    return parseFloat(item.stock?.MRP || 0);
+  }
+
+  return 0;
+};
 const CompleteSalesReturn = () => {
   const { user } = useSelector((state) => state.auth);
   const [comment, setComment] = useState("");
@@ -233,7 +279,9 @@ const CompleteSalesReturn = () => {
         totalGST: acc.totalGST + (parseFloat(gst.gstAmount) || 0),
 
         totalReturnValue:
-          acc.totalReturnValue + (parseFloat(item.TotalAmount) || 0) + parseFloat(gst.gstAmount),
+          acc.totalReturnValue +
+          (parseFloat(item.TotalAmount) || 0) +
+          parseFloat(gst.gstAmount),
       };
     },
     { totalQty: 0, totalGST: 0, totalReturnValue: 0 }
@@ -345,8 +393,8 @@ const CompleteSalesReturn = () => {
               "SRP",
               "Return Price",
               "GST Amt",
-              "Qty",
-              "Total Amount",
+              "return Qty",
+              "return Total Amount",
               "Action",
             ]}
             data={finalProducts?.data?.filter(
@@ -382,7 +430,7 @@ const CompleteSalesReturn = () => {
                       {getProductName(mappedOrder)}
                     </div>
                   </TableCell>
-                  <TableCell>₹{parseFloat(item.SRP || 0)}</TableCell>
+                  <TableCell>₹{parseFloat(getStockOutMRP(item))}</TableCell>
                   <TableCell>
                     ₹{parseFloat(item.ReturnPricePerUnit || 0)}
                   </TableCell>
@@ -408,13 +456,15 @@ const CompleteSalesReturn = () => {
                   </TableCell>
                   <TableCell>
                     ₹
-                    {parseFloat(
+                    {formatINR( parseFloat(
                       (item.TotalAmount || 0) +
-                        parseFloat(calculateGST(
-                          item.ReturnPricePerUnit * item.ReturnQty,
-                          parseFloat(item.GSTPercentage || 0)
-                        ).gstAmount)
-                    )}
+                        parseFloat(
+                          calculateGST(
+                            item.ReturnPricePerUnit * item.ReturnQty,
+                            parseFloat(item.GSTPercentage || 0)
+                          ).gstAmount
+                        )
+                    ))}
                   </TableCell>
                   <TableCell>
                     <Button

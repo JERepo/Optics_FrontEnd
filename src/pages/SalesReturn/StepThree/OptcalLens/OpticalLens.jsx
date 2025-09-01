@@ -568,12 +568,17 @@ const OpticalLens = () => {
           0
         )
       : 0;
+
+    if(priceDetails?.data.Quantity <= 0){
+      toast.error("Quantity should be greater than 0!")
+      return;
+    }
     setMainOLDetails((prev) => [
       ...prev,
       {
         ...lensData,
         ...priceDetails?.data,
-        CLMRP: parseFloat(priceDetails?.data.SellingPrice),
+        CLMRP: parseFloat(priceDetails?.data.SellingPrice), // report to abhipsa srp is not coming
         returnPrice:
           (parseFloat(priceDetails?.data?.SellingPrice) || 0) +
           addonsTotal +
@@ -639,6 +644,10 @@ const OpticalLens = () => {
     }
     if (!isValidNumericInput(parseFloat(editReturnFittingPrice))) {
       toast.error("Please enter valid return fitting price");
+      return;
+    }
+    if(selectedInvoice?.InvoiceQty <= 0){
+      toast.error("Invoice Qty should be greater than 0!")
       return;
     }
 

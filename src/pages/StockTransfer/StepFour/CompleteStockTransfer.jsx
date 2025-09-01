@@ -14,7 +14,8 @@ import {
 import toast from "react-hot-toast";
 import Loader from "../../../components/ui/Loader";
 
-const getProductName = (item) => {
+const getProductName = (data) => {
+  const item = { ...data.ProductDetails, ...data };
   const {
     typeid,
     ProductName,
@@ -36,7 +37,7 @@ const getProductName = (item) => {
     colour,
     brandName,
     HSN,
-    BatchCode
+    BatchCode,
   } = item;
 
   const clean = (val) => {
@@ -162,7 +163,9 @@ const getShortTypeName = (id) => {
   return "";
 };
 
-const getStockOutPrice = (item) => {
+const getStockOutPrice = (data) => {
+  const item = { ...data.ProductDetails, ...data };
+
   if (!item) {
     return 0;
   }
@@ -191,7 +194,7 @@ const getStockOutPrice = (item) => {
       return parseFloat(item.price?.BuyingPrice || 0);
     } else if (item.CLBatchCode === 1) {
       if (Array.isArray(item.Stock)) {
-        return item.Stock[0].BuyingPrice || 0
+        return item.Stock[0].BuyingPrice || 0;
       } else if (item.Stock && typeof item.Stock === "object") {
         return parseFloat(item.Stock.BuyingPrice || 0);
       }
@@ -202,7 +205,9 @@ const getStockOutPrice = (item) => {
 
   return 0;
 };
-const getStockOutMRP = (item) => {
+const getStockOutMRP = (data) => {
+    const item = { ...data.ProductDetails, ...data };
+
   if (!item) {
     return 0;
   }
@@ -231,7 +236,7 @@ const getStockOutMRP = (item) => {
       return parseFloat(item.price?.MRP || 0);
     } else if (item.CLBatchCode === 1) {
       if (Array.isArray(item.Stock)) {
-        return item.Stock[0].MRP || 0
+        return item.Stock[0].MRP || 0;
       } else if (item.Stock && typeof item.Stock === "object") {
         return parseFloat(item.Stock.MRP || 0);
       }
@@ -284,12 +289,12 @@ const CompleteStockTransfer = () => {
     (acc, item) => {
       const qty = item.STQtyOut || 0;
       const unitPrice = getStockOutPrice(item);
-      const gstRate =  parseFloat(item.ProductTaxPercentage) / 100
+      const gstRate = parseFloat(item.ProductTaxPercentage) / 100;
 
-      const basicValue  = unitPrice * qty;
-      const gst = unitPrice * qty * gstRate
+      const basicValue = unitPrice * qty;
+      const gst = unitPrice * qty * gstRate;
       const returnTotal = basicValue + gst;
-      
+
       acc.totalQty += qty;
       acc.totalGST += gst;
       acc.totalBasicValue += basicValue;
@@ -382,9 +387,9 @@ const CompleteStockTransfer = () => {
 
                 <TableCell>{item.STQtyOut}</TableCell>
                 <TableCell>
-                  {Array.isArray(item.Stock)
-                    ? item.Stock?.reduce((sum, it) => sum + it.Quantity, 0)
-                    : item.Stock.Quantity}
+                  {Array.isArray(item.ProductDetails.Stock)
+                    ? item.ProductDetails.Stock[0].Quantity
+                    : item.ProductDetails.Stock.Quantity}
                 </TableCell>
                 <TableCell>
                   ₹

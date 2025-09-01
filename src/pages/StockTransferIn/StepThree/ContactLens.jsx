@@ -530,6 +530,8 @@ const ContactLens = () => {
         const newItemCl = {
           sbatchbarCode: isAvailable.CLBatchBarCode,
           sMRP: isAvailable.CLMRP,
+          ExpiryDate: isAvailable.CLBatchExpiry,
+
           ...newItem.powerData,
           ...STOProduct,
           selectBatch,
@@ -548,7 +550,6 @@ const ContactLens = () => {
               item.sbatchbarCode == newItemCl.sbatchbarCode
           );
         }
-        console.log("existing index", existingIndex, newItemCl);
         if (existingIndex !== -1) {
           const item = mainClDetails[existingIndex];
           const newQty = item.tiq + 1;
@@ -678,6 +679,8 @@ const ContactLens = () => {
         ...newItem.powerData,
         sbatchCode: selectedBatchCode.CLBatchCode,
         sMRP: selectedBatchCode.CLMRP,
+        ExpiryDate: selectedBatchCode.CLBatchExpiry,
+
         ...STOProduct,
         tiq: 1,
         MRP: parseFloat(selectedBatchCode.CLMRP),
@@ -700,6 +703,8 @@ const ContactLens = () => {
         ...batchBarCodeDetails?.data.data,
         sbatchCode: selectedBatchCode.CLBatchCode,
         sMRP: selectedBatchCode.CLMRP,
+        ExpiryDate: selectedBatchCode.CLBatchExpiry,
+
         ...STOProduct,
         tiq: 1,
         BuyingPrice: parseFloat(selectedBatchCode.BuyingPrice),

@@ -486,7 +486,7 @@ const ContactLens = () => {
       );
       if (isAvailable) {
         if (
-          parseInt(batchBarCodeDetails?.data?.data?.AvlQty || newItem.avlQty) <=
+          parseInt(isAvailable.Quantity) <=
           0
         ) {
           toast.error("Stock quantity must be greater than 0!");
@@ -635,7 +635,7 @@ const ContactLens = () => {
   const handleSaveBatchData = async () => {
     let sub;
     if ((!detailId || openBatch) && productSearch == 0) {
-      if (newItem.avlQty <= 0) {
+      if (parseInt(selectedBatchCode.Quantity) <= 0) {
         toast.error("Stock quantity must be greater than 0!");
         return;
       }
@@ -646,7 +646,7 @@ const ContactLens = () => {
         ExpiryDate: selectedBatchCode.CLBatchExpiry,
 
         stkQty: 1,
-        Quantity: newItem.avlQty,
+        Quantity: selectedBatchCode.Quantity,
         MRP: parseFloat(selectedBatchCode.CLMRP),
         BuyingPrice: parseFloat(selectedBatchCode.BuyingPrice),
       };
@@ -658,7 +658,7 @@ const ContactLens = () => {
         ExpiryDate: selectedBatchCode.CLBatchExpiry,
 
         stkQty: 1,
-        Quantity: batchBarCodeDetails?.data.data.Quantity,
+        Quantity: selectedBatchCode.Quantity,
         BuyingPrice: parseFloat(selectedBatchCode.BuyingPrice),
         MRP: parseFloat(selectedBatchCode.CLMRP),
       };

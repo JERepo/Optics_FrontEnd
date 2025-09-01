@@ -12,6 +12,7 @@ import {
   FiArrowRightCircle,
   FiCornerUpLeft,
   FiFileMinus,
+  FiGift,
 } from "react-icons/fi";
 import {
   IoPeopleOutline,
@@ -246,5 +247,24 @@ export const menuItems = [
     icon: FiFileMinus,
     module: "Purchase-Return",
     path: "/purchase-return",
+  },
+  {
+    name: "Gift Voucher",
+    icon: FiGift,
+    module: "Gift-Voucher",
+    subItems: [
+      {
+        name: "New GV",
+        path: "gift-voucher",
+        module: "Gift-Voucher",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+      {
+        name: "Activate GV",
+        path: "activate-gv",
+        module: "Gift-Voucher",
+        icon: IoConstructOutline, // Suggests building/setup
+      }
+    ],
   },
 ];

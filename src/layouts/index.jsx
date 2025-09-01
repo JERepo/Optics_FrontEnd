@@ -75,6 +75,9 @@ import GRNStep1 from "../pages/GRN/GRNStep1";
 import GRNStep2 from "../pages/GRN/GRNStep2";
 import { PurchaseOrderMainPage } from "../pages/PurchaseOrder/POMainPage";
 import { POViewPage } from "../pages/PurchaseOrder/POViewPage";
+import NewGVMain from "../pages/GiftVoucher/NewGV/NewGVMain";
+import NewGV from "../pages/GiftVoucher/NewGV/NewGV";
+import ActiveteGV from "../pages/GiftVoucher/ActivateGV/ActiveteGV";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -770,6 +773,18 @@ export const router = createBrowserRouter([
           </GRNProvider>
           // </PermissionRoute>
         )
+      },
+      {
+        path : "gift-voucher",
+        element : <NewGVMain />
+      },
+      {
+        path : "newgv/create",
+        element : <NewGV />
+      },
+      {
+        path : "activate-gv",
+        element:<ActiveteGV />
       }
     ],
   },

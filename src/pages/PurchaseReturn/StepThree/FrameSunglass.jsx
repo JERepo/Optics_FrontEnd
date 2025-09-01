@@ -627,6 +627,7 @@ const FrameSunglass = () => {
                     <TableCell className="whitespace-pre-wrap">
                       <div>{item.Name}</div>
                       <div>Size: {item.Size}</div>
+                      <div>Category: {item.Category === 0 ? "Optical Frame" : "Sunglasses"}</div>
                       <div>Barcode: {item.Barcode}</div>
                       <div>HSN: {item.HSN}</div>
                     </TableCell>

@@ -96,7 +96,7 @@ const getProductName = (item) => {
       : "";
 
     const lines = [
-      ProductName || productName,
+      (ProductName || brandName) && `${brandName} ${productName}`,
       specs ? `${specs}` : "",
       clean(colour) ? `Colour: ${clean(colour)}` : "",
       barcode ? `Barcode: ${barcode}` : "",
@@ -164,7 +164,7 @@ const getShortTypeName = (id) => {
 
 const getStockOutPrice = (item) => {
   if (item.ProductType === 3) {
-    if (item.ProductDetails.CLBatchCode === 1) {
+    if (item.ProductDetails.CLBatchCode === 0) {
       return parseFloat(item.ProductDetails.price?.MRP || 0);
     }
 
@@ -433,7 +433,7 @@ const CompleteStockTransfer = () => {
                 isLoading={isPRUpdating}
                 disabled={isPRUpdating}
               >
-                Save & Next
+                Complete Purchase Return
               </Button>
             </div>
           </div>

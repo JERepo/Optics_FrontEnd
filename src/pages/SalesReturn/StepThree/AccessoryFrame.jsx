@@ -80,7 +80,7 @@ const getProductDetailsText = (order) => {
   };
 
   return [
-    brand && name ? `Brand: ${brand} - ${name}` : brand || name,
+    brand && name ? `${brand} - ${name}` : brand || name,
     
     sizeVal && `Size: ${sizeVal}`,
     variationName && `Variation: ${variationName}`,

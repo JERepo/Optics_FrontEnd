@@ -63,7 +63,7 @@ const PurchaseReturn = () => {
         ? format(new Date(s.PurchaseReturnDate), "dd/MM/yyyy")
         : "",
 
-      name: "srinivasa reddy",
+      name: s.Vendor.VendorName,
       totalQty: s.TotalQty,
       totalPrice: s.TotalValue,
     }));

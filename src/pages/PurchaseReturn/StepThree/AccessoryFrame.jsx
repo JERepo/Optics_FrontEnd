@@ -626,6 +626,7 @@ const AccessoryFrame = () => {
                     <div>{item.Name}</div>
                     <div>Variation: {item.Variation}</div>
                     <div>Barcode: {item.Barcode}</div>
+                    <div>HSN: {item.HSN}</div>
                   </TableCell>
                   <TableCell>₹{formatINR(item.MRP)}</TableCell>
                     <TableCell>

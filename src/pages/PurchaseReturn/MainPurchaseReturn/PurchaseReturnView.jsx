@@ -256,19 +256,32 @@ const PurchaseReturnView = () => {
         </div>
         {/* Order Details */}
         <div className="grid grid-cols-3 gap-3">
-          <Info label="Vendor Name" value="Srinivasa reddy" />
-          <Info label="PAN No" value="" />
+          <Info
+            label="Vendor Name"
+            value={PRDetails?.data.data.Vendor.VendorName}
+          />
 
-          {PRDetails?.TAXRegisteration === 1 && (
+          {PRDetails?.data.data.Vendor.TAXRegisteration === 1 && (
             <>
               <div className="flex gap-1">
                 <strong>GST No:</strong> {PRDetails?.TAXNo}
               </div>
-              <Info label="GST No:" value="Srinivasa reddy" />
+              <Info label="GST No:" value={PRDetails?.data.data.Vendor.TAXNo} />
 
-              <Info label="PAN Number" value="Srinivasa reddy" />
+              <Info
+                label="PAN Number"
+                value={PRDetails?.data.data.Vendor.PANNumber}
+              />
 
-              <Info label="Address" value="Srinivasa reddy" />
+              <Info
+                label="Address"
+                value={
+                  PRDetails?.data.data.Vendor.Address1 &&
+                  PRDetails?.data.data.Vendor.Landmark &&
+                  PRDetails?.data.data.Vendor.City &&
+                  `${PRDetails?.data.data.Vendor.Address1} ${PRDetails?.data.data.Vendor.Landmark} ${PRDetails?.data.data.Vendor.City}`
+                }
+              />
             </>
           )}
         </div>

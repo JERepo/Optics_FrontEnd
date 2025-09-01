@@ -15,7 +15,8 @@ import toast from "react-hot-toast";
 import Loader from "../../../components/ui/Loader";
 import { useSelector } from "react-redux";
 
-const getProductName = (item) => {
+const getProductName = (data) => {
+  const item = { ...data.ProductDetails, ...data };
   const {
     typeid,
     ProductName,
@@ -163,7 +164,8 @@ const getShortTypeName = (id) => {
   return "";
 };
 
-const getStockOutPrice = (item) => {
+const getStockOutPrice = (data) => {
+  const item = { ...data.ProductDetails, ...data };
   if (!item) {
     return 0;
   }

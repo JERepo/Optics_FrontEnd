@@ -744,7 +744,7 @@ const FrameSunglass = () => {
                         <div className="whitespace-pre-wrap">
                           <div>{item.PO == 1 ? "Photochromatic" : ""}</div>
                           <div>{item.Ph == 1 ? "Polarised" : ""}</div>
-                          <div>{item.Cl === 0 ? "" : `No of clips: ${item.Cl}`}</div>
+                          <div>{(item.Cl === 0 || item.Cl === null) ? "-" : `No of clips: ${item.Cl}`}</div>
                         </div>
                       </TableCell>
                       <TableCell>₹{item.MRP}</TableCell>
