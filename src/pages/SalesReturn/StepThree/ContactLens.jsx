@@ -951,7 +951,7 @@ const ContactLens = () => {
       ...selectedInvoice,
       ReturnQty: selectedInvoiceReturnQty,
       ReturnPricePerUnit: selectedInvoice.ActualSellingPrice,
-      GSTPercentage: 18,
+      GSTPercentage: parseFloat(selectedInvoice.ProductDetails[0].taxPercentage),
       TotalAmount:
         parseFloat(selectedInvoice.ActualSellingPrice) *
         selectedInvoiceReturnQty,
@@ -1015,12 +1015,12 @@ const ContactLens = () => {
             referenceApplicable === 0
               ? detail.returnPrice
               : parseFloat(detail.ReturnPricePerUnit) ?? null,
-          ProductTaxPercentage: Array.isArray(detail.TaxDetails)
+          ProductTaxPercentage: referenceApplicable === 0 ? Array.isArray(detail.TaxDetails)
             ? findGSTPercentage(detail).taxPercentage
             : findGSTPercentage({
                 ...detail,
                 TaxDetails: [{ ...detail.TaxDetails }],
-              }).taxPercentage ?? null,
+              }).taxPercentage ?? null : parseFloat(detail.ProductDetails[0].taxPercentage) ?? null,
           FittingReturnPrice: detail.FittingReturnPrice ?? null,
           FittingTaxPercentage: detail.FittingTaxPercentage ?? null,
           InvoiceDetailId: detail.Id ?? null,
@@ -1306,7 +1306,10 @@ const ContactLens = () => {
                         parseFloat(item.ReturnPricePerUnit || 0),
                         parseFloat(item.GSTPercentage || 0)
                       ).gstAmount
-                    )}
+                    )}({ calculateGST(
+                        parseFloat(item.ReturnPricePerUnit || 0),
+                        parseFloat(item.GSTPercentage || 0)
+                      ).taxPercentage}%)
                   </TableCell>
                   <TableCell className="text-center">
                     {item.ReturnQty || 0}

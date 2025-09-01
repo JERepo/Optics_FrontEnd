@@ -569,8 +569,8 @@ const OpticalLens = () => {
         )
       : 0;
 
-    if(priceDetails?.data.Quantity <= 0){
-      toast.error("Quantity should be greater than 0!")
+    if (priceDetails?.data.Quantity <= 0) {
+      toast.error("Quantity should be greater than 0!");
       return;
     }
     setMainOLDetails((prev) => [
@@ -581,8 +581,8 @@ const OpticalLens = () => {
         CLMRP: parseFloat(priceDetails?.data.SellingPrice), // report to abhipsa srp is not coming
         returnPrice:
           (parseFloat(priceDetails?.data?.SellingPrice) || 0) +
-          (addonsTotal/2) +
-          ((parseFloat(lensData?.tintPrice)/2) || 0),
+          addonsTotal / 2 +
+          (parseFloat(lensData?.tintPrice) / 2 || 0),
 
         returnQty: 1,
         ProductType: 0,
@@ -646,23 +646,24 @@ const OpticalLens = () => {
       toast.error("Please enter valid return fitting price");
       return;
     }
-    if(selectedInvoice?.InvoiceQty <= 0){
-      toast.error("Invoice Qty should be greater than 0!")
+    if (selectedInvoice?.InvoiceQty <= 0) {
+      toast.error("Invoice Qty should be greater than 0!");
       return;
     }
 
     const newItem = {
       ...selectedInvoice,
-      ReturnPricePerUnit:
-        parseInt(selectedInvoice?.InvoiceQty) *
-          parseFloat(selectedInvoice?.ActualSellingPrice) +
-        parseFloat(editReturnFittingPrice),
+      // ReturnPricePerUnit:
+      //   parseInt(selectedInvoice?.InvoiceQty) *
+      //     parseFloat(selectedInvoice?.ActualSellingPrice) +
+      //   parseFloat(editReturnFittingPrice),
+      ReturnPricePerUnit: parseFloat(selectedInvoice?.ActualSellingPrice),
       ReturnQty: selectedInvoice?.InvoiceQty,
+      FittingPriceEdit: editReturnFittingPrice,
     };
     setMainOLDetails((prev) => [...prev, newItem]);
-
-    setSelectedInvoice(null);
     setEditReturnFittingprice(0);
+    setSelectedInvoice(null);
   };
 
   useEffect(() => {
@@ -752,7 +753,7 @@ const OpticalLens = () => {
           FrameDetailId: detail.FrameDetailId ?? null,
           OpticalLensDetailId:
             referenceApplicable === 1
-              ? detail.OrderDetailId
+              ? detail.ProductDetails[0].olDetailId
               : detail.OpticalLensDetailId ?? null,
           BatchCode: detail.CLBatchCode ?? null,
           CNQty:
@@ -768,7 +769,7 @@ const OpticalLens = () => {
               ? detail.returnPrice
               : detail.ReturnPricePerUnit ?? null,
           ProductTaxPercentage:
-            parseFloat(findGSTPercentage(detail).taxPercentage) ?? null,
+            parseFloat(detail.ProductDetails[0]?.taxPercentage) ?? null,
           FittingReturnPrice:
             referenceApplicable === 0
               ? detail.FittingReturnPrice
@@ -1318,10 +1319,15 @@ const OpticalLens = () => {
                           parseFloat(item.ReturnPricePerUnit || 0),
                           parseFloat(item.ProductDetails[0].taxPercentage || 0)
                         ).gstAmount
-                      )}({calculateGST(
+                      )}
+                      (
+                      {
+                        calculateGST(
                           parseFloat(item.ReturnPricePerUnit || 0),
                           parseFloat(item.ProductDetails[0].taxPercentage || 0)
-                        ).taxPercentage}%)
+                        ).taxPercentage
+                      }
+                      %)
                     </TableCell>
                     <TableCell className="text-center">
                       {item.ReturnQty || 0}
@@ -1329,10 +1335,15 @@ const OpticalLens = () => {
                     <TableCell>
                       ₹
                       {formatINR(
-                        parseFloat(
-                          item.ReturnPricePerUnit * item.ReturnQty +
-                            editReturnFittingPrice
-                        )
+                        parseFloat(item.ReturnPricePerUnit * item.ReturnQty) +
+                          parseFloat(
+                            calculateGST(
+                              parseFloat(item.FittingPriceEdit || 0),
+                              parseFloat(
+                                item.ProductDetails[0].fittingGSTPercentage || 0
+                              )
+                            ).gstAmount
+                          ) + parseFloat(item.FittingPriceEdit)
                       )}
                     </TableCell>
                     <TableCell>
@@ -1810,17 +1821,15 @@ const OpticalLens = () => {
                     </div>
                   </>
                 )}
-              {lensData.treatmentId &&
-                lensData.productType === 1 &&
-                 (
-                  <Button
-                    onClick={handleAddToTable}
-                    icon={FiPlus}
-                    className="bg-green-600 hover:bg-green-700 mt-5"
-                  >
-                    Add
-                  </Button>
-                )}
+              {lensData.treatmentId && lensData.productType === 1 && (
+                <Button
+                  onClick={handleAddToTable}
+                  icon={FiPlus}
+                  className="bg-green-600 hover:bg-green-700 mt-5"
+                >
+                  Add
+                </Button>
+              )}
             </div>
           )}
           <ErrorDisplayModal

@@ -223,7 +223,7 @@ export const menuItems = [
       },
       {
         name: "Stock Transfer In",
-        path: "/stock-transferin/create",
+        path: "/stock-transferin",
         module: "StockTransfer",
         icon: IoConstructOutline,
       },

@@ -233,8 +233,7 @@ const CompleteStockTransferIn = () => {
     setDeletingId(id);
     try {
       const payload = {
-        STOutMainId:
-          stockTransferInDraftData.ID || stockTransferInDraftData[0].ID,
+        STInMainId: stockTransferInDraftData.ID ?? null,
           ApplicationUserID:user.Id,
         companyId: customerStockTransferIn.locationId,
         Comment: comment,
@@ -273,16 +272,17 @@ const CompleteStockTransferIn = () => {
     totalBasicValue: formatINR(totals.totalBasicValue),
     totalReturnValue: formatINR(totals.totalReturnValue),
   };
+  console.log("d",stockTransferInDraftData)
   const handleSaveStockTransferOut = async () => {
     try {
       const payload = {
-        STOutMainId: customerStockTransferIn.mainId ?? null,
+        STInMainId: stockTransferInDraftData.ID ?? null,
         ApplicationUserID: user.Id ?? null,
         companyId: customerStockTransferIn.locationId ?? null,
-        totalQtyIn: parseInt(formattedTotals.totalQty) ?? null,
-        totalGSTValueIn: parseFloat(formattedTotals.totalGST) ?? null,
-        totalBasicValueIn: parseFloat(formattedTotals.totalBasicValue) ?? null,
-        totalValueIn: parseFloat(formattedTotals.totalReturnValue) ?? null,
+        totalQtyIn: parseInt(totals.totalQty) ?? null,
+        totalGSTValueIn: parseFloat(totals.totalGST) ?? null,
+        totalBasicValueIn: parseFloat(totals.totalBasicValue) ?? null,
+        totalValueIn: parseFloat(totals.totalReturnValue) ?? null,
         Comment: comment ?? null,
       };
 

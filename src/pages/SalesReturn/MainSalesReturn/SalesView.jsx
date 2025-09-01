@@ -77,7 +77,7 @@ const SalesView = () => {
     // Common fields for all types
     if (typeid === 1) {
       // Frame
-      const Size = details.Size.Size;
+      const Size = clean(details?.Size?.Size) || details.size;
       if (clean(Size))
         lines.push(
           `Size: ${clean(Size)}-${clean(details.dBL)}-${clean(

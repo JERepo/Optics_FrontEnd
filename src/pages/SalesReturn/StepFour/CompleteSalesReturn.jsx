@@ -77,7 +77,7 @@ const getProductName = (order) => {
   if (productType === 2) {
     return joinNonEmpty(
       [
-        clean(` ${detail.productName}`),
+        clean(`${detail.productDescName}`),
         clean(detail.Variation?.Variation || detail.variationName) &&
           `Variation: ${detail.Variation?.Variation || detail.variationName}`,
         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
@@ -95,14 +95,14 @@ const getProductName = (order) => {
 
     const specsList = joinNonEmpty(
       [
-        cleanPower(detail.PowerSpecs?.Sph) &&
-          `SPH: ${cleanPower(detail.PowerSpecs?.Sph)}`,
-        cleanPower(detail.PowerSpecs?.cylindricalPower) &&
-          `CYL: ${cleanPower(detail.PowerSpecs?.cylindricalPower)}`,
-        clean(detail.PowerSpecs?.axis) &&
-          `Axis: ${clean(detail.PowerSpecs?.axis)}`,
-        cleanPower(detail.PowerSpecs?.additional) &&
-          `Add: ${cleanPower(detail.PowerSpecs?.additional)}`,
+        cleanPower(detail.specs?.sphericalPower) &&
+          `SPH: ${cleanPower(detail.specs?.sphericalPower)}`,
+        cleanPower(detail.specs?.cylindricalPower) &&
+          `CYL: ${cleanPower(detail.specs?.cylindricalPower)}`,
+        clean(detail.specs?.axis) &&
+          `Axis: ${clean(detail.specs?.axis)}`,
+        cleanPower(detail.specs?.additional) &&
+          `Add: ${cleanPower(detail.specs?.additional)}`,
       ],
       ", "
     );
@@ -430,7 +430,7 @@ const CompleteSalesReturn = () => {
                       {getProductName(mappedOrder)}
                     </div>
                   </TableCell>
-                  <TableCell>₹{parseFloat(getStockOutMRP(item))}</TableCell>
+                  <TableCell>₹{parseFloat(item.SRP)}</TableCell>
                   <TableCell>
                     ₹{parseFloat(item.ReturnPricePerUnit || 0)}
                   </TableCell>
@@ -458,13 +458,14 @@ const CompleteSalesReturn = () => {
                     ₹
                     {formatINR(
                       parseFloat(
-                        (item.TotalAmount || 0) +
-                          parseFloat(
-                            calculateGST(
-                              item.ReturnPricePerUnit * item.ReturnQty,
-                              parseFloat(item.GSTPercentage || 0)
-                            ).gstAmount
-                          )
+                        (item.ReturnPricePerUnit * item.ReturnQty) 
+                        // +
+                        //   parseFloat(
+                        //     calculateGST(
+                        //       item.ReturnPricePerUnit * item.ReturnQty,
+                        //       parseFloat(item.GSTPercentage || 0)
+                        //     ).gstAmount
+                        //   )
                       )
                     )}
                   </TableCell>
