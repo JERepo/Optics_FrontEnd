@@ -99,8 +99,7 @@ const getProductName = (order) => {
           `SPH: ${cleanPower(detail.specs?.sphericalPower)}`,
         cleanPower(detail.specs?.cylindricalPower) &&
           `CYL: ${cleanPower(detail.specs?.cylindricalPower)}`,
-        clean(detail.specs?.axis) &&
-          `Axis: ${clean(detail.specs?.axis)}`,
+        clean(detail.specs?.axis) && `Axis: ${clean(detail.specs?.axis)}`,
         cleanPower(detail.specs?.additional) &&
           `Add: ${cleanPower(detail.specs?.additional)}`,
       ],
@@ -109,7 +108,7 @@ const getProductName = (order) => {
 
     return joinNonEmpty(
       [
-        joinNonEmpty([clean(detail.brandName), clean(detail.productName)]),
+        joinNonEmpty([clean(detail.productName)]),
         specsList,
         clean(detail.specs?.color || detail.colour) &&
           `Color: ${clean(detail.specs?.color || detail.colour)}`,
@@ -260,7 +259,6 @@ const CompleteSalesReturn = () => {
     );
   const [completeSales, { isLoading: isCompleteSalesLoading }] =
     useCompleteSaleReturnMutation();
-  console.log("final r", finalProducts);
   // Calculate totals
   const totals = finalProducts?.data?.reduce(
     (acc, item) => {
@@ -293,7 +291,7 @@ const CompleteSalesReturn = () => {
       : "0.00",
     totalReturnValue: totals ? totals.totalReturnValue.toFixed(2) : "0.00",
   };
-
+console.log("patient",selectedPatient)
   const handleDelete = async (id) => {
     try {
       setDeletingId(id);
@@ -325,7 +323,7 @@ const CompleteSalesReturn = () => {
         CNQty: totals.totalQty,
         CNGST: parseFloat(totals.totalGST),
         CNTotal: parseFloat(totals.totalReturnValue),
-        creditBilling: "No",
+        creditBilling: selectedPatient?.mainCustomerObject?.CreditBilling,
       };
 
       await completeSales({
@@ -395,11 +393,7 @@ const CompleteSalesReturn = () => {
               "return Total Amount",
               "Action",
             ]}
-            data={
-              finalProducts?.data?.filter(
-                (item) => !itemsToDelete.includes(item.id)
-              ) || []
-            }
+            data={finalProducts?.data || []}
             renderRow={(item, index) => {
               const mappedOrder = {
                 productType: item.ProductType,
@@ -458,7 +452,7 @@ const CompleteSalesReturn = () => {
                     ₹
                     {formatINR(
                       parseFloat(
-                        (item.ReturnPricePerUnit * item.ReturnQty) 
+                        item.ReturnPricePerUnit * item.ReturnQty
                         // +
                         //   parseFloat(
                         //     calculateGST(

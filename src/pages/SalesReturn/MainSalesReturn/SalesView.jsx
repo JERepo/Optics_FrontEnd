@@ -44,10 +44,10 @@ const SalesView = () => {
     const brandName = details?.brandName;
     const ProductName = details?.productName || details?.productDescName || "";
     const Barcode = details?.barcode;
-    const Hsncode = details?.hSN || details.HSN;
+    const Hsncode = details?.hSN || details?.HSN;
     const Colour = details?.colour;
-    const Tint = details.tint?.tintName || "";
-    const addOn = details.addOn?.addOnName;
+    const Tint = details?.tint?.tintName || "";
+    const addOn = details?.addOn?.addOnName;
     
     const clean = (val) => {
       if (
@@ -77,20 +77,20 @@ const SalesView = () => {
     // Common fields for all types
     if (typeid === 1) {
       // Frame
-      const Size = clean(details?.Size?.Size) || details.size;
+      const Size = clean(details?.Size?.Size) || details?.size;
       if (clean(Size))
         lines.push(
-          `Size: ${clean(Size)}-${clean(details.dBL)}-${clean(
-            details.templeLength
+          `Size: ${clean(Size)}-${clean(details?.dBL)}-${clean(
+            details?.templeLength
           )}`
         );
     } else if (typeid === 2) {
       // Accessories
-      const Variation = details.Variation;
+      const Variation = details?.Variation;
       if (clean(Variation)) lines.push(`Variation: ${clean(Variation)}`);
     } else if (typeid === 3) {
       // Contact Lens
-      const PowerSpecs = details.PowerSpecs || {};
+      const PowerSpecs = details?.PowerSpecs || {};
       const batchcode = Array.isArray(details?.Stock)
       ? details?.Stock[0].BatchCode
       : details?.Stock.BatchCode;
@@ -116,7 +116,7 @@ const SalesView = () => {
         );
     } else if (typeid === 0) {
       // Optical Lenses
-      const powerDetails = details.specs?.powerDetails || {};
+      const powerDetails = details?.specs?.powerDetails || {};
       const specsLines = [];
 
       const formatLens = (side, data) => {
@@ -140,10 +140,10 @@ const SalesView = () => {
       if (specsLines.length) lines.push(...specsLines);
 
       // Add coating/treatment/family etc.
-      const family = clean(details.familyName);
-      const design = clean(details.designName);
-      const coating = clean(details.coatingName);
-      const treatment = clean(details.treatmentName);
+      const family = clean(details?.familyName);
+      const design = clean(details?.designName);
+      const coating = clean(details?.coatingName);
+      const treatment = clean(details?.treatmentName);
       const extra = [family, design, coating, treatment]
         .filter(Boolean)
         .join(" ");
@@ -151,11 +151,11 @@ const SalesView = () => {
 
       // Add tint & add-on
       const tint =
-        details.specs?.tint?.tintName || clean(details.tint?.tintName);
+        details?.specs?.tint?.tintName || clean(details?.tint?.tintName);
       if (tint) lines.push(`Tint: ${tint}`);
 
       const addOnName =
-        details.specs?.addOn?.addOnName || clean(details.addOn?.addOnName);
+        details?.specs?.addOn?.addOnName || clean(details?.addOn?.addOnName);
       if (addOnName) lines.push(`AddOn: ${addOnName}`);
     }
 
