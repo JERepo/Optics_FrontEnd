@@ -48,7 +48,7 @@ const SalesView = () => {
     const Colour = details?.colour;
     const Tint = details?.tint?.tintName || "";
     const addOn = details?.addOn?.addOnName;
-    
+
     const clean = (val) => {
       if (
         val == null ||
@@ -92,11 +92,11 @@ const SalesView = () => {
       // Contact Lens
       const PowerSpecs = details?.PowerSpecs || {};
       const batchcode = Array.isArray(details?.Stock)
-      ? details?.Stock[0].BatchCode
-      : details?.Stock.BatchCode;
-    const expiry = Array.isArray(details?.Stock)
-      ? details?.Stock[0].Expiry
-      : details?.Stock.Expiry;
+        ? details?.Stock[0].BatchCode
+        : details?.Stock.BatchCode;
+      const expiry = Array.isArray(details?.Stock)
+        ? details?.Stock[0].Expiry
+        : details?.Stock.Expiry;
       const specsParts = [];
       if (PowerSpecs.Sph != null)
         specsParts.push(`Sph: ${cleanPower(PowerSpecs.Sph)}`);
@@ -177,11 +177,9 @@ const SalesView = () => {
   const grandTotal = salesDetails?.data.reduce((sum, item) => {
     const price = parseFloat(item.TotalAmount || 0);
     const fittingPrice = parseFloat(item.FittingCharges || 0);
-    const gstPercentage = parseFloat(item.GSTPercentage) || 0;
-    const returnQty = parseInt(item.ReturnQty) || 0;
-    const returnPrice = parseFloat(item.ReturnPricePerUnit) || 0;
-    const gst = calculateGST(returnPrice * returnQty, gstPercentage);
-    return sum + price + fittingPrice + parseFloat(gst.gstAmount);
+    const gst = parseFloat(item.FittingGSTPercentage || 0);
+    const fittingGst = fittingPrice * (gst/100)
+    return sum + price + fittingPrice + fittingGst;
   }, 0);
 
   if (isViewLoading || isLoading) {
@@ -196,7 +194,9 @@ const SalesView = () => {
     <div className="max-w-8xl">
       <div className="bg-white rounded-sm shadow-sm overflow-hidden p-6">
         <div className="flex justify-between items-center mb-3">
-          <div className="text-2xl text-neutral-700 font-semibold">View Sales Return Details</div>
+          <div className="text-2xl text-neutral-700 font-semibold">
+            View Sales Return Details
+          </div>
           <div>
             <Button variant="outline" onClick={() => navigate("/sales-return")}>
               Back
@@ -303,14 +303,17 @@ const SalesView = () => {
                 <TableCell>₹{formatINR(s.FittingCharges ?? 0)}</TableCell>
                 <TableCell>
                   ₹
-                  {parseFloat(
-                    (s.TotalAmount || 0) +
+                  {formatINR(
+                    parseFloat(s.ReturnPricePerUnit * s.ReturnQty) +
                       parseFloat(
-                        calculateGST(
-                          s.ReturnPricePerUnit * s.ReturnQty,
-                          parseFloat(s.GSTPercentage || 0)
-                        ).gstAmount
-                      )
+                        s.ProductType === 0
+                          ? parseFloat(
+                              (s.FittingCharges || 0) *
+                                ((s.FittingGSTPercentage || 0) / 100)
+                            )
+                          : 0
+                      ) +
+                      parseFloat(s.FittingCharges || 0)
                   )}
                 </TableCell>
               </TableRow>

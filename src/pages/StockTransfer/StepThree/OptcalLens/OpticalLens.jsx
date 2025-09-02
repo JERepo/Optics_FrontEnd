@@ -728,7 +728,7 @@ const OpticalLens = () => {
       console.log(error?.data?.error);
     }
   };
-
+console.log(barcodeData)
   const handleSaveFinalData = async () => {
     if (!Array.isArray(barcodeData) || barcodeData.length === 0) {
       console.warn("No details to save");

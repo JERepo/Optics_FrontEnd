@@ -738,11 +738,36 @@ const OpticalLens = () => {
       .filter(Boolean)
       .join(" ");
   };
+  const findGSTPercent = (item) => {
+    const price = parseFloat(item.returnPrice || 0);
+
+    let gstPercent = 0;
+
+    if (item.TaxDetails && item.TaxDetails.length > 0) {
+      if (item.TaxDetails.length === 1) {
+        gstPercent = parseFloat(item.TaxDetails[0].SalesTaxPerct) || 0;
+      } else {
+        const matchingSlab = item.TaxDetails.find((slab) => {
+          const start = parseFloat(slab.SlabStart);
+          const end = parseFloat(slab.SlabEnd);
+          return price >= start && price <= end;
+        });
+
+        gstPercent = matchingSlab
+          ? parseFloat(matchingSlab.SalesTaxPerct) || 0
+          : 0;
+      }
+    }
+
+    return gstPercent;
+  };
+
   const handleSaveData = async () => {
     if (!Array.isArray(mainOLDetails) || mainOLDetails.length === 0) {
       console.warn("No details to save");
       return;
     }
+    console.log(mainOLDetails);
     try {
       for (const detail of mainOLDetails) {
         const payload = {
@@ -769,7 +794,9 @@ const OpticalLens = () => {
               ? detail.returnPrice
               : detail.ReturnPricePerUnit ?? null,
           ProductTaxPercentage:
-            parseFloat(detail.ProductDetails[0]?.taxPercentage) ?? null,
+            referenceApplicable === 1
+              ? parseFloat(detail.ProductDetails[0]?.taxPercentage) ?? null
+              : parseFloat(findGSTPercent(detail)) ?? null,
           FittingReturnPrice:
             referenceApplicable === 0
               ? detail.FittingReturnPrice
@@ -786,6 +813,7 @@ const OpticalLens = () => {
 
       goToSalesStep(4);
     } catch (error) {
+      console.log("error is triggering");
       console.error("Error saving detail:", error);
     }
   };
@@ -1055,7 +1083,6 @@ const OpticalLens = () => {
   };
   const inputTableColumns = ["SPH", "CYLD", "Dia"];
 
-  console.log(mainOLDetails);
   return (
     <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-sm">
@@ -1335,12 +1362,12 @@ const OpticalLens = () => {
                     <TableCell>
                       ₹
                       {formatINR(
-                        parseFloat(item.ReturnPricePerUnit * item.ReturnQty) +
-                          parseFloat(
-                            (item.FittingPriceEdit *
-                              (parseFloat(item.FittingGSTPercentage || 0)) / 100)
-                          ) +
-                          parseFloat(item.FittingPriceEdit)
+                        item.ReturnPricePerUnit * item.ReturnQty +
+                          (item.FittingPriceEdit || 0) +
+                          ((item.FittingPriceEdit || 0) *
+                            (parseFloat(item.ProductDetails[0].taxPercentage) ||
+                              0)) /
+                            100
                       )}
                     </TableCell>
                     <TableCell>

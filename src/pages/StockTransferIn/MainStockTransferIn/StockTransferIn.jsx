@@ -86,7 +86,7 @@ const StockTransferIn = () => {
   const today = new Date();
 
   const handleViewSalesReturn = (id) => {
-    navigate(`/stock-transfer/view?stockInId=${id}`);
+    navigate(`/stock-transferin/view?stockInId=${id}`);
   };
 
   if (isStockLoading) {

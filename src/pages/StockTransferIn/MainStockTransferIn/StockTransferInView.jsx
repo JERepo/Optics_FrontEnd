@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import Button from "../../../components/ui/Button";
 import Loader from "../../../components/ui/Loader";
 import { formatINR } from "../../../utils/formatINR";
-import { useGetStockInByIdQuery, useGetStockTransferOutByIdQuery } from "../../../api/stockTransfer";
+import { useGetStockInByIdQuery } from "../../../api/stockTransfer";
 import { useSelector } from "react-redux";
 
 const getProductName = (data) => {
@@ -31,7 +31,7 @@ const getProductName = (data) => {
     colour,
     brandName,
     HSN,
-    BatchCode
+    BatchCode,
   } = item;
 
   const clean = (val) => {
@@ -159,7 +159,7 @@ const getStockOutPrice = (data) => {
       return parseFloat(item.price?.BuyingPrice || 0);
     } else if (item.CLBatchCode === 1) {
       if (Array.isArray(item.Stock)) {
-        return item.Stock[0].BuyingPrice || 0;
+        return item.Stock[0]?.BuyingPrice || 0;
       } else if (item.Stock && typeof item.Stock === "object") {
         return parseFloat(item.Stock.BuyingPrice || 0);
       }
@@ -178,7 +178,7 @@ const getStockOutPrice = (data) => {
       return parseFloat(item.price?.BuyingPrice || 0);
     } else if (item.CLBatchCode === 1) {
       if (Array.isArray(item.Stock)) {
-        return item.Stock[0].BuyingPrice || 0
+        return item.Stock[0]?.BuyingPrice || 0;
       } else if (item.Stock && typeof item.Stock === "object") {
         return parseFloat(item.Stock.BuyingPrice || 0);
       }
@@ -186,8 +186,8 @@ const getStockOutPrice = (data) => {
 
     return parseFloat(item.Stock?.BuyingPrice || 0);
   }
-  return 0
-}
+  return 0;
+};
 const StockTransferInView = () => {
   const navigate = useNavigate();
   const { search } = useLocation();
@@ -211,14 +211,14 @@ const StockTransferInView = () => {
   const totals = (stockDetails?.data?.StockTransferInDetails || []).reduce(
     (acc, item) => {
       const qty = item.STQtyIn || 0;
-      const unitPrice = getStockOutPrice(item)
-      const gstRate = parseFloat(item.ProductTaxPercentage) / 100
+      const unitPrice = getStockOutPrice(item);
+      const gstRate = parseFloat(item.ProductTaxPercentage) / 100;
 
-     const basicValue  = unitPrice * qty;
-      const gst = unitPrice * qty * gstRate
+      const basicValue = unitPrice * qty;
+      const gst = unitPrice * qty * gstRate;
       const returnTotal = basicValue + gst;
 
-       acc.totalQty += qty;
+      acc.totalQty += qty;
       acc.totalGST += gst;
       acc.totalBasicValue += basicValue;
       acc.totalReturnValue += returnTotal;
@@ -247,7 +247,7 @@ const StockTransferInView = () => {
           <div>
             <Button
               variant="outline"
-              onClick={() => navigate("/stock-transfer")}
+              onClick={() => navigate("/stock-transferin")}
             >
               Back
             </Button>
@@ -257,18 +257,20 @@ const StockTransferInView = () => {
         <div className="grid grid-cols-3 gap-3">
           <Info
             label="Location Name"
-            value={stockDetails?.data?.CompanyId}
+            value={stockDetails?.data?.Company?.LocationName}
           />
           <Info
             label="Address"
-            value={`${stockDetails?.data?.result?.STOutPrefix}/${stockDetails?.data?.result?.STOutNo}`}
+            value={`${stockDetails?.data?.Company?.BillingAddress1 ?? ""} ${
+              stockDetails?.data?.Company?.BillingCity ?? ""
+            } ${stockDetails?.data?.Company?.BillingZipCode ?? ""}`}
           />
-           <Info
+          <Info
             label="Date"
             value={
-              stockDetails?.data?.result?.STOutCreateDate
+              stockDetails?.data?.STInCreateDate
                 ? format(
-                    new Date(stockDetails.data.result.STOutCreateDate),
+                    new Date(stockDetails.data.STInCreateDate),
                     "dd/MM/yyyy"
                   )
                 : ""
@@ -277,7 +279,7 @@ const StockTransferInView = () => {
         </div>
 
         {/* Product Table */}
-         <div className="p-6">
+        <div className="mt-5">
           <Table
             columns={[
               "s.no",
@@ -288,7 +290,6 @@ const StockTransferInView = () => {
               "transfer in qty",
               "gst",
               "total amount",
-              "action",
             ]}
             data={stockDetails?.data?.StockTransferInDetails}
             renderRow={(item, index) => (
@@ -319,15 +320,13 @@ const StockTransferInView = () => {
                         (parseFloat(item.ProductTaxPercentage) / 100)
                   )}
                 </TableCell>
-               
               </TableRow>
             )}
-          
           />
         </div>
 
         {/* Summary Section */}
-        {stockDetails?.data?.result && (
+        {stockDetails?.data?.StockTransferInDetails?.length > 0 && (
           <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200 justify-end">
             <div className="flex justify-end gap-10">
               <div className="flex flex-col">
@@ -335,10 +334,7 @@ const StockTransferInView = () => {
                   Total Qty
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
-                  {stockDetails?.data?.result?.details.reduce(
-                    (sum, item) => sum + item.STQtyOut,
-                    0
-                  )}
+                  {formattedTotals.totalQty}
                 </span>
               </div>
               <div className="flex flex-col">
@@ -347,15 +343,7 @@ const StockTransferInView = () => {
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
                   ₹
-                  {formatINR(
-                    stockDetails?.data?.result?.details.reduce(
-                      (sum, item) =>
-                        sum +
-                        getStockOutPrice(item) *
-                          (parseFloat(item.ProductTaxPercentage) / 100),
-                      0
-                    )
-                  ) || "0"}
+                  {formattedTotals.totalGST}
                 </span>
               </div>
               <div className="flex flex-col">
@@ -364,13 +352,7 @@ const StockTransferInView = () => {
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
                   ₹
-                  {formatINR(
-                    stockDetails?.data?.result?.details.reduce(
-                      (sum, item) =>
-                        sum + item.STQtyOut * parseFloat(item.TransferPrice),
-                      0
-                    )
-                  ) || "0"}
+                 {formattedTotals.totalReturnValue}
                 </span>
               </div>
             </div>

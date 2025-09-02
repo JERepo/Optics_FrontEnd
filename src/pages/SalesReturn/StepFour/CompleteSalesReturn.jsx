@@ -280,7 +280,8 @@ const CompleteSalesReturn = () => {
 
         totalReturnValue:
           acc.totalReturnValue +
-          (parseFloat(item.TotalAmount) || 0) 
+          (parseFloat(item.TotalAmount) || 0) +
+          fittingPrice + fittingValue
           // +
           // parseFloat(gst.gstAmount),
       };
@@ -458,13 +459,7 @@ const CompleteSalesReturn = () => {
                     {formatINR(
                       parseFloat(
                         item.ReturnPricePerUnit * item.ReturnQty
-                        // +
-                        //   parseFloat(
-                        //     calculateGST(
-                        //       item.ReturnPricePerUnit * item.ReturnQty,
-                        //       parseFloat(item.GSTPercentage || 0)
-                        //     ).gstAmount
-                        //   )
+                       
                       ) +
                         parseFloat(
                           item.ProductType === 0
