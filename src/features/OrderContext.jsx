@@ -46,6 +46,8 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
     identifier: null,
   });
 
+
+
   const goToStep = (step) => {
     if (step >= 1 && step <= TOTAL_STEPS) {
       setCurrentStep(step);

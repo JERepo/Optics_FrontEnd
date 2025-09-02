@@ -659,7 +659,7 @@ const OpticalLens = () => {
       //   parseFloat(editReturnFittingPrice),
       ReturnPricePerUnit: parseFloat(selectedInvoice?.ActualSellingPrice),
       ReturnQty: selectedInvoice?.InvoiceQty,
-      FittingPriceEdit: editReturnFittingPrice,
+      FittingPriceEdit: parseFloat(editReturnFittingPrice),
     };
     setMainOLDetails((prev) => [...prev, newItem]);
     setEditReturnFittingprice(0);

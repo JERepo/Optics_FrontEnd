@@ -323,7 +323,7 @@ const CompleteStockTransfer = () => {
               "product details",
               "srp",
               "return qty",
-              "return product price",
+              "return price",
               "gst/unit",
               "return total price",
               "action",

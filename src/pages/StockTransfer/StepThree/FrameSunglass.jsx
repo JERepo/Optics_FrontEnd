@@ -718,6 +718,7 @@ const FrameSunglass = () => {
                         {item.Category === 0 ? "Optical Frame" : "Sunglasses"}
                       </div>
                       <div>Barcode: {item.Barcode}</div>
+                      <div>HSN: {item.HSN}</div>
                     </TableCell>
                     <TableCell>₹{item.MRP}</TableCell>
                     <TableCell>

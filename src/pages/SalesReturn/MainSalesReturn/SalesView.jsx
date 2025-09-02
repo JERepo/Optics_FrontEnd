@@ -45,10 +45,8 @@ const SalesView = () => {
     const ProductName = details?.productName || details?.productDescName || "";
     const Barcode = details?.barcode;
     const Hsncode = details?.hSN || details?.HSN;
-    const Colour = details?.colour;
-    const Tint = details?.tint?.tintName || "";
-    const addOn = details?.addOn?.addOnName;
 
+    
     const clean = (val) => {
       if (
         val == null ||
@@ -86,30 +84,41 @@ const SalesView = () => {
         );
     } else if (typeid === 2) {
       // Accessories
-      const Variation = details?.Variation;
+      const Variation = details?.Variation?.Variation;
       if (clean(Variation)) lines.push(`Variation: ${clean(Variation)}`);
     } else if (typeid === 3) {
       // Contact Lens
-      const PowerSpecs = details?.PowerSpecs || {};
-      const batchcode = Array.isArray(details?.Stock)
-        ? details?.Stock[0].BatchCode
-        : details?.Stock.BatchCode;
-      const expiry = Array.isArray(details?.Stock)
-        ? details?.Stock[0].Expiry
-        : details?.Stock.Expiry;
+      const PowerSpecs = details?.specs || {};
+      // const batchcode = Array.isArray(details?.Stock)
+      //   ? details?.stock[0].batchCode
+      //   : details?.stock.batchCode;
+      // const expiry = Array.isArray(details?.Stock)
+      //   ? details?.stock[0].Expiry
+      //   : details?.stock.Expiry;
+      const batchCode = clean(item.BatchCode)
+      const expiry = clean(item.ExpiryDate)
       const specsParts = [];
-      if (PowerSpecs.Sph != null)
-        specsParts.push(`Sph: ${cleanPower(PowerSpecs.Sph)}`);
-      if (PowerSpecs.Cyl != null)
-        specsParts.push(`Cyl: ${cleanPower(PowerSpecs.Cyl)}`);
-      if (PowerSpecs.Axis != null)
-        specsParts.push(`Axis: ${clean(PowerSpecs.Axis)}`);
-      if (PowerSpecs.Add != null)
-        specsParts.push(`Add: ${cleanPower(PowerSpecs.Add)}`);
+      // if (PowerSpecs.Sph != null)
+      //   specsParts.push(`Sph: ${cleanPower(PowerSpecs.Sph)}`);
+      // if (PowerSpecs.Cyl != null)
+      //   specsParts.push(`Cyl: ${cleanPower(PowerSpecs.Cyl)}`);
+      // if (PowerSpecs.Axis != null)
+      //   specsParts.push(`Axis: ${clean(PowerSpecs.Axis)}`);
+      // if (PowerSpecs.Add != null)
+      //   specsParts.push(`Add: ${cleanPower(PowerSpecs.Add)}`);
+      // if (specsParts.length) lines.push(specsParts.join(" "));
+      if (PowerSpecs.sphericalPower != null)
+        specsParts.push(`Sph: ${cleanPower(PowerSpecs.sphericalPower)}`);
+      if (PowerSpecs.cylindricalPower != null)
+        specsParts.push(`Cyl: ${cleanPower(PowerSpecs.cylindricalPower)}`);
+      if (PowerSpecs.axis != null)
+        specsParts.push(`Axis: ${clean(PowerSpecs.axis)}`);
+      if (PowerSpecs.additional != null)
+        specsParts.push(`Add: ${cleanPower(PowerSpecs.additional)}`);
       if (specsParts.length) lines.push(specsParts.join(" "));
-      if (clean(batchcode && expiry))
+      if (batchCode && expiry)
         lines.push(
-          `BatchCode: ${batchcode} | Expiry: ${expiry
+          `BatchCode: ${batchCode} | Expiry: ${expiry
             .split("-")
             .reverse()
             .join("/")}`
@@ -133,9 +142,9 @@ const SalesView = () => {
       };
 
       if (powerDetails.right)
-        specsLines.push(formatLens("Right", powerDetails.right));
+        specsLines.push(formatLens("R", powerDetails.right));
       if (powerDetails.left)
-        specsLines.push(formatLens("Left", powerDetails.left));
+        specsLines.push(formatLens("L", powerDetails.left));
 
       if (specsLines.length) lines.push(...specsLines);
 
@@ -163,8 +172,8 @@ const SalesView = () => {
     // if(clean(productName))
     if (clean(Barcode)) lines.push(`Barcode: ${clean(Barcode)}`);
     if (clean(Hsncode)) lines.push(`HSN: ${clean(Hsncode)}`);
-    if (clean(Colour)) lines.push(`Colour: ${clean(Colour)}`);
-    if (clean(Tint)) lines.push(`Tint: ${clean(Tint)}`);
+    // if (clean(Colour)) lines.push(`Colour: ${clean(Colour)}`);
+    // if (clean(Tint)) lines.push(`Tint: ${clean(Tint)}`);
 
     return lines.join("\n");
   };

@@ -103,7 +103,7 @@ const StockTransferIn = () => {
         {/* Header */}
         <div className="px-6 py-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Stock Transfer</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Stock TransferIn</h1>
           </div>
         </div>
         <div className="px-6 py-5 border-b border-gray-100">

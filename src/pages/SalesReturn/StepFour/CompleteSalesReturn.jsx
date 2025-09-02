@@ -75,8 +75,12 @@ const getProductName = (order) => {
 
   // Accessories / Variation (ProductType 2)
   if (productType === 2) {
+     const line1 = clean(
+      ` ${clean(detail.productName || detail.productDescName)}`
+    );
     return joinNonEmpty(
       [
+        clean(line1),
         clean(`${detail.productDescName}`),
         clean(detail.Variation?.Variation || detail.variationName) &&
           `Variation: ${detail.Variation?.Variation || detail.variationName}`,
@@ -92,23 +96,23 @@ const getProductName = (order) => {
   if (productType === 3) {
     const bc = detail.CLBatchCode === 1 ? detail.Stock[0].BatchCode : null;
     const ex = detail.CLBatchCode === 1 ? detail.Stock[0].Expiry : null;
-
+// in the sales return PowerSpecs only
     const specsList = joinNonEmpty(
       [
-        cleanPower(detail.specs?.sphericalPower) &&
-          `SPH: ${cleanPower(detail.specs?.sphericalPower)}`,
-        cleanPower(detail.specs?.cylindricalPower) &&
-          `CYL: ${cleanPower(detail.specs?.cylindricalPower)}`,
-        clean(detail.specs?.axis) && `Axis: ${clean(detail.specs?.axis)}`,
-        cleanPower(detail.specs?.additional) &&
-          `Add: ${cleanPower(detail.specs?.additional)}`,
+        cleanPower(detail.PowerSpecs?.Sph) &&
+          `SPH: ${cleanPower(detail.PowerSpecs?.Sph)}`,
+        cleanPower(detail.PowerSpecs?.Cyl) &&
+          `CYL: ${cleanPower(detail.PowerSpecs?.Cyl)}`,
+        clean(detail.PowerSpecs?.Axis) && `Axis: ${clean(detail.PowerSpecs?.Axis)}`,
+        cleanPower(detail.PowerSpecs?.Add) &&
+          `Add: ${cleanPower(detail.PowerSpecs?.Add)}`,
       ],
       ", "
     );
 
     return joinNonEmpty(
       [
-        joinNonEmpty([clean(detail?.brandName || detail?.BrandName),clean(detail.productName)]),
+        joinNonEmpty([clean(detail.productName)]),
         specsList,
         clean(detail.specs?.color || detail.colour) &&
           `Color: ${clean(detail.specs?.color || detail.colour)}`,
@@ -130,9 +134,8 @@ const getProductName = (order) => {
 
   // Ophthalmic Lenses (ProductType 0)
   if (productType === 0) {
-    const olLine = clean(`${detail?.brandName || detail?.BrandName} ${detail.productName}`);
+    const olLine = clean(`${detail.productName} ${detail.treatmentName} ${detail.coatingName}`);
     // AddOns
-    console.log("add", AddOnData);
     const addonNames = Array.isArray(AddOnData)
       ? AddOnData?.map((item) => clean(item.name?.split(" - ₹")[0])).filter(
           Boolean
@@ -171,10 +174,11 @@ const getProductName = (order) => {
       [
         olLine,
         powerLine,
-        clean(detail.colour) && `Color: ${detail.colour}`,
+        // clean(detail.colour) && `Color: ${detail.colour}`,
         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
 
         fittingLine,
+        addonNames,
         clean(detail.hSN || detail.hsncode || detail.HSN) &&
           `HSN: ${
             clean(detail.hSN) || clean(detail.hsncode) || clean(detail.HSN)

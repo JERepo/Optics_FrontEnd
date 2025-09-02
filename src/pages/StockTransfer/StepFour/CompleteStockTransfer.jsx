@@ -314,7 +314,7 @@ const CompleteStockTransfer = () => {
   const handleSaveStockTransferOut = async () => {
     try {
       const payload = {
-        STOutMainId: stockDraftData.ID || stockDraftData[0].ID,
+        STOutMainId: stockDraftData.ID,
         FromCompanyId: customerStock.locationId,
         Comment: comment,
         delete: [],

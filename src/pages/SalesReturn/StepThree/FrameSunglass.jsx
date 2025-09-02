@@ -83,7 +83,7 @@ const getProductDetailsText = (order) => {
   };
 
   return [
-     name ? `${name}` : name,
+    name ? `${name}` : name,
     // mo && `Model No:${mo}`,
     sizeVal && `Size: ${sizeVal}-${dBL}-${templeLength}`,
     getCategoryName(category) && `Category: ${getCategoryName(category)}`,
@@ -744,7 +744,15 @@ const FrameSunglass = () => {
                         <div className="whitespace-pre-wrap">
                           <div>{item.PO == 1 ? "PH" : ""}</div>
                           <div>{item.Ph == 1 ? "PO" : ""}</div>
-                          <div>{(item.Cl === 0 || item.Cl === null) ? "-" : `CL: ${item.Cl}`}</div>
+                          <div>
+                            {item.Cl === 0 || item.Cl === null
+                              ? ""
+                              : `CL: ${item.Cl}`}
+                          </div>
+                          <div>
+                            {item.IsRxable &&
+                              `${item.IsRxable === 1 ? "Rx" : ""}`}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>₹{item.MRP}</TableCell>
@@ -1155,7 +1163,22 @@ const FrameSunglass = () => {
                   <TableCell>
                     {item.Category === "O" ? "Optical Frame" : "Sunglass"}
                   </TableCell>
-                  <TableCell>{item.PO}</TableCell>
+                  <TableCell>
+                    {" "}
+                    <div className="whitespace-pre-wrap">
+                      <div>{item.PO == 1 ? "PH" : ""}</div>
+                      <div>{item.Ph == 1 ? "PO" : ""}</div>
+                      <div>
+                        {item.Cl === 0 || item.Cl === null
+                          ? "-"
+                          : `CL: ${item.Cl}`}
+                      </div>
+                      <div>
+                            {item.IsRxable &&
+                              `${item.IsRxable === 1 ? "Rx" : ""}`}
+                          </div>
+                    </div>
+                  </TableCell>
                   <TableCell>{item.MRP}</TableCell>
                   <TableCell>{item.SellingPrice}</TableCell>
                 </TableRow>

@@ -242,7 +242,7 @@ const StockTransferInView = () => {
       <div className="bg-white rounded-sm shadow-sm overflow-hidden p-6">
         <div className="flex justify-between items-center mb-3">
           <div className="text-xl font-medium text-neutral-700">
-            View Stock Transfer Out Details
+            View Stock Transfer In Details
           </div>
           <div>
             <Button

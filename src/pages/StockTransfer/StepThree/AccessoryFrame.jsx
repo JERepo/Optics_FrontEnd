@@ -420,7 +420,7 @@ const AccessoryFrame = () => {
       gstPercent: lastDetail?.PurTaxPerct || 0,
     };
   };
-console.log("draft data",stockDraftData)
+  console.log("draft data", stockDraftData);
   const handleSaveData = async () => {
     if (!Array.isArray(items) || items.length === 0) {
       console.warn("No details to save");
@@ -655,6 +655,7 @@ console.log("draft data",stockDraftData)
                     <div>Variation: {item.Variation}</div>
 
                     <div>Barcode: {item.Barcode}</div>
+                    <div>HSN: {item.HSN}</div>
                   </TableCell>
                   <TableCell>₹{formatINR(item.MRP)}</TableCell>
                   <TableCell>
