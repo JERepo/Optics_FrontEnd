@@ -367,7 +367,7 @@ export const orderApi = createApi({
         method: "PUT",
         body: payload,
       }),
-     
+
     }),
 
     // MAIN PAGE AND VIEW PAGE
@@ -392,6 +392,16 @@ export const orderApi = createApi({
     getOrderViewById: builder.query({
       query: ({ id }) => ({
         url: `/api/v1/order/getorder/${id}`,
+      }),
+    }),
+
+
+    // Get order for GRN OL dd (companyId and status 0, 2, 6)
+    getOrderdd: builder.mutation({
+      query: (payload) => ({
+        url: `/api/v1/order/productdetails-dd/`,
+        method: 'POST',
+        body: payload
       }),
     }),
   }),
@@ -459,5 +469,6 @@ export const {
   useRemoveContactLensDiscountMutation,
   useCompleteOrderFinalMutation,
   useGetOrderDetailsByIdMutation,
-  useGetOrderDetailsAllMutation
+  useGetOrderDetailsAllMutation,
+  useGetOrderddMutation
 } = orderApi;

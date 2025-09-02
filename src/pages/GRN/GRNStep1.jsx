@@ -343,21 +343,6 @@ export default function GRNStep1() {
                             {/* Vendor dropdown */}
                             {selectedLocation && (
                                 <div className="flex items-center space-x-6 mb-6">
-                                    {/* <label className="text-sm font-medium text-gray-700">
-                                        Select Vendor:
-                                    </label>
-                                    <select
-                                        value={selectedVendor}
-                                        onChange={(e) => handleVendorChange(e.target.value)}
-                                        className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    >
-                                        <option value="">Select a vendor</option>
-                                        {vendors.map((vendor) => (
-                                            <option key={vendor.Id} value={vendor.Id}>
-                                                {vendor.VendorName}
-                                            </option>
-                                        ))}
-                                    </select> */}
 
                                     <Autocomplete
                                         options={vendors}

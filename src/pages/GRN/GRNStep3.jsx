@@ -11,7 +11,8 @@ import {
     useLazyFetchBarcodeForAccessoryQuery,
     useGetModalitiesQuery,
     useGetProductNamesByModalityQuery,
-    useGetPowerDetailsMutation
+    useGetPowerDetailsMutation,
+    useGetOrderddMutation
 } from "../../api/orderApi";
 import {
     useLazyGetOlByBarcodeQuery
@@ -19,7 +20,7 @@ import {
 import { Table, TableRow, TableCell } from "../../components/Table";
 import toast from "react-hot-toast";
 import { useGetAllBrandsQuery } from "../../api/brandsApi";
-import { useSaveGRNDetailsMutation } from "../../api/grnApi";
+import { useCheckSupplierOrderNoQuery, useGetOrderDetailsByorderDetasilIdMutation, useSaveGRNDetailsMutation } from "../../api/grnApi";
 import { GRNCLSearchTable, GRNSearchTable } from "./GRNSearchTables";
 import { GRNScannedTable } from "./GRNScannedTables";
 import { useGetContactLensDetailsMutation } from "../../api/clBatchDetailsApi";
@@ -43,7 +44,13 @@ export default function GRNStep3() {
         barcode: null,
         grnMainId: grnData.step1.GrnMainId,
         clBatchInputType: "select",
-        EntryType: "combined"
+        EntryType: "combined",
+        lensSupplierOrderNo: "",
+        clGRNType: "Against Order",
+        rate: null,
+        fittingCharge: null,
+        gstAmt: null,
+        fittingGstAmt: null
     });
     const [scannedItems, setScannedItems] = useState([]);
     const [showSearchInputs, setShowSearchInputs] = useState(false);
@@ -78,11 +85,19 @@ export default function GRNStep3() {
     const [errors, setErrors] = useState({});
     const [searchFethed, setSearchFetched] = useState(false);
     const [olPowerDia, setOlPowerDia] = useState([]);
+    const [lensDD, setLensDD] = useState([]);
+    const [lensDDInput, setlensDDInput] = useState("");
+    const [selectedLensDD, setSelectedLensDD] = useState(null);
+    const [GRNOrderPowerDetails, setGRNOrderPowerDetails] = useState(null);
+    const [error, setError] = useState({
+        lensSupplierOrderNo: null
+    });
 
     // RTK Mutation Hooks
     const [SaveGRN, { isLoading: isSavingGRN }] = useSaveGRNDetailsMutation();
     const [getPowerDetails, { isLoading: isPowerDetailsLoading }] = useGetPowerDetailsMutation();
-
+    const [getOrderDD, { isLoading: isGetOrderDDLoading }] = useGetOrderddMutation();
+    const [getGRNOrderDetails] = useGetOrderDetailsByorderDetasilIdMutation();
     // RTK Query Hooks
     const [triggerBarcodeQuery, {
         data: frameData,
@@ -106,6 +121,25 @@ export default function GRNStep3() {
         { brandId: brandId, modalityId: modalityId },
         { skip: !brandId || !modalityId }
     );
+
+    const { data: isUniqueResponse, refetch: checkSupplierNoUnique } = useCheckSupplierOrderNoQuery(
+        { docNo: formState.lensSupplierOrderNo, vendorId: grnData?.step1?.selectedVendor, companyId: grnData?.step1?.selectedLocation },
+        {
+            skip: (!formState.lensSupplierOrderNo || !grnData?.step1?.selectedVendor || !grnData?.step1?.selectedLocation),
+            refetchOnMountOrArgChange: true  // Always refetch to get latest data
+        }
+    )
+
+    console.log("isUniqueResponse ------------------ ", isUniqueResponse);
+
+    const isUnique = isUniqueResponse?.isUnique;
+
+
+    useEffect(() => {
+        if (formState.lensSupplierOrderNo && grnData?.step1?.selectedVendor && grnData?.step1?.selectedLocation) {
+            checkSupplierNoUnique();
+        }
+    }, [formState.lensSupplierOrderNo, grnData?.step1?.selectedVendor, grnData?.step1?.selectedLocation]);
 
     // useEffect to set filtered brands when allBrands changes
     useEffect(() => {
@@ -148,6 +182,45 @@ export default function GRNStep3() {
             }
         }
     }, [formState.productType, allBrands, brandInput]);
+
+    useEffect(() => {
+        const getDD = async () => {
+            const payload = {
+                productType: null,
+                locationId: grnData?.step1?.selectedLocation,
+                masterId: []
+            }
+            const responsea = await getOrderDD(payload).unwrap();
+            setLensDD(responsea);
+
+            console.log("DD reponse ----------", responsea);
+        }
+        if (formState.productType === "Lens" && grnData.step1.selectedLocation) {
+            getDD();
+        }
+    }, [formState.productType]);
+
+    useEffect(() => {
+        const GRNOrderDetails = async () => {
+            const payload = {
+                orderDetailId: selectedLensDD?.orderDetailId,
+                vendorId: grnData?.step1?.selectedVendor,
+                companyId: grnData?.step1?.selectedLocation
+            }
+
+            const response = await getGRNOrderDetails(payload).unwrap();
+            console.log("Order Detail GRN ------------ ", response);
+            setGRNOrderPowerDetails(response.data);
+            setFormState(prev => ({
+                ...prev,
+                rate: response?.data?.ProductDetails?.Stock?.BuyingPrice,
+                fittingCharge: response?.data?.FittingChargeDetails?.FittingPrice
+            }));
+        }
+        if (formState.productType === "Lens" && grnData.step1.selectedLocation && grnData.step1.selectedVendor) {
+            GRNOrderDetails();
+        }
+    }, [formState.productType, selectedLensDD, grnData])
 
     const [triggerbrandandModelQuery, {
         data: frameDatabrandandModel,
@@ -472,6 +545,7 @@ export default function GRNStep3() {
             Id: Date.now()
         };
 
+        console.log("newItem ------------- ", newItem);
         setScannedItems(prevItems => {
             let updatedItems = [...prevItems];
             const existingItemIndex = formState.EntryType === "combined"
@@ -492,6 +566,7 @@ export default function GRNStep3() {
             return updatedItems;
         });
 
+
         toast.success("Batch added successfully");
         setClSearchItems([]);
         setSelectedBatchCode(null);
@@ -511,12 +586,13 @@ export default function GRNStep3() {
             let grnDetails = [];
 
             setIsLoading(true);
-            if (scannedItems.length === 0) {
-                toast.error("Please scan and add at least one item");
-                return;
-            }
 
-            if (formState.productType === "Frame/Sunglass" || formState.productType === "Accessories") {
+            if (formState.productType === "Frame/Sunglass" || formState.productType === "Accessories" || formState.productType === "Contact Lens") {
+                if (scannedItems.length === 0) {
+                    toast.error("Please scan and add at least one item");
+                    return;
+                }
+
                 grnDetails = scannedItems.map((item, index) => {
                     let taxPercent = 0;
 
@@ -553,7 +629,7 @@ export default function GRNStep3() {
                                 : formState.productType === 'Accessories' ? 2
                                     : formState.productType === 'Contact Lens' ? 3
                                         : null,
-                        detailId: item.Id,
+                        detailId: formState.productType === 'Contact Lens' ? item.CLDetailId : search.Id,
                         BatchCode: item.CLBatchCode || null,
                         OrderDetailId: null,
                         VendorOrderNo: null,
@@ -568,9 +644,57 @@ export default function GRNStep3() {
                 });
             }
 
+            // if (formState.productType === "Contact Lens") {
+
+            //     grnDetails = [{
+            //         GRNMainID: formState.grnMainId,
+            //         GRNSlNo: 1,
+            //         ProductType: 0,
+            //         detailId: selectedLensDD.olDetailId,
+            //         BatchCode: selectedLensDD.cLBatchCode || null,
+            //         OrderDetailId: selectedLensDD.orderDetailId || null,
+            //         VendorOrderNo: formState.lensSupplierOrderNo || null,
+            //         PODetailsId: null,
+            //         GRNQty: GRNOrderPowerDetails?.OrderQuantity || 1,
+            //         GRNPrice: formState?.rate,
+            //         TaxPercent: GRNOrderPowerDetails?.TaxPercentage,
+            //         FittingPrice: formState?.fittingCharge,
+            //         FittingGSTPercentage: GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST || null,
+            //         ApplicationUserId: user.Id
+            //     }];
+
+            //     // return grnDetails;
+            // }
+
+            if (formState.productType === "Lens") {
+
+                grnDetails = [{
+                    GRNMainID: formState.grnMainId,
+                    GRNSlNo: 1,
+                    ProductType: 0,
+                    detailId: selectedLensDD.olDetailId,
+                    BatchCode: selectedLensDD.cLBatchCode || null,
+                    OrderDetailId: selectedLensDD.orderDetailId || null,
+                    VendorOrderNo: formState.lensSupplierOrderNo || null,
+                    PODetailsId: null,
+                    GRNQty: GRNOrderPowerDetails?.OrderQuantity || 1,
+                    GRNPrice: formState?.rate,
+                    TaxPercent: GRNOrderPowerDetails?.TaxPercentage,
+                    FittingPrice: formState?.fittingCharge,
+                    FittingGSTPercentage: GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST || null,
+                    ApplicationUserId: user.Id
+                }];
+
+                // return grnDetails;
+            }
+            console.log("grnDetails ---------- ", grnDetails);
+
             const response = await SaveGRN(grnDetails).unwrap();
             if (response.status === "success") {
                 toast.success("GRN details saved successfully");
+                updateStep1Data({
+                    GrnMainId: response?.data?.data[0]?.GRNMainID || null,
+                })
                 nextStep();
             }
         } catch (error) {
@@ -783,34 +907,64 @@ export default function GRNStep3() {
                     </button>
                 </div>
 
-                <div className="flex justify-start gap-12 mb-6">
-                    <div className="flex space-x-4">
-                        <label className="flex items-center space-x-2 cursor-pointer">
-                            <input
-                                type="radio"
-                                name="EntryType"
-                                value="combined"
-                                checked={formState.EntryType === "combined"}
-                                onChange={handleInputChange}
-                                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                            <span className="text-gray-700 font-medium">Combined Entry</span>
-                        </label>
-                        <label className="flex items-center space-x-2 cursor-pointer">
-                            <input
-                                type="radio"
-                                name="EntryType"
-                                value="seperate"
-                                checked={formState.EntryType === "seperate"}
-                                onChange={handleInputChange}
-                                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                            <span className="text-gray-700 font-medium">Separate Entry</span>
-                        </label>
-                    </div>
-                </div>
+                {formState.productType !== 'Lens' ? (
 
-                {!showSearchInputs ? (
+                    <div className="flex justify-start gap-12 mb-6">
+                        <div className="flex space-x-4">
+                            <label className="flex items-center space-x-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="EntryType"
+                                    value="combined"
+                                    checked={formState.EntryType === "combined"}
+                                    onChange={handleInputChange}
+                                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <span className="text-gray-700 font-medium">Combined Entry</span>
+                            </label>
+                            <label className="flex items-center space-x-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="EntryType"
+                                    value="seperate"
+                                    checked={formState.EntryType === "seperate"}
+                                    onChange={handleInputChange}
+                                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <span className="text-gray-700 font-medium">Separate Entry</span>
+                            </label>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex justify-start gap-12 mb-6">
+                        <div className="flex space-x-4">
+                            <label className="flex items-center space-x-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="clGRNType"
+                                    value="Against Order"
+                                    checked={formState.clGRNType === "Against Order"}
+                                    onChange={handleInputChange}
+                                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <span className="text-gray-700 font-medium">Against Order(Stock/Rx)</span>
+                            </label>
+                            <label className="flex items-center space-x-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="clGRNType"
+                                    value="Stock Lenses"
+                                    checked={formState.clGRNType === "Stock Lenses"}
+                                    onChange={handleInputChange}
+                                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <span className="text-gray-700 font-medium">Stock Lenses(Bulk)</span>
+                            </label>
+                        </div>
+                    </div>
+                )}
+
+                {(!showSearchInputs && formState.productType !== "Lens") ? (
                     <div className="flex-1 flex items-center gap-5">
                         <label htmlFor="barcode" className="block text-sm font-medium text-gray-700 whitespace-nowrap">
                             Enter Barcode
@@ -888,7 +1042,7 @@ export default function GRNStep3() {
                             Search
                         </button>
                     </div>
-                ) : (
+                ) : (showSearchInputs && formState.productType !== "Lens") ? (
                     <div className="flex flex-col md:flex-row items-start md:items-center gap-4 flex-wrap">
                         <div className="flex-1 min-w-[200px]">
                             <Autocomplete
@@ -1043,7 +1197,184 @@ export default function GRNStep3() {
                             Back to Barcode
                         </button>
                     </div>
+                ) : (!showSearchInputs && formState.productType === "Lens") ? (
+                    <div className="flex-1 min-w-[200px]">
+                        <Autocomplete
+                            options={lensDD}
+                            getOptionLabel={(option) => option.orderNoDDCl}
+                            onInputChange={(event, value) => {
+                                setlensDDInput(value);
+                            }}
+                            onChange={(event, newValue) => {
+                                if (newValue) {
+                                    setlensDDInput(newValue.orderNoDDCl);
+                                    setSelectedLensDD(newValue);
+                                } else {
+                                    setlensDDInput("");
+                                    setSelectedLensDD(null);
+                                }
+                            }}
+                            value={
+                                lensDD.find((b) => b.orderNoDDCl === lensDDInput) ||
+                                null
+                            }
+                            isOptionEqualToValue={(option, value) =>
+                                option.orderNoDDCl === value.orderNoDDCl
+                            }
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="Search Order no."
+                                    variant="outlined"
+                                    fullWidth
+                                />
+                            )}
+                        />
+                    </div>
+                ) : null}
+
+                {console.log("selectedLensDD ---------------- ", selectedLensDD)}
+                {(!showSearchInputs && formState.productType === "Lens" && selectedLensDD) && (
+                    <>
+                        <div key={selectedLensDD.Id} className="mb-4 space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <p className="text-gray-700 ">
+                                    <span className="font-bold flex">Customer Name </span>
+                                    <span>{selectedLensDD.customerName}</span>
+                                </p>
+                                <p className="text-gray-700">
+                                    <span className="font-bold flex">Order Reference</span>
+                                    <span>{selectedLensDD.orderReference}</span>
+                                </p>
+                                <p className="text-gray-700">
+                                    <span className="font-bold flex">With Fitting</span>
+                                    <span>{selectedLensDD.withFitting === 1 ? "Yes" : "No"}</span>
+                                </p>
+                                {/* <p className="text-gray-700">
+                                    <span className="font-bold flex">Product Name</span>
+                                    <span className="flex">{selectedLensDD.productDescName}</span>
+                                </p> */}
+                            </div>
+                            <p className="text-gray-700">
+                                <span className="font-bold flex">Product Name</span>
+                                <span className="flex">{selectedLensDD.productDescName}</span>
+                            </p>
+                        </div>
+
+                        <input
+                            id="lensSupplierOrderNo"
+                            name="lensSupplierOrderNo"
+                            type="text"
+                            autoComplete="off"
+                            autoFocus
+                            value={formState.lensSupplierOrderNo || ''}
+                            onChange={handleInputChange}
+                            className=" px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060] pr-10"
+                            placeholder="Supplier Order No."
+                            aria-label="Supplier Order no input"
+                            error={isUnique === false ? "Supplier order number must be unique for this vendor" : error.lensSupplierOrderNo || ""}
+                            helperText={error.lensSupplierOrderNo || "Must be unique for this vendor"}
+                            disabled={isLoading}
+                        />
+
+                        {GRNOrderPowerDetails && (
+                            <>
+                                <div className="flex">
+                                    {(GRNOrderPowerDetails?.PowerDetails?.RightSphericalPower ||
+                                        GRNOrderPowerDetails?.PowerDetails?.RightCylindricalPower ||
+                                        GRNOrderPowerDetails?.PowerDetails?.RightAxis ||
+                                        GRNOrderPowerDetails?.PowerDetails?.RightAddPower) && (
+                                            `R: Sph: ${GRNOrderPowerDetails?.PowerDetails?.RightSphericalPower || ''} Cyl: ${GRNOrderPowerDetails?.PowerDetails?.RightCylindricalPower || ''} Axis: ${GRNOrderPowerDetails?.PowerDetails?.RightAxis || ''} Add: ${GRNOrderPowerDetails?.PowerDetails?.RightAddPower || ''}`
+                                        )}
+                                    <br />
+                                    {(GRNOrderPowerDetails?.PowerDetails?.LeftSphericalPower ||
+                                        GRNOrderPowerDetails?.PowerDetails?.LeftCylindricalPower ||
+                                        GRNOrderPowerDetails?.PowerDetails?.LeftAxis ||
+                                        GRNOrderPowerDetails?.PowerDetails?.LeftAddPower) && (
+                                            `L: Sph: ${GRNOrderPowerDetails?.PowerDetails?.LeftSphericalPower || ''} Cyl: ${GRNOrderPowerDetails?.PowerDetails?.LeftCylindricalPower || ''} Axis: ${GRNOrderPowerDetails?.PowerDetails?.LeftAxis || ''} Add: ${GRNOrderPowerDetails?.PowerDetails?.LeftAddPower || ''}`
+                                        )}
+                                </div>
+
+                            </>
+                        )}
+
+                        {GRNOrderPowerDetails && (
+                            <>
+                                <div className="flex items-center justify-between gap-4 w-full mb-4">
+                                    <div className="flex flex-col flex-1">
+                                        <label htmlFor="rQty" className="text-sm font-medium text-gray-700 mb-1">Qty *</label>
+                                        <input
+                                            id="rQty"
+                                            name="rQty"
+                                            type="number"
+                                            value={GRNOrderPowerDetails?.OrderQuantity}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                            disabled={true}
+                                        />
+                                    </div>
+                                    <div className="flex flex-col flex-1">
+                                        <label htmlFor="rate" className="text-sm font-medium text-gray-700 mb-1">Rate *</label>
+                                        <input
+                                            id="rate"
+                                            name="rate"
+                                            type="text"
+                                            value={`${formState.rate}`}
+                                            onChange={handleInputChange}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                        // disabled={true}
+                                        />
+                                    </div>
+                                    <div className="flex flex-col flex-1">
+                                        <label htmlFor="gst" className="text-sm font-medium text-gray-700 mb-1">GST% & Amt *</label>
+                                        <input
+                                            id="gst"
+                                            name="gst"
+                                            type="text"
+                                            value={`₹ ${(
+                                                Number(formState.rate || 0) *
+                                                (Number(GRNOrderPowerDetails?.TaxPercentage || 0) / 100)
+                                            ).toFixed(2)} (${Number(GRNOrderPowerDetails?.TaxPercentage || 0)}%)`}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                            disabled={true}
+                                        />
+                                    </div>
+                                </div>
+
+                                {GRNOrderPowerDetails?.FittingChargeDetails?.FittingCharges === 1 && (
+                                    <div className="flex items-center justify-between gap-4 w-full">
+                                        <div className="flex flex-col flex-1">
+                                            <label htmlFor="fittingCharge" className="text-sm font-medium text-gray-700 mb-1">Fitting Charges *</label>
+                                            <input
+                                                id="fittingCharge"
+                                                name="fittingCharge"
+                                                type="text"
+                                                value={`${formState.fittingCharge}`}
+                                                onChange={handleInputChange}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                            // disabled={true}
+                                            />
+                                        </div>
+                                        <div className="flex flex-col flex-1">
+                                            <label htmlFor="fittingGst" className="text-sm font-medium text-gray-700 mb-1">Fitting Amt & GST% *</label>
+                                            <input
+                                                id="fittingGst"
+                                                name="fittingGst"
+                                                type="text"
+                                                value={`₹ ${(
+                                                    Number(formState.fittingCharge || 0) *
+                                                    (Number(GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST || 0) / 100)
+                                                ).toFixed(2)} (${Number(GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST || 0)}%)`}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                                disabled={true}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </>
                 )}
+
 
                 {/* Contact Lens Search */}
                 {(showSearchInputs && productId) && (
@@ -1121,11 +1452,12 @@ export default function GRNStep3() {
                                     <label className="block text-sm font-medium text-gray-700">
                                         Select by BatchCode
                                     </label>
+                                    {/* {console.log("CLBatches ------------- ", CLBatches)} */}
                                     <Autocomplete
-                                        options={CLBatches || []}
+                                        options={CLBatches?.data || []}
                                         getOptionLabel={(option) => option.CLBatchCode || ""}
                                         value={
-                                            CLBatches?.find(
+                                            CLBatches?.data?.find(
                                                 (batch) =>
                                                     batch.CLBatchCode === selectedBatchCode?.CLBatchCode
                                             ) || null
@@ -1203,7 +1535,7 @@ export default function GRNStep3() {
                         <button
                             onClick={handleSubmitGRNDetails}
                             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
-                            disabled={scannedItems.length <= 0}
+                            disabled={formState.productType === "Lens" ? (!formState.lensSupplierOrderNo || !selectedLensDD) : scannedItems.length <= 0}
                         >
                             Save & Next
                         </button>

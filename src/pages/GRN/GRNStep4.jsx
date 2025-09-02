@@ -86,7 +86,7 @@ export default function GRNStep4() {
     const handleNewGRNAdd = () => {
         if (grnViewDetails) {
             updateStep1Data({
-                GrnMainId: grnViewDetails[0]?.GRNMainId || null,
+                GrnMainId: grnViewDetails[0]?.GRNMainID || null,
             })
         };
         setCurrentStep(2);

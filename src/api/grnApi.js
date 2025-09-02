@@ -46,6 +46,19 @@ export const grnApi = createApi({
                 url: `/api/v1/grn/get-all-grn`,
                 method: 'GET'
             })
+        }),
+        getOrderDetailsByorderDetasilId: builder.mutation({
+            query: (payload) => ({
+                url: `/api/v1/grn/get-order-details-byorderDetasilId`,
+                method: 'POST',
+                body: payload
+            })
+        }),
+        checkSupplierOrderNo: builder.query({
+            query: ({vendorOrderNo, vendorId, companyId}) => ({
+                url: `/api/v1/grn/check-unique-order/${vendorOrderNo}/${vendorId}/${companyId}`,
+                method: 'GET'
+            })
         })
     })
 });
@@ -59,5 +72,7 @@ export const {
     useSaveGRNDetailsMutation,
     useGetGRNDetailsMutation,
     useSaveCompleteGRNMutation,
-    useGetAllGRNmainQuery
+    useGetAllGRNmainQuery,
+    useGetOrderDetailsByorderDetasilIdMutation,
+    useCheckSupplierOrderNoQuery
 } = grnApi;
