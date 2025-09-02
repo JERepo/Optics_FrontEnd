@@ -323,7 +323,7 @@ const CompleteStockTransfer = () => {
               "product details",
               "srp",
               "return qty",
-              "return product price",
+              "return price",
               "gst/unit",
               "return total price",
               "action",
@@ -345,7 +345,7 @@ const CompleteStockTransfer = () => {
                 <TableCell>{item.DNQty}</TableCell>
 
                 <TableCell>
-                  ₹{formatINR(getPurchaseValue(item) * item.DNQty)}{" "}
+                  ₹{formatINR(getPurchaseValue(item))}{" "}
                  
                 </TableCell>
 

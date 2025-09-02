@@ -379,6 +379,7 @@ const OpticalLens = () => {
       )
     );
   };
+  console.log("bar",barcodeData)
   const handleQtyChange = (barcode, qty, index) => {
     const newQty = Number(qty);
     const avlQty = Number(barcodeData[index].Quantity);
@@ -613,10 +614,9 @@ const OpticalLens = () => {
   };
   const handleInputChange = (eye, field, value) => {
     if (field === "transferQty") {
-      // allow only positive numbers
-      if (!/^[1-9]\d*$/.test(value)) {
-        return;
-      }
+     if(!(isValidNumericInput(value))){
+      return;
+     }
     }
 
     setFormValues((prev) => ({
@@ -624,6 +624,7 @@ const OpticalLens = () => {
       [eye]: { ...prev[eye], [field]: value },
     }));
   };
+  console.log("values",formValues)
   const handleGetDia = async () => {
     const isBothSelected = lensData.powerSingleORboth === 1;
     const isRSelected = isBothSelected || selectedEyes.includes("R");
@@ -716,7 +717,7 @@ const OpticalLens = () => {
             return prev;
           }
 
-          return [...prev, { ...res.data, tqty: 1 }];
+          return [...prev, { ...res.data, tqty: parseInt(formValues[eye]?.transferQty) }];
         });
 
         setBarcode(""); // clear input after scan
@@ -728,7 +729,6 @@ const OpticalLens = () => {
       console.log(error?.data?.error);
     }
   };
-
   const handleSaveFinalData = async () => {
     if (!Array.isArray(barcodeData) || barcodeData.length === 0) {
       console.warn("No details to save");

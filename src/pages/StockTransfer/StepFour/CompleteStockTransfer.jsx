@@ -314,7 +314,7 @@ const CompleteStockTransfer = () => {
   const handleSaveStockTransferOut = async () => {
     try {
       const payload = {
-        STOutMainId: stockDraftData.ID || stockDraftData[0].ID,
+        STOutMainId: stockDraftData.ID,
         FromCompanyId: customerStock.locationId,
         Comment: comment,
         delete: [],
@@ -329,7 +329,7 @@ const CompleteStockTransfer = () => {
       navigate("/stock-transfer");
       updateCurrentStockStep(1);
     } catch (error) {
-      toast.error(error?.data.error);
+      toast.error(error?.data.error?.message);
     }
   };
   console.log(stockDetails);

@@ -98,7 +98,7 @@ export const stockTransferApi = createApi({
       query: ({ mainId, locationId }) => ({
         url: `/api/v1/stock-transfer/in/details?STInMainID=${mainId}&locationId=${locationId}`,
       }),
-      providesTags:["StockTransferIn"]
+      providesTags: ["StockTransferIn"],
     }),
     deleteUpdateSTKIn: builder.mutation({
       query: ({ payload }) => ({
@@ -107,6 +107,16 @@ export const stockTransferApi = createApi({
         body: payload,
       }),
       invalidatesTags: ["StockTransferIn"],
+    }),
+    getAllStockInData: builder.query({
+      query: () => ({
+        url: `/api/v1/stock-transfer/in/all`,
+      }),
+    }),
+    getStockInById: builder.query({
+      query: ({ mainId, locationId }) => ({
+        url: `/api/v1/stock-transfer/in/details?STInMainID=${mainId}&locationId=${locationId}`,
+      }),
     }),
   }),
 });
@@ -129,5 +139,7 @@ export const {
   useLazyGetSTKIDraftDataQuery,
   useSaveSTIMutation,
   useGetStockInDetailsQuery,
-  useDeleteUpdateSTKInMutation
+  useDeleteUpdateSTKInMutation,
+  useGetAllStockInDataQuery,
+  useGetStockInByIdQuery
 } = stockTransferApi;

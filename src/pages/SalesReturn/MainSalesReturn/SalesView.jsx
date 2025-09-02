@@ -44,16 +44,9 @@ const SalesView = () => {
     const brandName = details?.brandName;
     const ProductName = details?.productName || details?.productDescName || "";
     const Barcode = details?.barcode;
-    const Hsncode = details?.hSN || details.HSN;
-    const Colour = details?.colour;
-    const Tint = details.tint?.tintName || "";
-    const addOn = details.addOn?.addOnName;
-    const batchcode = Array.isArray(details.Stock)
-      ? details.Stock[0].BatchCode
-      : details.Stock.BatchCode;
-    const expiry = Array.isArray(details.Stock)
-      ? details.Stock[0].Expiry
-      : details.Stock.Expiry;
+    const Hsncode = details?.hSN || details?.HSN;
+
+    
     const clean = (val) => {
       if (
         val == null ||
@@ -77,45 +70,62 @@ const SalesView = () => {
     const lines = [];
 
     // Add Product Name
-    if (clean(ProductName)) lines.push(`${brandName} ${ProductName}`);
+    if (clean(ProductName)) lines.push(`${ProductName}`);
 
     // Common fields for all types
     if (typeid === 1) {
       // Frame
-      const Size = details.size;
+      const Size = clean(details?.Size?.Size) || details?.size;
       if (clean(Size))
         lines.push(
-          `Size: ${clean(Size)}-${clean(details.dBL)}-${clean(
-            details.templeLength
+          `Size: ${clean(Size)}-${clean(details?.dBL)}-${clean(
+            details?.templeLength
           )}`
         );
     } else if (typeid === 2) {
       // Accessories
-      const Variation = details.Variation;
+      const Variation = details?.Variation?.Variation;
       if (clean(Variation)) lines.push(`Variation: ${clean(Variation)}`);
     } else if (typeid === 3) {
       // Contact Lens
-      const PowerSpecs = details.PowerSpecs || {};
+      const PowerSpecs = details?.specs || {};
+      // const batchcode = Array.isArray(details?.Stock)
+      //   ? details?.stock[0].batchCode
+      //   : details?.stock.batchCode;
+      // const expiry = Array.isArray(details?.Stock)
+      //   ? details?.stock[0].Expiry
+      //   : details?.stock.Expiry;
+      const batchCode = clean(item.BatchCode)
+      const expiry = clean(item.ExpiryDate)
       const specsParts = [];
-      if (PowerSpecs.Sph != null)
-        specsParts.push(`Sph: ${cleanPower(PowerSpecs.Sph)}`);
-      if (PowerSpecs.Cyl != null)
-        specsParts.push(`Cyl: ${cleanPower(PowerSpecs.Cyl)}`);
-      if (PowerSpecs.Axis != null)
-        specsParts.push(`Axis: ${clean(PowerSpecs.Axis)}`);
-      if (PowerSpecs.Add != null)
-        specsParts.push(`Add: ${cleanPower(PowerSpecs.Add)}`);
+      // if (PowerSpecs.Sph != null)
+      //   specsParts.push(`Sph: ${cleanPower(PowerSpecs.Sph)}`);
+      // if (PowerSpecs.Cyl != null)
+      //   specsParts.push(`Cyl: ${cleanPower(PowerSpecs.Cyl)}`);
+      // if (PowerSpecs.Axis != null)
+      //   specsParts.push(`Axis: ${clean(PowerSpecs.Axis)}`);
+      // if (PowerSpecs.Add != null)
+      //   specsParts.push(`Add: ${cleanPower(PowerSpecs.Add)}`);
+      // if (specsParts.length) lines.push(specsParts.join(" "));
+      if (PowerSpecs.sphericalPower != null)
+        specsParts.push(`Sph: ${cleanPower(PowerSpecs.sphericalPower)}`);
+      if (PowerSpecs.cylindricalPower != null)
+        specsParts.push(`Cyl: ${cleanPower(PowerSpecs.cylindricalPower)}`);
+      if (PowerSpecs.axis != null)
+        specsParts.push(`Axis: ${clean(PowerSpecs.axis)}`);
+      if (PowerSpecs.additional != null)
+        specsParts.push(`Add: ${cleanPower(PowerSpecs.additional)}`);
       if (specsParts.length) lines.push(specsParts.join(" "));
-      if (clean(batchcode && expiry))
+      if (batchCode && expiry)
         lines.push(
-          `BatchCode: ${batchcode} | Expiry: ${expiry
+          `BatchCode: ${batchCode} | Expiry: ${expiry
             .split("-")
             .reverse()
             .join("/")}`
         );
     } else if (typeid === 0) {
       // Optical Lenses
-      const powerDetails = details.specs?.powerDetails || {};
+      const powerDetails = details?.specs?.powerDetails || {};
       const specsLines = [];
 
       const formatLens = (side, data) => {
@@ -132,17 +142,17 @@ const SalesView = () => {
       };
 
       if (powerDetails.right)
-        specsLines.push(formatLens("Right", powerDetails.right));
+        specsLines.push(formatLens("R", powerDetails.right));
       if (powerDetails.left)
-        specsLines.push(formatLens("Left", powerDetails.left));
+        specsLines.push(formatLens("L", powerDetails.left));
 
       if (specsLines.length) lines.push(...specsLines);
 
       // Add coating/treatment/family etc.
-      const family = clean(details.familyName);
-      const design = clean(details.designName);
-      const coating = clean(details.coatingName);
-      const treatment = clean(details.treatmentName);
+      const family = clean(details?.familyName);
+      const design = clean(details?.designName);
+      const coating = clean(details?.coatingName);
+      const treatment = clean(details?.treatmentName);
       const extra = [family, design, coating, treatment]
         .filter(Boolean)
         .join(" ");
@@ -150,11 +160,11 @@ const SalesView = () => {
 
       // Add tint & add-on
       const tint =
-        details.specs?.tint?.tintName || clean(details.tint?.tintName);
+        details?.specs?.tint?.tintName || clean(details?.tint?.tintName);
       if (tint) lines.push(`Tint: ${tint}`);
 
       const addOnName =
-        details.specs?.addOn?.addOnName || clean(details.addOn?.addOnName);
+        details?.specs?.addOn?.addOnName || clean(details?.addOn?.addOnName);
       if (addOnName) lines.push(`AddOn: ${addOnName}`);
     }
 
@@ -162,8 +172,8 @@ const SalesView = () => {
     // if(clean(productName))
     if (clean(Barcode)) lines.push(`Barcode: ${clean(Barcode)}`);
     if (clean(Hsncode)) lines.push(`HSN: ${clean(Hsncode)}`);
-    if (clean(Colour)) lines.push(`Colour: ${clean(Colour)}`);
-    if (clean(Tint)) lines.push(`Tint: ${clean(Tint)}`);
+    // if (clean(Colour)) lines.push(`Colour: ${clean(Colour)}`);
+    // if (clean(Tint)) lines.push(`Tint: ${clean(Tint)}`);
 
     return lines.join("\n");
   };
@@ -176,11 +186,9 @@ const SalesView = () => {
   const grandTotal = salesDetails?.data.reduce((sum, item) => {
     const price = parseFloat(item.TotalAmount || 0);
     const fittingPrice = parseFloat(item.FittingCharges || 0);
-    const gstPercentage = parseFloat(item.GSTPercentage) || 0;
-    const returnQty = parseInt(item.ReturnQty) || 0;
-    const returnPrice = parseFloat(item.ReturnPricePerUnit) || 0;
-    const gst = calculateGST(returnPrice * returnQty, gstPercentage);
-    return sum + price + fittingPrice + parseFloat(gst.gstAmount);
+    const gst = parseFloat(item.FittingGSTPercentage || 0);
+    const fittingGst = fittingPrice * (gst/100)
+    return sum + price + fittingPrice + fittingGst;
   }, 0);
 
   if (isViewLoading || isLoading) {
@@ -195,7 +203,9 @@ const SalesView = () => {
     <div className="max-w-8xl">
       <div className="bg-white rounded-sm shadow-sm overflow-hidden p-6">
         <div className="flex justify-between items-center mb-3">
-          <div></div>
+          <div className="text-2xl text-neutral-700 font-semibold">
+            View Sales Return Details
+          </div>
           <div>
             <Button variant="outline" onClick={() => navigate("/sales-return")}>
               Back
@@ -302,14 +312,17 @@ const SalesView = () => {
                 <TableCell>₹{formatINR(s.FittingCharges ?? 0)}</TableCell>
                 <TableCell>
                   ₹
-                  {parseFloat(
-                    (s.TotalAmount || 0) +
+                  {formatINR(
+                    parseFloat(s.ReturnPricePerUnit * s.ReturnQty) +
                       parseFloat(
-                        calculateGST(
-                          s.ReturnPricePerUnit * s.ReturnQty,
-                          parseFloat(s.GSTPercentage || 0)
-                        ).gstAmount
-                      )
+                        s.ProductType === 0
+                          ? parseFloat(
+                              (s.FittingCharges || 0) *
+                                ((s.FittingGSTPercentage || 0) / 100)
+                            )
+                          : 0
+                      ) +
+                      parseFloat(s.FittingCharges || 0)
                   )}
                 </TableCell>
               </TableRow>

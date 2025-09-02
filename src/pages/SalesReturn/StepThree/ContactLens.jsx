@@ -154,7 +154,8 @@ const getProductName = (order) => {
 
   return "";
 };
-const getProductNameYes = (order) => {
+const getProductNameYes = (data) => {
+  const order = {...data.ProductDetails[0],...data}
   const {
     productName,
     BrandName,
@@ -167,8 +168,13 @@ const getProductNameYes = (order) => {
     ProductType,
     Colour,
     brandName,
+    selectBatch,
+    sbatchCode,
+    CLBatchBarCode,
+    sbatchbarCode,
+    ExpiryDate
   } = order;
-
+console.log("order in yes",order)
   const clean = (val) => {
     if (
       val === null ||
@@ -196,6 +202,9 @@ const getProductNameYes = (order) => {
   const brand = clean(brandName);
   const barcodeVal = clean(Barcode || barcode);
   const clr = clean(Colour || color);
+  const expiry = clean(ExpiryDate);
+  const batchc = clean(sbatchCode);
+  const batchBar = clean(sbatchbarCode);
 
   // Ensure specs is an object, handle cases where it might be a string
   let specsObj = {};
@@ -226,49 +235,16 @@ const getProductNameYes = (order) => {
     specsList,
     clr && `Color: ${clr}`,
     barcodeVal && `Barcode: ${barcodeVal}`,
+    batchc && `BatchCode: ${batchc}`,
+    batchBar && `BatchBarCode: ${batchBar}`,
+    expiry && `Expiry : ${expiry.split("-").reverse().join("/")}`,
     hsn && `HSN: ${hsn}`,
   ]
     .filter(Boolean)
     .join("\n");
 };
 
-const getSRPrice = (item) => {
-  if (!item) {
-    return 0;
-  }
 
-  if (item.CLBatchCode === 0) {
-    return parseFloat(item.price?.SellingPrice || 0);
-  } else if (item.CLBatchCode === 1) {
-    if (Array.isArray(item.Stock)) {
-      return item.Stock.reduce(
-        (sum, s) => sum + parseFloat(s.SellingPrice || 0),
-        0
-      );
-    } else if (item.Stock && typeof item.Stock === "object") {
-      return parseFloat(item.Stock.SellingPrice || 0);
-    }
-  }
-
-  return parseFloat(item.Stock?.SellingPrice || 0);
-};
-const getSROutMRP = (item) => {
-  if (!item) {
-    return 0;
-  }
-
-  if (item.CLBatchCode === 0) {
-    return parseFloat(item.price?.MRP || 0);
-  } else if (item.CLBatchCode === 1) {
-    if (Array.isArray(item.Stock)) {
-      return item.Stock.reduce((sum, s) => sum + parseFloat(s.MRP || 0), 0);
-    } else if (item.Stock && typeof item.Stock === "object") {
-      return parseFloat(item.Stock.MRP || 0);
-    }
-  }
-
-  return parseFloat(item.Stock?.MRP || 0);
-};
 const ContactLens = () => {
   const {
     prevSalesStep,
@@ -666,9 +642,9 @@ const ContactLens = () => {
           sbatchbarCode: isAvailable.CLBatchBarCode,
           ExpiryDate: isAvailable.CLBatchExpiry,
           selectBatch,
-          returnPrice:parseFloat(isAvailable.SellingPrice),
+          returnPrice: parseFloat(isAvailable.SellingPrice),
           returnQty: 1,
-          Quantity : isAvailable.Quantity,
+          Quantity: isAvailable.Quantity,
           ...(detailId ? batchBarCodeDetails?.data?.data : {}),
         };
         let existingIndex;
@@ -922,6 +898,7 @@ const ContactLens = () => {
     }
   };
   const handleAddData = () => {
+    console.log("select batch code in ", selectedBatchCode);
     if (!selectedInvoiceReturnQty || isNaN(selectedInvoiceReturnQty)) {
       toast.error("Please enter a valid Return Qty");
       return;
@@ -950,8 +927,15 @@ const ContactLens = () => {
       AccId: detaildAccId,
       ...selectedInvoice,
       ReturnQty: selectedInvoiceReturnQty,
+      sbatchCode:
+        selectBatch === 0
+          ? selectedBatchCode.CLBatchCode
+          : selectedBatchCode.CLBatchBarCode,
+      ExpiryDate: selectedBatchCode.CLBatchExpiry,
       ReturnPricePerUnit: selectedInvoice.ActualSellingPrice,
-      GSTPercentage: 18,
+      GSTPercentage: parseFloat(
+        selectedInvoice.ProductDetails[0].taxPercentage
+      ),
       TotalAmount:
         parseFloat(selectedInvoice.ActualSellingPrice) *
         selectedInvoiceReturnQty,
@@ -988,6 +972,7 @@ const ContactLens = () => {
     setProductCodeInput("");
     handleRefresh();
   };
+  console.log(mainClDetails);
   const handleSaveData = async () => {
     if (!Array.isArray(mainClDetails) || mainClDetails.length === 0) {
       console.warn("No details to save");
@@ -1015,12 +1000,15 @@ const ContactLens = () => {
             referenceApplicable === 0
               ? detail.returnPrice
               : parseFloat(detail.ReturnPricePerUnit) ?? null,
-          ProductTaxPercentage: Array.isArray(detail.TaxDetails)
-            ? findGSTPercentage(detail).taxPercentage
-            : findGSTPercentage({
-                ...detail,
-                TaxDetails: [{ ...detail.TaxDetails }],
-              }).taxPercentage ?? null,
+          ProductTaxPercentage:
+            referenceApplicable === 0
+              ? Array.isArray(detail.TaxDetails)
+                ? findGSTPercentage(detail).taxPercentage
+                : findGSTPercentage({
+                    ...detail,
+                    TaxDetails: [{ ...detail.TaxDetails }],
+                  }).taxPercentage ?? null
+              : parseFloat(detail.ProductDetails[0].taxPercentage) ?? null,
           FittingReturnPrice: detail.FittingReturnPrice ?? null,
           FittingTaxPercentage: detail.FittingTaxPercentage ?? null,
           InvoiceDetailId: detail.Id ?? null,
@@ -1253,7 +1241,7 @@ const ContactLens = () => {
                   </TableCell>
                   <TableCell className="text-center">CL</TableCell>
                   <TableCell className="whitespace-pre-line">
-                    {getProductNameYes(item.ProductDetails[0])}
+                    {getProductNameYes(item)}
                   </TableCell>
                   <TableCell className="text-right">
                     ₹{formatINR(parseFloat(item.SRP || 0))}
@@ -1303,11 +1291,18 @@ const ContactLens = () => {
                     ₹
                     {formatINR(
                       calculateGST(
-                        parseFloat(item.ReturnPricePerUnit || 0) *
-                          parseInt(item.ReturnQty || 0),
+                        parseFloat(item.ReturnPricePerUnit || 0),
                         parseFloat(item.GSTPercentage || 0)
                       ).gstAmount
                     )}
+                    (
+                    {
+                      calculateGST(
+                        parseFloat(item.ReturnPricePerUnit || 0),
+                        parseFloat(item.GSTPercentage || 0)
+                      ).taxPercentage
+                    }
+                    %)
                   </TableCell>
                   <TableCell className="text-center">
                     {item.ReturnQty || 0}

@@ -80,6 +80,8 @@ import { GRNViewPage } from "../pages/GRN/GRNViewPage";
 import NewGVMain from "../pages/GiftVoucher/NewGV/NewGVMain";
 import NewGV from "../pages/GiftVoucher/NewGV/NewGV";
 import ActiveteGV from "../pages/GiftVoucher/ActivateGV/ActiveteGV";
+import StockTransferIn from "../pages/StockTransferIn/MainStockTransferIn/StockTransferIn";
+import StockTransferInView from "../pages/StockTransferIn/MainStockTransferIn/StockTransferInView";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -765,7 +767,16 @@ export const router = createBrowserRouter([
         path: "purchase-return/view",
         element: <PurchaseReturnView />,
       },
-      { path: "stock-transferin/create", element: <TotalStockTransferIn /> },
+      {
+        path : "stock-transferin",
+        element : <StockTransferIn />
+      },
+      {
+        path : "stock-transferin/view",
+        element :<StockTransferInView />
+      },
+      { path: "stock-transferin/create", 
+        element: <TotalStockTransferIn /> },
       {
         path: "grn/create",
         element: (

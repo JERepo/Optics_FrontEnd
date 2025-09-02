@@ -229,24 +229,25 @@ const FrameSunglass = () => {
     setSearchResults([]);
   };
 
-  const handleQtyChange = (barcode, qty, index) => {
-    const newQty = Number(qty);
-    const avlQty = Number(items[index].Quantity);
-    if (newQty > avlQty) {
-      toast.error("Stock quantity cannot exceed available quantity!");
-      return;
-    }
-    if (newQty < 0) {
-      toast.error("Stock quantity must be greater than 0!");
-      return;
-    }
-    setItems((prev) =>
-      prev.map((i, idx) =>
-        i.Barcode === barcode && idx === index ? { ...i, stkQty: newQty } : i
-      )
-    );
-  };
-
+const handleQtyChange = (barcode, qty, index) => {
+  const newQty = Number(qty);
+  const avlQty = Number(items[index].Quantity);
+  
+  if (isNaN(newQty) || newQty < 1) {
+    toast.error("Stock quantity must be at least 1!");
+    return;
+  }
+  if (newQty > avlQty) {
+    toast.error("Stock quantity cannot exceed available quantity!");
+    return;
+  }
+  
+  setItems((prev) =>
+    prev.map((i, idx) =>
+      i.Barcode === barcode && idx === index ? { ...i, stkQty: newQty } : i
+    )
+  );
+};
   const handleDelete = (id, index) => {
     setItems((prev) =>
       prev.filter((i, idx) => !(i.Barcode === id && idx === index))
@@ -659,7 +660,7 @@ const FrameSunglass = () => {
                           </button>
                           <button
                             onClick={() =>
-                              toggleEditMode(item.Barcode, index, "qty")
+                              toggleEditMode(item.Barcode, index, "qty","cancel")
                             }
                             className="text-neutral-400 transition"
                             title="Cancel"

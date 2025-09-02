@@ -1,18 +1,11 @@
-import React, { useState } from "react";
-import { useOrder } from "../../../features/OrderContext";
+import React from "react";
+import { useLocation, useNavigate } from "react-router";
 import { Table, TableCell, TableRow } from "../../../components/Table";
-
+import { format } from "date-fns";
 import Button from "../../../components/ui/Button";
-import Textarea from "../../../components/Form/Textarea";
-import { useNavigate } from "react-router";
-import { FiTrash2 } from "react-icons/fi";
-import { formatINR } from "../../../utils/formatINR";
-import {
-  useDeleteUpdateSTKInMutation,
-  useGetStockInDetailsQuery,
-} from "../../../api/stockTransfer";
-import toast from "react-hot-toast";
 import Loader from "../../../components/ui/Loader";
+import { formatINR } from "../../../utils/formatINR";
+import { useGetStockInByIdQuery } from "../../../api/stockTransfer";
 import { useSelector } from "react-redux";
 
 const getProductName = (data) => {
@@ -38,7 +31,7 @@ const getProductName = (data) => {
     colour,
     brandName,
     HSN,
-    BatchCode
+    BatchCode,
   } = item;
 
   const clean = (val) => {
@@ -155,15 +148,6 @@ const getProductName = (data) => {
   return "";
 };
 
-const getShortTypeName = (id) => {
-  if (id === null || id === undefined) return;
-  if (id === 1) return "F/S";
-  if (id === 2) return "ACC";
-  if (id === 3) return "CL";
-  if (id === 0) return "OL";
-  return "";
-};
-
 const getStockOutPrice = (data) => {
   const item = { ...data.ProductDetails, ...data };
   if (!item) {
@@ -175,7 +159,7 @@ const getStockOutPrice = (data) => {
       return parseFloat(item.price?.BuyingPrice || 0);
     } else if (item.CLBatchCode === 1) {
       if (Array.isArray(item.Stock)) {
-        return item.Stock[0].BuyingPrice || 0;
+        return item.Stock[0]?.BuyingPrice || 0;
       } else if (item.Stock && typeof item.Stock === "object") {
         return parseFloat(item.Stock.BuyingPrice || 0);
       }
@@ -194,7 +178,7 @@ const getStockOutPrice = (data) => {
       return parseFloat(item.price?.BuyingPrice || 0);
     } else if (item.CLBatchCode === 1) {
       if (Array.isArray(item.Stock)) {
-        return item.Stock[0].BuyingPrice || 0
+        return item.Stock[0]?.BuyingPrice || 0;
       } else if (item.Stock && typeof item.Stock === "object") {
         return parseFloat(item.Stock.BuyingPrice || 0);
       }
@@ -202,61 +186,39 @@ const getStockOutPrice = (data) => {
 
     return parseFloat(item.Stock?.BuyingPrice || 0);
   }
-  return 0
-}
-
-const CompleteStockTransferIn = () => {
-  const { user } = useSelector((state) => state.auth);
-  const [comment, setComment] = useState("");
+  return 0;
+};
+const StockTransferInView = () => {
   const navigate = useNavigate();
-  const [deletingId, setDeletingId] = useState(null);
+  const { search } = useLocation();
+  const { hasMultipleLocations } = useSelector((state) => state.auth);
+  const params = new URLSearchParams(search);
+  const stockIn = params.get("stockInId");
 
-  const {
-    customerStockTransferIn,
-    currentStockTransferInStep,
-    stockTransferInDraftData,
-    goToStockTransferInStep,
-    prevStockTransferInStep,
-    selectedStockTransferInProduct,
-  } = useOrder();
+  const { data: stockDetails, isLoading } = useGetStockInByIdQuery({
+    mainId: stockIn,
+    locationId: parseInt(hasMultipleLocations[0]),
+  });
 
-  const { data: stockDetails, isLoading: isStockDetailsLoading } =
-    useGetStockInDetailsQuery({
-      mainId: stockTransferInDraftData.ID,
-      locationId: customerStockTransferIn.locationId,
-    });
-  console.log("stock data", stockDetails);
-  const [updateStockTI, { isLoading: isUpdating }] =
-    useDeleteUpdateSTKInMutation();
-
-  const handleDeleteItem = async (id) => {
-    setDeletingId(id);
-    try {
-      const payload = {
-        STInMainId: stockTransferInDraftData.ID ?? null,
-          ApplicationUserID:user.Id,
-        companyId: customerStockTransferIn.locationId,
-        Comment: comment,
-        delete: [id],
-      };
-      await updateStockTI({ payload }).unwrap();
-      toast.success("Deleted successfully");
-    } catch (error) {
-      toast.error(error?.data.error.message);
-    }
+  const getShortTypeName = (id) => {
+    if (id === null || id === undefined) return;
+    if (id === 1) return "F/S";
+    if (id === 2) return "ACC";
+    if (id === 3) return "CL";
+    if (id === 0) return "OL";
+    return "";
   };
-
   const totals = (stockDetails?.data?.StockTransferInDetails || []).reduce(
     (acc, item) => {
       const qty = item.STQtyIn || 0;
-      const unitPrice = getStockOutPrice(item)
-      const gstRate = parseFloat(item.ProductTaxPercentage) / 100
+      const unitPrice = getStockOutPrice(item);
+      const gstRate = parseFloat(item.ProductTaxPercentage) / 100;
 
-     const basicValue  = unitPrice * qty;
-      const gst = unitPrice * qty * gstRate
+      const basicValue = unitPrice * qty;
+      const gst = unitPrice * qty * gstRate;
       const returnTotal = basicValue + gst;
 
-       acc.totalQty += qty;
+      acc.totalQty += qty;
       acc.totalGST += gst;
       acc.totalBasicValue += basicValue;
       acc.totalReturnValue += returnTotal;
@@ -272,54 +234,52 @@ const CompleteStockTransferIn = () => {
     totalBasicValue: formatINR(totals.totalBasicValue),
     totalReturnValue: formatINR(totals.totalReturnValue),
   };
-  console.log("d",stockTransferInDraftData)
-  const handleSaveStockTransferOut = async () => {
-    try {
-      const payload = {
-        STInMainId: stockTransferInDraftData.ID ?? null,
-        ApplicationUserID: user.Id ?? null,
-        companyId: customerStockTransferIn.locationId ?? null,
-        totalQtyIn: parseInt(totals.totalQty) ?? null,
-        totalGSTValueIn: parseFloat(totals.totalGST) ?? null,
-        totalBasicValueIn: parseFloat(totals.totalBasicValue) ?? null,
-        totalValueIn: parseFloat(totals.totalReturnValue) ?? null,
-        Comment: comment ?? null,
-      };
-
-      await updateStockTI({ payload }).unwrap();
-      console.log(payload);
-      toast.success("Stock TransferIn successfully updated");
-      navigate("/stock-transferin");
-    } catch (error) {
-      toast.error(error?.data.error);
-    }
-  };
-  console.log(stockDetails);
+  if (isLoading) {
+    return <Loader color="black" />;
+  }
   return (
     <div className="max-w-8xl">
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        {/* Customer Info Header */}
-        <div className="p-6 border-b border-gray-200 bg-gray-50">
-          <div className="flex justify-between">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              Stock TransferIn Details
-            </h2>
-            <div className="flex items-center gap-4">
-              <Button onClick={() => goToStockTransferInStep(2)}>
-                Add Product
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => prevStockTransferInStep()}
-              >
-                Back
-              </Button>
-            </div>
+      <div className="bg-white rounded-sm shadow-sm overflow-hidden p-6">
+        <div className="flex justify-between items-center mb-3">
+          <div className="text-xl font-medium text-neutral-700">
+            View Stock Transfer In Details
+          </div>
+          <div>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/stock-transferin")}
+            >
+              Back
+            </Button>
           </div>
         </div>
+        {/* Order Details */}
+        <div className="grid grid-cols-3 gap-3">
+          <Info
+            label="Location Name"
+            value={stockDetails?.data?.Company?.LocationName}
+          />
+          <Info
+            label="Address"
+            value={`${stockDetails?.data?.Company?.BillingAddress1 ?? ""} ${
+              stockDetails?.data?.Company?.BillingCity ?? ""
+            } ${stockDetails?.data?.Company?.BillingZipCode ?? ""}`}
+          />
+          <Info
+            label="Date"
+            value={
+              stockDetails?.data?.STInCreateDate
+                ? format(
+                    new Date(stockDetails.data.STInCreateDate),
+                    "dd/MM/yyyy"
+                  )
+                : ""
+            }
+          />
+        </div>
 
-        {/* Products Table */}
-        <div className="p-6">
+        {/* Product Table */}
+        <div className="mt-5">
           <Table
             columns={[
               "s.no",
@@ -330,7 +290,6 @@ const CompleteStockTransferIn = () => {
               "transfer in qty",
               "gst",
               "total amount",
-              "action",
             ]}
             data={stockDetails?.data?.StockTransferInDetails}
             renderRow={(item, index) => (
@@ -361,73 +320,41 @@ const CompleteStockTransferIn = () => {
                         (parseFloat(item.ProductTaxPercentage) / 100)
                   )}
                 </TableCell>
-                <TableCell>
-                  <button
-                    onClick={() => handleDeleteItem(item.ID)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    {deletingId === item.ID && isUpdating ? (
-                      <Loader color="black" />
-                    ) : (
-                      <FiTrash2 />
-                    )}
-                  </button>
-                </TableCell>
               </TableRow>
             )}
-            emptyMessage={
-              isStockDetailsLoading ? "Loading..." : "No data found"
-            }
           />
         </div>
-        {stockDetails?.data?.StockTransferInDetails?.length > 0 && (
-          <div className="flex gap-10 justify-end mt-5 p-6 border-t border-gray-200 bg-gray-50">
-            <div className="flex gap-6">
-              <span className="text-lg font-semibold">
-                Total Qty: {formattedTotals.totalQty}
-              </span>
-              <span className="text-lg font-semibold">
-                Total GST: ₹{formattedTotals.totalGST}
-              </span>
-              <span className="text-lg font-semibold">
-                Total Basic Value: ₹{formattedTotals.totalBasicValue}
-              </span>
-              <span className="text-lg font-semibold">
-                Total Amount: ₹{formattedTotals.totalReturnValue}
-              </span>
-            </div>
-          </div>
-        )}
-        {stockDetails?.data?.StockTransferInDetails?.length > 0 && (
-          <div>
-            {/* Comment Section */}
-            <div className="p-4">
-              <label
-                htmlFor="comment"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Comment
-              </label>
-              <textarea
-                id="comment"
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Add comment"
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-              />
-            </div>
 
-            {/* Action Buttons */}
-            <div className="p-4 flex justify-end">
-              <Button
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={handleSaveStockTransferOut}
-                isLoading={isUpdating}
-                disabled={isUpdating}
-              >
-                Complete StockTransferIn
-              </Button>
+        {/* Summary Section */}
+        {stockDetails?.data?.StockTransferInDetails?.length > 0 && (
+          <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200 justify-end">
+            <div className="flex justify-end gap-10">
+              <div className="flex flex-col">
+                <span className="text-neutral-700 font-semibold text-lg">
+                  Total Qty
+                </span>
+                <span className="text-neutral-600 text-xl font-medium">
+                  {formattedTotals.totalQty}
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-neutral-700 font-semibold text-lg">
+                  Total GST
+                </span>
+                <span className="text-neutral-600 text-xl font-medium">
+                  ₹
+                  {formattedTotals.totalGST}
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-neutral-700 font-semibold text-lg">
+                  Total Amount
+                </span>
+                <span className="text-neutral-600 text-xl font-medium">
+                  ₹
+                 {formattedTotals.totalReturnValue}
+                </span>
+              </div>
             </div>
           </div>
         )}
@@ -436,4 +363,14 @@ const CompleteStockTransferIn = () => {
   );
 };
 
-export default CompleteStockTransferIn;
+// Reusable Info Block
+const Info = ({ label, value }) => (
+  <div className="flex flex-col">
+    <div className="text-neutral-700 font-semibold text-lg">{label}</div>
+    <div className="text-neutral-600">
+      {value !== null && value !== undefined && value !== "" ? value : "N/A"}
+    </div>
+  </div>
+);
+
+export default StockTransferInView;
