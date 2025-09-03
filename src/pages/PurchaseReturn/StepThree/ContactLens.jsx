@@ -892,7 +892,7 @@ const ContactLens = () => {
                           />
                           <button
                             onClick={() =>
-                              toggleEditMode(item.Barcode, index, "qty")
+                              toggleEditMode(item.Barcode, index, "qty","save")
                             }
                             className="text-neutral-400 transition"
                             title="Save"
@@ -901,7 +901,7 @@ const ContactLens = () => {
                           </button>
                           <button
                             onClick={() =>
-                              toggleEditMode(item.Barcode, index, "qty")
+                              toggleEditMode(item.Barcode, index, "qty","cancel")
                             }
                             className="text-neutral-400 transition"
                             title="Cancel"

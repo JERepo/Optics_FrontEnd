@@ -275,7 +275,7 @@ const CompleteStockTransfer = () => {
     try {
       const payload = {
         STOutMainId: stockDraftData.ID || stockDraftData[0].ID,
-        FromCompanyId: customerStock.locationId,
+        // FromCompanyId: customerStock.locationId,
         Comment: comment,
         delete: [id],
       };

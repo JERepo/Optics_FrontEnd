@@ -13,7 +13,7 @@ import { formatINR } from "../../../utils/formatINR";
 import toast from "react-hot-toast";
 import { useSelector } from "react-redux";
 
-const getProductName = (order,referenceApplicable) => {
+const getProductName = (order, referenceApplicable) => {
   const {
     productType,
     ProductType,
@@ -75,9 +75,7 @@ const getProductName = (order,referenceApplicable) => {
 
   // Accessories / Variation (ProductType 2)
   if (productType === 2) {
-     const line1 = clean(
-      ` ${clean(detail.productName || detail.productDescName)}`
-    );
+    const line1 = clean(` ${clean(detail.productDescName)}`);
     return joinNonEmpty(
       [
         clean(line1),
@@ -94,26 +92,46 @@ const getProductName = (order,referenceApplicable) => {
 
   // Contact Lens (ProductType 3)
   if (productType === 3) {
-    const bc = referenceApplicable === 0 ? detail?.Stock[0]?.BatchCode : detail?.stock[0]?.batchCode
-    const ex = referenceApplicable === 0 ? detail?.Stock[0]?.Expiry : order?.ExpiryDate;
-// in the sales return PowerSpecs only
+    const bc =
+      referenceApplicable === 0
+        ? detail?.Stock[0]?.BatchCode
+        : detail?.stock[0]?.batchCode;
+    const ex =
+      referenceApplicable === 0 ? detail?.Stock[0]?.Expiry : order?.ExpiryDate;
+    // in the sales return PowerSpecs only
     const specsList = joinNonEmpty(
       [
         cleanPower(detail.PowerSpecs?.Sph) &&
           `SPH: ${cleanPower(detail.PowerSpecs?.Sph)}`,
         cleanPower(detail.PowerSpecs?.Cyl) &&
           `CYL: ${cleanPower(detail.PowerSpecs?.Cyl)}`,
-        clean(detail.PowerSpecs?.Axis) && `Axis: ${clean(detail.PowerSpecs?.Axis)}`,
+        clean(detail.PowerSpecs?.Axis) &&
+          `Axis: ${clean(detail.PowerSpecs?.Axis)}`,
         cleanPower(detail.PowerSpecs?.Add) &&
           `Add: ${cleanPower(detail.PowerSpecs?.Add)}`,
+      ],
+      ", "
+    );
+    const specListYes = joinNonEmpty(
+      [
+        cleanPower(detail.specs?.sphericalPower) &&
+          `SPH: ${cleanPower(detail.specs?.sphericalPower)}`,
+        cleanPower(detail.specs?.cylindricalPower) &&
+          `CYL: ${cleanPower(detail.specs?.cylindricalPower)}`,
+        clean(detail.specs?.axis) && `Axis: ${clean(detail.specs?.axis)}`,
+        cleanPower(detail.specs?.additional) &&
+          `Add: ${cleanPower(detail.specs?.additional)}`,
       ],
       ", "
     );
 
     return joinNonEmpty(
       [
-        joinNonEmpty([referenceApplicable === 1 && `${clean(detail.brandName)}`,clean(detail.productName)]),
-        specsList,
+        joinNonEmpty([
+          referenceApplicable === 1 && `${clean(detail.brandName)}`,
+          clean(detail.productName),
+        ]),
+        referenceApplicable === 0 ? specsList : specListYes,
         clean(detail.specs?.color || detail.colour) &&
           `Color: ${clean(detail.specs?.color || detail.colour)}`,
         clean(detail.specs?.barcode || detail.barcode) &&
@@ -135,17 +153,22 @@ const getProductName = (order,referenceApplicable) => {
   // Ophthalmic Lenses (ProductType 0)
   if (productType === 0) {
     // ${detail.treatmentName} ${detail.coatingName}
-    const olLine =`${referenceApplicable === 1 && clean(detail.brandName)} ${detail.productName} `;
+    const olLine = `${
+      referenceApplicable === 1
+        ? `${clean(detail.brandName)} ${detail.productName}}`
+        : `${detail.productDescName}`
+    }`;
     // AddOns
-    const addonNames = referenceApplicable === 0 ? Array.isArray(AddOnData)
-      ? AddOnData?.map((item) => clean(item.name?.split(" - ₹")[0])).filter(
-          Boolean
-        )
-      : "" : Array.isArray(detail.addOn)
-      ? detail.addOn?.map((item) => clean(item.addOnName)).filter(
-          Boolean
-        )
-      : "";
+    const addonNames =
+      referenceApplicable === 0
+        ? Array.isArray(AddOnData)
+          ? AddOnData?.map((item) => clean(item.name?.split(" - ₹")[0])).filter(
+              Boolean
+            )
+          : ""
+        : Array.isArray(detail.addOn)
+        ? detail.addOn?.map((item) => clean(item.addOnName)).filter(Boolean)
+        : "";
     const formatPower = (eye) =>
       joinNonEmpty(
         [
@@ -160,6 +183,13 @@ const getProductName = (order,referenceApplicable) => {
     const pd = detail?.specs?.powerDetails || {};
     const rightParts = formatPower(pd.right || {});
     const leftParts = formatPower(pd.left || {});
+    const singlePower = detail?.Specs;
+
+    const singlePowerData = joinNonEmpty([
+      cleanPower(singlePower?.Spherical) && `SPH: ${singlePower?.Spherical},`,
+      cleanPower(singlePower?.Cylinder) && `Cyl: ${singlePower?.Cylinder},`,
+      cleanPower(singlePower?.Diameter) && `Dia: ${singlePower?.Diameter}`,
+    ]);
 
     const powerLine = joinNonEmpty(
       [rightParts && `R: ${rightParts}`, leftParts && `L: ${leftParts}`],
@@ -178,7 +208,7 @@ const getProductName = (order,referenceApplicable) => {
     return joinNonEmpty(
       [
         olLine,
-        powerLine,
+        referenceApplicable === 1 ? powerLine : singlePowerData,
         // clean(detail.colour) && `Color: ${detail.colour}`,
         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
 
@@ -195,6 +225,62 @@ const getProductName = (order,referenceApplicable) => {
 
   return "";
 };
+
+// const getProductNameForYes = (order) => {
+//   const detail = Array.isArray(order.productDetails)
+//     ? order.productDetails[0]
+//     : order.productDetails;
+//   const clean = (val) =>
+//     val == null ||
+//     val === "undefined" ||
+//     val === "null" ||
+//     val === "" ||
+//     val === "N/A"
+//       ? ""
+//       : String(val).trim();
+
+//   const cleanPower = (val) => {
+//     const cleaned = clean(val);
+//     if (!cleaned) return "";
+//     const num = parseFloat(cleaned);
+//     return isNaN(num) ? "" : num >= 0 ? `+${num}` : `${num}`;
+//   };
+//   const joinNonEmpty = (arr, sep = " ") => arr.filter(Boolean).join(sep);
+
+//   if (detail.productType === 1) {
+//     const productName = clean(` ${clean(detail.productDescName)}`);
+//     const size = clean(detail.size);
+//     const dbL = clean(detail.dBL);
+//     const templeLength = clean(detail.templeLength);
+//     const cat = "Optical Frame";
+
+//     return joinNonEmpty(
+//       [
+//         productName,
+//         size && dbL && templeLength && `Size: ${size}-${dbL}-${templeLength}`,
+//         cat && `Category: ${cat}`,
+//         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+//         clean(detail.hSN) && `HSN: ${clean(detail.hSN)}`,
+//       ],
+//       "\n"
+//     );
+//   }
+//    if (detail.productType === 2) {
+//     const productName = clean(` ${clean(detail.productDescName)}`);
+//     return joinNonEmpty(
+//       [
+//         productName && productName,
+//         clean(`${detail.productDescName}`),
+//         clean(detail.Variation?.Variation || detail.variationName) &&
+//           `Variation: ${detail.Variation?.Variation || detail.variationName}`,
+//         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+//         clean(detail.hsncode || detail.hSN || detail.HSN) &&
+//           `HSN: ${clean(detail.hsncode || detail.hSN || detail.HSN)}`,
+//       ],
+//       "\n"
+//     );
+//   }
+// };
 
 const getShortTypeName = (id) => {
   if (id === null || id === undefined) return;
@@ -219,7 +305,7 @@ const CompleteSalesReturn = () => {
     prevSalesStep,
     goToSalesStep,
     customerSalesId,
-    referenceApplicable
+    referenceApplicable,
   } = useOrder();
 
   const { data: finalProducts, isLoading: isProductsLoading } =
@@ -238,22 +324,24 @@ const CompleteSalesReturn = () => {
       const returnPrice = parseFloat(item.ReturnPricePerUnit) || 0;
       const gstPercentage = parseFloat(item.GSTPercentage) || 0;
 
-      const fittingPrice = parseFloat(item?.FittingCharges || 0)
-      const fittingGst = parseFloat(item?.FittingGSTPercentage || 0)
-      const fittingValue = fittingPrice * (fittingGst /100);
+      const fittingPrice = parseFloat(item?.FittingCharges || 0);
+      const fittingGst = parseFloat(item?.FittingGSTPercentage || 0);
+      const fittingValue = fittingPrice * (fittingGst / 100);
 
       const gst = calculateGST(returnPrice * returnQty, gstPercentage);
 
       return {
         totalQty: acc.totalQty + returnQty,
-        totalGST: acc.totalGST + (parseFloat(gst.gstAmount) || 0) + fittingValue,
+        totalGST:
+          acc.totalGST + (parseFloat(gst.gstAmount) || 0) + fittingValue,
 
         totalReturnValue:
           acc.totalReturnValue +
           (parseFloat(item.TotalAmount) || 0) +
-          fittingPrice + fittingValue
-          // +
-          // parseFloat(gst.gstAmount),
+          fittingPrice +
+          fittingValue,
+        // +
+        // parseFloat(gst.gstAmount),
       };
     },
     { totalQty: 0, totalGST: 0, totalReturnValue: 0 }
@@ -397,7 +485,7 @@ const CompleteSalesReturn = () => {
                   </TableCell>
                   <TableCell>
                     <div className="whitespace-pre-wrap">
-                      {getProductName(mappedOrder,referenceApplicable)}
+                      {getProductName(mappedOrder, referenceApplicable)}
                     </div>
                   </TableCell>
                   <TableCell>₹{parseFloat(item.SRP)}</TableCell>
@@ -427,10 +515,7 @@ const CompleteSalesReturn = () => {
                   <TableCell>
                     ₹
                     {formatINR(
-                      parseFloat(
-                        item.ReturnPricePerUnit * item.ReturnQty
-                       
-                      ) +
+                      parseFloat(item.ReturnPricePerUnit * item.ReturnQty) +
                         parseFloat(
                           item.ProductType === 0
                             ? parseFloat(
@@ -438,8 +523,8 @@ const CompleteSalesReturn = () => {
                                   ((item.FittingGSTPercentage || 0) / 100)
                               )
                             : 0
-                        )
-                        + parseFloat(item.FittingCharges || 0)
+                        ) +
+                        parseFloat(item.FittingCharges || 0)
                     )}
                   </TableCell>
                   <TableCell>

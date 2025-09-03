@@ -80,17 +80,21 @@ const SalesView = () => {
           clean(Size),
           clean(details?.dBL),
           clean(details?.templeLength),
-        ].filter(Boolean); 
+        ].filter(Boolean);
 
         lines.push(`Size: ${parts.join("-")}`);
+        if (clean(Barcode)) lines.push(`Barcode: ${clean(Barcode)}`);
+        if (clean(Hsncode)) lines.push(`HSN: ${clean(Hsncode)}`);
       }
     } else if (typeid === 2) {
       // Accessories
       const Variation = details?.Variation?.Variation;
       if (clean(Variation)) lines.push(`Variation: ${clean(Variation)}`);
+       if (clean(Barcode)) lines.push(`Barcode: ${clean(Barcode)}`);
+    if (clean(Hsncode)) lines.push(`HSN: ${clean(Hsncode)}`);
     } else if (typeid === 3) {
       // Contact Lens
-      const PowerSpecs = details?.specs || {};
+      const PowerSpecs = details.PowerSpecs || {};
       // const batchcode = Array.isArray(details?.Stock)
       //   ? details?.stock[0].batchCode
       //   : details?.stock.batchCode;
@@ -109,15 +113,7 @@ const SalesView = () => {
       if (PowerSpecs.Add != null)
         specsParts.push(`Add: ${cleanPower(PowerSpecs.Add)}`);
       if (specsParts.length) lines.push(specsParts.join(" "));
-      
-      if (PowerSpecs.sphericalPower != null)
-        specsParts.push(`Sph: ${cleanPower(PowerSpecs.sphericalPower)}`);
-      if (PowerSpecs.cylindricalPower != null)
-        specsParts.push(`Cyl: ${cleanPower(PowerSpecs.cylindricalPower)}`);
-      if (PowerSpecs.axis != null)
-        specsParts.push(`Axis: ${clean(PowerSpecs.axis)}`);
-      if (PowerSpecs.additional != null)
-        specsParts.push(`Add: ${cleanPower(PowerSpecs.additional)}`);
+
       if (specsParts.length) lines.push(specsParts.join(" "));
       if (batchCode && expiry)
         lines.push(
@@ -126,10 +122,14 @@ const SalesView = () => {
             .reverse()
             .join("/")}`
         );
+         if (clean(Barcode)) lines.push(`Barcode: ${clean(Barcode)}`);
+    if (clean(Hsncode)) lines.push(`HSN: ${clean(Hsncode)}`);
     } else if (typeid === 0) {
       // Optical Lenses
       const powerDetails = details?.specs?.powerDetails || {};
+      const singleDetails = details?.Specs || {};
       const specsLines = [];
+      const singlePower = [];
 
       const formatLens = (side, data) => {
         if (!data) return "";
@@ -149,7 +149,17 @@ const SalesView = () => {
       if (powerDetails.left)
         specsLines.push(formatLens("L", powerDetails.left));
 
+      if (singleDetails.sphericalPower != null)
+        singlePower.push(`Sph: ${cleanPower(singleDetails.sphericalPower)}`);
+      if (singleDetails.cylindricalPower != null)
+        singlePower.push(`Cyl: ${cleanPower(singleDetails.cylindricalPower)}`);
+      if (singleDetails.axis != null)
+        singlePower.push(`Axis: ${clean(singleDetails.axis)}`);
+      if (singleDetails.additional != null)
+        singlePower.push(`Add: ${cleanPower(singleDetails.additional)}`);
+
       if (specsLines.length) lines.push(...specsLines);
+      if (singlePower.length) lines.push(...singlePower);
 
       // Add coating/treatment/family etc.
       const family = clean(details?.familyName);
@@ -169,14 +179,9 @@ const SalesView = () => {
       const addOnName =
         details?.specs?.addOn?.addOnName || clean(details?.addOn?.addOnName);
       if (addOnName) lines.push(`AddOn: ${addOnName}`);
-    }
-
-    // Add common fields: Barcode, HSN, Colour, Tint, PatientName
-    // if(clean(productName))
-    if (clean(Barcode)) lines.push(`Barcode: ${clean(Barcode)}`);
+       if (clean(Barcode)) lines.push(`Barcode: ${clean(Barcode)}`);
     if (clean(Hsncode)) lines.push(`HSN: ${clean(Hsncode)}`);
-    // if (clean(Colour)) lines.push(`Colour: ${clean(Colour)}`);
-    // if (clean(Tint)) lines.push(`Tint: ${clean(Tint)}`);
+    }
 
     return lines.join("\n");
   };

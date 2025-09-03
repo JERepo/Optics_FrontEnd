@@ -816,9 +816,7 @@ const FrameSunglass = () => {
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <span className="text-gray-700">
-                              ₹{item.SellingPrice || "N/A"}
-                            </span>
+                           ₹{item.SellingPrice || "N/A"}
                             <button
                               onClick={() =>
                                 toggleEditMode(
@@ -872,9 +870,7 @@ const FrameSunglass = () => {
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <span className="text-gray-700">
-                              {item.Quantity}
-                            </span>
+                            {item.Quantity}
                             <button
                               onClick={() =>
                                 toggleEditMode(item.Barcode, index, "qty")
@@ -985,9 +981,7 @@ const FrameSunglass = () => {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-700">
-                          ₹{formatINR(parseFloat(item.ReturnPricePerUnit || 0))}
-                        </span>
+                        ₹{formatINR(parseFloat(item.ReturnPricePerUnit || 0))}
                         <button
                           onClick={() =>
                             toggleEditMode(item.Id, index, "returnPrice")

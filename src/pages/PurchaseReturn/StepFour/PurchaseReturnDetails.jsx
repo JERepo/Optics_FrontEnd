@@ -84,6 +84,9 @@ const getProductName = (item) => {
 
   // For Contact Lens (type = 3)
   if (type === 3) {
+    const batchCode = detail.Stock[0]?.BatchCode;
+
+    const expiry = detail.Stock[0]?.Expiry;
     const specs = PowerSpecs
       ? [
           PowerSpecs.Sph ? `Sph: ${clean(PowerSpecs.Sph)}` : "",
@@ -100,7 +103,9 @@ const getProductName = (item) => {
       specs ? `${specs}` : "",
       clean(colour) ? `Colour: ${clean(colour)}` : "",
       barcode ? `Barcode: ${barcode}` : "",
-      clean(item.BatchCode) ? `BatchCode: ${item.BatchCode}` : "",
+      clean(batchCode) ? `BatchCode: ${batchCode}` : "",
+      clean(expiry) ? `Expiry: ${expiry.split("-").reverse().join("/")}` : "",
+
       clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
 
@@ -337,17 +342,11 @@ const CompleteStockTransfer = () => {
                 <TableCell className="whitespace-pre-wrap">
                   {getProductName(item)}
                 </TableCell>
-                <TableCell>
-                  ₹{formatINR(getStockOutPrice(item))}{" "}
-                  
-                </TableCell>
+                <TableCell>₹{formatINR(getStockOutPrice(item))} </TableCell>
 
                 <TableCell>{item.DNQty}</TableCell>
 
-                <TableCell>
-                  ₹{formatINR(getPurchaseValue(item))}{" "}
-                 
-                </TableCell>
+                <TableCell>₹{formatINR(getPurchaseValue(item))} </TableCell>
 
                 <TableCell>
                   ₹
@@ -355,7 +354,7 @@ const CompleteStockTransfer = () => {
                     getPurchaseValue(item) *
                       (parseFloat(item.ProductTaxPercentage) / 100)
                   )}{" "}
-                 ({parseFloat(item.ProductTaxPercentage)}%)
+                  ({parseFloat(item.ProductTaxPercentage)}%)
                 </TableCell>
 
                 <TableCell>
