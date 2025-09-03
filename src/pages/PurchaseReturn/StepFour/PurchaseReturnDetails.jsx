@@ -99,7 +99,7 @@ const getProductName = (item) => {
       : "";
 
     const lines = [
-      (ProductName || brandName) && `${brandName} ${productName}`,
+      (productName) && `${productName}`,
       specs ? `${specs}` : "",
       clean(colour) ? `Colour: ${clean(colour)}` : "",
       barcode ? `Barcode: ${barcode}` : "",
@@ -112,48 +112,7 @@ const getProductName = (item) => {
     return lines.filter(Boolean).join("\n");
   }
 
-  // For Optical Lens (type = 0)
-  if (type === 0) {
-    const tintName = clean(Tint?.name) || "";
-    const addOns = AddOns?.map((a) => clean(a.name)).filter(Boolean) || [];
-
-    const specsLines = (Array.isArray(Specs) ? Specs : [{ ...Specs }])
-      .map((spec) => {
-        const side = clean(spec?.side);
-        const sph = clean(spec?.sph || spec.Spherical);
-        const cyl = clean(spec?.cyl || spec.Cylinder);
-        const dia = clean(spec.Diameter);
-        const axis = clean(spec?.axis);
-        const addition = clean(spec?.addition);
-
-        const powerValues = [];
-        if (sph) powerValues.push(`SPH ${formatPowerValue(sph)}`);
-        if (cyl) powerValues.push(`CYL ${formatPowerValue(cyl)}`);
-        if (dia) powerValues.push(`Dia ${formatPowerValue(dia)}`);
-        if (axis) powerValues.push(`Axis ${formatPowerValue(axis)}`);
-        if (addition) powerValues.push(`Add ${formatPowerValue(addition)}`);
-
-        return powerValues.join(", ");
-      })
-      .filter(Boolean)
-      .join("\n");
-
-    const lines = [
-      clean(
-        (ProductName || productName) &&
-          brandName &&
-          `${brandName} ${productName}`
-      ),
-      specsLines,
-      clean(barcode) && `Color: ${colour}`,
-      clean(hsncode || HSN) && `HSN: ${hsncode || HSN}`,
-      tintName ? `Tint: ${tintName}` : "",
-      addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
-      clean(FittingPrice) ? `Fitting Price: ${FittingPrice}` : "",
-    ];
-
-    return lines.filter(Boolean).join("\n");
-  }
+  
 
   return "";
 };

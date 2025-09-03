@@ -539,7 +539,7 @@ const OpticalLens = () => {
       Id: null,
     },
   });
-  console.log(selectedEyes);
+  console.log(formValues);
   const [getDIADetails, { isLoading: isDiaLoading }] =
     useGetDIaDetailsMutation();
   const [getPowerByOl, { isLoading: isPowerDetailsLoading }] =
@@ -597,21 +597,7 @@ const OpticalLens = () => {
       (lensData.powerSingleORboth !== 1 && !selectedEyes.includes(eye))
     );
   };
-  const handleCheckboxChange = (eye) => {
-    if (lensData.powerSingleORboth === 0) {
-      setSelectedEyes([eye]);
-      const otherEye = eye === "R" ? "L" : "R";
-      setFormValues((prev) => ({
-        ...prev,
-        [otherEye]: {
-          SPH: "",
-          CYLD: "",
-          Dia: null,
-          transferQty: "",
-        },
-      }));
-    }
-  };
+
   const handleInputChange = (eye, field, value) => {
     if (field === "transferQty") {
       if (!isValidNumericInput(value)) {
@@ -695,6 +681,7 @@ const OpticalLens = () => {
   };
 
   const handleAddPowerData = async (eye) => {
+    
     try {
       const payload = {
         olDetailId: formValues[eye]?.detailId,
@@ -707,7 +694,10 @@ const OpticalLens = () => {
       }
 
       const res = await getPowerByOl({ payload }).unwrap();
-
+      if(res?.data.Quantity <= 0){
+        toast.error("Stock Quantity must be greater than 0!")
+        return;
+      }
       if (res?.data) {
         setBarcodeData((prev) => {
           // If new entry, but make sure Quantity > 0

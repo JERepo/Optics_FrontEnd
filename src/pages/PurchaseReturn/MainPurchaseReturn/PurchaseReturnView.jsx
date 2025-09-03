@@ -81,7 +81,9 @@ const getProductName = (item) => {
 
   // For Contact Lens (type = 3)
   if (type === 3) {
-    const expiry = clean(ExpiryDate);
+    const batchCode = detail?.Stock[0]?.BatchCode ?? "";
+
+    const expiry = clean(detail?.Stock[0]?.Expiry) ?? "";
 
     const specs = PowerSpecs
       ? [
@@ -99,7 +101,8 @@ const getProductName = (item) => {
       specs ? `${specs}` : "",
       clean(colour) ? `Colour: ${clean(colour)}` : "",
       barcode ? `Barcode: ${barcode}` : "",
-      clean(detail.BatchCode) ? `BatchCode: ${detail.BatchCode}` : "",
+      clean(batchCode) ? `BatchCode: ${batchCode}` : "",
+      expiry && `Expiry: ${expiry.split("-").reverse().join("/")}`,
       clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
 

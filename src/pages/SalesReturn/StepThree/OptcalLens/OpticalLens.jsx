@@ -58,6 +58,7 @@ const getProductNameYes = (item) => {
     barcode,
     fittingPrice,
     fittingGSTPercentage,
+    FittingPriceEdit,
     hSN,
     specs,
     productDescName,
@@ -114,7 +115,7 @@ const getProductNameYes = (item) => {
     tintName ? `Tint: ${tintName}` : "",
     addOns?.length > 0 ? `AddOn: ${addOns}` : "",
     clean(hSN) && `HSN: ${hSN}`,
-    clean(fittingPrice) ? `Fitting Price: ${fittingPrice}` : "",
+    clean(FittingPriceEdit) ? `Fitting Price: ${FittingPriceEdit}` : "",
   ];
 
   return lines.filter(Boolean).join("\n");
@@ -171,7 +172,7 @@ const getProductName = (order, allBrandsData, lensData) => {
     return [
       [name].filter(Boolean).join(" "), // brand + product
       powerLine, // Sph, Cyl, Dia
-      clean(Barcode) ? `Barcode: ${Barcode}` : "",
+      // clean(Barcode) ? `Barcode: ${Barcode}` : "",
       tint ? `Tint: ${tint.split(" - ₹")[0]}` : "",
       addonNames.length > 0 ? `Add On: ${addonNames.join(", ")}` : "",
       clean(hsncode || HSNCode) ? `HSN: ${hsncode || HSNCode}` : "",
@@ -734,7 +735,7 @@ const OpticalLens = () => {
       leftPower,
       tint,
       addOn,
-      clean(barcode) ? `${clean(barcode)}` : "",
+      // clean(barcode) ? `${clean(barcode)}` : "",
     ]
       .filter(Boolean)
       .join(" ");

@@ -1176,21 +1176,20 @@ const FrameSunglass = () => {
                   <TableCell>
                     {item.Category === "O" ? "Optical Frame" : "Sunglass"}
                   </TableCell>
-                  <TableCell>
-                    {" "}
-                    <div className="whitespace-pre-wrap">
-                      <div>{item.PO == 1 ? "PH" : ""}</div>
-                      <div>{item.Ph == 1 ? "PO" : ""}</div>
-                      <div>
-                        {item.Cl === 0 || item.Cl === null
-                          ? "-"
-                          : `CL: ${item.Cl}`}
-                      </div>
-                      <div>
-                        {item.IsRxable && `${item.IsRxable === 1 ? "Rx" : ""}`}
-                      </div>
-                    </div>
-                  </TableCell>
+                 <TableCell className="w-[80px]">
+                                     <div className="grid grid-cols-2 gap-2 w-auto">
+                                       {[
+                                         item.PO == 1 ? "PH" : null,
+                                         item.Ph == 1 ? "PO" : null,
+                                         item.Cl ? `CL: ${item.Cl}` : null,
+                                         item.IsRxable === 1 ? "Rx" : null,
+                                       ]
+                                         .filter(Boolean) 
+                                         .map((val, idx) => (
+                                           <div key={idx}>{val}</div>
+                                         ))}
+                                     </div>
+                                   </TableCell>
                   <TableCell>{item.MRP}</TableCell>
                   <TableCell>{item.SellingPrice}</TableCell>
                 </TableRow>

@@ -188,7 +188,7 @@ const getProductNameForNo = (order, referenceApplicable) => {
       [
         olLine && olLine,
         singlePowerData,
-        clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+        // clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
         fittingLine,
         addonNames && `AddOn: ${addonNames}`,
         clean(detail.HSN) && `HSN: ${clean(clean(detail.HSN))}`,

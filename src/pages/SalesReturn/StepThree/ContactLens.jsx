@@ -380,7 +380,7 @@ const ContactLens = () => {
           [key]: {
             ...prev[key],
             [field]: !currentMode,
-            originalPrice: item.sellingPrice,
+            originalPrice: item.returnPrice,
           },
         };
       }
@@ -397,16 +397,16 @@ const ContactLens = () => {
       }
 
       if (currentMode && action === "cancel") {
-        if (field === "BuyingPrice") {
+        if (field === "SellingPrice") {
           setMainClDetails((prevItems) =>
             prevItems.map((i, idx) =>
-              idx === index ? { ...i, BuyingPrice: prev[key].originalPrice } : i
+              idx === index ? { ...i, returnPrice: prev[key].originalPrice } : i
             )
           );
         } else if (field === "qty") {
           setMainClDetails((prevItems) =>
             prevItems.map((i, idx) =>
-              idx === index ? { ...i, stkQty: prev[key].originalQty } : i
+              idx === index ? { ...i, returnQty: prev[key].originalQty } : i
             )
           );
         }
@@ -450,7 +450,7 @@ const ContactLens = () => {
       return;
     }
     setMainClDetails((prev) =>
-      prev.map((i, idx) => (idx === index ? { ...i, stkQty: newQty } : i))
+      prev.map((i, idx) => (idx === index ? { ...i, returnQty: newQty } : i))
     );
   };
   // const toggleEditMode = (index, field) => {
@@ -736,11 +736,11 @@ const ContactLens = () => {
 
   const handleDeleteYes = (index) => {
     setMainClDetails((prev) => prev.filter((item, i) => i !== index));
-    //  setEditMode((prev) => {
-    //   const newEditMode = { ...prev };
-    //   delete newEditMode[`${id}-${index}`];
-    //   return newEditMode;
-    // });
+    setEditMode((prev) => {
+      const newEditMode = { ...prev };
+      delete newEditMode[`${index}`];
+      return newEditMode;
+    });
   };
   const handleGetBatchBarCodeDetails = async () => {
     if (!batchCodeInput) {
@@ -867,6 +867,7 @@ const ContactLens = () => {
               ? parseFloat(response?.data.data.price.SellingPrice)
               : parseFloat(response?.data.data.stock.SellingPrice),
           returnQty: 1,
+          Quantity: response?.data.data.stock.Quantity,
           MRP:
             response?.data.data.CLBatchCode === 0
               ? parseFloat(response?.data.data.price.MRP)
@@ -1142,6 +1143,11 @@ const ContactLens = () => {
 
   const handleDelete = (index) => {
     setMainClDetails((prev) => prev.filter((_, i) => i !== index));
+    setEditMode((prev) => {
+      const newEditMode = { ...prev };
+      delete newEditMode[`${index}`];
+      return newEditMode;
+    });
   };
 
   const inputTableColumns = [
