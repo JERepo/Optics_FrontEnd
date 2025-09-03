@@ -104,9 +104,10 @@ const getProductName = (order) => {
     const hsn = clean(hSN || HSN || "");
     const brand = clean(BrandName);
     const barcodeVal = clean(barcode || Barcode);
-    const expiry = clean(ExpiryDate);
-    const batchc = clean(sbatchCode);
+    const expiry = clean(ExpiryDate || order.Expiry);
+    const batchc = clean(sbatchCode || order.BatchCode);
     const batchBar = clean(sbatchbarCode);
+    console.log("ooo", order);
     let specsObj = {};
     if (typeof specs === "string") {
       specs.split(",").forEach((pair) => {
@@ -155,7 +156,7 @@ const getProductName = (order) => {
   return "";
 };
 const getProductNameYes = (data) => {
-  const order = {...data.ProductDetails[0],...data}
+  const order = { ...data.ProductDetails[0], ...data };
   const {
     productName,
     BrandName,
@@ -172,9 +173,9 @@ const getProductNameYes = (data) => {
     sbatchCode,
     CLBatchBarCode,
     sbatchbarCode,
-    ExpiryDate
+    ExpiryDate,
   } = order;
-console.log("order in yes",order)
+  console.log("order in yes", order);
   const clean = (val) => {
     if (
       val === null ||
@@ -202,9 +203,10 @@ console.log("order in yes",order)
   const brand = clean(brandName);
   const barcodeVal = clean(Barcode || barcode);
   const clr = clean(Colour || color);
-  const expiry = clean(ExpiryDate);
-  const batchc = clean(sbatchCode);
+  const expiry = clean(ExpiryDate || order.Expiry);
+  const batchc = clean(sbatchCode || order.BatchCode);
   const batchBar = clean(sbatchbarCode);
+  console.log("ooo", order);
 
   // Ensure specs is an object, handle cases where it might be a string
   let specsObj = {};
@@ -243,7 +245,6 @@ console.log("order in yes",order)
     .filter(Boolean)
     .join("\n");
 };
-
 
 const ContactLens = () => {
   const {
@@ -552,14 +553,18 @@ const ContactLens = () => {
           setDetailId(true);
           setOpenBatch(true);
         } else if (data.CLBatchCode === 0 && referenceApplicable === 0) {
-          if (data.AvlQty <= 0 || data.Quantity <= 0) {
+          if (data.stock[0]?.quantity <= 0) {
             toast.error("Stock quantity must be greater than 0!");
             return;
           }
           const cc = {
             ...data,
-            returnPrice: parseFloat(data.SellingPrice),
+            Quantity : data.stock[0]?.quantity,
+            returnPrice: parseFloat(data?.priceMaster.sellingPrice),
             returnQty: 1,
+            sbatchCode :data.stock[0]?.batchCode,
+            ExpiryDate :data.stock[0]?.CLBatchExpiry,
+            MRP:parseFloat(data?.priceMaster.mrp)
           };
 
           const existingIndex = mainClDetails.findIndex(
@@ -736,7 +741,7 @@ const ContactLens = () => {
       }).unwrap();
 
       if (response?.data.data.CLBatchCode === 0 && referenceApplicable === 0) {
-        if (response?.data.data.Quantity <= 0) {
+        if (response?.data.data.stock.Quantity <= 0) {
           toast.error("Stock quantity not available for this barcode!");
           return;
         }
@@ -1119,9 +1124,7 @@ const ContactLens = () => {
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-700">
-                            ₹{item.returnPrice}
-                          </span>
+                           ₹{item.returnPrice}
                           <button
                             onClick={() => toggleEditMode(index, "returnPrice")}
                             className="text-neutral-400 transition"
@@ -1167,9 +1170,7 @@ const ContactLens = () => {
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-700">
-                            {item.returnQty}
-                          </span>
+                           {item.returnQty}
                           <button
                             onClick={() => toggleEditMode(index, "returnQty")}
                             className="text-neutral-400 transition"
@@ -1274,9 +1275,7 @@ const ContactLens = () => {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-700">
-                          ₹{formatINR(parseFloat(item.ReturnPricePerUnit || 0))}
-                        </span>
+                         ₹{formatINR(parseFloat(item.ReturnPricePerUnit || 0))}
                         <button
                           onClick={() => toggleEditMode(index, "returnPrice")}
                           className="text-neutral-400 transition"

@@ -13,7 +13,7 @@ import { formatINR } from "../../../utils/formatINR";
 import toast from "react-hot-toast";
 import { useSelector } from "react-redux";
 
-const getProductName = (order) => {
+const getProductName = (order,referenceApplicable) => {
   const {
     productType,
     ProductType,
@@ -94,8 +94,8 @@ const getProductName = (order) => {
 
   // Contact Lens (ProductType 3)
   if (productType === 3) {
-    const bc = detail.CLBatchCode === 1 ? detail.Stock[0].BatchCode : null;
-    const ex = detail.CLBatchCode === 1 ? detail.Stock[0].Expiry : null;
+    const bc = referenceApplicable === 0 ? detail?.Stock[0]?.BatchCode : detail?.stock[0]?.batchCode
+    const ex = referenceApplicable === 0 ? detail?.Stock[0]?.Expiry : order?.ExpiryDate;
 // in the sales return PowerSpecs only
     const specsList = joinNonEmpty(
       [
@@ -112,7 +112,7 @@ const getProductName = (order) => {
 
     return joinNonEmpty(
       [
-        joinNonEmpty([clean(detail.productName)]),
+        joinNonEmpty([referenceApplicable === 1 && `${clean(detail.brandName)}`,clean(detail.productName)]),
         specsList,
         clean(detail.specs?.color || detail.colour) &&
           `Color: ${clean(detail.specs?.color || detail.colour)}`,
@@ -134,10 +134,15 @@ const getProductName = (order) => {
 
   // Ophthalmic Lenses (ProductType 0)
   if (productType === 0) {
-    const olLine = clean(`${detail.productName} ${detail.treatmentName} ${detail.coatingName}`);
+    // ${detail.treatmentName} ${detail.coatingName}
+    const olLine =`${referenceApplicable === 1 && clean(detail.brandName)} ${detail.productName} `;
     // AddOns
-    const addonNames = Array.isArray(AddOnData)
+    const addonNames = referenceApplicable === 0 ? Array.isArray(AddOnData)
       ? AddOnData?.map((item) => clean(item.name?.split(" - ₹")[0])).filter(
+          Boolean
+        )
+      : "" : Array.isArray(detail.addOn)
+      ? detail.addOn?.map((item) => clean(item.addOnName)).filter(
           Boolean
         )
       : "";
@@ -178,7 +183,7 @@ const getProductName = (order) => {
         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
 
         fittingLine,
-        addonNames,
+        addonNames && `AddOn: ${addonNames}`,
         clean(detail.hSN || detail.hsncode || detail.HSN) &&
           `HSN: ${
             clean(detail.hSN) || clean(detail.hsncode) || clean(detail.HSN)
@@ -199,47 +204,7 @@ const getShortTypeName = (id) => {
   if (id === 0) return "OL";
   return "";
 };
-const getStockOutMRP = (data) => {
-  const productType = data.ProductType;
-  const item = Array.isArray(data.ProductDetails)
-    ? data.ProductDetails[0]
-    : data.ProductDetails;
 
-  if (productType === 3) {
-    if (item.CLBatchCode === 0) {
-      return parseFloat(item.price?.MRP || 0);
-    } else if (item.CLBatchCode === 1) {
-      if (Array.isArray(item.Stock)) {
-        return item.Stock[0].MRP || 0;
-      } else if (item.Stock && typeof item.Stock === "object") {
-        return parseFloat(item.Stock.MRP || 0);
-      }
-    }
-
-    return parseFloat(item.Stock?.MRP || 0);
-  }
-  if (productType === 1) {
-    return parseFloat(item.Stock?.FrameSRP || 0);
-  }
-  if (productType === 2) {
-    return parseFloat(item.Stock?.OPMRP || 0);
-  }
-  if (productType === 0) {
-    if (item.CLBatchCode === 0) {
-      return parseFloat(item.price?.MRP || 0);
-    } else if (item.CLBatchCode === 1) {
-      if (Array.isArray(item.Stock)) {
-        return item.Stock[0].MRP || 0;
-      } else if (item.Stock && typeof item.Stock === "object") {
-        return parseFloat(item.Stock.MRP || 0);
-      }
-    }
-
-    return parseFloat(item.Stock?.MRP || 0);
-  }
-
-  return 0;
-};
 const CompleteSalesReturn = () => {
   const { user } = useSelector((state) => state.auth);
   const [comment, setComment] = useState("");
@@ -254,6 +219,7 @@ const CompleteSalesReturn = () => {
     prevSalesStep,
     goToSalesStep,
     customerSalesId,
+    referenceApplicable
   } = useOrder();
 
   const { data: finalProducts, isLoading: isProductsLoading } =
@@ -431,7 +397,7 @@ const CompleteSalesReturn = () => {
                   </TableCell>
                   <TableCell>
                     <div className="whitespace-pre-wrap">
-                      {getProductName(mappedOrder)}
+                      {getProductName(mappedOrder,referenceApplicable)}
                     </div>
                   </TableCell>
                   <TableCell>₹{parseFloat(item.SRP)}</TableCell>

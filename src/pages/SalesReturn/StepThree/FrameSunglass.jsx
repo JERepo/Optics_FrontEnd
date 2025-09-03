@@ -30,6 +30,7 @@ import {
 } from "../../../api/salesReturnApi";
 import { useSelector } from "react-redux";
 import { formatINR } from "../../../utils/formatINR";
+import Loader from "../../../components/ui/Loader";
 
 const getProductDetailsText = (order) => {
   const {
@@ -221,29 +222,19 @@ const FrameSunglass = () => {
       }).unwrap();
 
       const data = res?.data;
-      if (referenceApplicable === 0) {
-        if (data && data.length > 0) {
-          setSearchResults(data);
-          setBrandInput("");
-          setBrandId(null);
-          setModelNo("");
-          setSearchMode(false);
-        } else {
-          toast.error(res?.data?.message || "No matching models found");
-          setBrandInput("");
-          setBrandId(null);
-          setModelNo("");
-          setSearchMode(false);
-        }
+
+      if (data && data.length > 0) {
+        setSearchResults(data);
+        setBrandInput("");
+        setBrandId(null);
+        setModelNo("");
+        setSearchMode(false);
       } else {
-        await getInvoiceDetails({
-          productType: 1,
-          detailId: data.Id,
-          batchCode: null,
-          patientId: customerSalesId.patientId,
-          locationId: customerSalesId.locationId,
-        }).unwrap();
-        setOpenReferenceYes(true);
+        toast.error(res?.data?.message || "No matching models found");
+        setBrandInput("");
+        setBrandId(null);
+        setModelNo("");
+        setSearchMode(false);
       }
     } catch (err) {
       const msg =
@@ -270,12 +261,36 @@ const FrameSunglass = () => {
     setEditMode({});
   };
 
-  const handleCheckboxChange = (item) => {
+  const handleCheckboxChange = async (item) => {
     const exists = selectedRows.find((i) => i.Barcode === item.Barcode);
-    if (exists) {
-      setSelectedRows((prev) => prev.filter((i) => i.Barcode !== item.Barcode));
-    } else {
-      setSelectedRows((prev) => [...prev, item]);
+    if (referenceApplicable === 0) {
+      if (exists) {
+        setSelectedRows((prev) =>
+          prev.filter((i) => i.Barcode !== item.Barcode)
+        );
+      } else {
+        setSelectedRows((prev) => [...prev, item]);
+      }
+    } else if (referenceApplicable === 1) {
+      // if (exists) {
+      //   setSelectedRows((prev) =>
+      //     prev.filter((i) => i.Barcode !== item.Barcode)
+      //   );
+      // } else {
+      //   setSelectedRows((prev) => [...prev, item]);
+      // }
+      try {
+        await getInvoiceDetails({
+          productType: 1,
+          detailId: item.Id,
+          batchCode: null,
+          patientId: customerSalesId.patientId,
+          locationId: customerSalesId.locationId,
+        }).unwrap();
+        setOpenReferenceYes(true);
+      } catch (error) {
+        toast.error("No eligible Invoice exists for the given product");
+      }
     }
   };
 
@@ -1149,13 +1164,17 @@ const FrameSunglass = () => {
               renderRow={(item, index) => (
                 <TableRow key={item.Barcode}>
                   <TableCell>
-                    <input
-                      type="checkbox"
-                      checked={selectedRows.some(
-                        (i) => i.Barcode === item.Barcode
-                      )}
-                      onChange={() => handleCheckboxChange(item)}
-                    />
+                    {isInvoiceLoading ? (
+                      <Loader size={15} color="black" />
+                    ) : (
+                      <input
+                        type="checkbox"
+                        checked={selectedRows.some(
+                          (i) => i.Barcode === item.Barcode
+                        )}
+                        onChange={() => handleCheckboxChange(item)}
+                      />
+                    )}
                   </TableCell>
                   <TableCell>{item.Barcode}</TableCell>
                   <TableCell>{item.Name}</TableCell>
@@ -1174,9 +1193,8 @@ const FrameSunglass = () => {
                           : `CL: ${item.Cl}`}
                       </div>
                       <div>
-                            {item.IsRxable &&
-                              `${item.IsRxable === 1 ? "Rx" : ""}`}
-                          </div>
+                        {item.IsRxable && `${item.IsRxable === 1 ? "Rx" : ""}`}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>{item.MRP}</TableCell>

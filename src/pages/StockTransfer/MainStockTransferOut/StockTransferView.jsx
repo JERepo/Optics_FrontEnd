@@ -30,6 +30,7 @@ const getProductName = (item) => {
     colour,
     brandName,
     BatchCode,
+    HSN,
   } = item;
 
   const clean = (val) => {
@@ -58,7 +59,7 @@ const getProductName = (item) => {
       Size ? `Size: ${Size.Size}` : "",
       Category === 0 ? "Category: Optical Frame" : "Category: Sunglasses",
       barcode ? `Barcode: ${barcode}` : "",
-      clean(hsncode) ? `HSN: ${hsncode}` : "",
+      clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
     return lines.filter(Boolean).join("\n");
   }
@@ -69,13 +70,16 @@ const getProductName = (item) => {
       ProductName || productName,
       Variation ? `Variation: ${Variation.Variation}` : "",
       barcode ? `Barcode: ${barcode}` : "",
-      clean(hsncode) ? `HSN: ${hsncode}` : "",
+      clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
     return lines.filter(Boolean).join("\n");
   }
 
   // For Contact Lens (ProductType = 3)
   if (ProductType === 3) {
+    const batchCode = item.Stock[0]?.BatchCode;
+
+    const expiry = item.Stock[0]?.Expiry;
     const specs = PowerSpecs
       ? [
           PowerSpecs.Sph ? `Sph: ${clean(PowerSpecs.Sph)}` : "",
@@ -92,8 +96,9 @@ const getProductName = (item) => {
       specs ? `Power: ${specs}` : "",
       clean(colour) ? `Colour: ${clean(colour)}` : "",
       barcode ? `Barcode: ${barcode}` : "",
-      clean(BatchCode) && `BatchCode: ${BatchCode}`,
-      clean(hsncode) ? `HSN: ${hsncode}` : "",
+      clean(batchCode) ? `BatchCode: ${batchCode}` : "",
+      clean(expiry) ? `Expiry: ${expiry.split("-").reverse().join("/")}` : "",
+      clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
 
     return lines.filter(Boolean).join("\n");
@@ -104,8 +109,11 @@ const getProductName = (item) => {
     const tintName = clean(Tint?.name) || "";
     const addOns = AddOns?.map((a) => clean(a.name)).filter(Boolean) || [];
 
-    const specsLines = (Array.isArray(PowerSpecs) ? PowerSpecs : [])
-      .map((spec) => {
+    let specsLines = "";
+
+    // Handle PowerSpecs (array)
+    if (Array.isArray(PowerSpecs) && PowerSpecs.length) {
+      specsLines = PowerSpecs.map((spec) => {
         const side = clean(spec?.side);
         const sph = clean(spec?.sph);
         const cyl = clean(spec?.cyl);
@@ -118,10 +126,27 @@ const getProductName = (item) => {
         if (axis) powerValues.push(`Axis ${formatPowerValue(axis)}`);
         if (addition) powerValues.push(`Add ${formatPowerValue(addition)}`);
 
-        return powerValues.length ? `${side}: ${powerValues.join(", ")}` : "";
+        return powerValues.length
+          ? `${side ? side + ": " : ""}${powerValues.join(", ")}`
+          : "";
       })
-      .filter(Boolean)
-      .join("\n");
+        .filter(Boolean)
+        .join("\n");
+    }
+
+    // Handle Specs (single object)
+    if (!specsLines && Specs && typeof Specs === "object") {
+      const diameter = clean(Specs.Diameter);
+      const spherical = clean(Specs.Spherical);
+      const cylinder = clean(Specs.Cylinder);
+
+      const specsValues = [];
+      if (spherical) specsValues.push(`SPH ${formatPowerValue(spherical)}`);
+      if (diameter) specsValues.push(`Diameter ${formatPowerValue(diameter)}`);
+      if (cylinder) specsValues.push(`CYL ${formatPowerValue(cylinder)}`);
+
+      specsLines = specsValues.join(", ");
+    }
 
     const lines = [
       clean(
@@ -132,7 +157,7 @@ const getProductName = (item) => {
       specsLines,
       clean(colour) && `Color: ${colour}`,
       clean(barcode) && `Barcode: ${barcode}`,
-      clean(hsncode) && `HSN: ${hsncode}`,
+      clean(hsncode || HSN) && `HSN: ${hsncode || HSN}`,
       tintName ? `Tint: ${tintName}` : "",
       addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
       clean(FittingPrice) ? `Fitting Price: ${FittingPrice}` : "",
@@ -384,7 +409,10 @@ const StockTransferView = () => {
                   {formatINR(
                     stockDetails?.data?.result?.details.reduce(
                       (sum, item) =>
-                        sum + item.STQtyOut * parseFloat(item.TransferPrice),
+                        sum +
+                        item.STQtyOut * getStockOutPrice(item) +
+                        getStockOutPrice(item) *
+                          (parseFloat(item.ProductTaxPercentage) / 100),
                       0
                     )
                   ) || "0"}

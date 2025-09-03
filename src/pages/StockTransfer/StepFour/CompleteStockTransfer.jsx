@@ -84,6 +84,9 @@ const getProductName = (data) => {
 
   // For Contact Lens (ProductType = 3)
   if (ProductType === 3) {
+    const batchCode = item.Stock[0]?.BatchCode;
+
+    const expiry = item.Stock[0]?.Expiry;
     const specs = PowerSpecs
       ? [
           PowerSpecs.Sph ? `Sph: ${clean(PowerSpecs.Sph)}` : "",
@@ -101,7 +104,9 @@ const getProductName = (data) => {
       clean(colour) ? `Colour: ${clean(colour)}` : "",
 
       barcode ? `Barcode: ${barcode}` : "",
-      clean(item.BatchCode) ? `BatchCode: ${item.BatchCode}` : "",
+      clean(batchCode) ? `BatchCode: ${batchCode}` : "",
+      clean(expiry) ? `Expiry: ${expiry.split("-").reverse().join("/")}` : "",
+
       clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
 
@@ -135,13 +140,9 @@ const getProductName = (data) => {
       .join("\n");
 
     const lines = [
-      clean(
-        (ProductName || productName) &&
-          brandName &&
-          `${brandName} ${productName}`
-      ),
+      clean((ProductName || productName) && `${productName}`),
       specsLines,
-      clean(barcode) && `Color: ${colour}`,
+      // clean(barcode) && `Color: ${colour}`,
       clean(hsncode || HSN) && `HSN: ${hsncode || HSN}`,
       tintName ? `Tint: ${tintName}` : "",
       addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
@@ -206,7 +207,7 @@ const getStockOutPrice = (data) => {
   return 0;
 };
 const getStockOutMRP = (data) => {
-    const item = { ...data.ProductDetails, ...data };
+  const item = { ...data.ProductDetails, ...data };
 
   if (!item) {
     return 0;

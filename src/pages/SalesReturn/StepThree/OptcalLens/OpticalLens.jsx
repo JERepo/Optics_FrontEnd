@@ -132,6 +132,7 @@ const getProductName = (order, allBrandsData, lensData) => {
     Diameter,
     Barcode,
     hsncode,
+    HSNCode
   } = order;
 
   const clean = (val) => {
@@ -173,7 +174,7 @@ const getProductName = (order, allBrandsData, lensData) => {
       clean(Barcode) ? `Barcode: ${Barcode}` : "",
       tint ? `Tint: ${tint.split(" - ₹")[0]}` : "",
       addonNames.length > 0 ? `Add On: ${addonNames.join(", ")}` : "",
-      clean(hsncode) ? `HSN: ${hsncode}` : "",
+      clean(hsncode || HSNCode) ? `HSN: ${hsncode || HSNCode}` : "",
     ]
       .filter(Boolean)
       .join("\n");

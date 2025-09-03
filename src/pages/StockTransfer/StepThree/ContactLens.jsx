@@ -362,14 +362,20 @@ const ContactLens = () => {
             return;
           }
         } else if (data.CLBatchCode === 0) {
-          if (data.AvlQty <= 0 || data.Quantity <= 0) {
+          if (data.stock[0]?.quantity <= 0) {
             toast.error("Stock quantity must be greater than 0!");
             return;
           }
           const cc = {
             ...data,
+            // stkQty: 1,
+            // Quantity: parseInt(data.AvlQty),
+             Quantity : data.stock[0]?.quantity,
+            BuyingPrice: parseFloat(data?.priceMaster.buyingPrice),
             stkQty: 1,
-            Quantity: parseInt(data.AvlQty),
+            sbatchCode :data.stock[0]?.batchCode,
+            ExpiryDate :data.stock[0]?.CLBatchExpiry,
+            MRP:parseFloat(data?.priceMaster.mrp)
           };
           const existingIndex = mainClDetails.findIndex(
             (item) => item.Barcode == data.Barcode
@@ -485,10 +491,7 @@ const ContactLens = () => {
         (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
       );
       if (isAvailable) {
-        if (
-          parseInt(isAvailable.Quantity) <=
-          0
-        ) {
+        if (parseInt(isAvailable.Quantity) <= 0) {
           toast.error("Stock quantity must be greater than 0!");
           return;
         }
@@ -582,14 +585,14 @@ const ContactLens = () => {
       }).unwrap();
 
       if (response?.data.data.CLBatchCode === 0) {
-        if (response?.data.data.Quantity <= 0) {
+        if (response?.data.data.stock.Quantity <= 0) {
           toast.error("Stock quantity must be greater than 0!");
           return;
         }
         const cc = {
           ...response?.data.data,
           stkQty: 1,
-          Quantity: response?.data.data.Quantity,
+          Quantity: response?.data.data.stock.Quantity,
           MRP:
             response?.data.data.CLBatchCode === 0
               ? parseFloat(response?.data.data.price.MRP)
@@ -598,6 +601,8 @@ const ContactLens = () => {
             response?.data.data.CLBatchCode === 0
               ? parseFloat(response?.data.data.price.BuyingPrice)
               : parseFloat(response?.data.data.stock.BuyingPrice),
+          sbatchCode :response?.data.data.stock.BatchCode,
+          ExpiryDate :response?.data.data.stock.Expiry
         };
         const existingIndex = mainClDetails.findIndex(
           (item) => item.Barcode == response?.data.data.Barcode
@@ -643,8 +648,7 @@ const ContactLens = () => {
         ...newItem.powerData,
         sbatchCode: selectedBatchCode.CLBatchCode,
         sMRP: selectedBatchCode.CLMRP,
-        ExpiryDate: selectedBatchCode.CLBatchExpiry,
-
+        ExpiryDate: selectedBatchCode.ExpiryDate,
         stkQty: 1,
         Quantity: selectedBatchCode.Quantity,
         MRP: parseFloat(selectedBatchCode.CLMRP),
@@ -655,8 +659,7 @@ const ContactLens = () => {
         ...batchBarCodeDetails?.data.data,
         sbatchCode: selectedBatchCode.CLBatchCode,
         sMRP: selectedBatchCode.CLMRP,
-        ExpiryDate: selectedBatchCode.CLBatchExpiry,
-
+        ExpiryDate: selectedBatchCode.ExpiryDate,
         stkQty: 1,
         Quantity: selectedBatchCode.Quantity,
         BuyingPrice: parseFloat(selectedBatchCode.BuyingPrice),

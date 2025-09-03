@@ -46,7 +46,6 @@ const SalesView = () => {
     const Barcode = details?.barcode;
     const Hsncode = details?.hSN || details?.HSN;
 
-    
     const clean = (val) => {
       if (
         val == null ||
@@ -76,12 +75,15 @@ const SalesView = () => {
     if (typeid === 1) {
       // Frame
       const Size = clean(details?.Size?.Size) || details?.size;
-      if (clean(Size))
-        lines.push(
-          `Size: ${clean(Size)}-${clean(details?.dBL)}-${clean(
-            details?.templeLength
-          )}`
-        );
+      if (clean(Size) || clean(details?.dBL) || clean(details?.templeLength)) {
+        const parts = [
+          clean(Size),
+          clean(details?.dBL),
+          clean(details?.templeLength),
+        ].filter(Boolean); 
+
+        lines.push(`Size: ${parts.join("-")}`);
+      }
     } else if (typeid === 2) {
       // Accessories
       const Variation = details?.Variation?.Variation;
@@ -95,18 +97,19 @@ const SalesView = () => {
       // const expiry = Array.isArray(details?.Stock)
       //   ? details?.stock[0].Expiry
       //   : details?.stock.Expiry;
-      const batchCode = clean(item.BatchCode)
-      const expiry = clean(item.ExpiryDate)
+      const batchCode = clean(item.BatchCode);
+      const expiry = clean(item.ExpiryDate);
       const specsParts = [];
-      // if (PowerSpecs.Sph != null)
-      //   specsParts.push(`Sph: ${cleanPower(PowerSpecs.Sph)}`);
-      // if (PowerSpecs.Cyl != null)
-      //   specsParts.push(`Cyl: ${cleanPower(PowerSpecs.Cyl)}`);
-      // if (PowerSpecs.Axis != null)
-      //   specsParts.push(`Axis: ${clean(PowerSpecs.Axis)}`);
-      // if (PowerSpecs.Add != null)
-      //   specsParts.push(`Add: ${cleanPower(PowerSpecs.Add)}`);
-      // if (specsParts.length) lines.push(specsParts.join(" "));
+      if (PowerSpecs.Sph != null)
+        specsParts.push(`Sph: ${cleanPower(PowerSpecs.Sph)}`);
+      if (PowerSpecs.Cyl != null)
+        specsParts.push(`Cyl: ${cleanPower(PowerSpecs.Cyl)}`);
+      if (PowerSpecs.Axis != null)
+        specsParts.push(`Axis: ${clean(PowerSpecs.Axis)}`);
+      if (PowerSpecs.Add != null)
+        specsParts.push(`Add: ${cleanPower(PowerSpecs.Add)}`);
+      if (specsParts.length) lines.push(specsParts.join(" "));
+      
       if (PowerSpecs.sphericalPower != null)
         specsParts.push(`Sph: ${cleanPower(PowerSpecs.sphericalPower)}`);
       if (PowerSpecs.cylindricalPower != null)
@@ -187,7 +190,7 @@ const SalesView = () => {
     const price = parseFloat(item.TotalAmount || 0);
     const fittingPrice = parseFloat(item.FittingCharges || 0);
     const gst = parseFloat(item.FittingGSTPercentage || 0);
-    const fittingGst = fittingPrice * (gst/100)
+    const fittingGst = fittingPrice * (gst / 100);
     return sum + price + fittingPrice + fittingGst;
   }, 0);
 
