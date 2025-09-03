@@ -13,7 +13,7 @@ import { formatINR } from "../../../utils/formatINR";
 import toast from "react-hot-toast";
 import { useSelector } from "react-redux";
 
-const getProductName = (order, referenceApplicable) => {
+const getProductNameForNo = (order, referenceApplicable) => {
   const {
     productType,
     ProductType,
@@ -54,16 +54,14 @@ const getProductName = (order, referenceApplicable) => {
 
   // Frames (ProductType 1)
   if (productType === 1) {
-    const line1 = clean(
-      ` ${clean(detail.productName || detail.productDescName)}`
-    );
-    const line2 = clean(detail.Size?.Size) || clean(detail.specs);
+    const productName = clean(` ${clean(detail.productName)}`);
+    const size = clean(detail.Size?.Size);
     const cat = "Optical Frame";
 
     return joinNonEmpty(
       [
-        line1,
-        line2 && `Size: ${line2}`,
+        productName && productName,
+        size && `Size: ${size}`,
         cat && `Category: ${cat}`,
         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
         clean(detail.hsncode || detail.hSN || detail.HSN) &&
@@ -75,11 +73,10 @@ const getProductName = (order, referenceApplicable) => {
 
   // Accessories / Variation (ProductType 2)
   if (productType === 2) {
-    const line1 = clean(` ${clean(detail.productDescName)}`);
+    const productName = clean(` ${clean(detail.productName)}`);
     return joinNonEmpty(
       [
-        clean(line1),
-        clean(`${detail.productDescName}`),
+        productName && productName,
         clean(detail.Variation?.Variation || detail.variationName) &&
           `Variation: ${detail.Variation?.Variation || detail.variationName}`,
         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
@@ -92,12 +89,9 @@ const getProductName = (order, referenceApplicable) => {
 
   // Contact Lens (ProductType 3)
   if (productType === 3) {
-    const bc =
-      referenceApplicable === 0
-        ? detail?.Stock[0]?.BatchCode
-        : detail?.stock[0]?.batchCode;
-    const ex =
-      referenceApplicable === 0 ? detail?.Stock[0]?.Expiry : order?.ExpiryDate;
+    const bc = detail?.Stock[0]?.BatchCode ?? "";
+
+    const ex = detail?.Stock[0]?.Expiry ?? "";
     // in the sales return PowerSpecs only
     const specsList = joinNonEmpty(
       [
@@ -112,6 +106,181 @@ const getProductName = (order, referenceApplicable) => {
       ],
       ", "
     );
+   
+
+    return joinNonEmpty(
+      [
+        joinNonEmpty([
+          referenceApplicable === 1 && `${clean(detail.brandName)}`,
+          clean(detail.productName),
+        ]),
+        specsList,
+        clean(detail.colour) && `Color: ${clean(detail.colour)}`,
+        clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+        (clean(bc || detail.BatchCode) || clean(ex || detail.ExpiryDate)) &&
+          `Batch Code: ${bc || detail.BatchCode || "-"} | Expiry: ${
+            ex || detail.ExpiryDate
+              ? ex.split("-").reverse().join("/") ||
+                detail.ExpiryDate.split("-").reverse().join("/")
+              : "-"
+          }`,
+        clean(detail.HSN) && `HSN: ${clean(detail.HSN)}`,
+      ],
+      "\n"
+    );
+  }
+
+  // Ophthalmic Lenses (ProductType 0)
+  if (productType === 0) {
+    // ${detail.treatmentName} ${detail.coatingName}
+    const olLine = clean(detail.productName);
+    // AddOns
+    const addonNames =
+      referenceApplicable === 0
+        ? Array.isArray(AddOnData)
+          ? AddOnData?.map((item) => clean(item.name?.split(" - ₹")[0])).filter(
+              Boolean
+            )
+          : ""
+        : Array.isArray(detail.addOn)
+        ? detail.addOn?.map((item) => clean(item.addOnName)).filter(Boolean)
+        : "";
+    // for yes
+    // const formatPower = (eye) =>
+    //   joinNonEmpty(
+    //     [
+    //       cleanPower(eye?.sphericalPower) &&
+    //         `SPH: ${cleanPower(eye?.sphericalPower)}`,
+    //       cleanPower(eye?.addition) && `Add: ${cleanPower(eye?.addition)}`,
+    //       clean(eye?.diameter) && `Dia: ${clean(eye?.diameter)}`,
+    //     ],
+    //     ", "
+    //   );
+
+    // for No
+    // const pd = detail?.Specs || {};
+
+    // const rightParts = formatPower(pd.right || {});
+    // const leftParts = formatPower(pd.left || {});
+    const singlePower = detail?.Specs;
+
+    const singlePowerData = joinNonEmpty([
+      cleanPower(singlePower?.Spherical) && `SPH: ${singlePower?.Spherical},`,
+      cleanPower(singlePower?.Cylinder) && `Cyl: ${singlePower?.Cylinder},`,
+      cleanPower(singlePower?.Diameter) && `Dia: ${singlePower?.Diameter}`,
+    ]);
+
+    // const powerLine = joinNonEmpty(
+    //   [rightParts && `R: ${rightParts}`, leftParts && `L: ${leftParts}`],
+    //   "\n"
+    // );
+
+    let fittingLine = "";
+    const fitPrice = parseFloat(fittingPrice);
+    const gstPerc = parseFloat(fittingGSTPercentage);
+    if (!isNaN(fitPrice) && !isNaN(gstPerc) && fitPrice > 0) {
+      fittingLine = `Fitting Price: ₹${(fitPrice * (1 + gstPerc / 100)).toFixed(
+        2
+      )}`;
+    }
+
+    return joinNonEmpty(
+      [
+        olLine && olLine,
+        singlePowerData,
+        clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+        fittingLine,
+        addonNames && `AddOn: ${addonNames}`,
+        clean(detail.HSN) && `HSN: ${clean(clean(detail.HSN))}`,
+      ],
+      "\n"
+    );
+  }
+
+  return "";
+};
+const getProductNameForYes = (order, referenceApplicable) => {
+  const {
+    productType,
+    ProductType,
+    productDetails,
+    fittingPrice,
+    fittingGSTPercentage,
+    batchCode,
+    expiry,
+    Spherical,
+    Cylinder,
+    Diameter,
+    AddOnData,
+  } = order;
+
+  const detail = Array.isArray(productDetails)
+    ? productDetails[0]
+    : productDetails;
+
+  if (!detail) return "";
+
+  const clean = (val) =>
+    val == null ||
+    val === "undefined" ||
+    val === "null" ||
+    val === "" ||
+    val === "N/A"
+      ? ""
+      : String(val).trim();
+
+  const cleanPower = (val) => {
+    const cleaned = clean(val);
+    if (!cleaned) return "";
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? "" : num >= 0 ? `+${num}` : `${num}`;
+  };
+
+  const joinNonEmpty = (arr, sep = " ") => arr.filter(Boolean).join(sep);
+
+  // Frames (ProductType 1)
+  if (productType === 1) {
+    const productName = clean(` ${clean(detail.productDescName)}`);
+    const size = clean(detail.size);
+    const dbL = clean(detail.dBL);
+    const templeLength = clean(detail.templeLength);
+
+    const cat = "Optical Frame";
+
+    return joinNonEmpty(
+      [
+        productName && productName,
+        size && dbL && templeLength && `Size: ${size}-${dbL}-${templeLength}`,
+        cat && `Category: ${cat}`,
+        clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+        clean(detail.hSN) && `HSN: ${clean(detail.hSN)}`,
+      ],
+      "\n"
+    );
+  }
+
+  // Accessories / Variation (ProductType 2)
+  if (productType === 2) {
+    const productName = clean(` ${clean(detail.productDescName)}`);
+    return joinNonEmpty(
+      [
+        productName && productName,
+        clean(detail.specs?.variation || detail.variationName) &&
+          `Variation: ${detail.specs?.variation || detail.variationName}`,
+        clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+        clean(detail.hsncode || detail.hSN || detail.HSN) &&
+          `HSN: ${clean(detail.hsncode || detail.hSN || detail.HSN)}`,
+      ],
+      "\n"
+    );
+  }
+
+  // Contact Lens (ProductType 3)
+  if (productType === 3) {
+    const bc = detail?.stock[0]?.batchCode ?? "";
+
+    const ex = detail?.stock[0]?.Expiry ?? "";
+    
     const specListYes = joinNonEmpty(
       [
         cleanPower(detail.specs?.sphericalPower) &&
@@ -127,15 +296,10 @@ const getProductName = (order, referenceApplicable) => {
 
     return joinNonEmpty(
       [
-        joinNonEmpty([
-          referenceApplicable === 1 && `${clean(detail.brandName)}`,
-          clean(detail.productName),
-        ]),
-        referenceApplicable === 0 ? specsList : specListYes,
-        clean(detail.specs?.color || detail.colour) &&
-          `Color: ${clean(detail.specs?.color || detail.colour)}`,
-        clean(detail.specs?.barcode || detail.barcode) &&
-          `Barcode: ${clean(detail.specs?.barcode || detail.barcode)}`,
+       clean(detail.productDescName) && detail.productDescName,
+        specListYes,
+        clean(detail.colour) && `Color: ${clean(detail.colour)}`,
+        clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
         (clean(bc || detail.BatchCode) || clean(ex || detail.ExpiryDate)) &&
           `Batch Code: ${bc || detail.BatchCode || "-"} | Expiry: ${
             ex || detail.ExpiryDate
@@ -143,32 +307,20 @@ const getProductName = (order, referenceApplicable) => {
                 detail.ExpiryDate.split("-").reverse().join("/")
               : "-"
           }`,
-        clean(detail.hSN || detail.hsncode || detail.HSN) &&
-          `HSN: ${clean(detail.hSN || detail.hsncode || detail.HSN)}`,
+        clean(detail.HSN) && `HSN: ${clean(detail.HSN)}`,
       ],
       "\n"
     );
   }
 
-  // Ophthalmic Lenses (ProductType 0)
+  // Optical Lenses (ProductType 0)
   if (productType === 0) {
-    // ${detail.treatmentName} ${detail.coatingName}
-    const olLine = `${
-      referenceApplicable === 1
-        ? `${clean(detail.brandName)} ${detail.productName}}`
-        : `${detail.productDescName}`
-    }`;
+    const olLine = clean(detail.productDescName);
     // AddOns
-    const addonNames =
-      referenceApplicable === 0
-        ? Array.isArray(AddOnData)
-          ? AddOnData?.map((item) => clean(item.name?.split(" - ₹")[0])).filter(
-              Boolean
-            )
-          : ""
-        : Array.isArray(detail.addOn)
-        ? detail.addOn?.map((item) => clean(item.addOnName)).filter(Boolean)
-        : "";
+    const addonNames = detail.specs?.addOn?.addOnName;
+    const tintName = detail.tint?.tintName;
+
+    // for yes
     const formatPower = (eye) =>
       joinNonEmpty(
         [
@@ -181,15 +333,9 @@ const getProductName = (order, referenceApplicable) => {
       );
 
     const pd = detail?.specs?.powerDetails || {};
+
     const rightParts = formatPower(pd.right || {});
     const leftParts = formatPower(pd.left || {});
-    const singlePower = detail?.Specs;
-
-    const singlePowerData = joinNonEmpty([
-      cleanPower(singlePower?.Spherical) && `SPH: ${singlePower?.Spherical},`,
-      cleanPower(singlePower?.Cylinder) && `Cyl: ${singlePower?.Cylinder},`,
-      cleanPower(singlePower?.Diameter) && `Dia: ${singlePower?.Diameter}`,
-    ]);
 
     const powerLine = joinNonEmpty(
       [rightParts && `R: ${rightParts}`, leftParts && `L: ${leftParts}`],
@@ -207,17 +353,12 @@ const getProductName = (order, referenceApplicable) => {
 
     return joinNonEmpty(
       [
-        olLine,
-        referenceApplicable === 1 ? powerLine : singlePowerData,
-        // clean(detail.colour) && `Color: ${detail.colour}`,
+        olLine && olLine,
+        powerLine,
         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
-
-        fittingLine,
         addonNames && `AddOn: ${addonNames}`,
-        clean(detail.hSN || detail.hsncode || detail.HSN) &&
-          `HSN: ${
-            clean(detail.hSN) || clean(detail.hsncode) || clean(detail.HSN)
-          }`,
+        fittingLine,
+        clean(detail.hSN) && `HSN: ${clean(clean(detail.hSN))}`,
       ],
       "\n"
     );
@@ -225,62 +366,6 @@ const getProductName = (order, referenceApplicable) => {
 
   return "";
 };
-
-// const getProductNameForYes = (order) => {
-//   const detail = Array.isArray(order.productDetails)
-//     ? order.productDetails[0]
-//     : order.productDetails;
-//   const clean = (val) =>
-//     val == null ||
-//     val === "undefined" ||
-//     val === "null" ||
-//     val === "" ||
-//     val === "N/A"
-//       ? ""
-//       : String(val).trim();
-
-//   const cleanPower = (val) => {
-//     const cleaned = clean(val);
-//     if (!cleaned) return "";
-//     const num = parseFloat(cleaned);
-//     return isNaN(num) ? "" : num >= 0 ? `+${num}` : `${num}`;
-//   };
-//   const joinNonEmpty = (arr, sep = " ") => arr.filter(Boolean).join(sep);
-
-//   if (detail.productType === 1) {
-//     const productName = clean(` ${clean(detail.productDescName)}`);
-//     const size = clean(detail.size);
-//     const dbL = clean(detail.dBL);
-//     const templeLength = clean(detail.templeLength);
-//     const cat = "Optical Frame";
-
-//     return joinNonEmpty(
-//       [
-//         productName,
-//         size && dbL && templeLength && `Size: ${size}-${dbL}-${templeLength}`,
-//         cat && `Category: ${cat}`,
-//         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
-//         clean(detail.hSN) && `HSN: ${clean(detail.hSN)}`,
-//       ],
-//       "\n"
-//     );
-//   }
-//    if (detail.productType === 2) {
-//     const productName = clean(` ${clean(detail.productDescName)}`);
-//     return joinNonEmpty(
-//       [
-//         productName && productName,
-//         clean(`${detail.productDescName}`),
-//         clean(detail.Variation?.Variation || detail.variationName) &&
-//           `Variation: ${detail.Variation?.Variation || detail.variationName}`,
-//         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
-//         clean(detail.hsncode || detail.hSN || detail.HSN) &&
-//           `HSN: ${clean(detail.hsncode || detail.hSN || detail.HSN)}`,
-//       ],
-//       "\n"
-//     );
-//   }
-// };
 
 const getShortTypeName = (id) => {
   if (id === null || id === undefined) return;
@@ -485,7 +570,12 @@ const CompleteSalesReturn = () => {
                   </TableCell>
                   <TableCell>
                     <div className="whitespace-pre-wrap">
-                      {getProductName(mappedOrder, referenceApplicable)}
+                      {referenceApplicable === 0
+                        ? getProductNameForNo(mappedOrder, referenceApplicable)
+                        : getProductNameForYes(
+                            mappedOrder,
+                            referenceApplicable
+                          )}
                     </div>
                   </TableCell>
                   <TableCell>₹{parseFloat(item.SRP)}</TableCell>

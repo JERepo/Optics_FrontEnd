@@ -142,7 +142,7 @@ const getProductName = (data) => {
     const lines = [
       clean((ProductName || productName) && `${productName}`),
       specsLines,
-      // clean(barcode) && `Color: ${colour}`,
+      clean(barcode) && `BarCode: ${barcode}`,
       clean(hsncode || HSN) && `HSN: ${hsncode || HSN}`,
       tintName ? `Tint: ${tintName}` : "",
       addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
@@ -395,9 +395,9 @@ const CompleteStockTransfer = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    getStockOutPrice(item) * item.STQtyOut +
-                      getStockOutPrice(item) *
-                        (parseFloat(item.ProductTaxPercentage) / 100)
+                    (getStockOutPrice(item) * item.STQtyOut) +
+                     ( item.STQtyOut*
+                        (parseFloat(item.ProductTaxPercentage) / 100))
                   )}
                 </TableCell>
                 <TableCell>

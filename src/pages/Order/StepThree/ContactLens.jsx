@@ -286,13 +286,13 @@ const ContactLens = () => {
         toast.success(`${response?.data.message}`);
         setNewItem({
           CLDetailId: data.CLDetailId,
-          sphericalPower: data.SphericalPower,
-          cylindricalPower: data.CylindricalPower,
+          sphericalPower: data.SphericalPower || data.Spherical,
+          cylindricalPower: data.CylindricalPower ||  data.Cylindrical,
           axis: data.Axis,
           additional: data.Additional,
-          avlQty: parseInt(data.AvlQty),
-          orderQty: data.DefaultOrderQty,
-          sellingPrice: data.SellingPrice,
+          avlQty: parseInt(data.stock[0]?.quantity),
+          orderQty: data.DefaultOrderQty || 0,
+          sellingPrice:data?.CLBatchCode === 0? parseFloat(data.priceMaster?.sellingPrice) : parseFloat(data?.stock[0]?.sellingPrice),
         });
         setSearchFetched(true);
       } else {
@@ -319,7 +319,6 @@ const ContactLens = () => {
       toast.error("Please add at least one item before saving");
       return;
     }
-    console.log("selected items", items);
     const payload = {
       lenses: items.map((item) => ({
         CLDetailId: item.CLDetailId,

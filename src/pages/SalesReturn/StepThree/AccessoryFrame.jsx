@@ -810,9 +810,7 @@ const AccessoryFrame = () => {
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <span className="text-gray-700">
-                              ₹{item.SellingPrice || "N/A"}
-                            </span>
+                            ₹{item.SellingPrice || "N/A"}
                             <button
                               onClick={() =>
                                 toggleEditMode(
@@ -866,9 +864,7 @@ const AccessoryFrame = () => {
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <span className="text-gray-700">
                               {item.Quantity}
-                            </span>
                             <button
                               onClick={() =>
                                 toggleEditMode(item.Barcode, index, "qty")

@@ -994,7 +994,7 @@ const FrameSunglass = () => {
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell >
                     ₹
                     {formatINR(
                       calculateGST(
@@ -1003,10 +1003,10 @@ const FrameSunglass = () => {
                       ).gstAmount
                     )}
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell >
                     {item.ReturnQty || 0}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell >
                     ₹{formatINR(parseFloat(item.TotalAmount || 0))}
                   </TableCell>
                   <TableCell>

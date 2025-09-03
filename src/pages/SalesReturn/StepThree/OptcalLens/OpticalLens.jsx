@@ -801,7 +801,7 @@ const OpticalLens = () => {
           FittingReturnPrice:
             referenceApplicable === 0
               ? detail.FittingReturnPrice
-              : detail.ProductDetails[0]?.fittingPrice ?? null,
+              : detail.FittingPriceEdit ?? null,
           FittingTaxPercentage:
             referenceApplicable === 0
               ? detail.FittingTaxPercentage

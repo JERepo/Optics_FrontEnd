@@ -903,7 +903,6 @@ const ContactLens = () => {
     }
   };
   const handleAddData = () => {
-    console.log("select batch code in ", selectedBatchCode);
     if (!selectedInvoiceReturnQty || isNaN(selectedInvoiceReturnQty)) {
       toast.error("Please enter a valid Return Qty");
       return;
@@ -932,11 +931,8 @@ const ContactLens = () => {
       AccId: detaildAccId,
       ...selectedInvoice,
       ReturnQty: selectedInvoiceReturnQty,
-      sbatchCode:
-        selectBatch === 0
-          ? selectedBatchCode.CLBatchCode
-          : selectedBatchCode.CLBatchBarCode,
-      ExpiryDate: selectedBatchCode.CLBatchExpiry,
+      sbatchCode: selectedInvoice?.ProductDetails[0]?.stock[0]?.batchCode ?? "",
+      ExpiryDate: selectedInvoice?.ProductDetails[0]?.stock[0]?.CLBatchExpiry ?? "",
       ReturnPricePerUnit: selectedInvoice.ActualSellingPrice,
       GSTPercentage: parseFloat(
         selectedInvoice.ProductDetails[0].taxPercentage

@@ -995,9 +995,9 @@ const CustomerSelect = () => {
       roundOff: 0.0,
       balanceAmount: 0,
       applicationUserId: user.Id,
-      creditBilling: selectedPatient?.CustomerMaster?.CreditBilling === 0,
+      creditBilling: selectedPatient?.CustomerMaster?.CreditBilling,
     };
-    if (payload.creditBilling) {
+    if (payload.creditBilling === 0) {
       payload.payments = preparePaymentsStructure();
     }
     try {

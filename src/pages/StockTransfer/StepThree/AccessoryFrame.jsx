@@ -435,7 +435,7 @@ const AccessoryFrame = () => {
             ProductType: 2,
             detailId: item.Id,
             BatchCode: null,
-            STQtyOut: item.Quantity,
+            STQtyOut: item.stkQty,
             TransferPrice: parseFloat(item.BuyingPrice),
             gstPercentage: calculateStockGST(item).gstPercent,
             mrp: item.MRP,

@@ -36,154 +36,359 @@ const SalesView = () => {
     return types[id] || "OL";
   };
 
-  const getProductName = (item) => {
-    const typeid = item.ProductType;
-    const details = Array.isArray(item.ProductDetails)
-      ? item.ProductDetails[0]
-      : item.ProductDetails || {};
-    const brandName = details?.brandName;
-    const ProductName = details?.productName || details?.productDescName || "";
-    const Barcode = details?.barcode;
-    const Hsncode = details?.hSN || details?.HSN;
+  const getProductNameForNo = (order, referenceApplicable = 0) => {
+    console.log("coming in no")
+    const {
+      productType,
+      ProductType,
+      ProductDetails,
+      fittingPrice,
+      fittingGSTPercentage,
+      batchCode,
+      expiry,
+      Spherical,
+      Cylinder,
+      Diameter,
+      AddOnData,
+    } = order;
 
-    const clean = (val) => {
-      if (
-        val == null ||
-        val === "undefined" ||
-        val === "null" ||
-        val === "N/A" ||
-        (typeof val === "string" && val.trim() === "")
-      )
-        return "";
-      return String(val).trim();
-    };
+    const detail = Array.isArray(ProductDetails)
+      ? ProductDetails[0]
+      : ProductDetails;
+
+    if (!detail) return "";
+
+    const clean = (val) =>
+      val == null ||
+      val === "undefined" ||
+      val === "null" ||
+      val === "" ||
+      val === "N/A"
+        ? ""
+        : String(val).trim();
 
     const cleanPower = (val) => {
       const cleaned = clean(val);
       if (!cleaned) return "";
       const num = parseFloat(cleaned);
-      if (isNaN(num)) return cleaned;
-      return num > 0 ? `+${num.toFixed(2)}` : num.toFixed(2);
+      return isNaN(num) ? "" : num >= 0 ? `+${num}` : `${num}`;
     };
 
-    const lines = [];
+    const joinNonEmpty = (arr, sep = " ") => arr.filter(Boolean).join(sep);
 
-    // Add Product Name
-    if (clean(ProductName)) lines.push(`${ProductName}`);
+    // Frames (ProductType 1)
+    if (order.ProductType === 1) {
+      const productName = clean(` ${clean(detail.productName)}`);
+      const size = clean(detail.Size?.Size);
+      const cat = "Optical Frame";
 
-    // Common fields for all types
-    if (typeid === 1) {
-      // Frame
-      const Size = clean(details?.Size?.Size) || details?.size;
-      if (clean(Size) || clean(details?.dBL) || clean(details?.templeLength)) {
-        const parts = [
-          clean(Size),
-          clean(details?.dBL),
-          clean(details?.templeLength),
-        ].filter(Boolean);
-
-        lines.push(`Size: ${parts.join("-")}`);
-        if (clean(Barcode)) lines.push(`Barcode: ${clean(Barcode)}`);
-        if (clean(Hsncode)) lines.push(`HSN: ${clean(Hsncode)}`);
-      }
-    } else if (typeid === 2) {
-      // Accessories
-      const Variation = details?.Variation?.Variation;
-      if (clean(Variation)) lines.push(`Variation: ${clean(Variation)}`);
-       if (clean(Barcode)) lines.push(`Barcode: ${clean(Barcode)}`);
-    if (clean(Hsncode)) lines.push(`HSN: ${clean(Hsncode)}`);
-    } else if (typeid === 3) {
-      // Contact Lens
-      const PowerSpecs = details.PowerSpecs || {};
-      // const batchcode = Array.isArray(details?.Stock)
-      //   ? details?.stock[0].batchCode
-      //   : details?.stock.batchCode;
-      // const expiry = Array.isArray(details?.Stock)
-      //   ? details?.stock[0].Expiry
-      //   : details?.stock.Expiry;
-      const batchCode = clean(item.BatchCode);
-      const expiry = clean(item.ExpiryDate);
-      const specsParts = [];
-      if (PowerSpecs.Sph != null)
-        specsParts.push(`Sph: ${cleanPower(PowerSpecs.Sph)}`);
-      if (PowerSpecs.Cyl != null)
-        specsParts.push(`Cyl: ${cleanPower(PowerSpecs.Cyl)}`);
-      if (PowerSpecs.Axis != null)
-        specsParts.push(`Axis: ${clean(PowerSpecs.Axis)}`);
-      if (PowerSpecs.Add != null)
-        specsParts.push(`Add: ${cleanPower(PowerSpecs.Add)}`);
-      if (specsParts.length) lines.push(specsParts.join(" "));
-
-      if (specsParts.length) lines.push(specsParts.join(" "));
-      if (batchCode && expiry)
-        lines.push(
-          `BatchCode: ${batchCode} | Expiry: ${expiry
-            .split("-")
-            .reverse()
-            .join("/")}`
-        );
-         if (clean(Barcode)) lines.push(`Barcode: ${clean(Barcode)}`);
-    if (clean(Hsncode)) lines.push(`HSN: ${clean(Hsncode)}`);
-    } else if (typeid === 0) {
-      // Optical Lenses
-      const powerDetails = details?.specs?.powerDetails || {};
-      const singleDetails = details?.Specs || {};
-      const specsLines = [];
-      const singlePower = [];
-
-      const formatLens = (side, data) => {
-        if (!data) return "";
-        const parts = [];
-        if (side) parts.push(side);
-        if (data.sphericalPower)
-          parts.push(`SPH: ${cleanPower(data.sphericalPower)}`);
-        if (data.cylinder) parts.push(`CYL: ${cleanPower(data.cylinder)}`);
-        if (data.axis) parts.push(`Axis: ${clean(data.axis)}`);
-        if (data.addition) parts.push(`Add: ${cleanPower(data.addition)}`);
-        if (data.diameter) parts.push(`Dia: ${clean(data.diameter)}`);
-        return parts.join(" ");
-      };
-
-      if (powerDetails.right)
-        specsLines.push(formatLens("R", powerDetails.right));
-      if (powerDetails.left)
-        specsLines.push(formatLens("L", powerDetails.left));
-
-      if (singleDetails.sphericalPower != null)
-        singlePower.push(`Sph: ${cleanPower(singleDetails.sphericalPower)}`);
-      if (singleDetails.cylindricalPower != null)
-        singlePower.push(`Cyl: ${cleanPower(singleDetails.cylindricalPower)}`);
-      if (singleDetails.axis != null)
-        singlePower.push(`Axis: ${clean(singleDetails.axis)}`);
-      if (singleDetails.additional != null)
-        singlePower.push(`Add: ${cleanPower(singleDetails.additional)}`);
-
-      if (specsLines.length) lines.push(...specsLines);
-      if (singlePower.length) lines.push(...singlePower);
-
-      // Add coating/treatment/family etc.
-      const family = clean(details?.familyName);
-      const design = clean(details?.designName);
-      const coating = clean(details?.coatingName);
-      const treatment = clean(details?.treatmentName);
-      const extra = [family, design, coating, treatment]
-        .filter(Boolean)
-        .join(" ");
-      if (extra) lines.push(extra);
-
-      // Add tint & add-on
-      const tint =
-        details?.specs?.tint?.tintName || clean(details?.tint?.tintName);
-      if (tint) lines.push(`Tint: ${tint}`);
-
-      const addOnName =
-        details?.specs?.addOn?.addOnName || clean(details?.addOn?.addOnName);
-      if (addOnName) lines.push(`AddOn: ${addOnName}`);
-       if (clean(Barcode)) lines.push(`Barcode: ${clean(Barcode)}`);
-    if (clean(Hsncode)) lines.push(`HSN: ${clean(Hsncode)}`);
+      return joinNonEmpty(
+        [
+          productName && productName,
+          size && `Size: ${size}`,
+          cat && `Category: ${cat}`,
+          clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+          clean(detail.hsncode || detail.hSN || detail.HSN) &&
+            `HSN: ${clean(detail.hsncode || detail.hSN || detail.HSN)}`,
+        ],
+        "\n"
+      );
     }
 
-    return lines.join("\n");
+    // Accessories / Variation (order.ProductType 2)
+    if (order.ProductType === 2) {
+      const productName = clean(` ${clean(detail.productName)}`);
+      return joinNonEmpty(
+        [
+          productName && productName,
+          clean(detail.Variation?.Variation || detail.variationName) &&
+            `Variation: ${detail.Variation?.Variation || detail.variationName}`,
+          clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+          clean(detail.hsncode || detail.hSN || detail.HSN) &&
+            `HSN: ${clean(detail.hsncode || detail.hSN || detail.HSN)}`,
+        ],
+        "\n"
+      );
+    }
+
+    // Contact Lens (order.ProductType 3)
+    if (order.ProductType === 3) {
+      const bc = detail?.Stock[0]?.BatchCode ?? "";
+
+      const ex = detail?.Stock[0]?.Expiry ?? "";
+      // in the sales return PowerSpecs only
+      const specsList = joinNonEmpty(
+        [
+          cleanPower(detail.PowerSpecs?.Sph) &&
+            `SPH: ${cleanPower(detail.PowerSpecs?.Sph)}`,
+          cleanPower(detail.PowerSpecs?.Cyl) &&
+            `CYL: ${cleanPower(detail.PowerSpecs?.Cyl)}`,
+          clean(detail.PowerSpecs?.Axis) &&
+            `Axis: ${clean(detail.PowerSpecs?.Axis)}`,
+          cleanPower(detail.PowerSpecs?.Add) &&
+            `Add: ${cleanPower(detail.PowerSpecs?.Add)}`,
+        ],
+        ", "
+      );
+
+      return joinNonEmpty(
+        [
+          joinNonEmpty([clean(detail.productName)]),
+          specsList,
+          clean(detail.colour) && `Color: ${clean(detail.colour)}`,
+          clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+          (clean(bc || detail.BatchCode) || clean(ex || detail.ExpiryDate)) &&
+            `Batch Code: ${bc || detail.BatchCode || "-"} | Expiry: ${
+              ex || detail.ExpiryDate
+                ? ex.split("-").reverse().join("/") ||
+                  detail.ExpiryDate.split("-").reverse().join("/")
+                : "-"
+            }`,
+          clean(detail.HSN) && `HSN: ${clean(detail.HSN)}`,
+        ],
+        "\n"
+      );
+    }
+
+    // Ophthalmic Lenses (order.ProductType 0)
+    if (order.ProductType === 0) {
+      // ${detail.treatmentName} ${detail.coatingName}
+      const olLine = clean(detail.productName);
+      // AddOns
+      const addonNames =
+        referenceApplicable === 0
+          ? Array.isArray(AddOnData)
+            ? AddOnData?.map((item) =>
+                clean(item.name?.split(" - ₹")[0])
+              ).filter(Boolean)
+            : ""
+          : Array.isArray(detail.addOn)
+          ? detail.addOn?.map((item) => clean(item.addOnName)).filter(Boolean)
+          : "";
+      // for yes
+      // const formatPower = (eye) =>
+      //   joinNonEmpty(
+      //     [
+      //       cleanPower(eye?.sphericalPower) &&
+      //         `SPH: ${cleanPower(eye?.sphericalPower)}`,
+      //       cleanPower(eye?.addition) && `Add: ${cleanPower(eye?.addition)}`,
+      //       clean(eye?.diameter) && `Dia: ${clean(eye?.diameter)}`,
+      //     ],
+      //     ", "
+      //   );
+
+      // for No
+      // const pd = detail?.Specs || {};
+
+      // const rightParts = formatPower(pd.right || {});
+      // const leftParts = formatPower(pd.left || {});
+      const singlePower = detail?.Specs;
+
+      const singlePowerData = joinNonEmpty([
+        cleanPower(singlePower?.Spherical) && `SPH: ${singlePower?.Spherical},`,
+        cleanPower(singlePower?.Cylinder) && `Cyl: ${singlePower?.Cylinder},`,
+        cleanPower(singlePower?.Diameter) && `Dia: ${singlePower?.Diameter}`,
+      ]);
+
+      // const powerLine = joinNonEmpty(
+      //   [rightParts && `R: ${rightParts}`, leftParts && `L: ${leftParts}`],
+      //   "\n"
+      // );
+
+      let fittingLine = "";
+      const fitPrice = parseFloat(fittingPrice);
+      const gstPerc = parseFloat(fittingGSTPercentage);
+      if (!isNaN(fitPrice) && !isNaN(gstPerc) && fitPrice > 0) {
+        fittingLine = `Fitting Price: ₹${(
+          fitPrice *
+          (1 + gstPerc / 100)
+        ).toFixed(2)}`;
+      }
+
+      return joinNonEmpty(
+        [
+          olLine && olLine,
+          singlePowerData,
+          clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+          fittingLine,
+          addonNames && `AddOn: ${addonNames}`,
+          clean(detail.HSN) && `HSN: ${clean(clean(detail.HSN))}`,
+        ],
+        "\n"
+      );
+    }
+
+    return "";
+  };
+  const getProductNameForYes = (order) => {
+    console.log("coming in yes also")
+    const {
+      productType,
+      ProductType,
+      ProductDetails,
+      FittingCharges,
+      FittingGSTPercentage,
+      batchCode,
+      expiry,
+      Spherical,
+      Cylinder,
+      Diameter,
+      AddOnData,
+    } = order;
+
+    const detail = Array.isArray(ProductDetails)
+      ? ProductDetails[0]
+      : ProductDetails;
+
+    if (!detail) return "";
+
+    const clean = (val) =>
+      val == null ||
+      val === "undefined" ||
+      val === "null" ||
+      val === "" ||
+      val === "N/A"
+        ? ""
+        : String(val).trim();
+
+    const cleanPower = (val) => {
+      const cleaned = clean(val);
+      if (!cleaned) return "";
+      const num = parseFloat(cleaned);
+      return isNaN(num) ? "" : num >= 0 ? `+${num}` : `${num}`;
+    };
+
+    const joinNonEmpty = (arr, sep = " ") => arr.filter(Boolean).join(sep);
+    console.log("type", order);
+    // Frames (ProductType 1)
+    if (order.ProductType === 1) {
+      const productName = clean(` ${clean(detail.productDescName)}`);
+      const size = clean(detail.size);
+      const dbL = clean(detail.dBL);
+      const templeLength = clean(detail.templeLength);
+
+      const cat = "Optical Frame";
+
+      return joinNonEmpty(
+        [
+          productName && productName,
+          size && dbL && templeLength && `Size: ${size}-${dbL}-${templeLength}`,
+          cat && `Category: ${cat}`,
+          clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+          clean(detail.hSN) && `HSN: ${clean(detail.hSN)}`,
+        ],
+        "\n"
+      );
+    }
+
+    // Accessories / Variation (order.ProductType 2)
+    if (order.ProductType === 2) {
+      const productName = clean(` ${clean(detail.productDescName)}`);
+      return joinNonEmpty(
+        [
+          productName && productName,
+          clean(detail.specs?.variation || detail.variationName) &&
+            `Variation: ${detail.specs?.variation || detail.variationName}`,
+          clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+          clean(detail.hsncode || detail.hSN || detail.HSN) &&
+            `HSN: ${clean(detail.hsncode || detail.hSN || detail.HSN)}`,
+        ],
+        "\n"
+      );
+    }
+
+    // Contact Lens (order.ProductType 3)
+    if (order.ProductType === 3) {
+      const bc = detail?.stock[0]?.batchCode ?? "";
+
+      const ex = detail?.stock[0]?.Expiry ?? "";
+
+      const specListYes = joinNonEmpty(
+        [
+          cleanPower(detail.specs?.sphericalPower) &&
+            `SPH: ${cleanPower(detail.specs?.sphericalPower)}`,
+          cleanPower(detail.specs?.cylindricalPower) &&
+            `CYL: ${cleanPower(detail.specs?.cylindricalPower)}`,
+          clean(detail.specs?.axis) && `Axis: ${clean(detail.specs?.axis)}`,
+          cleanPower(detail.specs?.additional) &&
+            `Add: ${cleanPower(detail.specs?.additional)}`,
+        ],
+        ", "
+      );
+
+      return joinNonEmpty(
+        [
+          clean(detail.productDescName) && detail.productDescName,
+          specListYes,
+          clean(detail.colour) && `Color: ${clean(detail.colour)}`,
+          clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+          (clean(bc || detail.BatchCode) || clean(ex || detail.ExpiryDate)) &&
+            `Batch Code: ${bc || detail.BatchCode || "-"} | Expiry: ${
+              ex || detail.ExpiryDate
+                ? ex.split("-").reverse().join("/") ||
+                  detail.ExpiryDate.split("-").reverse().join("/")
+                : "-"
+            }`,
+          clean(detail.HSN || detail.hSN) &&
+            `HSN: ${clean(detail.HSN || detail.hSN)}`,
+        ],
+        "\n"
+      );
+    }
+
+    // Optical Lenses (order.ProductType 0)
+    if (order.ProductType === 0) {
+      const olLine = clean(detail.productDescName);
+      // AddOns
+      const addonNames = detail.specs?.addOn?.addOnName;
+      const tintName = detail.tint?.tintName;
+
+      // for yes
+      const formatPower = (eye) =>
+        joinNonEmpty(
+          [
+            cleanPower(eye?.sphericalPower) &&
+              `SPH: ${cleanPower(eye?.sphericalPower)}`,
+            cleanPower(eye?.addition) && `Add: ${cleanPower(eye?.addition)}`,
+            clean(eye?.diameter) && `Dia: ${clean(eye?.diameter)}`,
+          ],
+          ", "
+        );
+
+      const pd = detail?.specs?.powerDetails || {};
+
+      const rightParts = formatPower(pd.right || {});
+      const leftParts = formatPower(pd.left || {});
+
+      const powerLine = joinNonEmpty(
+        [rightParts && `R: ${rightParts}`, leftParts && `L: ${leftParts}`],
+        "\n"
+      );
+
+      let fittingLine = "";
+      const fitPrice = parseFloat(FittingCharges);
+      const gstPerc = parseFloat(FittingGSTPercentage);
+      if (!isNaN(fitPrice) && !isNaN(gstPerc) && fitPrice > 0) {
+        fittingLine = `Fitting Price: ₹${(
+          fitPrice *
+          (1 + gstPerc / 100)
+        ).toFixed(2)}`;
+      }
+
+      return joinNonEmpty(
+        [
+          olLine && olLine,
+          powerLine,
+          clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+          addonNames && `AddOn: ${addonNames}`,
+          fittingLine,
+          clean(detail.hSN) && `HSN: ${clean(clean(detail.hSN))}`,
+        ],
+        "\n"
+      );
+    }
+
+    return "";
   };
 
   // Calculate summary values
@@ -296,7 +501,11 @@ const SalesView = () => {
                 </TableCell>
                 <TableCell>{getTypeName(s.ProductType)}</TableCell>
                 <TableCell>
-                  <div className="whitespace-pre-wrap">{getProductName(s)}</div>
+                  <div className="whitespace-pre-wrap">
+                    {s.InvoiceMain && s.InvoiceDetails
+                      ? getProductNameForYes(s)
+                      : getProductNameForNo(s)}
+                  </div>
                 </TableCell>
                 <TableCell>₹{formatINR(s.ReturnPricePerUnit)}</TableCell>
                 <TableCell>
