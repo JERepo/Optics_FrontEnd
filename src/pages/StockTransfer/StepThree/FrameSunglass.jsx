@@ -681,7 +681,7 @@ const FrameSunglass = () => {
                   <TableCell>
                     {item.Category === 0 ? "Optical Frame" : "Sunglass"}
                   </TableCell>
-                  <TableCell><div className="whitespace-pre-wrap">
+                  <TableCell><div className="grid grid-cols-2 gap-2 ">
                       <div>{item.PO == 1 ? "PH" : ""}</div>
                       <div>{item.Ph == 1 ? "PO" : ""}</div>
                       <div>

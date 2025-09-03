@@ -392,12 +392,13 @@ const CompleteStockTransfer = () => {
                     ? item.ProductDetails.Stock[0].Quantity
                     : item.ProductDetails.Stock.Quantity}
                 </TableCell>
+                {/* (“TransferPrice””StockOutQty”)+ (“TransferPrice”*GST””StockOutQty”) */}
                 <TableCell>
                   ₹
                   {formatINR(
                     (getStockOutPrice(item) * item.STQtyOut) +
-                     ( item.STQtyOut*
-                        (parseFloat(item.ProductTaxPercentage) / 100))
+                     ( getStockOutPrice(item) *
+                        (parseFloat(item.ProductTaxPercentage) / 100) * item.STQtyOut)
                   )}
                 </TableCell>
                 <TableCell>

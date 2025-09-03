@@ -96,7 +96,7 @@ const getProductName = (item) => {
 
     const lines = [
       ProductName || productName,
-      specs ? `Power: ${specs}` : "",
+      specs ? `${specs}` : "",
       clean(colour) ? `Colour: ${clean(colour)}` : "",
       barcode ? `Barcode: ${barcode}` : "",
       clean(detail.BatchCode) ? `BatchCode: ${detail.BatchCode}` : "",
@@ -139,7 +139,7 @@ const getProductName = (item) => {
           `${brandName} ${productName}`
       ),
       specsLines,
-      clean(barcode) && `Color: ${colour}`,
+      // clean(barcode) && `Color: ${colour}`,
       clean(hsncode || HSN) && `HSN: ${hsncode || HSN}`,
       tintName ? `Tint: ${tintName}` : "",
       addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
@@ -154,7 +154,7 @@ const getProductName = (item) => {
 
 const getStockOutPrice = (item) => {
   if (item.ProductType === 3) {
-    if (item.ProductDetails.CLBatchCode === 1) {
+    if (item.ProductDetails.CLBatchCode === 0) {
       return parseFloat(item.ProductDetails.price?.MRP || 0);
     }
 
@@ -300,7 +300,7 @@ const PurchaseReturnView = () => {
               "product details",
               "srp",
               "return qty",
-              "return product price",
+              "return price",
               "gst/unit",
               "total price",
             ]}

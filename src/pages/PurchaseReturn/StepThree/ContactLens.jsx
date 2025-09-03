@@ -71,6 +71,8 @@ const getProductName = (order) => {
     sbatchCode,
     CLBatchBarCode,
     sbatchbarCode,
+    Spherical,
+    Cylindrical,
   } = order;
 
   const clean = (val) => {
@@ -114,9 +116,15 @@ const getProductName = (order) => {
         specsObj[key] = value;
       });
     } else {
+      // specsObj = {
+      //   Sph: SphericalPower,
+      //   Cyld: CylindricalPower,
+      //   Axis: Axis,
+      //   Add: Additional,
+      // };
       specsObj = {
-        Sph: SphericalPower,
-        Cyld: CylindricalPower,
+        Sph: SphericalPower || Spherical,
+        Cyld: CylindricalPower || Cylindrical,
         Axis: Axis,
         Add: Additional,
       };
@@ -604,7 +612,7 @@ const ContactLens = () => {
           //   response?.data.data.CLBatchCode === 0
           //     ? parseFloat(response?.data.data.price.BuyingPrice)
           //     : parseFloat(response?.data.data.stock.BuyingPrice),
-        stkQty: 1,
+          stkQty: 1,
           Quantity: response?.data.data.stock.Quantity,
           MRP:
             response?.data.data.CLBatchCode === 0
@@ -614,8 +622,8 @@ const ContactLens = () => {
             response?.data.data.CLBatchCode === 0
               ? parseFloat(response?.data.data.price.BuyingPrice)
               : parseFloat(response?.data.data.stock.BuyingPrice),
-          sbatchCode :response?.data.data.stock.BatchCode,
-          ExpiryDate :response?.data.data.stock.Expiry
+          sbatchCode: response?.data.data.stock.BatchCode,
+          ExpiryDate: response?.data.data.stock.Expiry,
         };
         const existingIndex = mainClDetails.findIndex(
           (item) => item.Barcode == response?.data.data.Barcode
@@ -892,7 +900,7 @@ const ContactLens = () => {
                           />
                           <button
                             onClick={() =>
-                              toggleEditMode(item.Barcode, index, "qty","save")
+                              toggleEditMode(item.Barcode, index, "qty", "save")
                             }
                             className="text-neutral-400 transition"
                             title="Save"
@@ -901,7 +909,12 @@ const ContactLens = () => {
                           </button>
                           <button
                             onClick={() =>
-                              toggleEditMode(item.Barcode, index, "qty","cancel")
+                              toggleEditMode(
+                                item.Barcode,
+                                index,
+                                "qty",
+                                "cancel"
+                              )
                             }
                             className="text-neutral-400 transition"
                             title="Cancel"

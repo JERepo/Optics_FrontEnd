@@ -379,7 +379,7 @@ const OpticalLens = () => {
       )
     );
   };
-  console.log("bar",barcodeData)
+  console.log("bar", barcodeData);
   const handleQtyChange = (barcode, qty, index) => {
     const newQty = Number(qty);
     const avlQty = Number(barcodeData[index].Quantity);
@@ -614,9 +614,9 @@ const OpticalLens = () => {
   };
   const handleInputChange = (eye, field, value) => {
     if (field === "transferQty") {
-     if(!(isValidNumericInput(value))){
-      return;
-     }
+      if (!isValidNumericInput(value)) {
+        return;
+      }
     }
 
     setFormValues((prev) => ({
@@ -624,7 +624,6 @@ const OpticalLens = () => {
       [eye]: { ...prev[eye], [field]: value },
     }));
   };
-  console.log("values",formValues)
   const handleGetDia = async () => {
     const isBothSelected = lensData.powerSingleORboth === 1;
     const isRSelected = isBothSelected || selectedEyes.includes("R");
@@ -717,7 +716,10 @@ const OpticalLens = () => {
             return prev;
           }
 
-          return [...prev, { ...res.data, tqty: parseInt(formValues[eye]?.transferQty) }];
+          return [
+            ...prev,
+            { ...res.data, tqty: parseInt(formValues[eye]?.transferQty) },
+          ];
         });
 
         setBarcode(""); // clear input after scan
@@ -760,7 +762,6 @@ const OpticalLens = () => {
   };
 
   const inputTableColumns = ["SPH", "CYLD", "Dia", "transferQty"];
-  console.log("batchde", barcodeData);
   return (
     <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-sm">
@@ -791,46 +792,47 @@ const OpticalLens = () => {
             </div>
           </div>
           <form onSubmit={handleBarcodeSubmit} className="space-y-2 mb-5">
-                       <div className="flex flex-col gap-3">
-                         <div className="flex items-center justify-between w-1/2 mb-3">
-                           <div className="flex items-center gap-5">
-                             <Radio
-                               value="0"
-                               onChange={() => setBarCodeOrProduct(0)}
-                               checked={barCodeOrproduct === 0}
-                               label="Stock lenses(By barcode)"
-                             />
-                             <Radio
-                               value="1"
-                               onChange={() => setBarCodeOrProduct(1)}
-                               checked={barCodeOrproduct === 1}
-                               label="Search Product"
-                             />
-                           </div>
-                         </div>
-                         {barCodeOrproduct === 0 && 
-                         <div className="flex gap-2">
-                           <div className="relative flex items-center">
-                             <input
-                               id="barcode"
-                               type="text"
-                               value={barcode}
-                               onChange={(e) => setBarcode(e.target.value)}
-                               placeholder="Scan or enter barcode"
-                               className="w-[400px] pl-10 pr-4 py-3 border border-gray-300 rounded-lg"
-                             />
-                             <FiSearch className="absolute left-3 text-gray-400" />
-                           </div>
-                           <Button
-                             type="submit"
-                             isLoading={isByBarcodeLoading}
-                             disabled={isByBarcodeLoading}
-                           >
-                             Add
-                           </Button>
-                         </div>}
-                       </div>
-                     </form>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between w-1/2 mb-3">
+                <div className="flex items-center gap-5">
+                  <Radio
+                    value="0"
+                    onChange={() => setBarCodeOrProduct(0)}
+                    checked={barCodeOrproduct === 0}
+                    label="Stock lenses(By barcode)"
+                  />
+                  <Radio
+                    value="1"
+                    onChange={() => setBarCodeOrProduct(1)}
+                    checked={barCodeOrproduct === 1}
+                    label="Search Product"
+                  />
+                </div>
+              </div>
+              {barCodeOrproduct === 0 && (
+                <div className="flex gap-2">
+                  <div className="relative flex items-center">
+                    <input
+                      id="barcode"
+                      type="text"
+                      value={barcode}
+                      onChange={(e) => setBarcode(e.target.value)}
+                      placeholder="Scan or enter barcode"
+                      className="w-[400px] pl-10 pr-4 py-3 border border-gray-300 rounded-lg"
+                    />
+                    <FiSearch className="absolute left-3 text-gray-400" />
+                  </div>
+                  <Button
+                    type="submit"
+                    isLoading={isByBarcodeLoading}
+                    disabled={isByBarcodeLoading}
+                  >
+                    Add
+                  </Button>
+                </div>
+              )}
+            </div>
+          </form>
           {barcodeData.length > 0 && barCodeOrproduct === 0 && (
             <Table
               columns={[
@@ -1215,9 +1217,6 @@ const OpticalLens = () => {
               <table className="w-full bg-white shadow rounded-lg mt-3 border-collapse">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="p-3 text-left text-gray-600 font-medium">
-                      Eye
-                    </th>
                     {inputTableColumns.map((col) => (
                       <th
                         key={col}
@@ -1229,77 +1228,58 @@ const OpticalLens = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {["R", "L"].map((eye) => (
-                    <tr key={eye} className="hover:bg-gray-50">
-                      <td className="p-3 font-medium text-gray-700 flex items-center gap-2">
-                        {eye}
-                        <input
-                          type="checkbox"
-                          checked={selectedEyes.includes(eye)}
-                          onChange={() => handleCheckboxChange(eye)}
-                          disabled={lensData.powerSingleORboth === 1}
-                          className="w-5 h-5 accent-blue-500 cursor-pointer"
-                        />
+                  <tr className="hover:bg-gray-50">
+                    {inputTableColumns.map((field) => (
+                      <td key={field} className="p-3 align-top">
+                        {field === "Dia" && isDiaFetched ? (
+                          <select
+                            className={`w-24 px-2 py-1 border rounded-md ${
+                              isFieldDisabled("R", field) 
+                                ? "bg-gray-100 border-gray-200 text-gray-400"
+                                : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            }`}
+                            value={formValues.R.Dia?.DiameterSize || ""} 
+                            onChange={(e) => {
+                              const selectedDia = diaOptions.find(
+                                (d) => d.DiameterSize === e.target.value
+                              );
+                              setFormValues((prev) => ({
+                                ...prev,
+                                R: {
+                                  ...prev.R,
+                                  Dia: selectedDia || null,
+                                  transferQty: selectedDia ? "1" : "",
+                                },
+                              }));
+                            }}
+                            disabled={isFieldDisabled("R", field)}
+                          >
+                            <option value="">Select</option>
+                            {diaOptions.map((d) => (
+                              <option key={d.Id} value={d.DiameterSize}>
+                                {d.DiameterSize}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type={field === "transferQty" ? "number" : "text"}
+                            min={field === "transferQty" ? "1" : undefined}
+                            value={formValues.R[field] || ""} // only from R, or unify
+                            onChange={(e) =>
+                              handleInputChange("R", field, e.target.value)
+                            }
+                            disabled={isFieldDisabled("R", field)}
+                            className={`w-24 px-2 py-1 border rounded-md ${
+                              isFieldDisabled("R", field)
+                                ? "bg-gray-100 border-gray-200 text-gray-400"
+                                : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            }`}
+                          />
+                        )}
                       </td>
-                      {inputTableColumns.map((field) => (
-                        <td key={field} className="p-3 align-top">
-                          {field === "Dia" &&
-                          isDiaFetched &&
-                          (lensData.powerSingleORboth === 1 ||
-                            selectedEyes.includes(eye)) ? (
-                            <select
-                              className={`w-24 px-2 py-1 border rounded-md ${
-                                isFieldDisabled(eye, field)
-                                  ? "bg-gray-100 border-gray-200 text-gray-400"
-                                  : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              }`}
-                              value={formValues[eye].Dia?.DiameterSize || ""}
-                              onChange={(e) => {
-                                const selectedDia = diaOptions.find(
-                                  (d) =>
-                                    d.side === eye &&
-                                    d.DiameterSize === e.target.value
-                                );
-                                setFormValues((prev) => ({
-                                  ...prev,
-                                  [eye]: {
-                                    ...prev[eye],
-                                    Dia: selectedDia || null,
-                                    transferQty: selectedDia ? "1" : "",
-                                  },
-                                }));
-                              }}
-                              disabled={isFieldDisabled(eye, field)}
-                            >
-                              <option value="">Select</option>
-                              {diaOptions
-                                .filter((d) => d.side === eye)
-                                .map((d) => (
-                                  <option key={d.Id} value={d.DiameterSize}>
-                                    {d.DiameterSize}
-                                  </option>
-                                ))}
-                            </select>
-                          ) : (
-                            <input
-                              type={field === "transferQty" ? "number" : "text"}
-                              min={field === "transferQty" ? "1" : undefined}
-                              value={formValues[eye][field] || ""}
-                              onChange={(e) =>
-                                handleInputChange(eye, field, e.target.value)
-                              }
-                              disabled={isFieldDisabled(eye, field)}
-                              className={`w-24 px-2 py-1 border rounded-md ${
-                                isFieldDisabled(eye, field)
-                                  ? "bg-gray-100 border-gray-200 text-gray-400"
-                                  : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              }`}
-                            />
-                          )}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
+                    ))}
+                  </tr>
                 </tbody>
               </table>
               <div className="mt-4 flex justify-end gap-4 items-center">

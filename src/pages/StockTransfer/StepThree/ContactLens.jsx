@@ -70,6 +70,8 @@ const getProductName = (order) => {
     sbatchCode,
     CLBatchBarCode,
     sbatchbarCode,
+    Spherical,
+    Cylindrical
   } = order;
 
   const clean = (val) => {
@@ -113,8 +115,8 @@ const getProductName = (order) => {
       });
     } else {
       specsObj = {
-        Sph: SphericalPower,
-        Cyld: CylindricalPower,
+        Sph: SphericalPower || Spherical,
+        Cyld: CylindricalPower || Cylindrical,
         Axis: Axis,
         Add: Additional,
       };
@@ -701,7 +703,6 @@ const ContactLens = () => {
       )
     );
   };
-  console.log(mainClDetails);
   const calculateStockGST = (item) => {
     if (!item) return { gstAmount: 0, slabNo: null, gstPercent: 0 };
 
@@ -812,10 +813,6 @@ const ContactLens = () => {
     "",
   ];
 
-  // if (newItem.CLDetailId && !searchFethed) {
-  //   inputTableColumns.push("Avl.Qty", "Order Qty", "Action");
-  // }
-  console.log(mainClDetails);
   return (
     <div className="max-w-8xl h-auto">
       <div className="bg-white rounded-xl shadow-sm p-2">
@@ -985,9 +982,10 @@ const ContactLens = () => {
                     <TableCell>
                       ₹
                       {formatINR(
-                        parseFloat(item.BuyingPrice) * item.stkQty +
+                        (parseFloat(item.BuyingPrice) * item.stkQty) +
                           calculateStockGST(item).gstAmount * item.stkQty
                       )}
+
                     </TableCell>
                     <TableCell>
                       <button

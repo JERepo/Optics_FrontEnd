@@ -93,7 +93,7 @@ const getProductName = (item) => {
 
     const lines = [
       ProductName || productName,
-      specs ? `Power: ${specs}` : "",
+      specs ? `${specs}` : "",
       clean(colour) ? `Colour: ${clean(colour)}` : "",
       barcode ? `Barcode: ${barcode}` : "",
       clean(batchCode) ? `BatchCode: ${batchCode}` : "",
@@ -155,7 +155,7 @@ const getProductName = (item) => {
           `${brandName} ${productName}`
       ),
       specsLines,
-      clean(colour) && `Color: ${colour}`,
+      // clean(colour) && `Color: ${colour}`,
       clean(barcode) && `Barcode: ${barcode}`,
       clean(hsncode || HSN) && `HSN: ${hsncode || HSN}`,
       tintName ? `Tint: ${tintName}` : "",
