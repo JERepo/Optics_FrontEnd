@@ -50,28 +50,10 @@ const productTypes = [
 ];
 
 const getProductName = (item) => {
-  const {
-    typeid,
-    ProductName,
-    Size,
-    Barcode,
-    PatientName,
-    PowerSpecs,
-    Variation,
-    Specs,
-    Colour,
-    Category,
-    Tint,
-    AddOns,
-    FittingPrice,
-    productName,
-    barcode,
-    ProductType,
-    hsncode,
-    colour,
-    brandName,
-  } = item;
 
+  const detail = Array.isArray(item.ProductDetails)
+    ? item.ProductDetails[0]
+    : item.ProductDetails;
   const clean = (val) => {
     if (
       val === null ||
@@ -91,91 +73,50 @@ const getProductName = (item) => {
     return num > 0 ? `+${val}` : val;
   };
 
-  // For Frame (typeid = 1)
-  if (ProductType === 1) {
-    const lines = [
-      productName,
-      Size ? `Size: ${Size.Size}` : "",
-      Category === 0 ? "Category: Optical Frame" : "Category: Sunglasses",
-      barcode ? `Barcode: ${barcode}` : "",
-      clean(hsncode) ? `HSN: ${hsncode}` : "",
-    ];
-    return lines.filter(Boolean).join("\n");
-  }
-
-  // For Accessories (ProductType = 2)
-  if (ProductType === 2) {
-    const lines = [
-      ProductName || productName,
-      Variation ? `Variation: ${Variation.Variation}` : "",
-      barcode ? `Barcode: ${barcode}` : "",
-      clean(hsncode) ? `HSN: ${hsncode}` : "",
-    ];
-    return lines.filter(Boolean).join("\n");
-  }
-
-  // For Contact Lens (ProductType = 3)
-  if (ProductType === 3) {
-    const specs = PowerSpecs
-      ? [
-          PowerSpecs.Sph ? `Sph: ${clean(PowerSpecs.Sph)}` : "",
-          PowerSpecs.Cyl ? `Cyl: ${clean(PowerSpecs.Cyl)}` : "",
-          PowerSpecs.Axis ? `Axis: ${clean(PowerSpecs.Axis)}` : "",
-          PowerSpecs.Add ? `Add: ${clean(PowerSpecs.Add)}` : "",
-        ]
-          .filter(Boolean)
-          .join(", ")
-      : "";
-
-    const lines = [
-      ProductName || productName,
-      specs ? `Power: ${specs}` : "",
-      clean(colour) ? `Colour: ${clean(colour)}` : "",
-      barcode ? `Barcode: ${barcode}` : "",
-      clean(hsncode) ? `HSN: ${hsncode}` : "",
-    ];
-
-    return lines.filter(Boolean).join("\n");
-  }
-
   // For Optical Lens (ProductType = 0)
-  if (ProductType === 0) {
-    const tintName = clean(Tint?.name) || "";
-    const addOns = AddOns?.map((a) => clean(a.name)).filter(Boolean) || [];
+  if (detail.ProductType === 0 || true) {
+    // const tintName = clean(Tint?.name) || "";
+    // const addOns = AddOns?.map((a) => clean(a.name)).filter(Boolean) || [];
+    const productName = clean(detail.productName);
+    const hsn = clean(detail.HSN);
 
-    const specsLines = (Array.isArray(Specs) ? Specs : [{ ...Specs }])
-      .map((spec) => {
-        const side = clean(spec?.side);
-        const sph = clean(spec?.sph || spec.Spherical);
-        const cyl = clean(spec?.cyl || spec.Cylinder);
-        const dia = clean(spec.Diameter);
-        const axis = clean(spec?.axis);
-        const addition = clean(spec?.addition);
+    let specsObj = {};
+    if (typeof detail.Specs === "string") {
+      detail.Specs.split(",").forEach((pair) => {
+        let [key, value] = pair.split(":").map((s) => s.trim());
+        if (value === "null") value = null;
+        specsObj[key] = value;
+      });
+    } else {
+      specsObj = {
+        Sph: detail.Specs.Spherical || detail?.Spherical,
+        Cyld: detail.Specs.Cylinder || detail?.Cylinder,
+        Axis: null,
+        Dia: detail.Specs.Diameter || detail?.Diameter,
+        Add: null,
+      };
+    }
 
-        const powerValues = [];
-        if (sph) powerValues.push(`SPH ${formatPowerValue(sph)}`);
-        if (cyl) powerValues.push(`CYL ${formatPowerValue(cyl)}`);
-        if (dia) powerValues.push(`Dia ${formatPowerValue(dia)}`);
-        if (axis) powerValues.push(`Axis ${formatPowerValue(axis)}`);
-        if (addition) powerValues.push(`Add ${formatPowerValue(addition)}`);
+    const sph = formatPowerValue(specsObj.Sph);
+    const cyld = formatPowerValue(specsObj.Cyld);
+    const addl = formatPowerValue(specsObj.Add);
+    const dia = formatPowerValue(specsObj.Dia);
 
-        return powerValues.join(", ");
-      })
+    const specsList = [
+      sph && `SPH: ${sph}`,
+      cyld && `CYL: ${cyld}`,
+      dia && `Axis: ${dia}`,
+      addl && `Add: ${addl}`,
+    ]
       .filter(Boolean)
-      .join("\n");
-
+      .join(", ");
     const lines = [
-      clean(
-        (ProductName || productName) &&
-          brandName &&
-          `${brandName} ${productName}`
-      ),
-      specsLines,
-      clean(barcode) && `Color: ${colour}`,
-      clean(hsncode) && `HSN: ${hsncode}`,
-      tintName ? `Tint: ${tintName}` : "",
-      addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
-      clean(FittingPrice) ? `Fitting Price: ${FittingPrice}` : "",
+      productName && productName,
+      specsList,
+      hsn && `HSN: ${hsn}`,
+      // tintName ? `Tint: ${tintName}` : "",
+      // addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
+      // clean(FittingPrice) ? `Fitting Price: ${FittingPrice}` : "",
     ];
 
     return lines.filter(Boolean).join("\n");
@@ -318,7 +259,7 @@ const OpticalLens = () => {
       }
     );
 
-  const [getOLByBarcode, { data: BarcodeData, isLoading: isByBarcodeLoading }] =
+  const [getOLByBarcode, { data: BarcodeData, isLoading: isByBarcodeLoading ,isFetching:isBarcodeFetching}] =
     useLazyGetOLByBarcodeQuery();
   const [saveStockTransfer, { isLoading: isStockTransferLoading }] =
     useSaveSTIMutation();
@@ -693,7 +634,6 @@ const OpticalLens = () => {
       Id: null,
     },
   });
-  console.log(selectedEyes);
   const [getDIADetails, { isLoading: isDiaLoading }] =
     useGetDIaDetailsMutation();
   const [getPowerByOl, { isLoading: isPowerDetailsLoading }] =
@@ -864,7 +804,15 @@ const OpticalLens = () => {
       }
 
       const res = await getPowerByOl({ payload }).unwrap();
+      if (res?.data.Quantity <= 0) {
+        toast.error("Stock Quantity must be greater than 0!");
+        return;
+      }
 
+      if (parseInt(formValues["R"].transferQty) > res?.data.Quantity) {
+        toast.error("Stock Quantity cannot exceed the available Quantity!");
+        return;
+      }
       // Check if product exists in StockTransferOut
       const STOProduct = stockOutData?.data.details.find(
         (item) => item.OpticalLensDetailId === res?.data.OpticalLensDetailId
@@ -890,7 +838,7 @@ const OpticalLens = () => {
         setBarcodeData((prev) => {
           return [
             ...prev,
-            { ...res.data, ...STOProduct, tiq: 1, STQtyIn: currentSTQtyIn + 1 },
+            { ...res.data, ...STOProduct, tiq: parseInt(formValues[eye]?.transferQty), STQtyIn: currentSTQtyIn + 1 },
           ];
         });
 
@@ -909,7 +857,6 @@ const OpticalLens = () => {
       console.warn("No details to save");
       return;
     }
-    console.log("bar",barcodeData)
     try {
       const payload = {
         STInMainId: stockTransferInDraftData.ID,
@@ -927,7 +874,6 @@ const OpticalLens = () => {
           };
         }),
       };
-      console.log(payload);
       await saveStockTransfer({ payload }).unwrap();
       toast.success("Optical Lens transferin successfully added");
       goToStockTransferInStep(4);
@@ -1002,8 +948,8 @@ const OpticalLens = () => {
                   </div>
                   <Button
                     type="submit"
-                    isLoading={isByBarcodeLoading}
-                    disabled={isByBarcodeLoading}
+                    isLoading={isByBarcodeLoading || isBarcodeFetching}
+                    disabled={isByBarcodeLoading || isBarcodeFetching}
                   >
                     Add
                   </Button>
@@ -1030,7 +976,9 @@ const OpticalLens = () => {
                 <TableRow key={index}>
                   <TableCell>{index + 1}</TableCell>
                   <TableCell>OL</TableCell>
-                  <TableCell className="whitespace-pre-wrap">{getProductName(item)}</TableCell>
+                  <TableCell className="whitespace-pre-wrap">
+                    {getProductName(item)}
+                  </TableCell>
                   <TableCell>
                     {editMode[`${item.Barcode}-${index}`]?.BuyingPrice ? (
                       <div className="flex items-center gap-2">
@@ -1410,9 +1358,6 @@ const OpticalLens = () => {
               <table className="w-full bg-white shadow rounded-lg mt-3 border-collapse">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="p-3 text-left text-gray-600 font-medium">
-                      Eye
-                    </th>
                     {inputTableColumns.map((col) => (
                       <th
                         key={col}
@@ -1424,77 +1369,58 @@ const OpticalLens = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {["R", "L"].map((eye) => (
-                    <tr key={eye} className="hover:bg-gray-50">
-                      <td className="p-3 font-medium text-gray-700 flex items-center gap-2">
-                        {eye}
-                        <input
-                          type="checkbox"
-                          checked={selectedEyes.includes(eye)}
-                          onChange={() => handleCheckboxChange(eye)}
-                          disabled={lensData.powerSingleORboth === 1}
-                          className="w-5 h-5 accent-blue-500 cursor-pointer"
-                        />
+                  <tr className="hover:bg-gray-50">
+                    {inputTableColumns.map((field) => (
+                      <td key={field} className="p-3 align-top">
+                        {field === "Dia" && isDiaFetched ? (
+                          <select
+                            className={`w-24 px-2 py-1 border rounded-md ${
+                              isFieldDisabled("R", field)
+                                ? "bg-gray-100 border-gray-200 text-gray-400"
+                                : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            }`}
+                            value={formValues.R.Dia?.DiameterSize || ""}
+                            onChange={(e) => {
+                              const selectedDia = diaOptions.find(
+                                (d) => d.DiameterSize === e.target.value
+                              );
+                              setFormValues((prev) => ({
+                                ...prev,
+                                R: {
+                                  ...prev.R,
+                                  Dia: selectedDia || null,
+                                  transferQty: selectedDia ? "1" : "",
+                                },
+                              }));
+                            }}
+                            disabled={isFieldDisabled("R", field)}
+                          >
+                            <option value="">Select</option>
+                            {diaOptions.map((d) => (
+                              <option key={d.Id} value={d.DiameterSize}>
+                                {d.DiameterSize}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type={field === "transferQty" ? "number" : "text"}
+                            min={field === "transferQty" ? "1" : undefined}
+                            value={formValues.R[field] || ""} // only from R, or unify
+                            onChange={(e) =>
+                              handleInputChange("R", field, e.target.value)
+                            }
+                            disabled={isFieldDisabled("R", field)}
+                            className={`w-24 px-2 py-1 border rounded-md ${
+                              isFieldDisabled("R", field)
+                                ? "bg-gray-100 border-gray-200 text-gray-400"
+                                : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            }`}
+                          />
+                        )}
                       </td>
-                      {inputTableColumns.map((field) => (
-                        <td key={field} className="p-3 align-top">
-                          {field === "Dia" &&
-                          isDiaFetched &&
-                          (lensData.powerSingleORboth === 1 ||
-                            selectedEyes.includes(eye)) ? (
-                            <select
-                              className={`w-24 px-2 py-1 border rounded-md ${
-                                isFieldDisabled(eye, field)
-                                  ? "bg-gray-100 border-gray-200 text-gray-400"
-                                  : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              }`}
-                              value={formValues[eye].Dia?.DiameterSize || ""}
-                              onChange={(e) => {
-                                const selectedDia = diaOptions.find(
-                                  (d) =>
-                                    d.side === eye &&
-                                    d.DiameterSize === e.target.value
-                                );
-                                setFormValues((prev) => ({
-                                  ...prev,
-                                  [eye]: {
-                                    ...prev[eye],
-                                    Dia: selectedDia || null,
-                                    transferQty: selectedDia ? "1" : "",
-                                  },
-                                }));
-                              }}
-                              disabled={isFieldDisabled(eye, field)}
-                            >
-                              <option value="">Select</option>
-                              {diaOptions
-                                .filter((d) => d.side === eye)
-                                .map((d) => (
-                                  <option key={d.Id} value={d.DiameterSize}>
-                                    {d.DiameterSize}
-                                  </option>
-                                ))}
-                            </select>
-                          ) : (
-                            <input
-                              type={field === "transferQty" ? "number" : "text"}
-                              min={field === "transferQty" ? "1" : undefined}
-                              value={formValues[eye][field] || ""}
-                              onChange={(e) =>
-                                handleInputChange(eye, field, e.target.value)
-                              }
-                              disabled={isFieldDisabled(eye, field)}
-                              className={`w-24 px-2 py-1 border rounded-md ${
-                                isFieldDisabled(eye, field)
-                                  ? "bg-gray-100 border-gray-200 text-gray-400"
-                                  : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              }`}
-                            />
-                          )}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
+                    ))}
+                  </tr>
                 </tbody>
               </table>
               <div className="mt-4 flex justify-end gap-4 items-center">
@@ -1533,7 +1459,9 @@ const OpticalLens = () => {
                 <TableRow key={index}>
                   <TableCell>{index + 1}</TableCell>
                   <TableCell>OL</TableCell>
-                  <TableCell className="whitespace-pre-wrap">{getProductName(item)}</TableCell>
+                  <TableCell className="whitespace-pre-wrap">
+                    {getProductName(item)}
+                  </TableCell>
                   <TableCell>
                     {editMode[`${item.Barcode}-${index}`]?.BuyingPrice ? (
                       <div className="flex items-center gap-2">
@@ -1708,8 +1636,7 @@ const OpticalLens = () => {
                       barcodeData.reduce((sum, item) => {
                         const { gstPercent } = calculateStockGST(item);
                         const baseAmount =
-                          (parseFloat(item.BuyingPrice) || 0) *
-                          (item.tiq || 0);
+                          (parseFloat(item.BuyingPrice) || 0) * (item.tiq || 0);
                         const gstAmount = baseAmount * (gstPercent / 100);
                         return sum + (baseAmount + gstAmount);
                       }, 0)

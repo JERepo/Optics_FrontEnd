@@ -78,6 +78,8 @@ const getProductName = (data) => {
 
   // For Contact Lens (ProductType = 3)
   if (ProductType === 3) {
+    const batchcode = item?.Stock[0]?.BatchCode ?? null;
+    const expiry = item?.Stock[0]?.Expiry ?? null;
     const specs = PowerSpecs
       ? [
           PowerSpecs.Sph ? `Sph: ${clean(PowerSpecs.Sph)}` : "",
@@ -93,9 +95,9 @@ const getProductName = (data) => {
       ProductName || productName,
       specs ? `${specs}` : "",
       clean(colour) ? `Colour: ${clean(colour)}` : "",
-
       barcode ? `Barcode: ${barcode}` : "",
-      clean(item.BatchCode) ? `BatchCode: ${item.BatchCode}` : "",
+      clean(batchcode) ? `BatchCode: ${batchcode}` : "",
+      clean(expiry) && `Expiry: ${expiry.split("-").reverse().join("/")}`,
       clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
 
@@ -129,17 +131,12 @@ const getProductName = (data) => {
       .join("\n");
 
     const lines = [
-      clean(
-        (ProductName || productName) &&
-          brandName &&
-          `${brandName} ${productName}`
-      ),
+      clean((ProductName || productName) && `${productName || ProductName}`),
       specsLines,
-      clean(barcode) && `Color: ${colour}`,
-      clean(hsncode || HSN) && `HSN: ${hsncode || HSN}`,
       tintName ? `Tint: ${tintName}` : "",
       addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
       clean(FittingPrice) ? `Fitting Price: ${FittingPrice}` : "",
+      clean(hsncode || HSN) && `HSN: ${hsncode || HSN}`,
     ];
 
     return lines.filter(Boolean).join("\n");
@@ -317,7 +314,8 @@ const StockTransferInView = () => {
                   {formatINR(
                     getStockOutPrice(item) * item.STQtyIn +
                       getStockOutPrice(item) *
-                        (parseFloat(item.ProductTaxPercentage) / 100)
+                        (parseFloat(item.ProductTaxPercentage) / 100) *
+                        item.STQtyIn
                   )}
                 </TableCell>
               </TableRow>
@@ -342,8 +340,7 @@ const StockTransferInView = () => {
                   Total GST
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
-                  ₹
-                  {formattedTotals.totalGST}
+                  ₹{formattedTotals.totalGST}
                 </span>
               </div>
               <div className="flex flex-col">
@@ -351,8 +348,7 @@ const StockTransferInView = () => {
                   Total Amount
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
-                  ₹
-                 {formattedTotals.totalReturnValue}
+                  ₹{formattedTotals.totalReturnValue}
                 </span>
               </div>
             </div>
