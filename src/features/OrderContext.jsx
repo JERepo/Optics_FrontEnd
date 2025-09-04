@@ -390,6 +390,9 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
   const setSubStockTransferInStep = (step) => {
     setCurrentStockTransferInSubStep(step);
   };
+   const updateCurrentSTINStep = (step) => {
+    setCurrentStockTransferInStep(step)
+  }
 
   return (
     <OrderContext.Provider
@@ -519,6 +522,7 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
         setCustomerStockTransferIn,
         selectedStockTransferInPatient,
         setSelectedStockTransferInPatient,
+        updateCurrentSTINStep
       }}
     >
       {children}

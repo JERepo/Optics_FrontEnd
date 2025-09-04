@@ -81,7 +81,9 @@ const getProductName = (item) => {
 
   // For Contact Lens (type = 3)
   if (type === 3) {
-    const expiry = clean(ExpiryDate);
+    const batchCode = detail?.Stock[0]?.BatchCode ?? "";
+
+    const expiry = clean(detail?.Stock[0]?.Expiry) ?? "";
 
     const specs = PowerSpecs
       ? [
@@ -96,54 +98,12 @@ const getProductName = (item) => {
 
     const lines = [
       ProductName || productName,
-      specs ? `Power: ${specs}` : "",
+      specs ? `${specs}` : "",
       clean(colour) ? `Colour: ${clean(colour)}` : "",
       barcode ? `Barcode: ${barcode}` : "",
-      clean(detail.BatchCode) ? `BatchCode: ${detail.BatchCode}` : "",
+      clean(batchCode) ? `BatchCode: ${batchCode}` : "",
+      expiry && `Expiry: ${expiry.split("-").reverse().join("/")}`,
       clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
-    ];
-
-    return lines.filter(Boolean).join("\n");
-  }
-
-  // For Optical Lens (type = 0)
-  if (type === 0) {
-    const tintName = clean(Tint?.name) || "";
-    const addOns = AddOns?.map((a) => clean(a.name)).filter(Boolean) || [];
-
-    const specsLines = (Array.isArray(Specs) ? Specs : [{ ...Specs }])
-      .map((spec) => {
-        const side = clean(spec?.side);
-        const sph = clean(spec?.sph || spec.Spherical);
-        const cyl = clean(spec?.cyl || spec.Cylinder);
-        const dia = clean(spec.Diameter);
-        const axis = clean(spec?.axis);
-        const addition = clean(spec?.addition);
-
-        const powerValues = [];
-        if (sph) powerValues.push(`SPH ${formatPowerValue(sph)}`);
-        if (cyl) powerValues.push(`CYL ${formatPowerValue(cyl)}`);
-        if (dia) powerValues.push(`Dia ${formatPowerValue(dia)}`);
-        if (axis) powerValues.push(`Axis ${formatPowerValue(axis)}`);
-        if (addition) powerValues.push(`Add ${formatPowerValue(addition)}`);
-
-        return powerValues.join(", ");
-      })
-      .filter(Boolean)
-      .join("\n");
-
-    const lines = [
-      clean(
-        (ProductName || productName) &&
-          brandName &&
-          `${brandName} ${productName}`
-      ),
-      specsLines,
-      clean(barcode) && `Color: ${colour}`,
-      clean(hsncode || HSN) && `HSN: ${hsncode || HSN}`,
-      tintName ? `Tint: ${tintName}` : "",
-      addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
-      clean(FittingPrice) ? `Fitting Price: ${FittingPrice}` : "",
     ];
 
     return lines.filter(Boolean).join("\n");
@@ -154,7 +114,7 @@ const getProductName = (item) => {
 
 const getStockOutPrice = (item) => {
   if (item.ProductType === 3) {
-    if (item.ProductDetails.CLBatchCode === 1) {
+    if (item.ProductDetails.CLBatchCode === 0) {
       return parseFloat(item.ProductDetails.price?.MRP || 0);
     }
 
@@ -300,7 +260,7 @@ const PurchaseReturnView = () => {
               "product details",
               "srp",
               "return qty",
-              "return product price",
+              "return price",
               "gst/unit",
               "total price",
             ]}

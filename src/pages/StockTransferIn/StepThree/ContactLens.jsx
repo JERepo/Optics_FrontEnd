@@ -73,6 +73,8 @@ const getProductName = (order) => {
     sbatchCode,
     CLBatchBarCode,
     sbatchbarCode,
+    Spherical,
+    Cylindrical,
   } = order;
 
   const clean = (val) => {
@@ -116,8 +118,8 @@ const getProductName = (order) => {
       });
     } else {
       specsObj = {
-        Sph: SphericalPower,
-        Cyld: CylindricalPower,
+        Sph: SphericalPower || Spherical,
+        Cyld: CylindricalPower || Cylindrical,
         Axis: Axis,
         Add: Additional,
       };
@@ -371,7 +373,7 @@ const ContactLens = () => {
             return;
           }
         } else if (data.CLBatchCode === 0) {
-          if (data.AvlQty <= 0 || data.Quantity <= 0) {
+          if (data.stock[0]?.quantity <= 0) {
             toast.error("Stock quantity must be greater than 0!");
             return;
           }
@@ -393,6 +395,9 @@ const ContactLens = () => {
             ...data,
             ...STOProduct,
             tiq: 1,
+            BuyingPrice: parseFloat(data?.priceMaster.buyingPrice),
+            sbatchCode: data.stock[0]?.batchCode,
+            ExpiryDate: data.stock[0]?.CLBatchExpiry,
           };
           const existingIndex = mainClDetails.findIndex(
             (item) => item.Barcode == data.Barcode
@@ -530,11 +535,12 @@ const ContactLens = () => {
         const newItemCl = {
           sbatchbarCode: isAvailable.CLBatchBarCode,
           sMRP: isAvailable.CLMRP,
-          ExpiryDate: isAvailable.CLBatchExpiry,
+          ExpiryDate: isAvailable.ExpiryDate,
 
           ...newItem.powerData,
           ...STOProduct,
           selectBatch,
+          BuyingPrice: parseFloat(isAvailable.BuyingPrice),
           tiq: 1,
           ...(detailId ? batchBarCodeDetails?.data?.data : {}),
         };
@@ -679,7 +685,7 @@ const ContactLens = () => {
         ...newItem.powerData,
         sbatchCode: selectedBatchCode.CLBatchCode,
         sMRP: selectedBatchCode.CLMRP,
-        ExpiryDate: selectedBatchCode.CLBatchExpiry,
+        ExpiryDate: selectedBatchCode.ExpiryDate,
 
         ...STOProduct,
         tiq: 1,
@@ -703,7 +709,7 @@ const ContactLens = () => {
         ...batchBarCodeDetails?.data.data,
         sbatchCode: selectedBatchCode.CLBatchCode,
         sMRP: selectedBatchCode.CLMRP,
-        ExpiryDate: selectedBatchCode.CLBatchExpiry,
+        ExpiryDate: selectedBatchCode.ExpiryDate,
 
         ...STOProduct,
         tiq: 1,

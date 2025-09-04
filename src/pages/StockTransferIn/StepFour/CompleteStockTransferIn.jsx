@@ -38,7 +38,7 @@ const getProductName = (data) => {
     colour,
     brandName,
     HSN,
-    BatchCode
+    BatchCode,
   } = item;
 
   const clean = (val) => {
@@ -85,6 +85,8 @@ const getProductName = (data) => {
 
   // For Contact Lens (ProductType = 3)
   if (ProductType === 3) {
+    const batchcode = item?.Stock[0]?.BatchCode ?? null;
+    const expiry = item?.Stock[0]?.Expiry ?? null;
     const specs = PowerSpecs
       ? [
           PowerSpecs.Sph ? `Sph: ${clean(PowerSpecs.Sph)}` : "",
@@ -97,12 +99,12 @@ const getProductName = (data) => {
       : "";
 
     const lines = [
-      ProductName || productName,
+      productName,
       specs ? `${specs}` : "",
       clean(colour) ? `Colour: ${clean(colour)}` : "",
-
       barcode ? `Barcode: ${barcode}` : "",
-      clean(item.BatchCode) ? `BatchCode: ${item.BatchCode}` : "",
+      clean(batchcode) ? `BatchCode: ${batchcode}` : "",
+      clean(expiry) && `Expiry: ${expiry.split("-").reverse().join("/")}`,
       clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
 
@@ -136,17 +138,12 @@ const getProductName = (data) => {
       .join("\n");
 
     const lines = [
-      clean(
-        (ProductName || productName) &&
-          brandName &&
-          `${brandName} ${productName}`
-      ),
+      clean((ProductName || productName) && `${productName}`),
       specsLines,
-      clean(barcode) && `Color: ${colour}`,
-      clean(hsncode || HSN) && `HSN: ${hsncode || HSN}`,
       tintName ? `Tint: ${tintName}` : "",
       addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
       clean(FittingPrice) ? `Fitting Price: ${FittingPrice}` : "",
+      clean(hsncode || HSN) && `HSN: ${hsncode || HSN}`,
     ];
 
     return lines.filter(Boolean).join("\n");
@@ -194,7 +191,7 @@ const getStockOutPrice = (data) => {
       return parseFloat(item.price?.BuyingPrice || 0);
     } else if (item.CLBatchCode === 1) {
       if (Array.isArray(item.Stock)) {
-        return item.Stock[0].BuyingPrice || 0
+        return item.Stock[0].BuyingPrice || 0;
       } else if (item.Stock && typeof item.Stock === "object") {
         return parseFloat(item.Stock.BuyingPrice || 0);
       }
@@ -202,8 +199,8 @@ const getStockOutPrice = (data) => {
 
     return parseFloat(item.Stock?.BuyingPrice || 0);
   }
-  return 0
-}
+  return 0;
+};
 
 const CompleteStockTransferIn = () => {
   const { user } = useSelector((state) => state.auth);
@@ -218,6 +215,7 @@ const CompleteStockTransferIn = () => {
     goToStockTransferInStep,
     prevStockTransferInStep,
     selectedStockTransferInProduct,
+    updateCurrentSTINStep
   } = useOrder();
 
   const { data: stockDetails, isLoading: isStockDetailsLoading } =
@@ -234,13 +232,14 @@ const CompleteStockTransferIn = () => {
     try {
       const payload = {
         STInMainId: stockTransferInDraftData.ID ?? null,
-          ApplicationUserID:user.Id,
+        ApplicationUserID: user.Id,
         companyId: customerStockTransferIn.locationId,
         Comment: comment,
         delete: [id],
       };
       await updateStockTI({ payload }).unwrap();
       toast.success("Deleted successfully");
+      updateCurrentSTINStep(1)
     } catch (error) {
       toast.error(error?.data.error.message);
     }
@@ -249,14 +248,14 @@ const CompleteStockTransferIn = () => {
   const totals = (stockDetails?.data?.StockTransferInDetails || []).reduce(
     (acc, item) => {
       const qty = item.STQtyIn || 0;
-      const unitPrice = getStockOutPrice(item)
-      const gstRate = parseFloat(item.ProductTaxPercentage) / 100
+      const unitPrice = getStockOutPrice(item);
+      const gstRate = parseFloat(item.ProductTaxPercentage) / 100;
 
-     const basicValue  = unitPrice * qty;
-      const gst = unitPrice * qty * gstRate
+      const basicValue = unitPrice * qty;
+      const gst = unitPrice * qty * gstRate;
       const returnTotal = basicValue + gst;
 
-       acc.totalQty += qty;
+      acc.totalQty += qty;
       acc.totalGST += gst;
       acc.totalBasicValue += basicValue;
       acc.totalReturnValue += returnTotal;
@@ -272,7 +271,7 @@ const CompleteStockTransferIn = () => {
     totalBasicValue: formatINR(totals.totalBasicValue),
     totalReturnValue: formatINR(totals.totalReturnValue),
   };
-  console.log("d",stockTransferInDraftData)
+  console.log("d", stockTransferInDraftData);
   const handleSaveStockTransferOut = async () => {
     try {
       const payload = {
@@ -324,7 +323,7 @@ const CompleteStockTransferIn = () => {
             columns={[
               "s.no",
               "type",
-              "product name",
+              "product details",
               "transfer price",
               "transfer out qty",
               "transfer in qty",
@@ -355,10 +354,16 @@ const CompleteStockTransferIn = () => {
 
                 <TableCell>
                   ₹
-                  {formatINR(
+                  {/* {formatINR(
                     getStockOutPrice(item) * item.STQtyIn +
                       getStockOutPrice(item) *
                         (parseFloat(item.ProductTaxPercentage) / 100)
+                  )} */}
+                  {formatINR(
+                    getStockOutPrice(item) * item.STQtyIn +
+                      getStockOutPrice(item) *
+                        (parseFloat(item.ProductTaxPercentage) / 100) *
+                        item.STQtyIn
                   )}
                 </TableCell>
                 <TableCell>

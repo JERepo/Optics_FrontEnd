@@ -47,7 +47,7 @@ const getProductDetailsText = (order) => {
     brandName,
     size,
     category,
-    variationName
+    variationName,
   } = order;
 
   const clean = (val) => {
@@ -81,7 +81,7 @@ const getProductDetailsText = (order) => {
 
   return [
     brand && name ? `${brand} - ${name}` : brand || name,
-    
+
     sizeVal && `Size: ${sizeVal}`,
     variationName && `Variation: ${variationName}`,
     getCategoryName(category) && `Category: ${getCategoryName(category)}`,
@@ -222,33 +222,18 @@ const AccessoryFrame = () => {
 
       const data = res?.data?.data;
 
-      if (referenceApplicable === 0) {
-        if (data && data.length > 0) {
-          setSearchResults(data);
-          setBrandInput("");
-          setBrandId(null);
-          setModelNo("");
-          setSearchMode(false);
-        } else {
-          toast.error(res?.data?.message || "No matching models found");
-          setBrandInput("");
-          setBrandId(null);
-          setModelNo("");
-          setSearchMode(false);
-        }
+      if (data && data.length > 0) {
+        setSearchResults(data);
+        setBrandInput("");
+        setBrandId(null);
+        setModelNo("");
+        setSearchMode(false);
       } else {
-        try {
-          await getInvoiceDetails({
-            productType: 2,
-            detailId: data.Id,
-            batchCode: null,
-            patientId: customerSalesId.patientId,
-            locationId: customerSalesId.locationId,
-          }).unwrap();
-          setOpenReferenceYes(true);
-        } catch (error) {
-          toast.error("No eligible Invoice exists for the given product");
-        }
+        toast.error(res?.data?.message || "No matching Products found");
+        setBrandInput("");
+        setBrandId(null);
+        setModelNo("");
+        setSearchMode(false);
       }
     } catch (err) {
       const msg = err?.data?.message || err?.error || "Failed to fetch models";
@@ -272,14 +257,48 @@ const AccessoryFrame = () => {
     setEditMode({});
   };
 
-  const handleCheckboxChange = (item) => {
-    const exists = selectedRows.find((i) => i.Barcode === item.Barcode);
-    if (exists) {
-      setSelectedRows((prev) => prev.filter((i) => i.Barcode !== item.Barcode));
-    } else {
-      setSelectedRows((prev) => [...prev, item]);
-    }
-  };
+  // const handleCheckboxChange = (item) => {
+  //   const exists = selectedRows.find((i) => i.Barcode === item.Barcode);
+
+  //   if (exists) {
+  //     setSelectedRows((prev) => prev.filter((i) => i.Barcode !== item.Barcode));
+  //   } else {
+  //     setSelectedRows((prev) => [...prev, item]);
+  //   }
+  // };
+
+    const handleCheckboxChange = async (item) => {
+      const exists = selectedRows.find((i) => i.Barcode === item.Barcode);
+      if (referenceApplicable === 0) {
+        if (exists) {
+          setSelectedRows((prev) =>
+            prev.filter((i) => i.Barcode !== item.Barcode)
+          );
+        } else {
+          setSelectedRows((prev) => [...prev, item]);
+        }
+      } else if (referenceApplicable === 1) {
+        // if (exists) {
+        //   setSelectedRows((prev) =>
+        //     prev.filter((i) => i.Barcode !== item.Barcode)
+        //   );
+        // } else {
+        //   setSelectedRows((prev) => [...prev, item]);
+        // }
+        try {
+          await getInvoiceDetails({
+            productType: 2,
+            detailId: item.Id,
+            batchCode: null,
+            patientId: customerSalesId.patientId,
+            locationId: customerSalesId.locationId,
+          }).unwrap();
+          setOpenReferenceYes(true);
+        } catch (error) {
+          toast.error("No eligible Invoice exists for the given product");
+        }
+      }
+    };
 
   const handleAddSelectedItems = () => {
     setItems((prev) => {
@@ -494,7 +513,7 @@ const AccessoryFrame = () => {
     setSelectedInvoiceReturnQty(0);
     setSelectedInvoice(null);
   };
-console.log("items",items)
+  console.log("items", items);
   const handleSaveData = async () => {
     if (referenceApplicable === 0) {
       if (!Array.isArray(items) || items.length === 0) {
@@ -791,9 +810,7 @@ console.log("items",items)
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <span className="text-gray-700">
-                              ₹{item.SellingPrice || "N/A"}
-                            </span>
+                            ₹{item.SellingPrice || "N/A"}
                             <button
                               onClick={() =>
                                 toggleEditMode(
@@ -847,9 +864,7 @@ console.log("items",items)
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <span className="text-gray-700">
                               {item.Quantity}
-                            </span>
                             <button
                               onClick={() =>
                                 toggleEditMode(item.Barcode, index, "qty")
@@ -960,8 +975,7 @@ console.log("items",items)
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                       
-                         ₹{formatINR(parseFloat(item.ReturnPricePerUnit || 0))}
+                        ₹{formatINR(parseFloat(item.ReturnPricePerUnit || 0))}
                         <button
                           onClick={() =>
                             toggleEditMode(item.Id, index, "returnPrice")
@@ -983,9 +997,7 @@ console.log("items",items)
                       ).gstAmount
                     )}
                   </TableCell>
-                  <TableCell className="">
-                    {item.ReturnQty || 0}
-                  </TableCell>
+                  <TableCell className="">{item.ReturnQty || 0}</TableCell>
                   <TableCell className="">
                     ₹{formatINR(parseFloat(item.TotalAmount || 0))}
                   </TableCell>
@@ -1057,7 +1069,7 @@ console.log("items",items)
                       </TableCell>
                       <TableCell>
                         <button
-                        className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                           onClick={() => {
                             setSelectedInvoice(item);
                             setIsInvoiceSelected(true);

@@ -214,9 +214,7 @@ const FrameSunglass = () => {
               return; // Skip this item if stkQty exceeds AvlQty
             }
             updated = updated.map((item, idx) =>
-              idx === index
-                ? { ...item, stkQty: newStkQty }
-                : item
+              idx === index ? { ...item, stkQty: newStkQty } : item
             );
           } else {
             updated = [{ ...selected, stkQty: 1 }, ...updated];
@@ -229,25 +227,25 @@ const FrameSunglass = () => {
     setSearchResults([]);
   };
 
-const handleQtyChange = (barcode, qty, index) => {
-  const newQty = Number(qty);
-  const avlQty = Number(items[index].Quantity);
-  
-  if (isNaN(newQty) || newQty < 1) {
-    toast.error("Stock quantity must be at least 1!");
-    return;
-  }
-  if (newQty > avlQty) {
-    toast.error("Stock quantity cannot exceed available quantity!");
-    return;
-  }
-  
-  setItems((prev) =>
-    prev.map((i, idx) =>
-      i.Barcode === barcode && idx === index ? { ...i, stkQty: newQty } : i
-    )
-  );
-};
+  const handleQtyChange = (barcode, qty, index) => {
+    const newQty = Number(qty);
+    const avlQty = Number(items[index].Quantity);
+
+    if (isNaN(newQty) || newQty < 1) {
+      toast.error("Stock quantity must be at least 1!");
+      return;
+    }
+    if (newQty > avlQty) {
+      toast.error("Stock quantity cannot exceed available quantity!");
+      return;
+    }
+
+    setItems((prev) =>
+      prev.map((i, idx) =>
+        i.Barcode === barcode && idx === index ? { ...i, stkQty: newQty } : i
+      )
+    );
+  };
   const handleDelete = (id, index) => {
     setItems((prev) =>
       prev.filter((i, idx) => !(i.Barcode === id && idx === index))
@@ -628,7 +626,10 @@ const handleQtyChange = (barcode, qty, index) => {
                     <TableCell className="whitespace-pre-wrap">
                       <div>{item.Name}</div>
                       <div>Size: {item.Size}</div>
-                      <div>Category: {item.Category === 0 ? "Optical Frame" : "Sunglasses"}</div>
+                      <div>
+                        Category:{" "}
+                        {item.Category === 0 ? "Optical Frame" : "Sunglasses"}
+                      </div>
                       <div>Barcode: {item.Barcode}</div>
                       <div>HSN: {item.HSN}</div>
                     </TableCell>
@@ -660,7 +661,12 @@ const handleQtyChange = (barcode, qty, index) => {
                           </button>
                           <button
                             onClick={() =>
-                              toggleEditMode(item.Barcode, index, "qty","cancel")
+                              toggleEditMode(
+                                item.Barcode,
+                                index,
+                                "qty",
+                                "cancel"
+                              )
                             }
                             className="text-neutral-400 transition"
                             title="Cancel"
@@ -750,7 +756,7 @@ const handleQtyChange = (barcode, qty, index) => {
                     <TableCell>
                       ₹
                       {formatINR(
-                        (parseFloat(item.BuyingPrice) * item.stkQty) +
+                        parseFloat(item.BuyingPrice) * item.stkQty +
                           calculateStockGST(item).gstAmount * item.stkQty
                       )}
                     </TableCell>
@@ -834,7 +840,21 @@ const handleQtyChange = (barcode, qty, index) => {
                   <TableCell>
                     {item.Category === 0 ? "Optical Frame" : "Sunglass"}
                   </TableCell>
-                  <TableCell>{item.PO}</TableCell>
+                  <TableCell className="w-[80px]">
+                    <div className="grid grid-cols-2 gap-2 w-auto">
+                      {[
+                        item.PO == 1 ? "PH" : null,
+                        item.Ph == 1 ? "PO" : null,
+                        item.Cl ? `CL: ${item.Cl}` : null,
+                        item.IsRxable === 1 ? "Rx" : null,
+                      ]
+                        .filter(Boolean) 
+                        .map((val, idx) => (
+                          <div key={idx}>{val}</div>
+                        ))}
+                    </div>
+                  </TableCell>
+
                   <TableCell>{item.MRP}</TableCell>
                   <TableCell>{item.BuyingPrice}</TableCell>
                 </TableRow>

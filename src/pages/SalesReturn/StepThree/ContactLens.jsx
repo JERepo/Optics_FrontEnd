@@ -74,6 +74,8 @@ const getProductName = (order) => {
     sbatchCode,
     CLBatchBarCode,
     sbatchbarCode,
+    sphericalPower,
+    cylindricalPower,
   } = order;
 
   const clean = (val) => {
@@ -104,8 +106,8 @@ const getProductName = (order) => {
     const hsn = clean(hSN || HSN || "");
     const brand = clean(BrandName);
     const barcodeVal = clean(barcode || Barcode);
-    const expiry = clean(ExpiryDate);
-    const batchc = clean(sbatchCode);
+    const expiry = clean(ExpiryDate || order.Expiry);
+    const batchc = clean(sbatchCode || order.BatchCode);
     const batchBar = clean(sbatchbarCode);
     let specsObj = {};
     if (typeof specs === "string") {
@@ -116,11 +118,17 @@ const getProductName = (order) => {
       });
     } else {
       specsObj = {
-        Sph: SphericalPower,
-        Cyld: CylindricalPower,
+        Sph: SphericalPower || sphericalPower || order.Spherical,
+        Cyld: CylindricalPower || cylindricalPower || order.Cylindrical,
         Axis: Axis,
         Add: Additional,
       };
+      // specsObj = {
+      //   Sph: specs.SphericalPower || specs.sphericalPower,
+      //   Cyld: specs.CylindricalPower || specs.cylindricalPower,
+      //   Axis: specs.Axis || specs.axis,
+      //   Add: specs.Additional || specs.additional,
+      // };
     }
 
     const sph = cleanPower(specsObj.Sph);
@@ -155,7 +163,7 @@ const getProductName = (order) => {
   return "";
 };
 const getProductNameYes = (data) => {
-  const order = {...data.ProductDetails[0],...data}
+  const order = { ...data.ProductDetails[0], ...data };
   const {
     productName,
     BrandName,
@@ -172,9 +180,9 @@ const getProductNameYes = (data) => {
     sbatchCode,
     CLBatchBarCode,
     sbatchbarCode,
-    ExpiryDate
+    ExpiryDate,
   } = order;
-console.log("order in yes",order)
+  console.log("order in yes", order);
   const clean = (val) => {
     if (
       val === null ||
@@ -202,9 +210,10 @@ console.log("order in yes",order)
   const brand = clean(brandName);
   const barcodeVal = clean(Barcode || barcode);
   const clr = clean(Colour || color);
-  const expiry = clean(ExpiryDate);
-  const batchc = clean(sbatchCode);
+  const expiry = clean(ExpiryDate || order.Expiry);
+  const batchc = clean(sbatchCode || order.BatchCode);
   const batchBar = clean(sbatchbarCode);
+  console.log("ooo", order);
 
   // Ensure specs is an object, handle cases where it might be a string
   let specsObj = {};
@@ -243,7 +252,6 @@ console.log("order in yes",order)
     .filter(Boolean)
     .join("\n");
 };
-
 
 const ContactLens = () => {
   const {
@@ -331,114 +339,122 @@ const ContactLens = () => {
   ] = useLazyGetInvoiceDetailsQuery();
   const [getCLBatches, { data: CLBatches }] = useLazyGetBatchesForCLQuery();
 
+  // useEffect(() => {
+  //   setEditMode((prev) => {
+  //     const newEditMode = { ...prev };
+  //     mainClDetails?.forEach((_, index) => {
+  //       if (!newEditMode[index]) {
+  //         newEditMode[index] = { returnPrice: false, returnQty: false };
+  //       }
+  //     });
+  //     return newEditMode;
+  //   });
+  // }, [mainClDetails]);
   useEffect(() => {
     setEditMode((prev) => {
       const newEditMode = { ...prev };
-      mainClDetails?.forEach((_, index) => {
-        if (!newEditMode[index]) {
-          newEditMode[index] = { returnPrice: false, returnQty: false };
+      mainClDetails.forEach((item, index) => {
+        const key = `${item.Barcode}-${index}`;
+        if (!newEditMode[key]) {
+          newEditMode[key] = {
+            SellingPrice: false,
+            qty: false,
+            originalPrice: item.sellingPrice,
+            originalQty: item.returnQty,
+          };
         }
       });
       return newEditMode;
     });
   }, [mainClDetails]);
-  const toggleEditMode = (index, field) => {
-    setEditMode((prev) => ({
-      ...prev,
-      [index]: {
-        ...prev[index],
-        [field]: !prev[index]?.[field],
-      },
-    }));
-    const item = mainClDetails[index];
 
-    if (field === "returnPrice") {
-      setEditReturnPrice(
-        referenceApplicable === 1
-          ? item.ReturnPricePerUnit || ""
-          : item.returnPrice || ""
-      );
-    } else if (field === "returnQty") {
-      setEditReturnQty(
-        referenceApplicable === 1 ? item.ReturnQty || "" : item.returnQty || ""
-      );
-    }
+  const toggleEditMode = (id, index, field, action = "toggle") => {
+    setEditMode((prev) => {
+      const key = `${id}-${index}`;
+      const currentMode = prev[key]?.[field];
+      const item = mainClDetails.find((i, idx) => idx === index);
+
+      if (field === "SellingPrice" && !currentMode) {
+        return {
+          ...prev,
+          [key]: {
+            ...prev[key],
+            [field]: !currentMode,
+            originalPrice: item.returnPrice,
+          },
+        };
+      }
+
+      if (field === "qty" && !currentMode) {
+        return {
+          ...prev,
+          [key]: {
+            ...prev[key],
+            [field]: !currentMode,
+            originalQty: item.returnQty, // Store original quantity
+          },
+        };
+      }
+
+      if (currentMode && action === "cancel") {
+        if (field === "SellingPrice") {
+          setMainClDetails((prevItems) =>
+            prevItems.map((i, idx) =>
+              idx === index ? { ...i, returnPrice: prev[key].originalPrice } : i
+            )
+          );
+        } else if (field === "qty") {
+          setMainClDetails((prevItems) =>
+            prevItems.map((i, idx) =>
+              idx === index ? { ...i, returnQty: prev[key].originalQty } : i
+            )
+          );
+        }
+      }
+
+      return {
+        ...prev,
+        [key]: {
+          ...prev[key],
+          [field]: !currentMode,
+          originalPrice: prev[key]?.originalPrice,
+          originalQty: prev[key]?.originalQty,
+        },
+      };
+    });
   };
-  const saveEdit = (index, field) => {
-    const parsedQty = parseFloat(editReturnQty);
-    const parsedPrice = parseFloat(editReturnPrice);
-    const item = mainClDetails[index];
+  const handleSellingPriceChange = (barcode, price, index) => {
+    const item = mainClDetails.find((i, idx) => idx === index);
+    const newPrice = Number(price);
 
-    const sellingPrice =
-      referenceApplicable === 1
-        ? parseFloat(item.ActualSellingPrice)
-        : parseFloat(item.SellingPrice);
-
-    if (field === "returnPrice" && parsedPrice > sellingPrice) {
-      toast.error(
-        "Sales return price should not be greater than selling price"
-      );
+    if (newPrice > item.MRP) {
+      toast.error("Return Price cannot be greater than MRP!");
       return;
     }
 
-    if (field === "returnQty") {
-      const maxQty =
-        referenceApplicable === 1
-          ? item.InvoiceQty - parseInt(item.ReturnQty || 0)
-          : item.Quantity;
-      if (parsedQty > maxQty) {
-        toast.error(
-          "Sales return qty should not be greater than " +
-            (referenceApplicable === 1 ? "pending quantity" : "quantity")
-        );
-        return;
-      }
-    }
-
     setMainClDetails((prev) =>
-      prev.map((it, i) => {
-        if (i === index) {
-          let updatedItem = { ...it };
-          if (field === "returnPrice") {
-            if (referenceApplicable === 1) {
-              updatedItem.ReturnPricePerUnit = parsedPrice;
-              updatedItem.TotalAmount =
-                parsedPrice * (updatedItem.ReturnQty || 0);
-            } else {
-              updatedItem.returnPrice = parsedPrice;
-            }
-          } else if (field === "returnQty") {
-            if (referenceApplicable === 1) {
-              updatedItem.ReturnQty = parsedQty;
-              updatedItem.TotalAmount =
-                (updatedItem.ReturnPricePerUnit || 0) * parsedQty;
-            } else {
-              updatedItem.returnQty = parsedQty;
-            }
-          }
-          return updatedItem;
-        }
-        return it;
-      })
+      prev.map((i, idx) =>
+        idx === index ? { ...i, returnPrice: newPrice } : i
+      )
     );
-    setEditMode((prev) => ({
-      ...prev,
-      [index]: {
-        ...prev[index],
-        [field]: false,
-      },
-    }));
+  };
+  const handleQtyChange = (barcode, qty, index) => {
+    const newQty = Number(qty);
+    const avlQty = Number(mainClDetails[index].Quantity);
+    if (newQty > avlQty) {
+      toast.error("Stock quantity cannot exceed available quantity!");
+      return;
+    }
+    if (newQty < 0) {
+      toast.error("Stock quantity must be greater than 0!");
+      return;
+    }
+    setMainClDetails((prev) =>
+      prev.map((i, idx) => (idx === index ? { ...i, returnQty: newQty } : i))
+    );
   };
 
-  const cancelEdit = (index, field) => {
-    setEditMode((prev) => ({
-      ...prev,
-      [index]: {
-        ...prev[index],
-        [field]: false,
-      },
-    }));
-  };
+  
   const handleRefresh = () => {
     setLensData({
       orderReference: null,
@@ -552,14 +568,18 @@ const ContactLens = () => {
           setDetailId(true);
           setOpenBatch(true);
         } else if (data.CLBatchCode === 0 && referenceApplicable === 0) {
-          if (data.AvlQty <= 0 || data.Quantity <= 0) {
+          if (data.stock[0]?.quantity <= 0) {
             toast.error("Stock quantity must be greater than 0!");
             return;
           }
           const cc = {
             ...data,
-            returnPrice: parseFloat(data.SellingPrice),
+            Quantity: data.stock[0]?.quantity,
+            returnPrice: parseFloat(data?.priceMaster.sellingPrice),
             returnQty: 1,
+            sbatchCode: data.stock[0]?.batchCode,
+            ExpiryDate: data.stock[0]?.CLBatchExpiry,
+            MRP: parseFloat(data?.priceMaster.mrp),
           };
 
           const existingIndex = mainClDetails.findIndex(
@@ -619,9 +639,7 @@ const ContactLens = () => {
     }
   };
 
-  const handleDeleteYes = (index) => {
-    setMainClDetails((prev) => prev.filter((item, i) => i !== index));
-  };
+
   const handleGetBatchBarCodeDetails = async () => {
     if (!batchCodeInput) {
       return;
@@ -736,7 +754,7 @@ const ContactLens = () => {
       }).unwrap();
 
       if (response?.data.data.CLBatchCode === 0 && referenceApplicable === 0) {
-        if (response?.data.data.Quantity <= 0) {
+        if (response?.data.data.stock.Quantity <= 0) {
           toast.error("Stock quantity not available for this barcode!");
           return;
         }
@@ -747,6 +765,7 @@ const ContactLens = () => {
               ? parseFloat(response?.data.data.price.SellingPrice)
               : parseFloat(response?.data.data.stock.SellingPrice),
           returnQty: 1,
+          Quantity: response?.data.data.stock.Quantity,
           MRP:
             response?.data.data.CLBatchCode === 0
               ? parseFloat(response?.data.data.price.MRP)
@@ -898,7 +917,6 @@ const ContactLens = () => {
     }
   };
   const handleAddData = () => {
-    console.log("select batch code in ", selectedBatchCode);
     if (!selectedInvoiceReturnQty || isNaN(selectedInvoiceReturnQty)) {
       toast.error("Please enter a valid Return Qty");
       return;
@@ -927,11 +945,9 @@ const ContactLens = () => {
       AccId: detaildAccId,
       ...selectedInvoice,
       ReturnQty: selectedInvoiceReturnQty,
-      sbatchCode:
-        selectBatch === 0
-          ? selectedBatchCode.CLBatchCode
-          : selectedBatchCode.CLBatchBarCode,
-      ExpiryDate: selectedBatchCode.CLBatchExpiry,
+      sbatchCode: selectedInvoice?.ProductDetails[0]?.stock[0]?.batchCode ?? "",
+      ExpiryDate:
+        selectedInvoice?.ProductDetails[0]?.stock[0]?.CLBatchExpiry ?? "",
       ReturnPricePerUnit: selectedInvoice.ActualSellingPrice,
       GSTPercentage: parseFloat(
         selectedInvoice.ProductDetails[0].taxPercentage
@@ -1023,9 +1039,25 @@ const ContactLens = () => {
     }
   };
 
-  const handleDelete = (index) => {
-    setMainClDetails((prev) => prev.filter((_, i) => i !== index));
-  };
+const handleDelete = (index) => {
+  const item = mainClDetails[index];
+  setMainClDetails((prev) => prev.filter((_, i) => i !== index));
+  setEditMode((prev) => {
+    const newEditMode = { ...prev };
+    delete newEditMode[`${item.Barcode}-${index}`];
+    return newEditMode;
+  });
+};
+
+const handleDeleteYes = (index) => {
+  const item = mainClDetails[index];
+  setMainClDetails((prev) => prev.filter((item, i) => i !== index));
+  setEditMode((prev) => {
+    const newEditMode = { ...prev };
+    delete newEditMode[`${item.Barcode}-${index}`];
+    return newEditMode;
+  });
+};
 
   const inputTableColumns = [
     "Spherical Power",
@@ -1092,25 +1124,44 @@ const ContactLens = () => {
                     </TableCell>
                     <TableCell>₹{item.MRP}</TableCell>
                     <TableCell>
-                      {editMode[index]?.returnPrice ? (
+                      {editMode[`${item.Barcode}-${index}`]?.SellingPrice ? (
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
-                            value={editReturnPrice}
-                            onChange={(e) => setEditReturnPrice(e.target.value)}
+                            value={item.returnPrice || ""}
+                            onChange={(e) =>
+                              handleSellingPriceChange(
+                                item.Barcode,
+                                e.target.value,
+                                index
+                              )
+                            }
                             className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                             placeholder="Enter price"
-                            min="0"
                           />
                           <button
-                            onClick={() => saveEdit(index, "returnPrice")}
+                            onClick={() =>
+                              toggleEditMode(
+                                item.Barcode,
+                                index,
+                                "SellingPrice",
+                                "save"
+                              )
+                            }
                             className="text-neutral-400 transition"
                             title="Save"
                           >
                             <FiCheck size={18} />
                           </button>
                           <button
-                            onClick={() => cancelEdit(index, "returnPrice")}
+                            onClick={() =>
+                              toggleEditMode(
+                                item.Barcode,
+                                index,
+                                "SellingPrice",
+                                "cancel"
+                              )
+                            }
                             className="text-neutral-400 transition"
                             title="Cancel"
                           >
@@ -1119,11 +1170,15 @@ const ContactLens = () => {
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-700">
-                            ₹{item.returnPrice}
-                          </span>
+                          ₹{formatINR(item.returnPrice)}
                           <button
-                            onClick={() => toggleEditMode(index, "returnPrice")}
+                            onClick={() =>
+                              toggleEditMode(
+                                item.Barcode,
+                                index,
+                                "SellingPrice"
+                              )
+                            }
                             className="text-neutral-400 transition"
                             title="Edit Price"
                           >
@@ -1141,24 +1196,39 @@ const ContactLens = () => {
                           ).gstAmount}
                     </TableCell>
                     <TableCell>
-                      {editMode[index]?.returnQty ? (
+                      {editMode[`${item.Barcode}-${index}`]?.qty ? (
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
-                            value={editReturnQty}
-                            onChange={(e) => setEditReturnQty(e.target.value)}
+                            value={item.returnQty}
+                            onChange={(e) =>
+                              handleQtyChange(
+                                item.Barcode,
+                                e.target.value,
+                                index
+                              )
+                            }
                             className="w-20 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                             min="1"
                           />
                           <button
-                            onClick={() => saveEdit(index, "returnQty")}
+                            onClick={() =>
+                              toggleEditMode(item.Barcode, index, "qty", "save")
+                            }
                             className="text-neutral-400 transition"
                             title="Save"
                           >
                             <FiCheck size={18} />
                           </button>
                           <button
-                            onClick={() => cancelEdit(index, "returnQty")}
+                            onClick={() =>
+                              toggleEditMode(
+                                item.Barcode,
+                                index,
+                                "qty",
+                                "cancel"
+                              )
+                            }
                             className="text-neutral-400 transition"
                             title="Cancel"
                           >
@@ -1167,11 +1237,11 @@ const ContactLens = () => {
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-700">
-                            {item.returnQty}
-                          </span>
+                          {item.returnQty}
                           <button
-                            onClick={() => toggleEditMode(index, "returnQty")}
+                            onClick={() =>
+                              toggleEditMode(item.Barcode, index, "qty")
+                            }
                             className="text-neutral-400 transition"
                             title="Edit Quantity"
                           >
@@ -1246,7 +1316,7 @@ const ContactLens = () => {
                   <TableCell className="text-right">
                     ₹{formatINR(parseFloat(item.SRP || 0))}
                   </TableCell>
-                  <TableCell className="text-right">
+                  {/* <TableCell className="text-right">
                     {editMode[index]?.returnPrice ? (
                       <div className="flex items-center gap-2">
                         <input
@@ -1274,9 +1344,7 @@ const ContactLens = () => {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-700">
-                          ₹{formatINR(parseFloat(item.ReturnPricePerUnit || 0))}
-                        </span>
+                        ₹{formatINR(parseFloat(item.ReturnPricePerUnit || 0))}
                         <button
                           onClick={() => toggleEditMode(index, "returnPrice")}
                           className="text-neutral-400 transition"
@@ -1286,7 +1354,7 @@ const ContactLens = () => {
                         </button>
                       </div>
                     )}
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell className="text-right">
                     ₹
                     {formatINR(

@@ -46,19 +46,21 @@ const getProductName = (data) => {
       val === undefined ||
       val === "undefined" ||
       val === "null" ||
-      val === "N/A"
+      val === "N/A" ||
+      val === 0
     ) {
       return "";
     }
-    return val;
+    return String(val).trim();
   };
 
   const formatPowerValue = (val) => {
-    const num = parseFloat(val);
-    if (isNaN(num)) return val;
-    return num > 0 ? `+${val}` : val;
+    const cleaned = clean(val);
+    if (!cleaned) return "";
+    const num = parseFloat(cleaned);
+    if (isNaN(num)) return "";
+    return num >= 0 ? `+${num.toFixed(2)}` : `${num.toFixed(2)}`;
   };
-
   // For Frame (typeid = 1)
   if (ProductType === 1) {
     const lines = [
@@ -84,6 +86,9 @@ const getProductName = (data) => {
 
   // For Contact Lens (ProductType = 3)
   if (ProductType === 3) {
+    const batchCode = item.Stock[0]?.BatchCode;
+
+    const expiry = item.Stock[0]?.Expiry;
     const specs = PowerSpecs
       ? [
           PowerSpecs.Sph ? `Sph: ${clean(PowerSpecs.Sph)}` : "",
@@ -101,7 +106,9 @@ const getProductName = (data) => {
       clean(colour) ? `Colour: ${clean(colour)}` : "",
 
       barcode ? `Barcode: ${barcode}` : "",
-      clean(item.BatchCode) ? `BatchCode: ${item.BatchCode}` : "",
+      clean(batchCode) ? `BatchCode: ${batchCode}` : "",
+      clean(expiry) ? `Expiry: ${expiry.split("-").reverse().join("/")}` : "",
+
       clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
 
@@ -135,13 +142,9 @@ const getProductName = (data) => {
       .join("\n");
 
     const lines = [
-      clean(
-        (ProductName || productName) &&
-          brandName &&
-          `${brandName} ${productName}`
-      ),
+      clean((ProductName || productName) && `${productName}`),
       specsLines,
-      clean(barcode) && `Color: ${colour}`,
+      // clean(barcode) && `BarCode: ${barcode}`,
       clean(hsncode || HSN) && `HSN: ${hsncode || HSN}`,
       tintName ? `Tint: ${tintName}` : "",
       addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
@@ -206,7 +209,7 @@ const getStockOutPrice = (data) => {
   return 0;
 };
 const getStockOutMRP = (data) => {
-    const item = { ...data.ProductDetails, ...data };
+  const item = { ...data.ProductDetails, ...data };
 
   if (!item) {
     return 0;
@@ -274,7 +277,7 @@ const CompleteStockTransfer = () => {
     try {
       const payload = {
         STOutMainId: stockDraftData.ID || stockDraftData[0].ID,
-        FromCompanyId: customerStock.locationId,
+        // FromCompanyId: customerStock.locationId,
         Comment: comment,
         delete: [id],
       };
@@ -391,12 +394,14 @@ const CompleteStockTransfer = () => {
                     ? item.ProductDetails.Stock[0].Quantity
                     : item.ProductDetails.Stock.Quantity}
                 </TableCell>
+                {/* (“TransferPrice””StockOutQty”)+ (“TransferPrice”*GST””StockOutQty”) */}
                 <TableCell>
                   ₹
                   {formatINR(
                     getStockOutPrice(item) * item.STQtyOut +
                       getStockOutPrice(item) *
-                        (parseFloat(item.ProductTaxPercentage) / 100)
+                        (parseFloat(item.ProductTaxPercentage) / 100) *
+                        item.STQtyOut
                   )}
                 </TableCell>
                 <TableCell>

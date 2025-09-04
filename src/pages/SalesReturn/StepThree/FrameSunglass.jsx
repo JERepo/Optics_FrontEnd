@@ -30,6 +30,7 @@ import {
 } from "../../../api/salesReturnApi";
 import { useSelector } from "react-redux";
 import { formatINR } from "../../../utils/formatINR";
+import Loader from "../../../components/ui/Loader";
 
 const getProductDetailsText = (order) => {
   const {
@@ -221,29 +222,19 @@ const FrameSunglass = () => {
       }).unwrap();
 
       const data = res?.data;
-      if (referenceApplicable === 0) {
-        if (data && data.length > 0) {
-          setSearchResults(data);
-          setBrandInput("");
-          setBrandId(null);
-          setModelNo("");
-          setSearchMode(false);
-        } else {
-          toast.error(res?.data?.message || "No matching models found");
-          setBrandInput("");
-          setBrandId(null);
-          setModelNo("");
-          setSearchMode(false);
-        }
+
+      if (data && data.length > 0) {
+        setSearchResults(data);
+        setBrandInput("");
+        setBrandId(null);
+        setModelNo("");
+        setSearchMode(false);
       } else {
-        await getInvoiceDetails({
-          productType: 1,
-          detailId: data.Id,
-          batchCode: null,
-          patientId: customerSalesId.patientId,
-          locationId: customerSalesId.locationId,
-        }).unwrap();
-        setOpenReferenceYes(true);
+        toast.error(res?.data?.message || "No matching models found");
+        setBrandInput("");
+        setBrandId(null);
+        setModelNo("");
+        setSearchMode(false);
       }
     } catch (err) {
       const msg =
@@ -270,12 +261,36 @@ const FrameSunglass = () => {
     setEditMode({});
   };
 
-  const handleCheckboxChange = (item) => {
+  const handleCheckboxChange = async (item) => {
     const exists = selectedRows.find((i) => i.Barcode === item.Barcode);
-    if (exists) {
-      setSelectedRows((prev) => prev.filter((i) => i.Barcode !== item.Barcode));
-    } else {
-      setSelectedRows((prev) => [...prev, item]);
+    if (referenceApplicable === 0) {
+      if (exists) {
+        setSelectedRows((prev) =>
+          prev.filter((i) => i.Barcode !== item.Barcode)
+        );
+      } else {
+        setSelectedRows((prev) => [...prev, item]);
+      }
+    } else if (referenceApplicable === 1) {
+      // if (exists) {
+      //   setSelectedRows((prev) =>
+      //     prev.filter((i) => i.Barcode !== item.Barcode)
+      //   );
+      // } else {
+      //   setSelectedRows((prev) => [...prev, item]);
+      // }
+      try {
+        await getInvoiceDetails({
+          productType: 1,
+          detailId: item.Id,
+          batchCode: null,
+          patientId: customerSalesId.patientId,
+          locationId: customerSalesId.locationId,
+        }).unwrap();
+        setOpenReferenceYes(true);
+      } catch (error) {
+        toast.error("No eligible Invoice exists for the given product");
+      }
     }
   };
 
@@ -801,9 +816,7 @@ const FrameSunglass = () => {
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <span className="text-gray-700">
-                              ₹{item.SellingPrice || "N/A"}
-                            </span>
+                           ₹{item.SellingPrice || "N/A"}
                             <button
                               onClick={() =>
                                 toggleEditMode(
@@ -857,9 +870,7 @@ const FrameSunglass = () => {
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <span className="text-gray-700">
-                              {item.Quantity}
-                            </span>
+                            {item.Quantity}
                             <button
                               onClick={() =>
                                 toggleEditMode(item.Barcode, index, "qty")
@@ -960,7 +971,7 @@ const FrameSunglass = () => {
                         </button>
                         <button
                           onClick={() =>
-                            toggleEditMode(item.Id, index, "returnPrice")
+                            toggleEditMode(item.Id, index, "returnPrice","cancel")
                           }
                           className="text-neutral-400 transition"
                           title="Cancel"
@@ -970,9 +981,7 @@ const FrameSunglass = () => {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-700">
-                          ₹{formatINR(parseFloat(item.ReturnPricePerUnit || 0))}
-                        </span>
+                        ₹{formatINR(parseFloat(item.ReturnPricePerUnit || 0))}
                         <button
                           onClick={() =>
                             toggleEditMode(item.Id, index, "returnPrice")
@@ -985,7 +994,7 @@ const FrameSunglass = () => {
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell >
                     ₹
                     {formatINR(
                       calculateGST(
@@ -994,10 +1003,10 @@ const FrameSunglass = () => {
                       ).gstAmount
                     )}
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell >
                     {item.ReturnQty || 0}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell >
                     ₹{formatINR(parseFloat(item.TotalAmount || 0))}
                   </TableCell>
                   <TableCell>
@@ -1149,13 +1158,17 @@ const FrameSunglass = () => {
               renderRow={(item, index) => (
                 <TableRow key={item.Barcode}>
                   <TableCell>
-                    <input
-                      type="checkbox"
-                      checked={selectedRows.some(
-                        (i) => i.Barcode === item.Barcode
-                      )}
-                      onChange={() => handleCheckboxChange(item)}
-                    />
+                    {isInvoiceLoading ? (
+                      <Loader size={15} color="black" />
+                    ) : (
+                      <input
+                        type="checkbox"
+                        checked={selectedRows.some(
+                          (i) => i.Barcode === item.Barcode
+                        )}
+                        onChange={() => handleCheckboxChange(item)}
+                      />
+                    )}
                   </TableCell>
                   <TableCell>{item.Barcode}</TableCell>
                   <TableCell>{item.Name}</TableCell>
@@ -1163,22 +1176,20 @@ const FrameSunglass = () => {
                   <TableCell>
                     {item.Category === "O" ? "Optical Frame" : "Sunglass"}
                   </TableCell>
-                  <TableCell>
-                    {" "}
-                    <div className="whitespace-pre-wrap">
-                      <div>{item.PO == 1 ? "PH" : ""}</div>
-                      <div>{item.Ph == 1 ? "PO" : ""}</div>
-                      <div>
-                        {item.Cl === 0 || item.Cl === null
-                          ? "-"
-                          : `CL: ${item.Cl}`}
-                      </div>
-                      <div>
-                            {item.IsRxable &&
-                              `${item.IsRxable === 1 ? "Rx" : ""}`}
-                          </div>
-                    </div>
-                  </TableCell>
+                 <TableCell className="w-[80px]">
+                                     <div className="grid grid-cols-2 gap-2 w-auto">
+                                       {[
+                                         item.PO == 1 ? "PH" : null,
+                                         item.Ph == 1 ? "PO" : null,
+                                         item.Cl ? `CL: ${item.Cl}` : null,
+                                         item.IsRxable === 1 ? "Rx" : null,
+                                       ]
+                                         .filter(Boolean) 
+                                         .map((val, idx) => (
+                                           <div key={idx}>{val}</div>
+                                         ))}
+                                     </div>
+                                   </TableCell>
                   <TableCell>{item.MRP}</TableCell>
                   <TableCell>{item.SellingPrice}</TableCell>
                 </TableRow>

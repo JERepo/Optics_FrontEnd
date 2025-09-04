@@ -637,8 +637,10 @@ const FrameSunglass = () => {
                     <TableCell>F/S</TableCell>
                     <TableCell className="whitespace-pre-wrap">
                       <div>{item.Name}</div>
-                      <div>Size: {item.Size.Size}</div>
+                      <div>Category: {item.Category === 0 ? "Optical Frame" : "Sunglasess"}</div>
+                      <div>Size: {(item.Size.Size || item.Size && (item?.Size || item.Size.Size))}</div>
                       <div>Barcode: {item.Barcode}</div>
+                      <div>HSN: {item.HSN}</div>
                     </TableCell>
                     <TableCell>
                       {editMode[`${item.Barcode}-${index}`]?.BuyingPrice ? (
@@ -841,7 +843,20 @@ const FrameSunglass = () => {
                   <TableCell>
                     {item.Category === 0 ? "Optical Frame" : "Sunglass"}
                   </TableCell>
-                  <TableCell>{item.PO}</TableCell>
+                  <TableCell className="w-[80px]">
+                                     <div className="grid grid-cols-2 gap-2 w-auto">
+                                       {[
+                                         item.PO == 1 ? "PH" : null,
+                                         item.Ph == 1 ? "PO" : null,
+                                         item.Cl ? `CL: ${item.Cl}` : null,
+                                         item.IsRxable === 1 ? "Rx" : null,
+                                       ]
+                                         .filter(Boolean)
+                                         .map((val, idx) => (
+                                           <div key={idx}>{val}</div>
+                                         ))}
+                                     </div>
+                                   </TableCell>
                   <TableCell>{item.MRP}</TableCell>
                   <TableCell>{item.BuyingPrice}</TableCell>
                 </TableRow>

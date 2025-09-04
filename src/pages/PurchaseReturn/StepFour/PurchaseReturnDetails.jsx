@@ -84,6 +84,9 @@ const getProductName = (item) => {
 
   // For Contact Lens (type = 3)
   if (type === 3) {
+    const batchCode = detail.Stock[0]?.BatchCode;
+
+    const expiry = detail.Stock[0]?.Expiry;
     const specs = PowerSpecs
       ? [
           PowerSpecs.Sph ? `Sph: ${clean(PowerSpecs.Sph)}` : "",
@@ -96,59 +99,20 @@ const getProductName = (item) => {
       : "";
 
     const lines = [
-      (ProductName || brandName) && `${brandName} ${productName}`,
+      (productName) && `${productName}`,
       specs ? `${specs}` : "",
       clean(colour) ? `Colour: ${clean(colour)}` : "",
       barcode ? `Barcode: ${barcode}` : "",
-      clean(item.BatchCode) ? `BatchCode: ${item.BatchCode}` : "",
+      clean(batchCode) ? `BatchCode: ${batchCode}` : "",
+      clean(expiry) ? `Expiry: ${expiry.split("-").reverse().join("/")}` : "",
+
       clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
 
     return lines.filter(Boolean).join("\n");
   }
 
-  // For Optical Lens (type = 0)
-  if (type === 0) {
-    const tintName = clean(Tint?.name) || "";
-    const addOns = AddOns?.map((a) => clean(a.name)).filter(Boolean) || [];
-
-    const specsLines = (Array.isArray(Specs) ? Specs : [{ ...Specs }])
-      .map((spec) => {
-        const side = clean(spec?.side);
-        const sph = clean(spec?.sph || spec.Spherical);
-        const cyl = clean(spec?.cyl || spec.Cylinder);
-        const dia = clean(spec.Diameter);
-        const axis = clean(spec?.axis);
-        const addition = clean(spec?.addition);
-
-        const powerValues = [];
-        if (sph) powerValues.push(`SPH ${formatPowerValue(sph)}`);
-        if (cyl) powerValues.push(`CYL ${formatPowerValue(cyl)}`);
-        if (dia) powerValues.push(`Dia ${formatPowerValue(dia)}`);
-        if (axis) powerValues.push(`Axis ${formatPowerValue(axis)}`);
-        if (addition) powerValues.push(`Add ${formatPowerValue(addition)}`);
-
-        return powerValues.join(", ");
-      })
-      .filter(Boolean)
-      .join("\n");
-
-    const lines = [
-      clean(
-        (ProductName || productName) &&
-          brandName &&
-          `${brandName} ${productName}`
-      ),
-      specsLines,
-      clean(barcode) && `Color: ${colour}`,
-      clean(hsncode || HSN) && `HSN: ${hsncode || HSN}`,
-      tintName ? `Tint: ${tintName}` : "",
-      addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
-      clean(FittingPrice) ? `Fitting Price: ${FittingPrice}` : "",
-    ];
-
-    return lines.filter(Boolean).join("\n");
-  }
+  
 
   return "";
 };
@@ -337,17 +301,11 @@ const CompleteStockTransfer = () => {
                 <TableCell className="whitespace-pre-wrap">
                   {getProductName(item)}
                 </TableCell>
-                <TableCell>
-                  ₹{formatINR(getStockOutPrice(item))}{" "}
-                  
-                </TableCell>
+                <TableCell>₹{formatINR(getStockOutPrice(item))} </TableCell>
 
                 <TableCell>{item.DNQty}</TableCell>
 
-                <TableCell>
-                  ₹{formatINR(getPurchaseValue(item))}{" "}
-                 
-                </TableCell>
+                <TableCell>₹{formatINR(getPurchaseValue(item))} </TableCell>
 
                 <TableCell>
                   ₹
@@ -355,7 +313,7 @@ const CompleteStockTransfer = () => {
                     getPurchaseValue(item) *
                       (parseFloat(item.ProductTaxPercentage) / 100)
                   )}{" "}
-                 ({parseFloat(item.ProductTaxPercentage)}%)
+                  ({parseFloat(item.ProductTaxPercentage)}%)
                 </TableCell>
 
                 <TableCell>
