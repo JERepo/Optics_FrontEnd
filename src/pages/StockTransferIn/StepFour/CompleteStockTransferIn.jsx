@@ -270,7 +270,6 @@ const CompleteStockTransferIn = () => {
     totalBasicValue: formatINR(totals.totalBasicValue),
     totalReturnValue: formatINR(totals.totalReturnValue),
   };
-  console.log("d", stockTransferInDraftData);
   const handleSaveStockTransferOut = async () => {
     try {
       const payload = {

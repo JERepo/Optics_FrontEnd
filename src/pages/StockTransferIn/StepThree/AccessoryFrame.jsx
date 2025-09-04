@@ -24,6 +24,7 @@ import { Autocomplete, TextField } from "@mui/material";
 import { useSelector } from "react-redux";
 import Radio from "../../../components/Form/Radio";
 import {
+  useGetStockOutDataForStockInQuery,
   useGetStockOutDetailsQuery,
   useSaveStockDetailsMutation,
 } from "../../../api/stockTransfer";
@@ -55,10 +56,14 @@ const AccessoryFrame = () => {
   const [singleOrCombine, setSingleOrCombine] = useState(0); // 0 = Combine, 1 = Separate
   const [editMode, setEditMode] = useState({}); // { [barcode-index]: { sellingPrice: false, qty: false } }
 
-  const { data: stockOutData } = useGetStockOutDetailsQuery({
-    mainId: customerStockTransferIn.mainId,
-    locationId: parseInt(hasMultipleLocations[0]),
-  });
+  // const { data: stockOutData } = useGetStockOutDetailsQuery({
+  //   mainId: customerStockTransferIn.mainId,
+  //   locationId: parseInt(hasMultipleLocations[0]),
+  // });
+  const { data: stockOutData } = useGetStockOutDataForStockInQuery({
+      mainId: customerStockTransferIn.mainId,
+      locationId: parseInt(hasMultipleLocations[0]),
+    });
   const { data: allBrands } = useGetAllBrandsQuery();
   const [
     fetchByBarcode,
@@ -107,7 +112,7 @@ const AccessoryFrame = () => {
 
       setItems((prev) => {
         // Check if product exists in StockTransferOut
-        const STOProduct = stockOutData?.data.details.find(
+        const STOProduct = stockOutData?.data?.StockTransferInDetails?.find(
           (item) => item.FrameDetailId === data.Id
         );
         if (!STOProduct) {
@@ -222,7 +227,7 @@ const AccessoryFrame = () => {
       let updated = [...prev];
 
       selectedRows.forEach((selected) => {
-        const STOProduct = stockOutData?.data.details.find(
+        const STOProduct = stockOutData?.data?.StockTransferInDetails?.find(
           (item) => item.FrameDetailId === selected.Id
         );
 
@@ -439,13 +444,11 @@ const AccessoryFrame = () => {
       gstPercent: lastDetail?.PurTaxPerct || 0,
     };
   };
-
   const handleSaveData = async () => {
     if (!Array.isArray(items) || items.length === 0) {
       console.warn("No details to save");
       return;
     }
-    console.log("items", items);
     try {
       const payload = {
         STInMainId: stockTransferInDraftData.ID,
@@ -464,7 +467,6 @@ const AccessoryFrame = () => {
         }),
       };
 
-      console.log(payload);
       await saveStockTransfer({ payload }).unwrap();
       toast.success("Accessory transfer in successfully added");
       goToStockTransferInStep(4);

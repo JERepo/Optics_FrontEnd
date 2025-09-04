@@ -339,17 +339,7 @@ const ContactLens = () => {
   ] = useLazyGetInvoiceDetailsQuery();
   const [getCLBatches, { data: CLBatches }] = useLazyGetBatchesForCLQuery();
 
-  // useEffect(() => {
-  //   setEditMode((prev) => {
-  //     const newEditMode = { ...prev };
-  //     mainClDetails?.forEach((_, index) => {
-  //       if (!newEditMode[index]) {
-  //         newEditMode[index] = { returnPrice: false, returnQty: false };
-  //       }
-  //     });
-  //     return newEditMode;
-  //   });
-  // }, [mainClDetails]);
+
   useEffect(() => {
     setEditMode((prev) => {
       const newEditMode = { ...prev };
@@ -454,7 +444,6 @@ const ContactLens = () => {
     );
   };
 
-  
   const handleRefresh = () => {
     setLensData({
       orderReference: null,
@@ -639,7 +628,6 @@ const ContactLens = () => {
     }
   };
 
-
   const handleGetBatchBarCodeDetails = async () => {
     if (!batchCodeInput) {
       return;
@@ -718,23 +706,32 @@ const ContactLens = () => {
         setProductCodeInput("");
         setbatchCodeInput("");
       } else if (isAvailable && referenceApplicable === 1) {
-        await getInvoiceDetails({
-          productType: 3,
-          detailId:
-            selectBatch === 1
-              ? batchBarCodeDetails?.data.data.CLDetailId
-              : newItem.CLDetailId,
-          batchCode: isAvailable.CLBatchBarCode,
-          patientId: customerSalesId.patientId,
-          locationId: customerSalesId.locationId,
-        }).unwrap();
-        const id =
+        try {
+          await getInvoiceDetails({
+            productType: 3,
+            detailId:
+              selectBatch === 1
+                ? batchBarCodeDetails?.data.data.CLDetailId
+                : newItem.CLDetailId,
+            batchCode: isAvailable.CLBatchBarCode,
+            patientId: customerSalesId.patientId,
+            locationId: customerSalesId.locationId,
+          }).unwrap();
+          const id =
           selectBatch === 1
             ? batchBarCodeDetails?.data.data.CLDetailId
             : newItem.CLDetailId;
         setDetailAccId(id);
         setOpenReferenceYes(true);
         setbatchCodeInput("");
+        } catch (error) {
+          console.log(error);
+          toast.error(
+            error?.data.error ||
+              "No eligible Invoice exists for the given product"
+          );
+        }
+        
       } else {
         toast.error("Entered BatchBarcode is not exists!");
       }
@@ -837,14 +834,13 @@ const ContactLens = () => {
   };
 
   const handleSaveBatchData = async () => {
+    if (selectedBatchCode.Quantity <= 0) {
+      toast.error("Stock quantity must be greater than 0!");
+      return;
+    }
     if (referenceApplicable === 0) {
       let sub;
       if ((!detailId || openBatch) && productSearch == 0) {
-        if (selectedBatchCode.Quantity <= 0) {
-          toast.error("Stock quantity must be greater than 0!");
-          return;
-        }
-
         sub = {
           ...newItem.powerData,
           sbatchCode: selectedBatchCode.CLBatchCode,
@@ -1039,25 +1035,25 @@ const ContactLens = () => {
     }
   };
 
-const handleDelete = (index) => {
-  const item = mainClDetails[index];
-  setMainClDetails((prev) => prev.filter((_, i) => i !== index));
-  setEditMode((prev) => {
-    const newEditMode = { ...prev };
-    delete newEditMode[`${item.Barcode}-${index}`];
-    return newEditMode;
-  });
-};
+  const handleDelete = (index) => {
+    const item = mainClDetails[index];
+    setMainClDetails((prev) => prev.filter((_, i) => i !== index));
+    setEditMode((prev) => {
+      const newEditMode = { ...prev };
+      delete newEditMode[`${item.Barcode}-${index}`];
+      return newEditMode;
+    });
+  };
 
-const handleDeleteYes = (index) => {
-  const item = mainClDetails[index];
-  setMainClDetails((prev) => prev.filter((item, i) => i !== index));
-  setEditMode((prev) => {
-    const newEditMode = { ...prev };
-    delete newEditMode[`${item.Barcode}-${index}`];
-    return newEditMode;
-  });
-};
+  const handleDeleteYes = (index) => {
+    const item = mainClDetails[index];
+    setMainClDetails((prev) => prev.filter((item, i) => i !== index));
+    setEditMode((prev) => {
+      const newEditMode = { ...prev };
+      delete newEditMode[`${item.Barcode}-${index}`];
+      return newEditMode;
+    });
+  };
 
   const inputTableColumns = [
     "Spherical Power",

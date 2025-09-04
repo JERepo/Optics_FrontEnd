@@ -26,6 +26,7 @@ import Radio from "../../../components/Form/Radio";
 import { useSelector } from "react-redux";
 import { formatINR } from "../../../utils/formatINR";
 import {
+  useGetStockOutDataForStockInQuery,
   useGetStockOutDetailsQuery,
   useSaveSTIMutation,
 } from "../../../api/stockTransfer";
@@ -50,10 +51,15 @@ const FrameSunglass = () => {
   const [selectedRows, setSelectedRows] = useState([]);
   const [singleOrCombine, setSingleOrCombine] = useState(0);
   const [editMode, setEditMode] = useState({}); // { [barcode-index]: { sellingPrice: false, qty: false } }
-  const { data: stockOutData } = useGetStockOutDetailsQuery({
+  // const { data: stockOutData } = useGetStockOutDetailsQuery({
+  // mainId: customerStockTransferIn.mainId,
+  // locationId: parseInt(hasMultipleLocations[0]),
+  // });
+  const { data: stockOutData } = useGetStockOutDataForStockInQuery({
     mainId: customerStockTransferIn.mainId,
     locationId: parseInt(hasMultipleLocations[0]),
   });
+
   const { data: allBrands } = useGetAllBrandsQuery();
   const [
     fetchByBarcode,
@@ -88,7 +94,6 @@ const FrameSunglass = () => {
       return newEditMode;
     });
   }, [items]);
-
   const handleBarcodeSubmit = async (e) => {
     e.preventDefault();
     if (!barcode) return;
@@ -101,7 +106,7 @@ const FrameSunglass = () => {
 
       setItems((prev) => {
         // Check if product exists in StockTransferOut
-        const STOProduct = stockOutData?.data.details.find(
+        const STOProduct = stockOutData?.data?.StockTransferInDetails?.find(
           (item) => item.FrameDetailId === data.Id
         );
         if (!STOProduct) {
@@ -210,7 +215,7 @@ const FrameSunglass = () => {
       let updated = [...prev];
 
       selectedRows.forEach((selected) => {
-        const STOProduct = stockOutData?.data.details.find(
+        const STOProduct = stockOutData?.data?.StockTransferInDetails?.find(
           (item) => item.FrameDetailId === selected.Id
         );
 
@@ -514,8 +519,6 @@ const FrameSunglass = () => {
                   >
                     Enter Barcode
                   </label>
-
-                 
                 </div>
                 <div className="flex gap-2">
                   <div className="relative flex items-center">
@@ -555,7 +558,6 @@ const FrameSunglass = () => {
                   >
                     Search by Brand & Model *
                   </label>
-                 
                 </div>
                 <div className="flex gap-2">
                   <Autocomplete
@@ -637,8 +639,15 @@ const FrameSunglass = () => {
                     <TableCell>F/S</TableCell>
                     <TableCell className="whitespace-pre-wrap">
                       <div>{item.Name}</div>
-                      <div>Category: {item.Category === 0 ? "Optical Frame" : "Sunglasess"}</div>
-                      <div>Size: {(item.Size.Size || item.Size && (item?.Size || item.Size.Size))}</div>
+                      <div>
+                        Category:{" "}
+                        {item.Category === 0 ? "Optical Frame" : "Sunglasess"}
+                      </div>
+                      <div>
+                        Size:{" "}
+                        {item.Size.Size ||
+                          (item.Size && (item?.Size || item.Size.Size))}
+                      </div>
                       <div>Barcode: {item.Barcode}</div>
                       <div>HSN: {item.HSN}</div>
                     </TableCell>
@@ -844,19 +853,19 @@ const FrameSunglass = () => {
                     {item.Category === 0 ? "Optical Frame" : "Sunglass"}
                   </TableCell>
                   <TableCell className="w-[80px]">
-                                     <div className="grid grid-cols-2 gap-2 w-auto">
-                                       {[
-                                         item.PO == 1 ? "PH" : null,
-                                         item.Ph == 1 ? "PO" : null,
-                                         item.Cl ? `CL: ${item.Cl}` : null,
-                                         item.IsRxable === 1 ? "Rx" : null,
-                                       ]
-                                         .filter(Boolean)
-                                         .map((val, idx) => (
-                                           <div key={idx}>{val}</div>
-                                         ))}
-                                     </div>
-                                   </TableCell>
+                    <div className="grid grid-cols-2 gap-2 w-auto">
+                      {[
+                        item.PO == 1 ? "PH" : null,
+                        item.Ph == 1 ? "PO" : null,
+                        item.Cl ? `CL: ${item.Cl}` : null,
+                        item.IsRxable === 1 ? "Rx" : null,
+                      ]
+                        .filter(Boolean)
+                        .map((val, idx) => (
+                          <div key={idx}>{val}</div>
+                        ))}
+                    </div>
+                  </TableCell>
                   <TableCell>{item.MRP}</TableCell>
                   <TableCell>{item.BuyingPrice}</TableCell>
                 </TableRow>

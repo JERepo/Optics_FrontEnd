@@ -31,6 +31,7 @@ import { useGetBatchBarCodeMutation } from "../../../api/salesReturnApi";
 import { formatINR } from "../../../utils/formatINR";
 import Modal from "../../../components/ui/Modal";
 import {
+  useGetStockOutDataForStockInQuery,
   useGetStockOutDetailsQuery,
   useSaveSTIMutation,
 } from "../../../api/stockTransfer";
@@ -204,10 +205,14 @@ const ContactLens = () => {
   });
 
   const [errors, setErrors] = useState({});
-  const { data: stockOutData } = useGetStockOutDetailsQuery({
-    mainId: customerStockTransferIn.mainId,
-    locationId: parseInt(hasMultipleLocations[0]),
-  });
+  // const { data: stockOutData } = useGetStockOutDetailsQuery({
+  //   mainId: customerStockTransferIn.mainId,
+  //   locationId: parseInt(hasMultipleLocations[0]),
+  // });
+    const { data: stockOutData } = useGetStockOutDataForStockInQuery({
+        mainId: customerStockTransferIn.mainId,
+        locationId: parseInt(hasMultipleLocations[0]),
+      });
 
   const { data: modalities, isLoading: modalitiesLoading } =
     useGetModalitiesQuery();
@@ -377,7 +382,7 @@ const ContactLens = () => {
             toast.error("Stock quantity must be greater than 0!");
             return;
           }
-          const STOProduct = stockOutData?.data.details.find(
+          const STOProduct = stockOutData?.data?.StockTransferInDetails?.find(
             (item) => item.ContactLensDetailId === data.CLDetailId
           );
           if (!STOProduct) {
@@ -518,7 +523,7 @@ const ContactLens = () => {
       );
 
       if (isAvailable) {
-        const STOProduct = stockOutData?.data.details.find(
+        const STOProduct = stockOutData?.data?.StockTransferInDetails?.find(
           (item) =>
             item.ContactLensDetailId ===
             batchBarCodeDetails?.data?.data.CLDetailId
@@ -614,7 +619,7 @@ const ContactLens = () => {
       }).unwrap();
 
       if (response?.data.data.CLBatchCode === 0) {
-        const STOProduct = stockOutData?.data.details.find(
+        const STOProduct = stockOutData?.data?.StockTransferInDetails?.find(
           (item) => item.ContactLensDetailId === response?.data.data.CLDetailId
         );
         if (!STOProduct) {
@@ -670,7 +675,7 @@ const ContactLens = () => {
   const handleSaveBatchData = async () => {
     let sub;
     if ((!detailId || openBatch) && productSearch == 0) {
-      const STOProduct = stockOutData?.data.details.find(
+      const STOProduct = stockOutData?.data?.StockTransferInDetails?.find(
         (item) => item.ContactLensDetailId === newItem.CLDetailId
       );
       if (!STOProduct) {
@@ -693,7 +698,7 @@ const ContactLens = () => {
         BuyingPrice: parseFloat(selectedBatchCode.BuyingPrice),
       };
     } else if (detailId && productSearch == 1) {
-      const STOProduct = stockOutData?.data.details.find(
+      const STOProduct = stockOutData?.data?.StockTransferInDetails?.find(
         (item) =>
           item.ContactLensDetailId === batchBarCodeDetails?.data.data.CLDetailId
       );

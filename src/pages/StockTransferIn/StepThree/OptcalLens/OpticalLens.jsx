@@ -36,6 +36,7 @@ import { isValidNumericInput } from "../../../../utils/isValidNumericInput";
 import { formatINR } from "../../../../utils/formatINR";
 import {
   useGetOlDetailsByOlDetailIdMutation,
+  useGetStockOutDataForStockInQuery,
   useGetStockOutDetailsQuery,
   useLazyGetOLByBarcodeQuery,
   useSaveSTIMutation,
@@ -142,7 +143,7 @@ const OpticalLens = () => {
     selectedStockTransferInProduct,
   } = useOrder();
 
-  const { user } = useSelector((state) => state.auth);
+  const { user ,hasMultipleLocations} = useSelector((state) => state.auth);
   const [barcode, setBarcode] = useState("");
   const [barCodeOrproduct, setBarCodeOrProduct] = useState(0);
   const [editMode, setEditMode] = useState({});
@@ -263,10 +264,14 @@ const OpticalLens = () => {
     useLazyGetOLByBarcodeQuery();
   const [saveStockTransfer, { isLoading: isStockTransferLoading }] =
     useSaveSTIMutation();
-  const { data: stockOutData } = useGetStockOutDetailsQuery({
-    mainId: customerStockTransferIn.mainId,
-    locationId: customerStockTransferIn.locationId,
-  });
+  // const { data: stockOutData } = useGetStockOutDetailsQuery({
+  //   mainId: customerStockTransferIn.mainId,
+  //   locationId: customerStockTransferIn.locationId,
+  // });
+      const { data: stockOutData } = useGetStockOutDataForStockInQuery({
+          mainId: customerStockTransferIn.mainId,
+          locationId: parseInt(hasMultipleLocations[0]),
+        });
   const calculateStockGST = (item) => {
     if (!item) return { gstAmount: 0, slabNo: null, gstPercent: 0 };
 
@@ -550,7 +555,7 @@ const OpticalLens = () => {
       if (res?.data) {
         setBarcodeData((prev) => {
           // Check if product exists in StockTransferOut
-          const STOProduct = stockOutData?.data.details.find(
+          const STOProduct = stockOutData?.data?.StockTransferInDetails?.find(
             (item) => item.OpticalLensDetailId === res?.data.OpticalLensDetailId
           );
           if (!STOProduct) {
@@ -814,7 +819,7 @@ const OpticalLens = () => {
         return;
       }
       // Check if product exists in StockTransferOut
-      const STOProduct = stockOutData?.data.details.find(
+      const STOProduct = stockOutData?.data?.StockTransferInDetails?.find(
         (item) => item.OpticalLensDetailId === res?.data.OpticalLensDetailId
       );
       if (!STOProduct) {
