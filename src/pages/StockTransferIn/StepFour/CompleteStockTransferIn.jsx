@@ -215,7 +215,7 @@ const CompleteStockTransferIn = () => {
     goToStockTransferInStep,
     prevStockTransferInStep,
     selectedStockTransferInProduct,
-    updateCurrentSTINStep
+    updateCurrentSTINStep,
   } = useOrder();
 
   const { data: stockDetails, isLoading: isStockDetailsLoading } =
@@ -239,7 +239,6 @@ const CompleteStockTransferIn = () => {
       };
       await updateStockTI({ payload }).unwrap();
       toast.success("Deleted successfully");
-      updateCurrentSTINStep(1)
     } catch (error) {
       toast.error(error?.data.error.message);
     }
@@ -289,6 +288,7 @@ const CompleteStockTransferIn = () => {
       console.log(payload);
       toast.success("Stock TransferIn successfully updated");
       navigate("/stock-transferin");
+      updateCurrentSTINStep(1);
     } catch (error) {
       toast.error(error?.data.error);
     }

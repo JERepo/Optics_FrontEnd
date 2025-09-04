@@ -54,9 +54,11 @@ const getProductName = (item) => {
   };
 
   const formatPowerValue = (val) => {
-    const num = parseFloat(val);
-    if (isNaN(num)) return val;
-    return num > 0 ? `+${val}` : val;
+    const cleaned = clean(val);
+    if (!cleaned) return "";
+    const num = parseFloat(cleaned);
+    if (isNaN(num)) return "";
+    return num >= 0 ? `+${num.toFixed(2)}` : `${num.toFixed(2)}`;
   };
 
   // For Frame (typeid = 1)
@@ -89,10 +91,10 @@ const getProductName = (item) => {
     const expiry = detail.Stock[0]?.Expiry;
     const specs = PowerSpecs
       ? [
-          PowerSpecs.Sph ? `Sph: ${clean(PowerSpecs.Sph)}` : "",
-          PowerSpecs.Cyl ? `Cyl: ${clean(PowerSpecs.Cyl)}` : "",
-          PowerSpecs.Axis ? `Axis: ${clean(PowerSpecs.Axis)}` : "",
-          PowerSpecs.Add ? `Add: ${clean(PowerSpecs.Add)}` : "",
+          PowerSpecs.Sph ? `Sph: ${formatPowerValue(PowerSpecs.Sph)}` : "",
+          PowerSpecs.Cyl ? `Cyl: ${formatPowerValue(PowerSpecs.Cyl)}` : "",
+          PowerSpecs.Axis ? `Axis: ${formatPowerValue(PowerSpecs.Axis)}` : "",
+          PowerSpecs.Add ? `Add: ${formatPowerValue(PowerSpecs.Add)}` : "",
         ]
           .filter(Boolean)
           .join(", ")

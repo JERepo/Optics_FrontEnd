@@ -424,7 +424,6 @@ const FrameSunglass = () => {
       console.warn("No details to save");
       return;
     }
-    console.log("items", items);
     try {
       const payload = {
         STOutMainId: stockDraftData.ID ?? null,
