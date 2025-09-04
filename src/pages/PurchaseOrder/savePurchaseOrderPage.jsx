@@ -32,7 +32,8 @@ import {
     useUpdatePoMainMutation,
     useLazyGetOlByBarcodeQuery,
     useGetOlByDetailIdMutation,
-    useGetAllPoDetailsForNewOrderMutation
+    useGetAllPoDetailsForNewOrderMutation,
+    useGetPOMainMutation
 } from "../../api/purchaseOrderApi";
 import { useGetCompanySettingsQuery } from "../../api/companySettingsApi";
 import { useGetCompanyByIdQuery } from "../../api/companiesApi";
@@ -177,6 +178,8 @@ export default function SavePurchaseOrder() {
         isFetching: isCLFetching,
         isLoading: isCLLoading
     }] = useGetContactLensDetailsMutation();
+
+    const [triggerGetPOMain] = useGetPOMainMutation();
 
 
     const [triggerSearchOLByBarcode, {
@@ -492,7 +495,11 @@ export default function SavePurchaseOrder() {
                             const validMasterStatus = [1, 2].includes(detail.orderMasterStatus);
                             return validDetailStatus && validMasterStatus;
                         });
-                        setFilteredOrderDetails(filteredDetails);
+
+                        // reverse the list tp show the latest entry first
+                        const sortedDetails = filteredDetails.sort((a, b) => b.Id - a.Id);
+
+                        setFilteredOrderDetails(sortedDetails);
                         setSelectedOrders([]);
                         setSelectAll(false);
                     }
@@ -635,20 +642,23 @@ export default function SavePurchaseOrder() {
                         cLDetailId: result?.data?.data?.CLDetailId,
                         Id: formState.EntryType === "seperate"
                             ? `cl-${data.OpticalLensDetailId}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
-                            : data.OpticalLensDetailId || Date.now()
+                            : data.OpticalLensDetailId || Date.now(),
+                        timestamp: Date.now()
                     };
                 } else {
                     newItem = {
                         ...result.data,
                         quantity: 1, // Default quantity
                         price: result?.data?.data?.BuyingPrice, // Default price
-                        cLDetailId: result?.data?.data?.CLDetailId
+                        cLDetailId: result?.data?.data?.CLDetailId,
+                        timestamp: Date.now()
                     };
                 }
 
                 console.log("new Item ---- ", newItem);
 
 
+                let updatedItems = [];
                 if (formState.EntryType === "combined") {
                     // Check if item with same barcode already exists
                     const existingItemIndex = scannedItems.findIndex(
@@ -659,22 +669,27 @@ export default function SavePurchaseOrder() {
 
                     if (existingItemIndex >= 0) {
                         // Increment quantity for existing item
-                        setScannedItems(prevItems =>
-                            prevItems.map((item, index) =>
-                                index === existingItemIndex
-                                    ? { ...item, quantity: item.quantity + 1 }
-                                    : item
-                            )
+                        updatedItems = scannedItems.map((item, index) =>
+                            index === existingItemIndex
+                                ? { ...item, quantity: item.quantity + 1 }
+                                : item
                         );
                     } else {
                         // Add new item
-                        setScannedItems(prevItems => [...prevItems, newItem]);
+                        updatedItems = [...scannedItems, newItem];
                     }
                 } else {
                     // Always add as new item (even if same barcode exists)
-                    setScannedItems(prevItems => [...prevItems, newItem]);
+                    updatedItems = [...scannedItems, newItem];
                 }
-                console.log("scannedItems ---- ", scannedItems);
+
+                // Sort by timestamp in descending order (latest first)
+                updatedItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+                console.log("scannedItems ---- ", updatedItems);
+
+                // Update state with sorted items
+                setScannedItems(updatedItems);
 
                 setAlertMessage({
                     type: "success",
@@ -844,48 +859,54 @@ export default function SavePurchaseOrder() {
                 ...newItem,
                 Barcode: data.Barcode,
                 CLDetailId: data?.CLDetailId,
-                SphericalPower: data.SphericalPower,
+                SphericalPower: Number(data.SphericalPower),
                 CylindricalPower: data.CylindricalPower,
                 Axis: data.Axis,
                 Additional: data.Additional,
                 avlQty: parseInt(data.AvlQty) || 0,
                 orderQty: data.DefaultOrderQty || 1,
                 quantity: 1,
-                BuyingPrice: data?.BuyingPrice || 0,
+                BuyingPrice: data?.priceMaster?.buyingPrice || 0,
                 // Add truly unique ID for separate entries
                 Id: formState.EntryType === "seperate"
                     ? `cl-${data.CLDetailId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-                    : data.CLDetailId || Date.now()
+                    : data.CLDetailId || Date.now(),
+                timestamp: Date.now()
             };
 
             console.log("updatedItem ------------ ", updatedItem);
 
-            // Use functional update to work with latest state
-            setScannedItems(prevItems => {
-                if (formState.EntryType === "seperate") {
-                    // SEPARATE ENTRY: Always add as new individual entry
-                    return [...prevItems, updatedItem];
-                } else {
-                    // COMBINED ENTRY: Find existing item with same barcode in the current state
-                    const existingItemIndex = prevItems.findIndex(
-                        item => item.Barcode === updatedItem.Barcode
+            let updatedItems = [];
+            if (formState.EntryType === "combined") {
+                // Check if item with same barcode already exists
+                const existingItemIndex = scannedItems.findIndex(
+                    item => item.Barcode === updatedItem.Barcode
+                );
+
+                console.log("existingItemIndex --- ", existingItemIndex);
+
+                if (existingItemIndex >= 0) {
+                    // Increment quantity for existing item
+                    updatedItems = scannedItems.map((item, index) =>
+                        index === existingItemIndex
+                            ? { ...item, quantity: item.quantity + 1 }
+                            : item
                     );
-
-                    console.log("existingItemIndex --- ", existingItemIndex);
-
-                    if (existingItemIndex >= 0) {
-                        // Increment quantity for existing item
-                        return prevItems.map((item, index) =>
-                            index === existingItemIndex
-                                ? { ...item, quantity: item.quantity + 1 }
-                                : item
-                        );
-                    } else {
-                        // Add new item
-                        return [...prevItems, updatedItem];
-                    }
+                } else {
+                    // Add new item
+                    updatedItems = [...scannedItems, updatedItem];
                 }
-            });
+            } else {
+                // Always add as new item (even if same barcode exists)
+                updatedItems = [...scannedItems, updatedItem];
+            }
+
+            updatedItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+            console.log("scannedItems ---- ", updatedItems);
+
+            // Update state with sorted items
+            setScannedItems(updatedItems);
 
             const entryType = formState.EntryType === "seperate" ? "separate" : "combined";
             toast.success(`Added as ${entryType} entry`);
@@ -1120,22 +1141,22 @@ export default function SavePurchaseOrder() {
 
         let message = "";
 
-        if (["sphericalPower", "cylindricalPower", "additional"].includes(name)) {
-            if (value && !isMultipleOfQuarter(value)) {
-                message = "Power should only be in multiples of 0.25";
-            }
-        }
+        // if (["sphericalPower", "cylindricalPower", "additional"].includes(name)) {
+        //     if (value && !isMultipleOfQuarter(value)) {
+        //         message = "Power should only be in multiples of 0.25";
+        //     }
+        // }
 
         if (name === "axis" && value && !isValidAxis(value)) {
             message = "Axis is incorrect";
         }
 
-        if (name === "additional") {
-            const additionalValue = parseFloat(value);
-            if (value && (!isMultipleOfQuarter(value) || additionalValue < 0)) {
-                message = "Additional power must be a positive multiple of 0.25";
-            }
-        }
+        // if (name === "additional") {
+        //     const additionalValue = parseFloat(value);
+        //     if (value && (!isMultipleOfQuarter(value) || additionalValue < 0)) {
+        //         message = "Additional power must be a positive multiple of 0.25";
+        //     }
+        // }
 
         setErrors((prev) => ({ ...prev, [name]: message }));
     };
@@ -1337,29 +1358,38 @@ export default function SavePurchaseOrder() {
                 locationId: parseInt(selectedLocation),
                 ApplicationUserId: parseInt(user.Id),
                 vendorId: parseInt(selectedVendor),
-                againstOrder: formState.shiptoAddress === "against" ? "1" : "0"
+                againstOrder: formState.shiptoAddress === "against" ? "1" : "0",
+                status: 0
             };
 
             let poDetailsResponse;
+            const poMainResponse = await triggerGetPOMain(checkPayload).unwrap();
 
-            if (formState.shiptoAddress === "against") {
-                poDetailsResponse = await getAllPoDetails(checkPayload).unwrap();
-            } else if (formState.shiptoAddress === "new") {
-                const response = await getAllPoDetailsForNewOrder(checkPayload).unwrap();
-                poDetailsResponse = response?.data;
-            }
-            console.log("poDetailsResponse ---------------- ", poDetailsResponse);
-            // Check existing PO details
+            if (poMainResponse.data.length > 0) {
 
-            // console.log("poDetailsResponse ----------", poDetailsResponse);
-            if (poDetailsResponse && poDetailsResponse.length > 0) {
-                const poMainId = poDetailsResponse[0]?.POMainId;
-                console.log("poMainId ------------ ", poMainId);
+                const poMainId = poMainResponse.data[0]?.Id;
                 setCreatedPOMainId(poMainId);
-                setPoreviewDetails(poDetailsResponse);
-                setCurrentStep(4);
+
+                if (formState.shiptoAddress === "against") {
+                    poDetailsResponse = await getAllPoDetails(checkPayload).unwrap();
+                } else if (formState.shiptoAddress === "new") {
+                    const response = await getAllPoDetailsForNewOrder(checkPayload).unwrap();
+                    poDetailsResponse = response?.data;
+                }
+                // console.log("poDetailsResponse ---------------- ", poDetailsResponse);
+
+                if (poDetailsResponse && poDetailsResponse.length > 0) {
+                    setPoreviewDetails(poDetailsResponse);
+                    setCurrentStep(4);
+                    return;
+                }
+
+                setCurrentStep(2);
                 return;
+
             }
+
+
 
             // Prepare payload with data from all steps
             const payload = {
@@ -1492,7 +1522,7 @@ export default function SavePurchaseOrder() {
                     return;
                 }
 
-                // console.log("scannedItems in po details ", scannedItems);
+                console.log("scannedItems in po details ", scannedItems);
 
                 // Prepare PO details payload for new orders
                 poDetails = scannedItems.map((item, index) => ({
@@ -1553,9 +1583,106 @@ export default function SavePurchaseOrder() {
     // Handle complete PO in step 4
     const handleCompletePO = async () => {
         try {
+            // Calculate total values based on formState.shiptoAddress
+            const totalQty = formState.shiptoAddress === "against"
+                ? poreviewDetails.reduce((total, order) => total + (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty), 0)
+                : poreviewDetails.reduce((total, order) => total + (order.poQty ?? order.POQty), 0);
+
+            const totalBasicValue = formState.shiptoAddress === "against"
+                ? poreviewDetails.reduce((total, order) => {
+                    const quantity = order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty;
+                    const price = order.productType === 3
+                        ? parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0
+                        : parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
+
+                    const addOn = order.productType === 0
+                        ? (Array.isArray(order?.specs?.addOn)
+                            ? order.specs.addOn.reduce(
+                                (sum, add) => sum + (parseFloat(add?.addOnBuyingPrice || 0) || 0),
+                                0
+                            )
+                            : parseFloat(order?.specs?.addOn?.addOnBuyingPrice || 0) || 0) : 0;
+
+                    const tint = order.productType === 0
+                        ? parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) || 0 : 0;
+
+                    if (price && !isNaN(price) && !isNaN(quantity)) {
+                        return total + ((price + addOn + tint) * quantity);
+                    }
+                    return total;
+                }, 0).toFixed(2)
+                : poreviewDetails.reduce((total, order) => {
+                    const quantity = order.poQty ?? order.POQty;
+                    const price = order?.ProductDetails?.ProductType === 3
+                        ? parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0
+                        : parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
+
+                    if (price && !isNaN(price) && !isNaN(quantity)) {
+                        return total + (price * quantity);
+                    }
+                    return total;
+                }, 0).toFixed(2);
+
+            const totalGSTValue = formState.shiptoAddress === "against"
+                ? poreviewDetails.reduce((total, order) => {
+                    const quantity = order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty;
+                    const price = order.productType === 3
+                        ? parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0
+                        : parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
+
+                    const addOn = order.productType === 0
+                        ? (Array.isArray(order?.specs?.addOn)
+                            ? order.specs.addOn.reduce(
+                                (sum, add) => sum + (parseFloat(add?.addOnBuyingPrice || 0) || 0),
+                                0
+                            )
+                            : parseFloat(order?.specs?.addOn?.addOnBuyingPrice || 0) || 0) : 0;
+
+                    const tint = order.productType === 0
+                        ? parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) || 0 : 0;
+
+                    const taxPercentage = parseFloat(order.taxPercentage / 100) || 1;
+
+                    if (price && !isNaN(price) && !isNaN(quantity)) {
+                        return total + ((price + tint + addOn) * quantity * taxPercentage);
+                    }
+                    return total;
+                }, 0).toFixed(2)
+                : poreviewDetails.reduce((total, order) => {
+                    const quantity = order.poQty ?? order.POQty;
+                    const price = order?.ProductDetails?.ProductType === 3
+                        ? parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0
+                        : parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
+                    const taxPercentage = parseFloat(order?.ProductDetails?.GSTPercentage / 100) || 1;
+
+                    if (price && !isNaN(price) && !isNaN(quantity)) {
+                        return total + (price * quantity * taxPercentage);
+                    }
+                    return total;
+                }, 0).toFixed(2);
+
+            const totalValue = formState.shiptoAddress === "against"
+                ? (parseFloat(totalBasicValue) + parseFloat(totalGSTValue)).toFixed(2)
+                : poreviewDetails.reduce((total, order) => {
+                    const quantity = order.poQty ?? order.POQty;
+                    const price = order?.ProductDetails?.ProductType === 3
+                        ? parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0
+                        : parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
+                    const taxPercentage = parseFloat(order?.ProductDetails?.GSTPercentage / 100) || 1;
+
+                    if (price && !isNaN(price) && !isNaN(quantity)) {
+                        return total + ((price * quantity) + (price * quantity * taxPercentage));
+                    }
+                    return total;
+                }, 0).toFixed(2);
+
             const payload = {
                 poId: createdPOMainId,
                 remarks: formState.remarks || "",
+                totalBasicValue: parseFloat(totalBasicValue),
+                totalGSTValue: parseFloat(totalGSTValue),
+                totalValue: parseFloat(totalValue),
+                totalQty: totalQty
             };
 
             const response = await updatePoMain(payload).unwrap();
@@ -1567,7 +1694,6 @@ export default function SavePurchaseOrder() {
                 });
                 setShowAlert(true);
                 setTimeout(() => setShowAlert(false), 3000);
-                // Optionally navigate to another page
                 navigate('/purchase-order/');
             } else {
                 setAlertMessage({
@@ -1597,8 +1723,8 @@ export default function SavePurchaseOrder() {
                 const frameBrands = allBrands?.filter(
                     (b) =>
                         b.FrameActive === 1 &&
-                        b.IsActive === 1 
-                        // b.BrandName.toLowerCase().includes(brandInput?.toLowerCase())
+                        b.IsActive === 1
+                    // b.BrandName.toLowerCase().includes(brandInput?.toLowerCase())
                 );
                 console.log(frameBrands);
 
@@ -1608,8 +1734,8 @@ export default function SavePurchaseOrder() {
                 const accessoriesBrands = allBrands?.filter(
                     (b) =>
                         b.OthersProductsActive === 1 &&
-                        b.IsActive === 1 
-                        // b.BrandName.toLowerCase().includes(brandInput?.toLowerCase())
+                        b.IsActive === 1
+                    // b.BrandName.toLowerCase().includes(brandInput?.toLowerCase())
                 );
                 console.log(accessoriesBrands);
 
@@ -1619,8 +1745,8 @@ export default function SavePurchaseOrder() {
                 const contactLensBrands = allBrands?.filter(
                     (b) =>
                         b.ContactLensActive === 1 &&
-                        b.IsActive === 1 
-                        // b.BrandName.toLowerCase().includes(brandInput?.toLowerCase())
+                        b.IsActive === 1
+                    // b.BrandName.toLowerCase().includes(brandInput?.toLowerCase())
                 );
                 console.log(contactLensBrands);
 
@@ -1630,8 +1756,8 @@ export default function SavePurchaseOrder() {
                 const OlBrands = allBrands?.filter(
                     (b) =>
                         b.OpticalLensActive === 1 &&
-                        b.IsActive === 1 
-                        // b.BrandName.toLowerCase().includes(brandInput?.toLowerCase())
+                        b.IsActive === 1
+                    // b.BrandName.toLowerCase().includes(brandInput?.toLowerCase())
                 );
                 console.log(OlBrands);
 
@@ -2214,7 +2340,7 @@ export default function SavePurchaseOrder() {
 
                         <div className=" items-center my-10 w-full gap-6">
 
-                            <div className="flex justify-start gap-12 mb-6">
+                            <div className="flex gap-12 mb-6 items-center justify-center">
                                 <div className="flex space-x-4">
                                     <label className="flex items-center space-x-2 cursor-pointer">
                                         <input
@@ -2801,7 +2927,7 @@ export default function SavePurchaseOrder() {
                                                 updateScannedItemPrice={updateScannedItemPrice}
                                                 handleDeleteScannedItem={handleDeleteScannedItem}
                                             />
-                                        ) : formState.selectedOption === "Contact Lens" && (
+                                        ) : formState.selectedOption === "Contact Lens" ? (
                                             <POCLScannedTable
                                                 headerItems={["Barcode", "Spherical power", "Cylindrical power", "Axis", "Additional", "Buying Price", "PO Qty", "Action"]}
                                                 scannedItems={scannedItems}
@@ -2809,7 +2935,7 @@ export default function SavePurchaseOrder() {
                                                 updateScannedItemPrice={updateScannedItemPrice}
                                                 handleDeleteScannedItem={handleDeleteScannedItem}
                                             />
-                                        )}
+                                        ) : null}
                             </div>
 
                         )}
@@ -2942,8 +3068,8 @@ export default function SavePurchaseOrder() {
                                                     }
                                                     {order.productType == 1 &&
                                                         <td className="px-6 py-4 whitespace-wrap">{order?.productDescName}
-                                                            <br></br>{order?.size}-{order?.dBL}-{order?.templeLength}
-                                                            <br></br>{order?.category === 0 ? `Sunglass` : `OpticalFrame`}
+                                                            <br></br>Size: {order?.size}-{order?.dBL}-{order?.templeLength}
+                                                            <br></br>{order?.category === 0 ? `Category: Sunglass` : `Category: OpticalFrame`}
                                                             <br></br>{order?.barcode && `Barcode: ` + order?.barcode}
                                                             <br></br>{order?.hSN && `HSN: ` + order?.hSN}
                                                         </td>
@@ -3095,9 +3221,46 @@ export default function SavePurchaseOrder() {
                                                     <td className="px-6 py-4 whitespace-nowrap">{index + 1}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.ProductType == 0 && `OL` || order?.ProductDetails?.ProductType == 1 && `F` || order?.ProductDetails?.ProductType == 2 && `Acc` || order?.ProductDetails?.ProductType == 3 && `CL`}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.barcode}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.productName}
+                                                    {/* <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.productName}
                                                         <br />{order?.ProductDetails?.hsncode ? `HSN: ` + order?.ProductDetails?.hsncode : null}
-                                                    </td>
+                                                    </td> */}
+                                                    {order?.ProductDetails?.ProductType == 0 ?
+                                                        <td className="px-6 py-4 whitespace-wrap min-w-72">{order?.ProductDetails?.productName
+                                                        }
+                                                            <br />
+                                                            {order?.ProductDetails?.Specs?.Spherical ? `Sph: ${order?.ProductDetails?.Specs?.Spherical} ` : `Sph: `}
+                                                            {order?.ProductDetails?.Specs?.Cylinder ? `Cyl: ${order?.ProductDetails?.Specs?.Cylinder} ` : `Cyl: `}
+                                                            {order?.ProductDetails?.Specs?.Diameter ? `Dia: ${order?.ProductDetails?.Specs?.Diameter} ` : `Dia: `}
+
+                                                            <br></br>{order?.ProductDetails?.HSN && `HSN: ` + order?.ProductDetails?.HSN}
+
+                                                        </td>
+                                                        : order?.ProductDetails?.ProductType == 1 ?
+                                                            <td className="px-6 py-4 whitespace-wrap">{order?.ProductDetails?.productName}
+                                                                <br></br>Size: {order?.ProductDetails?.Size?.Size}
+                                                                <br></br>{order?.ProductDetails?.ProductType === 0 ? `Category: Sunglass` : `Category: OpticalFrame`}
+                                                                <br></br>{order?.ProductDetails?.HSN && `HSN: ` + order?.ProductDetails?.HSN}
+                                                            </td>
+                                                            : order?.ProductDetails?.ProductType == 2 ?
+                                                                <td className="px-6 py-4 whitespace-wrap">{order?.ProductDetails?.productName}
+                                                                    {order?.ProductDetails?.Variation?.Variation && (<><br />Variation: {order?.ProductDetails?.Variation?.Variation}</>)}
+                                                                    <br></br>{order?.ProductDetails?.HSN && `HSN: ` + order?.ProductDetails?.HSN}
+                                                                </td>
+                                                                : order?.ProductDetails?.ProductType == 3 ?
+                                                                    <td className="px-6 py-4 whitespace-wrap">{order?.ProductDetails?.productName}
+                                                                        <br />
+                                                                        {order?.ProductDetails?.PowerSpecs?.Sph ? `Sph: ${order?.ProductDetails?.PowerSpecs?.Sph} ` : `Sph: `}
+                                                                        {order?.ProductDetails?.PowerSpecs?.Cyl ? `Cyl: ${order?.ProductDetails?.PowerSpecs?.Cyl} ` : `Cyl: `}
+                                                                        {order?.ProductDetails?.PowerSpecs?.Axis ? `Axis: ${order?.ProductDetails?.PowerSpecs?.Axis} ` : `Axis: `}
+                                                                        {order?.ProductDetails?.PowerSpecs?.Add ? `Add: ${order?.ProductDetails?.PowerSpecs?.Axis} ` : `Add: `}
+                                                                        <br></br>{order?.ProductDetails?.HSN && `HSN: ` + order?.ProductDetails?.HSN}
+                                                                    </td>
+                                                                    :
+                                                                    <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.productName}
+                                                                        <br />{order?.ProductDetails?.hsncode ? `HSN: ` + order?.ProductDetails?.hsncode : null}
+                                                                    </td>
+                                                    }
+
                                                     {order?.ProductDetails?.ProductType == 3 ?
                                                         <td className="px-6 py-4 whitespace-nowrap">{order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice}
                                                             <button
@@ -3189,13 +3352,27 @@ export default function SavePurchaseOrder() {
                                                         ? parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0
                                                         : parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
 
-                                                    // const addOn = order.productType === 3 
-                                                    //     ? (order?.specs?.addOn ? (Array.isArray(order?.specs?.addOn)
+                                                    let addOn = order.productType === 0
+                                                        ? (Array.isArray(order?.specs?.addOn)
+                                                            ? order.specs.addOn.reduce(
+                                                                (sum, add) => sum + (parseFloat(add?.addOnBuyingPrice || 0) || 0),
+                                                                0
+                                                            )
+                                                            : parseFloat(order?.specs?.addOn?.addOnBuyingPrice || 0) || 0) : 0;
+
+                                                    let tint = order.productType === 0
+                                                        ? parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) : 0;
+
+
+                                                    if (order?.specs?.powerDetails?.bothLens === 0) {
+                                                        addOn = addOn / 2;
+                                                        tint = tint / 2;
+                                                    }
 
 
                                                     // Ensure both price and quantity are valid numbers
                                                     if (price && !isNaN(price) && !isNaN(quantity)) {
-                                                        return total + (price * quantity);
+                                                        return total + ((price + addOn + tint) * quantity);
                                                     }
                                                     return total;
                                                 }, 0)
@@ -3213,9 +3390,22 @@ export default function SavePurchaseOrder() {
                                                 const price = order.productType === 3
                                                     ? parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0
                                                     : parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
+
+                                                const addOn = order.productType === 0
+                                                    ? (Array.isArray(order?.specs?.addOn)
+                                                        ? order.specs.addOn.reduce(
+                                                            (sum, add) => sum + (parseFloat(add?.addOnBuyingPrice || 0) || 0),
+                                                            0
+                                                        )
+                                                        : parseFloat(order?.specs?.addOn?.addOnBuyingPrice || 0) || 0) : 0;
+
+                                                const tint = order.productType === 0
+                                                    ? parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) : 0;
+
                                                 const taxPercentage = parseFloat(order.taxPercentage / 100) || 0;
+
                                                 if (price && !isNaN(price) && !isNaN(quantity)) {
-                                                    return total + (price * quantity * taxPercentage);
+                                                    return total + ((price + tint + addOn) * quantity * taxPercentage);
                                                 }
                                                 return total;
                                             }, 0)
@@ -3252,11 +3442,30 @@ export default function SavePurchaseOrder() {
                                                             ? parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0
                                                             : parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
 
+                                                        let addOn = order.productType === 0
+                                                            ? (Array.isArray(order?.specs?.addOn)
+                                                                ? order?.specs?.addOn.reduce(
+                                                                    (sum, add) => sum + (parseFloat(add?.addOnBuyingPrice || 0) || 0),
+                                                                    0
+                                                                )
+                                                                : parseFloat(order?.specs?.addOn?.addOnBuyingPrice || 0) || 0) : 0;
+
+                                                        let tint = order.productType === 0
+                                                            ? parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) : 0;
+
+
+                                                        if (order?.specs?.powerDetails?.bothLens === 0) {
+                                                            addOn = addOn / 2;
+                                                            tint = tint / 2;
+                                                        }
+
+
                                                         // Ensure both price and quantity are valid numbers
                                                         if (price && !isNaN(price) && !isNaN(quantity)) {
-                                                            return total + (price * quantity);
+                                                            return total + ((price + addOn + tint) * quantity);
                                                         }
                                                         return total;
+
                                                     }, 0)
                                                     ?.toFixed?.(2) ?? '0.00'
                                             }
@@ -3272,9 +3481,22 @@ export default function SavePurchaseOrder() {
                                                     const price = order?.ProductDetails?.ProductType === 3
                                                         ? parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0
                                                         : parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
-                                                    const taxPercentage = parseFloat(order?.ProductDetails?.GSTPercentage / 100) || 0;
+
+                                                    const addOn = order.productType === 0
+                                                        ? (Array.isArray(order?.specs?.addOn)
+                                                            ? order.specs.addOn.reduce(
+                                                                (sum, add) => sum + (parseFloat(add?.addOnBuyingPrice || 0) || 0),
+                                                                0
+                                                            )
+                                                            : parseFloat(order?.specs?.addOn?.addOnBuyingPrice || 0) || 0) : 0;
+
+                                                    const tint = order.productType === 0
+                                                        ? parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) : 0;
+
+                                                    const taxPercentage = parseFloat(order?.ProductDetails?.GSTPercentage / 100) || 1;
+
                                                     if (price && !isNaN(price) && !isNaN(quantity)) {
-                                                        return total + (price * quantity * taxPercentage);
+                                                        return total + ((price + tint + addOn) * quantity * taxPercentage);
                                                     }
                                                     return total;
                                                 }, 0)
@@ -3291,7 +3513,7 @@ export default function SavePurchaseOrder() {
                                                     const price = order?.ProductDetails?.ProductType === 3
                                                         ? parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0
                                                         : parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
-                                                    const taxPercentage = parseFloat(order?.ProductDetails?.GSTPercentage / 100) || 0;
+                                                    const taxPercentage = parseFloat(order?.ProductDetails?.GSTPercentage / 100) || 1;
                                                     if (price && !isNaN(price) && !isNaN(quantity)) {
                                                         return total + ((price * quantity) + (price * quantity * taxPercentage));
                                                     }

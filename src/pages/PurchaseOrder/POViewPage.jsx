@@ -45,7 +45,8 @@ export function POViewPage() {
                     ApplicationUserId: poData.applicationUser, // Replace with actual user ID
                     vendorId: poData.vendor.Id,
                     againstOrder: String(poData.againstOrder),
-                    status: 1
+                    status: 1,
+                    poMainId: poData.id
                 };
 
                 if (poData.againstOrder === 1) {
@@ -352,71 +353,28 @@ export function POViewPage() {
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total Quantity:</span>
                     <span className="font-bold text-lg">
-                        {poreviewDetails.reduce((total, order) => {
-                            const quantity = poData.againstOrder === 1 ?
-                                (order.poQty ?? (order.orderQty - order.billedQty - order.cancelledQty)) :
-                                (order.poQty ?? order.POQty);
-                            return total + (quantity || 0);
-                        }, 0)}
+                        {poreviewDetails[0]?.TotalQty}
                     </span>
                 </div>
 
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total Gross Value:</span>
                     <span className="font-bold text-lg">
-                        ₹{poreviewDetails.reduce((total, order) => {
-                            const quantity = poData.againstOrder === 1 ?
-                                (order.poQty ?? (order.orderQty - order.billedQty - order.cancelledQty)) :
-                                (order.poQty ?? order.POQty);
-
-                            let price = 0;
-                            if (poData.againstOrder === 1) {
-                                price = order.productType === 3 ?
-                                    parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0 :
-                                    parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
-                            } else {
-                                price = order?.ProductDetails?.ProductType === 3 ?
-                                    parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0 :
-                                    parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
-                            }
-
-                            return total + (price * (quantity || 0));
-                        }, 0).toFixed(2)}
+                        ₹ {poreviewDetails[0]?.TotalBasicValue}
                     </span>
                 </div>
 
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total GST:</span>
                     <span className="font-bold text-lg">
-                        ₹{poreviewDetails.reduce((total, order) => {
-                            const quantity = poData.againstOrder === 1 ?
-                                (order.poQty ?? (order.orderQty - order.billedQty - order.cancelledQty)) :
-                                (order.poQty ?? order.POQty);
-
-                            let price = 0;
-                            let taxPercentage = 0;
-
-                            if (poData.againstOrder === 1) {
-                                price = order.productType === 3 ?
-                                    parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0 :
-                                    parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
-                                taxPercentage = parseFloat(order.taxPercentage) / 100 || 0;
-                            } else {
-                                price = order?.ProductDetails?.ProductType === 3 ?
-                                    parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0 :
-                                    parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
-                                taxPercentage = parseFloat(order?.ProductDetails?.GSTPercentage) / 100 || 0;
-                            }
-
-                            return total + (price * (quantity || 0) * taxPercentage);
-                        }, 0).toFixed(2)}
+                        ₹{poreviewDetails[0]?.TotalGSTValue}
                     </span>
                 </div>
 
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total Net Value:</span>
                     <span className="font-bold text-lg">
-                        ₹{calculateTotalAmount().toFixed(2)}
+                        ₹{poreviewDetails[0]?.TotalValue}
                     </span>
                 </div>
             </div>

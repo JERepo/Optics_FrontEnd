@@ -132,8 +132,8 @@ export function POAgainstOrderTableComponent({ filteredOrderDetails, formState, 
                             }
                             {formState.selectedOption === 'Frame/Sunglass' &&
                                 <td className="px-6 py-4 whitespace-wrap">{order?.productDescName}
-                                    <br></br>{order?.size}-{order?.dBL}-{order?.templeLength}
-                                    <br></br>{order?.category === 0 ? `Sunglass` : `OpticalFrame`}
+                                    <br></br>Size: {order?.size}-{order?.dBL}-{order?.templeLength}
+                                    <br></br>{order?.category === 0 ? `Category: Sunglass` : `Category: OpticalFrame`}
                                     <br></br>{order?.barcode && `Barcode: ` + order?.barcode}
                                     <br></br>{order?.hSN && `HSN: ` + order?.hSN}
                                 </td>

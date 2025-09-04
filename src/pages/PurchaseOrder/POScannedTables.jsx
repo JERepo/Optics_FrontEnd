@@ -158,7 +158,7 @@ export function POCLScannedTable({ headerItems, scannedItems, updateScannedItemQ
             renderRow={(cl, index) => (
                 <TableRow key={index}>
                     <TableCell>{cl.Barcode}</TableCell>
-                    <TableCell>{cl.SphericalPower}</TableCell>
+                    <TableCell>{cl.SphericalPower || cl.sphericalPower}</TableCell>
                     <TableCell>{cl.CylindricalPower}</TableCell>
                     <TableCell>{cl.Axis}</TableCell>
                     <TableCell>{cl.Additional}</TableCell>

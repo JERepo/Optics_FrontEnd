@@ -194,20 +194,21 @@ export const menuItems = [
     name: "Purchase Order",
     icon: FiPackage,
     module: "Purchase Order",
-    subItems: [
-      {
-        name: "Add PO",
-        path: "/purchase-order/create",
-        module: "Purchase Order",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
-      {
-        name: "Approve PO",
-        path: "/purchase-order/approve",
-        module: "Purchase Order",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
-    ],
+    path: "/purchase-order/"
+    // subItems: [
+    //   {
+    //     name: "Add PO",
+    //     path: "/purchase-order/create",
+    //     module: "Purchase Order",
+    //     icon: IoConstructOutline, // Suggests building/setup
+    //   },
+    //   {
+    //     name: "Approve PO",
+    //     path: "/purchase-order/approve",
+    //     module: "Purchase Order",
+    //     icon: IoConstructOutline, // Suggests building/setup
+    //   },
+    // ],
   },
 
   {
@@ -233,14 +234,15 @@ export const menuItems = [
     name: "GRN",
     icon: FiArrowRightCircle,
     module: "GRN",
-    subItems: [
-      {
-        name: "Add GRN",
-        path: "/grn/create",
-        module: "GRN",
-        icon: IoConstructOutline, // Suggests building/setup
-      }
-    ],
+    path: "/grn/"
+    // subItems: [
+    //   {
+    //     name: "Add GRN",
+    //     path: "/grn/create",
+    //     module: "GRN",
+    //     icon: IoConstructOutline, // Suggests building/setup
+    //   }
+    // ],
   },
   {
     name: "Purchase Return",
