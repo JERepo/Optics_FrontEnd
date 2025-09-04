@@ -46,10 +46,17 @@ const getProductName = (item) => {
     return val;
   };
 
+  // const formatPowerValue = (val) => {
+  //   const num = parseFloat(val);
+  //   if (isNaN(num)) return val;
+  //   return num > 0 ? `+${val}` : val;
+  // };
   const formatPowerValue = (val) => {
-    const num = parseFloat(val);
-    if (isNaN(num)) return val;
-    return num > 0 ? `+${val}` : val;
+    const cleaned = clean(val);
+    if (!cleaned) return "";
+    const num = parseFloat(cleaned);
+    if (isNaN(num)) return "";
+    return num >= 0 ? `+${num.toFixed(2)}` : `${num.toFixed(2)}`;
   };
 
   // For Frame (typeid = 1)
@@ -142,21 +149,17 @@ const getProductName = (item) => {
 
       const specsValues = [];
       if (spherical) specsValues.push(`SPH ${formatPowerValue(spherical)}`);
-      if (diameter) specsValues.push(`Diameter ${formatPowerValue(diameter)}`);
+      if (diameter) specsValues.push(`Dia ${formatPowerValue(diameter)}`);
       if (cylinder) specsValues.push(`CYL ${formatPowerValue(cylinder)}`);
 
       specsLines = specsValues.join(", ");
     }
 
     const lines = [
-      clean(
-        (ProductName || productName) &&
-          brandName &&
-          `${brandName} ${productName}`
-      ),
+      clean(productName && productName),
       specsLines,
       // clean(colour) && `Color: ${colour}`,
-      clean(barcode) && `Barcode: ${barcode}`,
+      // clean(barcode) && `Barcode: ${barcode}`,
       clean(hsncode || HSN) && `HSN: ${hsncode || HSN}`,
       tintName ? `Tint: ${tintName}` : "",
       addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
@@ -357,10 +360,16 @@ const StockTransferView = () => {
                 </TableCell>
                 <TableCell>
                   ₹
-                  {formatINR(
+                  {/* {formatINR(
                     getStockOutPrice(item) * item.STQtyOut +
                       getStockOutPrice(item) *
                         (parseFloat(item.ProductTaxPercentage) / 100)
+                  )} */}
+                  {formatINR(
+                    getStockOutPrice(item) * item.STQtyOut +
+                      getStockOutPrice(item) *
+                        (parseFloat(item.ProductTaxPercentage) / 100) *
+                        item.STQtyOut
                   )}
                 </TableCell>
               </TableRow>

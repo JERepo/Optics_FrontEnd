@@ -111,7 +111,7 @@ const getProductNameYes = (item) => {
   const lines = [
     `${clean()} ${clean(productDescName)}`,
     specsLines,
-    clean(barcode) && `Barcode: ${barcode}`,
+    // clean(barcode) && `Barcode: ${barcode}`,
     tintName ? `Tint: ${tintName}` : "",
     addOns?.length > 0 ? `AddOn: ${addOns}` : "",
     clean(hSN) && `HSN: ${hSN}`,
@@ -133,7 +133,7 @@ const getProductName = (order, allBrandsData, lensData) => {
     Diameter,
     Barcode,
     hsncode,
-    HSNCode
+    HSNCode,
   } = order;
 
   const clean = (val) => {
@@ -1009,6 +1009,12 @@ const OpticalLens = () => {
       }
 
       const res = await getPowerByOl({ payload }).unwrap();
+      if(res?.data.Quantity <= 0){
+        toast.error("Stock Quantity must be greater than 0!")
+        return;
+      }
+
+     
 
       if (res?.data) {
         if ((res.data.Quantity || 0) <= 0) {
@@ -1731,103 +1737,70 @@ const OpticalLens = () => {
                     <table className="w-full bg-white shadow rounded-lg mt-3 border-collapse">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="p-3 text-left text-gray-600 font-medium">
-                            Eye
-                          </th>
                           {inputTableColumns.map((col) => (
                             <th
                               key={col}
                               className="p-3 text-left text-gray-600 font-medium uppercase"
                             >
-                              {col}
+                              {col === "transferQty" ? "Transfer Qty" : col}
                             </th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
-                        {["R", "L"].map((eye) => (
-                          <tr key={eye} className="hover:bg-gray-50">
-                            <td className="p-3 font-medium text-gray-700 flex items-center gap-2">
-                              {eye}
-                              <input
-                                type="checkbox"
-                                checked={selectedEyes.includes(eye)}
-                                onChange={() => handleCheckboxChange(eye)}
-                                // disabled={lensData.powerSingleORboth === 1}
-                                className="w-5 h-5 accent-blue-500 cursor-pointer"
-                              />
-                            </td>
-                            {inputTableColumns.map((field) => (
-                              <td key={field} className="p-3 align-top">
-                                {field === "Dia" &&
-                                isDiaFetched &&
-                                (lensData.powerSingleORboth === 0 ||
-                                  selectedEyes.includes(eye)) ? (
-                                  <select
-                                    className={`w-24 px-2 py-1 border rounded-md ${
-                                      isFieldDisabled(eye, field)
-                                        ? "bg-gray-100 border-gray-200 text-gray-400"
-                                        : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    }`}
-                                    value={
-                                      formValues[eye].Dia?.DiameterSize || ""
-                                    }
-                                    onChange={(e) => {
-                                      const selectedDia = diaOptions.find(
-                                        (d) =>
-                                          d.side === eye &&
-                                          d.DiameterSize === e.target.value
-                                      );
-                                      setFormValues((prev) => ({
-                                        ...prev,
-                                        [eye]: {
-                                          ...prev[eye],
-                                          Dia: selectedDia || null,
-                                        },
-                                      }));
-                                    }}
-                                    disabled={isFieldDisabled(eye, field)}
-                                  >
-                                    <option value="">Select</option>
-                                    {diaOptions
-                                      .filter((d) => d.side === eye)
-                                      .map((d) => (
-                                        <option
-                                          key={d.Id}
-                                          value={d.DiameterSize}
-                                        >
-                                          {d.DiameterSize}
-                                        </option>
-                                      ))}
-                                  </select>
-                                ) : (
-                                  <input
-                                    type={
-                                      field === "transferQty"
-                                        ? "number"
-                                        : "text"
-                                    }
-                                    value={formValues[eye][field] || ""}
-                                    onChange={(e) =>
-                                      handleInputChange(
-                                        eye,
-                                        field,
-                                        e.target.value
-                                      )
-                                    }
-                                    disabled={isFieldDisabled(eye, field)}
-                                    className={`w-24 px-2 py-1 border rounded-md ${
-                                      isFieldDisabled(eye, field)
-                                        ? "bg-gray-100 border-gray-200 text-gray-400"
-                                        : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    }`}
-                                  />
-                                )}
-                              </td>
+                  <tr className="hover:bg-gray-50">
+                    {inputTableColumns.map((field) => (
+                      <td key={field} className="p-3 align-top">
+                        {field === "Dia" && isDiaFetched ? (
+                          <select
+                            className={`w-24 px-2 py-1 border rounded-md ${
+                              isFieldDisabled("R", field) 
+                                ? "bg-gray-100 border-gray-200 text-gray-400"
+                                : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            }`}
+                            value={formValues.R.Dia?.DiameterSize || ""} 
+                            onChange={(e) => {
+                              const selectedDia = diaOptions.find(
+                                (d) => d.DiameterSize === e.target.value
+                              );
+                              setFormValues((prev) => ({
+                                ...prev,
+                                R: {
+                                  ...prev.R,
+                                  Dia: selectedDia || null,
+                                  transferQty: selectedDia ? "1" : "",
+                                },
+                              }));
+                            }}
+                            disabled={isFieldDisabled("R", field)}
+                          >
+                            <option value="">Select</option>
+                            {diaOptions.map((d) => (
+                              <option key={d.Id} value={d.DiameterSize}>
+                                {d.DiameterSize}
+                              </option>
                             ))}
-                          </tr>
-                        ))}
-                      </tbody>
+                          </select>
+                        ) : (
+                          <input
+                            type={field === "transferQty" ? "number" : "text"}
+                            min={field === "transferQty" ? "1" : undefined}
+                            value={formValues.R[field] || ""} // only from R, or unify
+                            onChange={(e) =>
+                              handleInputChange("R", field, e.target.value)
+                            }
+                            disabled={isFieldDisabled("R", field)}
+                            className={`w-24 px-2 py-1 border rounded-md ${
+                              isFieldDisabled("R", field)
+                                ? "bg-gray-100 border-gray-200 text-gray-400"
+                                : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            }`}
+                          />
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
                     </table>
                     <div className="mt-4 flex justify-end gap-4 items-center">
                       {showGetDiaButton && (

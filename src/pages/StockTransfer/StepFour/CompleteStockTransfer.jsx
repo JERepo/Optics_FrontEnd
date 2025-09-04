@@ -46,19 +46,21 @@ const getProductName = (data) => {
       val === undefined ||
       val === "undefined" ||
       val === "null" ||
-      val === "N/A"
+      val === "N/A" ||
+      val === 0
     ) {
       return "";
     }
-    return val;
+    return String(val).trim();
   };
 
   const formatPowerValue = (val) => {
-    const num = parseFloat(val);
-    if (isNaN(num)) return val;
-    return num > 0 ? `+${val}` : val;
+    const cleaned = clean(val);
+    if (!cleaned) return "";
+    const num = parseFloat(cleaned);
+    if (isNaN(num)) return "";
+    return num >= 0 ? `+${num.toFixed(2)}` : `${num.toFixed(2)}`;
   };
-
   // For Frame (typeid = 1)
   if (ProductType === 1) {
     const lines = [
@@ -142,7 +144,7 @@ const getProductName = (data) => {
     const lines = [
       clean((ProductName || productName) && `${productName}`),
       specsLines,
-      clean(barcode) && `BarCode: ${barcode}`,
+      // clean(barcode) && `BarCode: ${barcode}`,
       clean(hsncode || HSN) && `HSN: ${hsncode || HSN}`,
       tintName ? `Tint: ${tintName}` : "",
       addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
@@ -396,9 +398,10 @@ const CompleteStockTransfer = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    (getStockOutPrice(item) * item.STQtyOut) +
-                     ( getStockOutPrice(item) *
-                        (parseFloat(item.ProductTaxPercentage) / 100) * item.STQtyOut)
+                    getStockOutPrice(item) * item.STQtyOut +
+                      getStockOutPrice(item) *
+                        (parseFloat(item.ProductTaxPercentage) / 100) *
+                        item.STQtyOut
                   )}
                 </TableCell>
                 <TableCell>

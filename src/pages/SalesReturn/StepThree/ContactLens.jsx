@@ -453,103 +453,8 @@ const ContactLens = () => {
       prev.map((i, idx) => (idx === index ? { ...i, returnQty: newQty } : i))
     );
   };
-  // const toggleEditMode = (index, field) => {
-  //   setEditMode((prev) => ({
-  //     ...prev,
-  //     [index]: {
-  //       ...prev[index],
-  //       [field]: !prev[index]?.[field],
-  //     },
-  //   }));
-  //   const item = mainClDetails[index];
 
-  //   if (field === "returnPrice") {
-  //     setEditReturnPrice(
-  //       referenceApplicable === 1
-  //         ? item.ReturnPricePerUnit || ""
-  //         : item.returnPrice || ""
-  //     );
-  //   } else if (field === "returnQty") {
-  //     setEditReturnQty(
-  //       referenceApplicable === 1 ? item.ReturnQty || "" : item.returnQty || ""
-  //     );
-  //   }
-  // };
-  // const saveEdit = (index, field) => {
-  //   const parsedQty = parseFloat(editReturnQty);
-  //   const parsedPrice = parseFloat(editReturnPrice);
-  //   const item = mainClDetails[index];
-
-  //   const sellingPrice =
-  //     referenceApplicable === 1
-  //       ? parseFloat(item.ActualSellingPrice)
-  //       : parseFloat(item.SellingPrice);
-
-  //   if (field === "returnPrice" && parsedPrice > sellingPrice) {
-  //     toast.error(
-  //       "Sales return price should not be greater than selling price"
-  //     );
-  //     return;
-  //   }
-
-  //   if (field === "returnQty") {
-  //     const maxQty =
-  //       referenceApplicable === 1
-  //         ? item.InvoiceQty - parseInt(item.ReturnQty || 0)
-  //         : item.Quantity;
-  //     if (parsedQty > maxQty) {
-  //       toast.error(
-  //         "Sales return qty should not be greater than " +
-  //           (referenceApplicable === 1 ? "pending quantity" : "quantity")
-  //       );
-  //       return;
-  //     }
-  //   }
-
-  //   setMainClDetails((prev) =>
-  //     prev.map((it, i) => {
-  //       if (i === index) {
-  //         let updatedItem = { ...it };
-  //         if (field === "returnPrice") {
-  //           if (referenceApplicable === 1) {
-  //             updatedItem.ReturnPricePerUnit = parsedPrice;
-  //             updatedItem.TotalAmount =
-  //               parsedPrice * (updatedItem.ReturnQty || 0);
-  //           } else {
-  //             updatedItem.returnPrice = parsedPrice;
-  //           }
-  //         } else if (field === "returnQty") {
-  //           if (referenceApplicable === 1) {
-  //             updatedItem.ReturnQty = parsedQty;
-  //             updatedItem.TotalAmount =
-  //               (updatedItem.ReturnPricePerUnit || 0) * parsedQty;
-  //           } else {
-  //             updatedItem.returnQty = parsedQty;
-  //           }
-  //         }
-  //         return updatedItem;
-  //       }
-  //       return it;
-  //     })
-  //   );
-  //   setEditMode((prev) => ({
-  //     ...prev,
-  //     [index]: {
-  //       ...prev[index],
-  //       [field]: false,
-  //     },
-  //   }));
-  // };
-
-  // const cancelEdit = (index, field) => {
-  //   setEditMode((prev) => ({
-  //     ...prev,
-  //     [index]: {
-  //       ...prev[index],
-  //       [field]: false,
-  //     },
-  //   }));
-  // };
+  
   const handleRefresh = () => {
     setLensData({
       orderReference: null,
@@ -734,14 +639,7 @@ const ContactLens = () => {
     }
   };
 
-  const handleDeleteYes = (index) => {
-    setMainClDetails((prev) => prev.filter((item, i) => i !== index));
-    setEditMode((prev) => {
-      const newEditMode = { ...prev };
-      delete newEditMode[`${index}`];
-      return newEditMode;
-    });
-  };
+
   const handleGetBatchBarCodeDetails = async () => {
     if (!batchCodeInput) {
       return;
@@ -1141,14 +1039,25 @@ const ContactLens = () => {
     }
   };
 
-  const handleDelete = (index) => {
-    setMainClDetails((prev) => prev.filter((_, i) => i !== index));
-    setEditMode((prev) => {
-      const newEditMode = { ...prev };
-      delete newEditMode[`${index}`];
-      return newEditMode;
-    });
-  };
+const handleDelete = (index) => {
+  const item = mainClDetails[index];
+  setMainClDetails((prev) => prev.filter((_, i) => i !== index));
+  setEditMode((prev) => {
+    const newEditMode = { ...prev };
+    delete newEditMode[`${item.Barcode}-${index}`];
+    return newEditMode;
+  });
+};
+
+const handleDeleteYes = (index) => {
+  const item = mainClDetails[index];
+  setMainClDetails((prev) => prev.filter((item, i) => i !== index));
+  setEditMode((prev) => {
+    const newEditMode = { ...prev };
+    delete newEditMode[`${item.Barcode}-${index}`];
+    return newEditMode;
+  });
+};
 
   const inputTableColumns = [
     "Spherical Power",

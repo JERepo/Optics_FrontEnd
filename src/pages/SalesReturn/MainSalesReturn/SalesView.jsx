@@ -37,7 +37,7 @@ const SalesView = () => {
   };
 
   const getProductNameForNo = (order, referenceApplicable = 0) => {
-    console.log("coming in no")
+    console.log("coming in no");
     const {
       productType,
       ProductType,
@@ -209,7 +209,7 @@ const SalesView = () => {
         [
           olLine && olLine,
           singlePowerData,
-          clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+          // clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
           fittingLine,
           addonNames && `AddOn: ${addonNames}`,
           clean(detail.HSN) && `HSN: ${clean(clean(detail.HSN))}`,
@@ -221,7 +221,7 @@ const SalesView = () => {
     return "";
   };
   const getProductNameForYes = (order) => {
-    console.log("coming in yes also")
+    console.log("coming in yes also");
     const {
       productType,
       ProductType,
@@ -341,7 +341,7 @@ const SalesView = () => {
       const olLine = clean(detail.productDescName);
       // AddOns
       const addonNames = detail.specs?.addOn?.addOnName;
-      const tintName = detail.tint?.tintName;
+      const tintName = detail.specs?.tint?.tintName;
 
       // for yes
       const formatPower = (eye) =>
@@ -379,8 +379,9 @@ const SalesView = () => {
         [
           olLine && olLine,
           powerLine,
-          clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+          // clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
           addonNames && `AddOn: ${addonNames}`,
+          tintName && `Tint: ${tintName}`,
           fittingLine,
           clean(detail.hSN) && `HSN: ${clean(clean(detail.hSN))}`,
         ],
@@ -402,6 +403,17 @@ const SalesView = () => {
     const gst = parseFloat(item.FittingGSTPercentage || 0);
     const fittingGst = fittingPrice * (gst / 100);
     return sum + price + fittingPrice + fittingGst;
+  }, 0);
+
+  const totalGST = salesDetails?.data.reduce((sum, item) => {
+    const price = parseFloat(item.ReturnPricePerUnit) * item.ReturnQty;
+    const totalPriceGst = parseFloat(
+      calculateGST(price, parseFloat(item.GSTPercentage)).gstAmount
+    );
+    const fittingPrice = parseFloat(item.FittingCharges || 0);
+    const gst = parseFloat(item.FittingGSTPercentage || 0);
+    const fittingGst = fittingPrice * (gst / 100);
+    return sum + totalPriceGst + fittingGst;
   }, 0);
 
   if (isViewLoading || isLoading) {
@@ -511,20 +523,21 @@ const SalesView = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    calculateGST(
-                      parseFloat(s.ReturnPricePerUnit),
+                    parseFloat(calculateGST(
+                      parseFloat(s.ReturnPricePerUnit) * s.ReturnQty,
                       parseFloat(s.GSTPercentage)
-                    ).gstAmount
+                    ).gstAmount) + (parseFloat(s.FittingCharges || 0) * (parseFloat(s.FittingGSTPercentage || 0)/100))
                   )}
                   (
                   {
                     calculateGST(
-                      parseFloat(s.ReturnPricePerUnit),
+                      parseFloat(s.ReturnPricePerUnit) * s.ReturnQty,
                       parseFloat(s.GSTPercentage)
                     ).taxPercentage
                   }
                   %)
                 </TableCell>
+
                 <TableCell>{s.ReturnQty}</TableCell>
                 <TableCell>₹{formatINR(s.FittingCharges ?? 0)}</TableCell>
                 <TableCell>
@@ -534,8 +547,8 @@ const SalesView = () => {
                       parseFloat(
                         s.ProductType === 0
                           ? parseFloat(
-                              (s.FittingCharges || 0) *
-                                ((s.FittingGSTPercentage || 0) / 100)
+                              parseFloat(s.FittingCharges || 0) *
+                                (parseFloat(s.FittingGSTPercentage || 0) / 100)
                             )
                           : 0
                       ) +
@@ -557,7 +570,15 @@ const SalesView = () => {
                   Total Qty
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
-                  {formatNumber(totalQty) || "0"}
+                  {totalQty || "0"}
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-neutral-700 font-semibold text-lg">
+                  Total GST
+                </span>
+                <span className="text-neutral-600 text-xl font-medium">
+                  ₹{formatINR(totalGST) || "0"}
                 </span>
               </div>
               <div className="flex flex-col">

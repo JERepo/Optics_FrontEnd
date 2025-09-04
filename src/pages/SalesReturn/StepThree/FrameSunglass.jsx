@@ -971,7 +971,7 @@ const FrameSunglass = () => {
                         </button>
                         <button
                           onClick={() =>
-                            toggleEditMode(item.Id, index, "returnPrice")
+                            toggleEditMode(item.Id, index, "returnPrice","cancel")
                           }
                           className="text-neutral-400 transition"
                           title="Cancel"

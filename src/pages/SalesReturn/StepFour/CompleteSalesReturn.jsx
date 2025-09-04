@@ -145,23 +145,7 @@ const getProductNameForNo = (order, referenceApplicable) => {
         : Array.isArray(detail.addOn)
         ? detail.addOn?.map((item) => clean(item.addOnName)).filter(Boolean)
         : "";
-    // for yes
-    // const formatPower = (eye) =>
-    //   joinNonEmpty(
-    //     [
-    //       cleanPower(eye?.sphericalPower) &&
-    //         `SPH: ${cleanPower(eye?.sphericalPower)}`,
-    //       cleanPower(eye?.addition) && `Add: ${cleanPower(eye?.addition)}`,
-    //       clean(eye?.diameter) && `Dia: ${clean(eye?.diameter)}`,
-    //     ],
-    //     ", "
-    //   );
-
-    // for No
-    // const pd = detail?.Specs || {};
-
-    // const rightParts = formatPower(pd.right || {});
-    // const leftParts = formatPower(pd.left || {});
+   
     const singlePower = detail?.Specs;
 
     const singlePowerData = joinNonEmpty([
@@ -170,11 +154,7 @@ const getProductNameForNo = (order, referenceApplicable) => {
       cleanPower(singlePower?.Diameter) && `Dia: ${singlePower?.Diameter}`,
     ]);
 
-    // const powerLine = joinNonEmpty(
-    //   [rightParts && `R: ${rightParts}`, leftParts && `L: ${leftParts}`],
-    //   "\n"
-    // );
-
+  
     let fittingLine = "";
     const fitPrice = parseFloat(fittingPrice);
     const gstPerc = parseFloat(fittingGSTPercentage);
@@ -188,7 +168,6 @@ const getProductNameForNo = (order, referenceApplicable) => {
       [
         olLine && olLine,
         singlePowerData,
-        // clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
         fittingLine,
         addonNames && `AddOn: ${addonNames}`,
         clean(detail.HSN) && `HSN: ${clean(clean(detail.HSN))}`,
@@ -318,7 +297,7 @@ const getProductNameForYes = (order, referenceApplicable) => {
     const olLine = clean(detail.productDescName);
     // AddOns
     const addonNames = detail.specs?.addOn?.addOnName;
-    const tintName = detail.tint?.tintName;
+    const tintName = detail.specs?.tint?.tintName;
 
     // for yes
     const formatPower = (eye) =>
@@ -355,8 +334,9 @@ const getProductNameForYes = (order, referenceApplicable) => {
       [
         olLine && olLine,
         powerLine,
-        clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+        // clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
         addonNames && `AddOn: ${addonNames}`,
+        tintName && `Tint: ${tintName}`,
         fittingLine,
         clean(detail.hSN) && `HSN: ${clean(clean(detail.hSN))}`,
       ],

@@ -379,7 +379,6 @@ const OpticalLens = () => {
       )
     );
   };
-  console.log("bar", barcodeData);
   const handleQtyChange = (barcode, qty, index) => {
     const newQty = Number(qty);
     const avlQty = Number(barcodeData[index].Quantity);
@@ -539,7 +538,6 @@ const OpticalLens = () => {
       Id: null,
     },
   });
-  console.log(formValues);
   const [getDIADetails, { isLoading: isDiaLoading }] =
     useGetDIaDetailsMutation();
   const [getPowerByOl, { isLoading: isPowerDetailsLoading }] =
@@ -679,7 +677,6 @@ const OpticalLens = () => {
       setErrorModalOpen(true);
     }
   };
-
   const handleAddPowerData = async (eye) => {
     
     try {
@@ -696,6 +693,11 @@ const OpticalLens = () => {
       const res = await getPowerByOl({ payload }).unwrap();
       if(res?.data.Quantity <= 0){
         toast.error("Stock Quantity must be greater than 0!")
+        return;
+      }
+
+      if(parseInt(formValues["R"].transferQty) > res?.data.Quantity){
+        toast.error("Stock Quantity cannot exceed the available Quantity!")
         return;
       }
       if (res?.data) {
@@ -726,7 +728,6 @@ const OpticalLens = () => {
       console.warn("No details to save");
       return;
     }
-    console.log("barcodeData", barcodeData);
     try {
       const payload = {
         STOutMainId: stockDraftData.ID ?? null,
@@ -742,12 +743,11 @@ const OpticalLens = () => {
           };
         }),
       };
-      console.log(payload);
       await saveStockTransfer({ payload }).unwrap();
       toast.success("Optical Lens transfer out successfully added");
       goToStockStep(4);
     } catch (error) {
-      toast.error(error?.data.error.message);
+      console.log(error)
     }
   };
 
