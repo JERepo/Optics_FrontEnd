@@ -552,10 +552,10 @@ const ContactLens = () => {
           setDetailId(true);
           setOpenBatch(true);
         } else if (data.CLBatchCode === 0 && referenceApplicable === 0) {
-          if (data.stock[0]?.quantity <= 0) {
-            toast.error("Stock quantity must be greater than 0!");
-            return;
-          }
+          // if (data.stock[0]?.quantity <= 0) {
+          //   toast.error("Stock quantity must be greater than 0!");
+          //   return;
+          // }
           const cc = {
             ...data,
             Quantity: data.stock[0]?.quantity,
@@ -572,10 +572,10 @@ const ContactLens = () => {
           if (existingIndex !== -1) {
             const item = mainClDetails[existingIndex];
             const newQty = item.returnQty + 1;
-            if (newQty > item.Quantity) {
-              toast.error("Stock quantity cannot exceed available quantity!");
-              return;
-            }
+            // if (newQty > item.Quantity) {
+            //   toast.error("Stock quantity cannot exceed available quantity!");
+            //   return;
+            // }
             setMainClDetails((prev) =>
               prev.map((it, idx) =>
                 idx === existingIndex
