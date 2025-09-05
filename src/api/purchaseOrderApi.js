@@ -99,7 +99,14 @@ export const purchaseOrderApi = createApi({
                 method: 'POST',
                 body: payload
             })
-        }) 
+        }),
+        updatePOMainData: builder.mutation({
+            query: ({ poMainId, refNo }) => ({
+                url: `/api/v1/purchase-order/update-pomain?poMainId=${poMainId}&refNo=${refNo}`,
+                method: 'PUT',
+            }),
+            invalidatesTags: ['PurchaseOrder'],
+        }),
     })
 });
 
@@ -118,5 +125,6 @@ export const {
     useGetOlByDetailIdMutation,
     useGetAllPoDetailsForNewOrderMutation,
     useGetPOviewQuery,
-    useGetPOMainMutation
+    useGetPOMainMutation,
+    useUpdatePOMainDataMutation
 } = purchaseOrderApi;

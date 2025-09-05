@@ -6,10 +6,11 @@ import { useGetGRNDetailsMutation, useSaveCompleteGRNMutation } from "../../api/
 import toast from "react-hot-toast";
 import { PenIcon, Trash2 } from "lucide-react";
 import { Table, TableRow, TableCell } from "../../components/Table";
+import { useNavigate } from "react-router-dom";
 
 export default function GRNStep4() {
     const { grnData, currentStep, setCurrentStep, updateStep1Data, nextStep, prevStep, resetGRN } = useGRN();
-
+    const navigate = useNavigate();
     console.log("grnData in GRNStep4 ---------------- ", grnData);
     const { user, hasMultipleLocations } = useSelector((state) => state.auth);
     const [grnViewDetails, setGrnViewDetails] = useState([]);
@@ -128,7 +129,8 @@ export default function GRNStep4() {
                 toast.success("GRN completed successfully!");
                 resetGRN(); // Reset the GRN context
                 // Navigate to GRN list or next step as needed
-                setCurrentStep(1); // Or navigate to GRN list
+                // setCurrentStep(1); // Or navigate to GRN list
+                navigate("/grn");
             } else {
                 toast.error("Failed to complete GRN");
             }

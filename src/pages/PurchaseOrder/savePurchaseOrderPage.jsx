@@ -33,7 +33,8 @@ import {
     useLazyGetOlByBarcodeQuery,
     useGetOlByDetailIdMutation,
     useGetAllPoDetailsForNewOrderMutation,
-    useGetPOMainMutation
+    useGetPOMainMutation,
+    useUpdatePOMainDataMutation
 } from "../../api/purchaseOrderApi";
 import { useGetCompanySettingsQuery } from "../../api/companySettingsApi";
 import { useGetCompanyByIdQuery } from "../../api/companiesApi";
@@ -61,6 +62,7 @@ import { POAgainstOrderTableComponent, PurchaseOrderVendorSection } from "./Purc
 import { POAccessoriesScannedTable, POCLScannedTable, POFrameScannedTable, POLensScannedTable } from "./POScannedTables";
 import { set } from "react-hook-form";
 import { POCLpowerSearchTable, POFrameSearchTable, POolSearchTable } from "./POSearchTable";
+import { calculateTotalQuantity, calculateTotalAmount, calculateTotalGrossValue, calculateTotalGST, calculateTotalNetValue } from "./helperFunction";
 
 export default function SavePurchaseOrder() {
     const navigate = useNavigate();
@@ -187,6 +189,8 @@ export default function SavePurchaseOrder() {
         isFetching: isOLFetching,
         isLoading: isOLLoading
     }] = useLazyGetOlByBarcodeQuery();
+
+    const [triggerUpdatePOMainData] = useUpdatePOMainDataMutation();
 
     const { data: focalityData, isLoading: isLoadingFocality } = useGetFocalityQuery(
         {
@@ -362,6 +366,39 @@ export default function SavePurchaseOrder() {
         { id: formState?.vendorDetails?.MultiDelivery === 1 ? selectedLocation : formState?.vendorDetails?.DeliveryLocationId },
         { skip: !selectedLocation && !hasLocation?.[0]?.Id }
     );
+
+
+    // fetch draftinfo
+    useEffect(() => {
+
+        const fetchPOMainDraft = async () => {
+            if (selectedVendor && formState.shiptoAddress) {
+                const checkPayload = {
+                    locationId: parseInt(selectedLocation),
+                    ApplicationUserId: parseInt(user.Id),
+                    vendorId: parseInt(selectedVendor),
+                    againstOrder: formState.shiptoAddress === "against" ? "1" : "0",
+                    status: 0
+                };
+
+                const poMainResponse = await triggerGetPOMain(checkPayload).unwrap();
+
+                if (poMainResponse.data.length > 0) {
+
+                    const poMainId = poMainResponse.data[0]?.Id;
+                    setCreatedPOMainId(poMainId);
+                    setFormState((prev) => ({ ...prev, referenceNo: poMainResponse.data[0]?.POReferenceNo }));
+                    return;
+
+                } else {
+                    setFormState((prev) => ({ ...prev, referenceNo: ""}));
+                }
+            }
+
+        }
+
+        fetchPOMainDraft();
+    }, [selectedVendor, formState.shiptoAddress])
 
     // Auto select location if it has only 1.
     useEffect(() => {
@@ -957,6 +994,7 @@ export default function SavePurchaseOrder() {
                 Cylinder: data?.Cylinder,
                 quantity: data.quantity || 1,
                 BuyingPrice: data?.BuyingPrice || 0,
+                taxPercentage: data?.TaxDetails[0]?.PurTaxPerct || 0,
                 // Add unique ID for separate entries tracking
                 Id: formState.EntryType === "seperate"
                     ? `ol-${data.OpticalLensDetailId}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
@@ -1353,22 +1391,21 @@ export default function SavePurchaseOrder() {
     // Handle Save for PO main 
     const handleSubmit = async () => {
         try {
-            // First check if PO details exist
-            const checkPayload = {
-                locationId: parseInt(selectedLocation),
-                ApplicationUserId: parseInt(user.Id),
-                vendorId: parseInt(selectedVendor),
-                againstOrder: formState.shiptoAddress === "against" ? "1" : "0",
-                status: 0
-            };
-
             let poDetailsResponse;
-            const poMainResponse = await triggerGetPOMain(checkPayload).unwrap();
+            if (createdPOMainId) {
 
-            if (poMainResponse.data.length > 0) {
+                const checkPayload = {
+                    locationId: parseInt(selectedLocation),
+                    ApplicationUserId: parseInt(user.Id),
+                    vendorId: parseInt(selectedVendor),
+                    againstOrder: formState.shiptoAddress === "against" ? "1" : "0",
+                    status: 0
+                };
 
-                const poMainId = poMainResponse.data[0]?.Id;
-                setCreatedPOMainId(poMainId);
+                await triggerUpdatePOMainData({
+                    poMainId: createdPOMainId,
+                    refNo: formState.referenceNo
+                });
 
                 if (formState.shiptoAddress === "against") {
                     poDetailsResponse = await getAllPoDetails(checkPayload).unwrap();
@@ -1485,7 +1522,7 @@ export default function SavePurchaseOrder() {
                         poQty: order.poQty ?? order?.orderQty - order?.billedQty - order?.cancelledQty,
                         poPrice: order.productType == 3 ? order.poPrice ?? order?.priceMaster?.buyingPrice
                             : order.poPrice ?? order?.pricing?.buyingPrice,
-                        taxPercentage: order.taxPercentage || 0,
+                        taxPercentage: formState.selectedOption === 'Lens' ? order?.TaxPrectTaxMain : order?.taxPercentage || 0,
                         Status: 0, // Default status
                         ApplicationUserId: user.Id
                     }));
@@ -1536,7 +1573,7 @@ export default function SavePurchaseOrder() {
                     detailId: formState.selectedOption === "Contact Lens" ? item.CLDetailId : formState.selectedOption === "Lens" ? item.OpticalLensDetailId : item.Id,
                     poQty: item.quantity || 1,
                     poPrice: item.price || item.BuyingPrice,
-                    taxPercentage: 0,
+                    taxPercentage: item.taxPercentage || 0,
                     Status: 0,
                     ApplicationUserId: user.Id
                 }));
@@ -1584,104 +1621,20 @@ export default function SavePurchaseOrder() {
     const handleCompletePO = async () => {
         try {
             // Calculate total values based on formState.shiptoAddress
-            const totalQty = formState.shiptoAddress === "against"
-                ? poreviewDetails.reduce((total, order) => total + (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty), 0)
-                : poreviewDetails.reduce((total, order) => total + (order.poQty ?? order.POQty), 0);
+            const totalQty = calculateTotalQuantity(poreviewDetails, formState.shiptoAddress);
 
-            const totalBasicValue = formState.shiptoAddress === "against"
-                ? poreviewDetails.reduce((total, order) => {
-                    const quantity = order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty;
-                    const price = order.productType === 3
-                        ? parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0
-                        : parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
+            const totalBasicValue = calculateTotalGrossValue(poreviewDetails, formState.shiptoAddress);
 
-                    const addOn = order.productType === 0
-                        ? (Array.isArray(order?.specs?.addOn)
-                            ? order.specs.addOn.reduce(
-                                (sum, add) => sum + (parseFloat(add?.addOnBuyingPrice || 0) || 0),
-                                0
-                            )
-                            : parseFloat(order?.specs?.addOn?.addOnBuyingPrice || 0) || 0) : 0;
+            const totalGSTValue = calculateTotalGST(poreviewDetails, formState.shiptoAddress);
 
-                    const tint = order.productType === 0
-                        ? parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) || 0 : 0;
-
-                    if (price && !isNaN(price) && !isNaN(quantity)) {
-                        return total + ((price + addOn + tint) * quantity);
-                    }
-                    return total;
-                }, 0).toFixed(2)
-                : poreviewDetails.reduce((total, order) => {
-                    const quantity = order.poQty ?? order.POQty;
-                    const price = order?.ProductDetails?.ProductType === 3
-                        ? parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0
-                        : parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
-
-                    if (price && !isNaN(price) && !isNaN(quantity)) {
-                        return total + (price * quantity);
-                    }
-                    return total;
-                }, 0).toFixed(2);
-
-            const totalGSTValue = formState.shiptoAddress === "against"
-                ? poreviewDetails.reduce((total, order) => {
-                    const quantity = order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty;
-                    const price = order.productType === 3
-                        ? parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0
-                        : parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
-
-                    const addOn = order.productType === 0
-                        ? (Array.isArray(order?.specs?.addOn)
-                            ? order.specs.addOn.reduce(
-                                (sum, add) => sum + (parseFloat(add?.addOnBuyingPrice || 0) || 0),
-                                0
-                            )
-                            : parseFloat(order?.specs?.addOn?.addOnBuyingPrice || 0) || 0) : 0;
-
-                    const tint = order.productType === 0
-                        ? parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) || 0 : 0;
-
-                    const taxPercentage = parseFloat(order.taxPercentage / 100) || 1;
-
-                    if (price && !isNaN(price) && !isNaN(quantity)) {
-                        return total + ((price + tint + addOn) * quantity * taxPercentage);
-                    }
-                    return total;
-                }, 0).toFixed(2)
-                : poreviewDetails.reduce((total, order) => {
-                    const quantity = order.poQty ?? order.POQty;
-                    const price = order?.ProductDetails?.ProductType === 3
-                        ? parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0
-                        : parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
-                    const taxPercentage = parseFloat(order?.ProductDetails?.GSTPercentage / 100) || 1;
-
-                    if (price && !isNaN(price) && !isNaN(quantity)) {
-                        return total + (price * quantity * taxPercentage);
-                    }
-                    return total;
-                }, 0).toFixed(2);
-
-            const totalValue = formState.shiptoAddress === "against"
-                ? (parseFloat(totalBasicValue) + parseFloat(totalGSTValue)).toFixed(2)
-                : poreviewDetails.reduce((total, order) => {
-                    const quantity = order.poQty ?? order.POQty;
-                    const price = order?.ProductDetails?.ProductType === 3
-                        ? parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0
-                        : parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
-                    const taxPercentage = parseFloat(order?.ProductDetails?.GSTPercentage / 100) || 1;
-
-                    if (price && !isNaN(price) && !isNaN(quantity)) {
-                        return total + ((price * quantity) + (price * quantity * taxPercentage));
-                    }
-                    return total;
-                }, 0).toFixed(2);
+            const totalValue = calculateTotalNetValue(poreviewDetails, formState.shiptoAddress);
 
             const payload = {
                 poId: createdPOMainId,
                 remarks: formState.remarks || "",
-                totalBasicValue: parseFloat(totalBasicValue),
-                totalGSTValue: parseFloat(totalGSTValue),
-                totalValue: parseFloat(totalValue),
+                totalBasicValue: parseFloat(totalBasicValue).toFixed(2),
+                totalGSTValue: parseFloat(totalGSTValue).toFixed(2),
+                totalValue: parseFloat(totalValue).toFixed(2),
                 totalQty: totalQty
             };
 
@@ -1767,48 +1720,6 @@ export default function SavePurchaseOrder() {
         }
         setShowSearchInputs(true);
     }
-
-    const calculateTotalAmount = () => {
-        return poreviewDetails.reduce((total, order) => {
-            const quantity = order.poQty ?? (order.orderQty - order.billedQty - order.cancelledQty);
-            if (order.productType === 0) { // Optical Lens
-                const bothLens = order?.specs?.powerDetails?.bothLens === 1;
-                const buyingPrice = parseFloat(order?.pricing?.buyingPrice || 0);
-
-                // Tint buying price
-                const tintBuying = parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) || 0;
-
-                // Sum of addon buying prices
-                const addonBuying = Array.isArray(order?.specs?.addOn)
-                    ? order.specs.addOn.reduce(
-                        (sum, add) => sum + (parseFloat(add?.addOnBuyingPrice || 0) || 0),
-                        0
-                    )
-                    : parseFloat(order?.specs?.addOn?.addOnBuyingPrice || 0) || 0;
-
-                // Calculate base
-                let subtotal;
-                if (bothLens) {
-                    subtotal = buyingPrice * quantity + tintBuying + addonBuying;
-                } else {
-                    subtotal = buyingPrice * quantity + tintBuying / 2 + addonBuying / 2;
-                }
-
-                // Add tax
-                return total + (subtotal + subtotal * (parseFloat(order?.taxPercentage) / 100 || 0));
-            } else if ((order.productType === 3)) {
-                const price = parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0
-                const tax = parseFloat(order?.taxPercentage / 100) || 0
-
-                return total + ((price * quantity) + (price * quantity * tax))
-
-            } else {
-                const price = parseFloat(order.pricing?.buyingPrice) || 0;
-                const tax = parseFloat(order?.taxPercentage / 100) || 0;
-                return total + (price * quantity) + (price * quantity * tax);
-            }
-        }, 0);
-    };
 
     const handleEditPriceClick = (item) => {
         console.log("item ---------------- ", item);
@@ -2123,13 +2034,13 @@ export default function SavePurchaseOrder() {
                                     <div className="flex">
                                         {/* {console.log("vend -------------- ", formState.vendorDetails)} */}
                                         <p className="font-bold text-gray-500 mb-4">Ship to Address:</p>
-                                        {formState.vendorDetails.MultiDelivery === 0 ? (
+                                        {formState.vendorDetails?.MultiDelivery === 0 ? (
                                             <div className="ml-4 text-gray-500">
-                                                <p>{formState.vendorDetails.Address1 || 'N/A'} {formState.vendorDetails.Address2}</p>
+                                                <p>{formState.vendorDetails?.Address1 || 'N/A'} {formState.vendorDetails?.Address2}</p>
                                                 <p>
-                                                    {formState.vendorDetails.City}
-                                                    {formState.vendorDetails.Pin &&
-                                                        ` - ${formState.vendorDetails.Pin}`
+                                                    {formState.vendorDetails?.City}
+                                                    {formState.vendorDetails?.Pin &&
+                                                        ` - ${formState.vendorDetails?.Pin}`
                                                     }
                                                 </p>
                                                 <p>
@@ -3131,57 +3042,7 @@ export default function SavePurchaseOrder() {
                                                     }
                                                     {/* // In the table cell where Total Amount is displayed: */}
                                                     <td className="px-6 py-4 whitespace-nowrap">
-                                                        {order.productType == 0 ? (
-                                                            // Optical Lens calculation
-                                                            (() => {
-                                                                const bothLens = order?.specs?.powerDetails?.bothLens === 1;
-                                                                const buyingPrice = parseFloat(order?.pricing?.buyingPrice || 0);
-                                                                // Use poQty instead of orderQty for calculation
-                                                                const poQty = parseInt(order.poQty || (order.orderQty - order.billedQty - order.cancelledQty), 10);
-
-                                                                // Tint buying price
-                                                                const tintBuying =
-                                                                    parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) || 0;
-
-                                                                // Sum of addon buying prices
-                                                                const addonBuying = Array.isArray(order?.specs?.addOn)
-                                                                    ? order.specs.addOn.reduce(
-                                                                        (sum, add) => sum + (parseFloat(add?.addOnBuyingPrice || 0) || 0),
-                                                                        0
-                                                                    )
-                                                                    : parseFloat(order?.specs?.addOn?.addOnBuyingPrice || 0) || 0;
-
-                                                                // Calculate base
-                                                                let total;
-                                                                if (bothLens) {
-                                                                    total = buyingPrice * poQty + tintBuying + addonBuying;
-                                                                } else {
-                                                                    total =
-                                                                        buyingPrice * poQty + tintBuying / 2 + addonBuying / 2;
-                                                                }
-
-                                                                // Add tax
-                                                                const totalWithTax =
-                                                                    total + total * (parseFloat(order?.taxPercentage) / 100 || 0);
-
-                                                                return totalWithTax.toFixed(2);
-                                                            })()
-                                                        ) : order.productType === 3 ? (
-                                                            (
-                                                                (order?.priceMaster?.buyingPrice * (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty)) +
-                                                                (order?.priceMaster?.buyingPrice *
-                                                                    (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty) *
-                                                                    (order?.taxPercentage / 100))
-                                                            ).toFixed(2)
-                                                        ) : (
-                                                            // Default calculation
-                                                            (
-                                                                (order?.pricing?.buyingPrice * (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty)) +
-                                                                (order?.pricing?.buyingPrice *
-                                                                    (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty) *
-                                                                    (order?.taxPercentage / 100))
-                                                            ).toFixed(2)
-                                                        )}
+                                                        {calculateTotalAmount(order)}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <button
@@ -3336,87 +3197,28 @@ export default function SavePurchaseOrder() {
                                 <div className="flex justify-between gap-4">
                                     <span className="text-gray-600 font-bold text-lg">Total Quantity :</span>
                                     <span className="font-bold text-lg">
-                                        {poreviewDetails
-                                            .reduce((total, order) => total + (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty), 0)}
+                                        {calculateTotalQuantity(poreviewDetails, formState.shiptoAddress)}
                                     </span>
                                 </div>
 
                                 <div className="flex justify-between gap-4">
                                     <span className="text-gray-600 font-bold text-lg">Total Gross Value :</span>
                                     <span className="font-bold text-lg">
-                                        ₹{
-                                            poreviewDetails
-                                                .reduce((total, order) => {
-                                                    const quantity = order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty;
-                                                    const price = order.productType === 3
-                                                        ? parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0
-                                                        : parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
-
-                                                    let addOn = order.productType === 0
-                                                        ? (Array.isArray(order?.specs?.addOn)
-                                                            ? order.specs.addOn.reduce(
-                                                                (sum, add) => sum + (parseFloat(add?.addOnBuyingPrice || 0) || 0),
-                                                                0
-                                                            )
-                                                            : parseFloat(order?.specs?.addOn?.addOnBuyingPrice || 0) || 0) : 0;
-
-                                                    let tint = order.productType === 0
-                                                        ? parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) : 0;
-
-
-                                                    if (order?.specs?.powerDetails?.bothLens === 0) {
-                                                        addOn = addOn / 2;
-                                                        tint = tint / 2;
-                                                    }
-
-
-                                                    // Ensure both price and quantity are valid numbers
-                                                    if (price && !isNaN(price) && !isNaN(quantity)) {
-                                                        return total + ((price + addOn + tint) * quantity);
-                                                    }
-                                                    return total;
-                                                }, 0)
-                                                ?.toFixed?.(2) ?? '0.00'
-                                        }
+                                        ₹ {calculateTotalGrossValue(poreviewDetails, formState.shiptoAddress)}
                                     </span>
                                 </div>
 
                                 <div className="flex justify-between gap-4">
                                     <span className="text-gray-600 font-bold text-lg">Total GST :</span>
                                     <span className="font-bold text-lg">
-                                        ₹{poreviewDetails
-                                            .reduce((total, order) => {
-                                                const quantity = order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty;
-                                                const price = order.productType === 3
-                                                    ? parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0
-                                                    : parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
-
-                                                const addOn = order.productType === 0
-                                                    ? (Array.isArray(order?.specs?.addOn)
-                                                        ? order.specs.addOn.reduce(
-                                                            (sum, add) => sum + (parseFloat(add?.addOnBuyingPrice || 0) || 0),
-                                                            0
-                                                        )
-                                                        : parseFloat(order?.specs?.addOn?.addOnBuyingPrice || 0) || 0) : 0;
-
-                                                const tint = order.productType === 0
-                                                    ? parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) : 0;
-
-                                                const taxPercentage = parseFloat(order.taxPercentage / 100) || 0;
-
-                                                if (price && !isNaN(price) && !isNaN(quantity)) {
-                                                    return total + ((price + tint + addOn) * quantity * taxPercentage);
-                                                }
-                                                return total;
-                                            }, 0)
-                                            ?.toFixed?.(2) ?? '0.00'}
+                                        ₹ {calculateTotalGST(poreviewDetails, formState.shiptoAddress)}
                                     </span>
                                 </div>
 
                                 <div className="flex justify-between gap-4">
                                     <span className="text-gray-600 font-bold text-lg">Total Net Value :</span>
                                     <span className="font-bold text-lg">
-                                        ₹{calculateTotalAmount().toFixed(2)}
+                                        ₹ {calculateTotalNetValue(poreviewDetails)}
                                     </span>
                                 </div>
                             </div>
@@ -3426,101 +3228,28 @@ export default function SavePurchaseOrder() {
                                     <div className="flex justify-between gap-4">
                                         <span className="text-gray-600 font-bold text-lg">Total Quantity :</span>
                                         <span className="font-bold text-lg">
-                                            {poreviewDetails
-                                                .reduce((total, order) => total + (order.poQty ?? order.POQty), 0)}
+                                            {calculateTotalQuantity(poreviewDetails, formState.shiptoAddress)}
                                         </span>
                                     </div>
 
                                     <div className="flex justify-between gap-4">
                                         <span className="text-gray-600 font-bold text-lg">Total Gross Value :</span>
                                         <span className="font-bold text-lg">
-                                            ₹{
-                                                poreviewDetails
-                                                    .reduce((total, order) => {
-                                                        const quantity = order.poQty ?? order.POQty;
-                                                        const price = order?.ProductDetails?.ProductType === 3
-                                                            ? parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0
-                                                            : parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
-
-                                                        let addOn = order.productType === 0
-                                                            ? (Array.isArray(order?.specs?.addOn)
-                                                                ? order?.specs?.addOn.reduce(
-                                                                    (sum, add) => sum + (parseFloat(add?.addOnBuyingPrice || 0) || 0),
-                                                                    0
-                                                                )
-                                                                : parseFloat(order?.specs?.addOn?.addOnBuyingPrice || 0) || 0) : 0;
-
-                                                        let tint = order.productType === 0
-                                                            ? parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) : 0;
-
-
-                                                        if (order?.specs?.powerDetails?.bothLens === 0) {
-                                                            addOn = addOn / 2;
-                                                            tint = tint / 2;
-                                                        }
-
-
-                                                        // Ensure both price and quantity are valid numbers
-                                                        if (price && !isNaN(price) && !isNaN(quantity)) {
-                                                            return total + ((price + addOn + tint) * quantity);
-                                                        }
-                                                        return total;
-
-                                                    }, 0)
-                                                    ?.toFixed?.(2) ?? '0.00'
-                                            }
+                                            ₹ {calculateTotalGrossValue(poreviewDetails, formState.shiptoAddress)}
                                         </span>
                                     </div>
 
                                     <div className="flex justify-between gap-4">
                                         <span className="text-gray-600 font-bold text-lg">Total GST :</span>
                                         <span className="font-bold text-lg">
-                                            ₹{poreviewDetails
-                                                .reduce((total, order) => {
-                                                    const quantity = order.poQty ?? order.POQty;
-                                                    const price = order?.ProductDetails?.ProductType === 3
-                                                        ? parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0
-                                                        : parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
-
-                                                    const addOn = order.productType === 0
-                                                        ? (Array.isArray(order?.specs?.addOn)
-                                                            ? order.specs.addOn.reduce(
-                                                                (sum, add) => sum + (parseFloat(add?.addOnBuyingPrice || 0) || 0),
-                                                                0
-                                                            )
-                                                            : parseFloat(order?.specs?.addOn?.addOnBuyingPrice || 0) || 0) : 0;
-
-                                                    const tint = order.productType === 0
-                                                        ? parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) : 0;
-
-                                                    const taxPercentage = parseFloat(order?.ProductDetails?.GSTPercentage / 100) || 1;
-
-                                                    if (price && !isNaN(price) && !isNaN(quantity)) {
-                                                        return total + ((price + tint + addOn) * quantity * taxPercentage);
-                                                    }
-                                                    return total;
-                                                }, 0)
-                                                ?.toFixed?.(2) ?? '0.00'}
+                                            ₹ {calculateTotalGST(poreviewDetails, formState.shiptoAddress)}
                                         </span>
                                     </div>
 
                                     <div className="flex justify-between gap-4">
                                         <span className="text-gray-600 font-bold text-lg">Total Net Value :</span>
                                         <span className="font-bold text-lg">
-                                            ₹{poreviewDetails
-                                                .reduce((total, order) => {
-                                                    const quantity = order.poQty ?? order.POQty;
-                                                    const price = order?.ProductDetails?.ProductType === 3
-                                                        ? parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0
-                                                        : parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
-                                                    const taxPercentage = parseFloat(order?.ProductDetails?.GSTPercentage / 100) || 1;
-                                                    if (price && !isNaN(price) && !isNaN(quantity)) {
-                                                        return total + ((price * quantity) + (price * quantity * taxPercentage));
-                                                    }
-                                                    return total;
-                                                }, 0)
-                                                ?.toFixed?.(2) ?? '0.00'
-                                            }
+                                            ₹ {calculateTotalNetValue(poreviewDetails)}
                                         </span>
                                     </div>
                                 </div>)

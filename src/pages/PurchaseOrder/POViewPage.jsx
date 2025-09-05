@@ -46,7 +46,8 @@ export function POViewPage() {
                     vendorId: poData.vendor.Id,
                     againstOrder: String(poData.againstOrder),
                     status: 1,
-                    poMainId: poData.id
+                    poMainId: poData.id,
+                    poMain: poData.id
                 };
 
                 if (poData.againstOrder === 1) {

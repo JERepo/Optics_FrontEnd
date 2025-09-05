@@ -186,7 +186,11 @@ export default function GRNStep3() {
     useEffect(() => {
         const getDD = async () => {
             const payload = {
-                productType: null,
+                productType: (grnData?.step2?.productType === "Lens" ? 0
+                    : grnData?.step2?.productType === "Frame/Sunglass" ? 1 
+                    : grnData?.step2?.productType === "Accessories" ? 2 
+                    : grnData?.step2?.productType === "Contact Lens" ? 3 
+                    : null ) ?? null,
                 locationId: grnData?.step1?.selectedLocation,
                 masterId: []
             }
