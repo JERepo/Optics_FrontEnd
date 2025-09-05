@@ -339,17 +339,6 @@ const ContactLens = () => {
   ] = useLazyGetInvoiceDetailsQuery();
   const [getCLBatches, { data: CLBatches }] = useLazyGetBatchesForCLQuery();
 
-  // useEffect(() => {
-  //   setEditMode((prev) => {
-  //     const newEditMode = { ...prev };
-  //     mainClDetails?.forEach((_, index) => {
-  //       if (!newEditMode[index]) {
-  //         newEditMode[index] = { returnPrice: false, returnQty: false };
-  //       }
-  //     });
-  //     return newEditMode;
-  //   });
-  // }, [mainClDetails]);
   useEffect(() => {
     setEditMode((prev) => {
       const newEditMode = { ...prev };
@@ -440,11 +429,7 @@ const ContactLens = () => {
   };
   const handleQtyChange = (barcode, qty, index) => {
     const newQty = Number(qty);
-    const avlQty = Number(mainClDetails[index].Quantity);
-    if (newQty > avlQty) {
-      toast.error("Stock quantity cannot exceed available quantity!");
-      return;
-    }
+
     if (newQty < 0) {
       toast.error("Stock quantity must be greater than 0!");
       return;
@@ -454,7 +439,6 @@ const ContactLens = () => {
     );
   };
 
-  
   const handleRefresh = () => {
     setLensData({
       orderReference: null,
@@ -568,10 +552,10 @@ const ContactLens = () => {
           setDetailId(true);
           setOpenBatch(true);
         } else if (data.CLBatchCode === 0 && referenceApplicable === 0) {
-          if (data.stock[0]?.quantity <= 0) {
-            toast.error("Stock quantity must be greater than 0!");
-            return;
-          }
+          // if (data.stock[0]?.quantity <= 0) {
+          //   toast.error("Stock quantity must be greater than 0!");
+          //   return;
+          // }
           const cc = {
             ...data,
             Quantity: data.stock[0]?.quantity,
@@ -588,10 +572,10 @@ const ContactLens = () => {
           if (existingIndex !== -1) {
             const item = mainClDetails[existingIndex];
             const newQty = item.returnQty + 1;
-            if (newQty > item.Quantity) {
-              toast.error("Stock quantity cannot exceed available quantity!");
-              return;
-            }
+            // if (newQty > item.Quantity) {
+            //   toast.error("Stock quantity cannot exceed available quantity!");
+            //   return;
+            // }
             setMainClDetails((prev) =>
               prev.map((it, idx) =>
                 idx === existingIndex
@@ -639,7 +623,6 @@ const ContactLens = () => {
     }
   };
 
-
   const handleGetBatchBarCodeDetails = async () => {
     if (!batchCodeInput) {
       return;
@@ -651,10 +634,10 @@ const ContactLens = () => {
       );
 
       if (isAvailable && referenceApplicable === 0) {
-        if (isAvailable.Quantity <= 0) {
-          toast.error("Stock quantity not available for this batchbarcode!");
-          return;
-        }
+        // if (isAvailable.Quantity <= 0) {
+        //   toast.error("Stock quantity not available for this batchbarcode!");
+        //   return;
+        // }
         const newItemCl = {
           ...newItem.powerData,
           sbatchbarCode: isAvailable.CLBatchBarCode,
@@ -680,10 +663,10 @@ const ContactLens = () => {
         if (existingIndex !== -1) {
           const item = mainClDetails[existingIndex];
           const newQty = item.returnQty + 1;
-          if (newQty > item.Quantity) {
-            toast.error("Stock quantity cannot exceed available quantity!");
-            return;
-          }
+          // if (newQty > item.Quantity) {
+          //   toast.error("Stock quantity cannot exceed available quantity!");
+          //   return;
+          // }
           setMainClDetails((prev) =>
             prev.map((it, idx) =>
               idx === existingIndex
@@ -718,23 +701,31 @@ const ContactLens = () => {
         setProductCodeInput("");
         setbatchCodeInput("");
       } else if (isAvailable && referenceApplicable === 1) {
-        await getInvoiceDetails({
-          productType: 3,
-          detailId:
+        try {
+          await getInvoiceDetails({
+            productType: 3,
+            detailId:
+              selectBatch === 1
+                ? batchBarCodeDetails?.data.data.CLDetailId
+                : newItem.CLDetailId,
+            batchCode: isAvailable.CLBatchBarCode,
+            patientId: customerSalesId.patientId,
+            locationId: customerSalesId.locationId,
+          }).unwrap();
+          const id =
             selectBatch === 1
               ? batchBarCodeDetails?.data.data.CLDetailId
-              : newItem.CLDetailId,
-          batchCode: isAvailable.CLBatchBarCode,
-          patientId: customerSalesId.patientId,
-          locationId: customerSalesId.locationId,
-        }).unwrap();
-        const id =
-          selectBatch === 1
-            ? batchBarCodeDetails?.data.data.CLDetailId
-            : newItem.CLDetailId;
-        setDetailAccId(id);
-        setOpenReferenceYes(true);
-        setbatchCodeInput("");
+              : newItem.CLDetailId;
+          setDetailAccId(id);
+          setOpenReferenceYes(true);
+          setbatchCodeInput("");
+        } catch (error) {
+          console.log(error);
+          toast.error(
+            error?.data.error ||
+              "No eligible Invoice exists for the given product"
+          );
+        }
       } else {
         toast.error("Entered BatchBarcode is not exists!");
       }
@@ -754,10 +745,10 @@ const ContactLens = () => {
       }).unwrap();
 
       if (response?.data.data.CLBatchCode === 0 && referenceApplicable === 0) {
-        if (response?.data.data.stock.Quantity <= 0) {
-          toast.error("Stock quantity not available for this barcode!");
-          return;
-        }
+        // if (response?.data.data.stock.Quantity <= 0) {
+        //   toast.error("Stock quantity not available for this barcode!");
+        //   return;
+        // }
         const cc = {
           ...response?.data.data,
           returnPrice:
@@ -777,10 +768,10 @@ const ContactLens = () => {
         if (existingIndex !== -1) {
           const item = mainClDetails[existingIndex];
           const newQty = item.returnQty + 1;
-          if (newQty > item.Quantity) {
-            toast.error("Stock quantity cannot exceed available quantity!");
-            return;
-          }
+          // if (newQty > item.Quantity) {
+          //   toast.error("Stock quantity cannot exceed available quantity!");
+          //   return;
+          // }
           setMainClDetails((prev) =>
             prev.map((it, idx) =>
               idx === existingIndex
@@ -837,14 +828,13 @@ const ContactLens = () => {
   };
 
   const handleSaveBatchData = async () => {
+    // if (selectedBatchCode.Quantity <= 0) {
+    //   toast.error("Stock quantity must be greater than 0!");
+    //   return;
+    // }
     if (referenceApplicable === 0) {
       let sub;
       if ((!detailId || openBatch) && productSearch == 0) {
-        if (selectedBatchCode.Quantity <= 0) {
-          toast.error("Stock quantity must be greater than 0!");
-          return;
-        }
-
         sub = {
           ...newItem.powerData,
           sbatchCode: selectedBatchCode.CLBatchCode,
@@ -879,10 +869,10 @@ const ContactLens = () => {
       if (existingIndex !== -1) {
         const item = mainClDetails[existingIndex];
         const newQty = item.returnQty + 1;
-        if (newQty > item.Quantity) {
-          toast.error("Stock quantity cannot exceed available quantity!");
-          return;
-        }
+        // if (newQty > item.Quantity) {
+        //   toast.error("Stock quantity cannot exceed available quantity!");
+        //   return;
+        // }
         setMainClDetails((prev) =>
           prev.map((it, idx) =>
             idx === existingIndex ? { ...it, returnQty: it.returnQty + 1 } : it
@@ -947,8 +937,10 @@ const ContactLens = () => {
       ReturnQty: selectedInvoiceReturnQty,
       sbatchCode: selectedInvoice?.ProductDetails[0]?.stock[0]?.batchCode ?? "",
       ExpiryDate:
-        selectedInvoice?.ProductDetails[0]?.stock[0]?.CLBatchExpiry ?? "",
-      ReturnPricePerUnit: selectedInvoice.ActualSellingPrice,
+        (selectedInvoice?.ProductDetails[0]?.stock[0]?.CLBatchExpiry ||
+          selectedInvoice?.ProductDetails[0]?.stock[0]?.cLBatchExpiry) ??
+        "",
+      returnPrice: selectedInvoice.ActualSellingPrice,
       GSTPercentage: parseFloat(
         selectedInvoice.ProductDetails[0].taxPercentage
       ),
@@ -988,7 +980,6 @@ const ContactLens = () => {
     setProductCodeInput("");
     handleRefresh();
   };
-  console.log(mainClDetails);
   const handleSaveData = async () => {
     if (!Array.isArray(mainClDetails) || mainClDetails.length === 0) {
       console.warn("No details to save");
@@ -1015,7 +1006,7 @@ const ContactLens = () => {
           ReturnPrice:
             referenceApplicable === 0
               ? detail.returnPrice
-              : parseFloat(detail.ReturnPricePerUnit) ?? null,
+              : parseFloat(detail.returnPrice) ?? null,
           ProductTaxPercentage:
             referenceApplicable === 0
               ? Array.isArray(detail.TaxDetails)
@@ -1039,25 +1030,25 @@ const ContactLens = () => {
     }
   };
 
-const handleDelete = (index) => {
-  const item = mainClDetails[index];
-  setMainClDetails((prev) => prev.filter((_, i) => i !== index));
-  setEditMode((prev) => {
-    const newEditMode = { ...prev };
-    delete newEditMode[`${item.Barcode}-${index}`];
-    return newEditMode;
-  });
-};
+  const handleDelete = (index) => {
+    const item = mainClDetails[index];
+    setMainClDetails((prev) => prev.filter((_, i) => i !== index));
+    setEditMode((prev) => {
+      const newEditMode = { ...prev };
+      delete newEditMode[`${item.Barcode}-${index}`];
+      return newEditMode;
+    });
+  };
 
-const handleDeleteYes = (index) => {
-  const item = mainClDetails[index];
-  setMainClDetails((prev) => prev.filter((item, i) => i !== index));
-  setEditMode((prev) => {
-    const newEditMode = { ...prev };
-    delete newEditMode[`${item.Barcode}-${index}`];
-    return newEditMode;
-  });
-};
+  const handleDeleteYes = (index) => {
+    const item = mainClDetails[index];
+    setMainClDetails((prev) => prev.filter((item, i) => i !== index));
+    setEditMode((prev) => {
+      const newEditMode = { ...prev };
+      delete newEditMode[`${item.Barcode}-${index}`];
+      return newEditMode;
+    });
+  };
 
   const inputTableColumns = [
     "Spherical Power",
@@ -1313,69 +1304,94 @@ const handleDeleteYes = (index) => {
                   <TableCell className="whitespace-pre-line">
                     {getProductNameYes(item)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="">
                     ₹{formatINR(parseFloat(item.SRP || 0))}
                   </TableCell>
-                  {/* <TableCell className="text-right">
-                    {editMode[index]?.returnPrice ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          value={editReturnPrice}
-                          onChange={(e) => setEditReturnPrice(e.target.value)}
-                          className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                          placeholder="Enter return price"
-                          min="0"
-                        />
-                        <button
-                          onClick={() => saveEdit(index, "returnPrice")}
-                          className="text-neutral-400 transition"
-                          title="Save"
-                        >
-                          <FiCheck size={18} />
-                        </button>
-                        <button
-                          onClick={() => cancelEdit(index, "returnPrice")}
-                          className="text-neutral-400 transition"
-                          title="Cancel"
-                        >
-                          <FiX size={18} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        ₹{formatINR(parseFloat(item.ReturnPricePerUnit || 0))}
-                        <button
-                          onClick={() => toggleEditMode(index, "returnPrice")}
-                          className="text-neutral-400 transition"
-                          title="Edit Return Price"
-                        >
-                          <FiEdit2 size={14} />
-                        </button>
-                      </div>
-                    )}
-                  </TableCell> */}
-                  <TableCell className="text-right">
+                  <TableCell>
+                      {editMode[`${item.Barcode}-${index}`]?.SellingPrice ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            value={item.returnPrice || ""}
+                            onChange={(e) =>
+                              handleSellingPriceChange(
+                                item.Barcode,
+                                e.target.value,
+                                index
+                              )
+                            }
+                            className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                            placeholder="Enter price"
+                          />
+                          <button
+                            onClick={() =>
+                              toggleEditMode(
+                                item.Barcode,
+                                index,
+                                "SellingPrice",
+                                "save"
+                              )
+                            }
+                            className="text-neutral-400 transition"
+                            title="Save"
+                          >
+                            <FiCheck size={18} />
+                          </button>
+                          <button
+                            onClick={() =>
+                              toggleEditMode(
+                                item.Barcode,
+                                index,
+                                "SellingPrice",
+                                "cancel"
+                              )
+                            }
+                            className="text-neutral-400 transition"
+                            title="Cancel"
+                          >
+                            <FiX size={18} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          ₹{formatINR(item.returnPrice)}
+                          <button
+                            onClick={() =>
+                              toggleEditMode(
+                                item.Barcode,
+                                index,
+                                "SellingPrice"
+                              )
+                            }
+                            className="text-neutral-400 transition"
+                            title="Edit Price"
+                          >
+                            <FiEdit2 size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </TableCell>
+                  <TableCell className="">
                     ₹
                     {formatINR(
                       calculateGST(
-                        parseFloat(item.ReturnPricePerUnit || 0),
+                        parseFloat(item.returnPrice || 0),
                         parseFloat(item.GSTPercentage || 0)
                       ).gstAmount
                     )}
                     (
                     {
                       calculateGST(
-                        parseFloat(item.ReturnPricePerUnit || 0),
+                        parseFloat(item.returnPrice || 0),
                         parseFloat(item.GSTPercentage || 0)
                       ).taxPercentage
                     }
                     %)
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="">
                     {item.ReturnQty || 0}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="">
                     ₹{formatINR(parseFloat(item.TotalAmount || 0))}
                   </TableCell>
                   <TableCell>

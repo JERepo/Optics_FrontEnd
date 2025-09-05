@@ -36,6 +36,7 @@ import { isValidNumericInput } from "../../../../utils/isValidNumericInput";
 import { formatINR } from "../../../../utils/formatINR";
 import {
   useGetOlDetailsByOlDetailIdMutation,
+  useGetStockOutDataForStockInQuery,
   useGetStockOutDetailsQuery,
   useLazyGetOLByBarcodeQuery,
   useSaveSTIMutation,
@@ -50,7 +51,6 @@ const productTypes = [
 ];
 
 const getProductName = (item) => {
-
   const detail = Array.isArray(item.ProductDetails)
     ? item.ProductDetails[0]
     : item.ProductDetails;
@@ -142,7 +142,7 @@ const OpticalLens = () => {
     selectedStockTransferInProduct,
   } = useOrder();
 
-  const { user } = useSelector((state) => state.auth);
+  const { user, hasMultipleLocations } = useSelector((state) => state.auth);
   const [barcode, setBarcode] = useState("");
   const [barCodeOrproduct, setBarCodeOrProduct] = useState(0);
   const [editMode, setEditMode] = useState({});
@@ -259,14 +259,24 @@ const OpticalLens = () => {
       }
     );
 
-  const [getOLByBarcode, { data: BarcodeData, isLoading: isByBarcodeLoading ,isFetching:isBarcodeFetching}] =
-    useLazyGetOLByBarcodeQuery();
+  const [
+    getOLByBarcode,
+    {
+      data: BarcodeData,
+      isLoading: isByBarcodeLoading,
+      isFetching: isBarcodeFetching,
+    },
+  ] = useLazyGetOLByBarcodeQuery();
   const [saveStockTransfer, { isLoading: isStockTransferLoading }] =
     useSaveSTIMutation();
   const { data: stockOutData } = useGetStockOutDetailsQuery({
     mainId: customerStockTransferIn.mainId,
     locationId: customerStockTransferIn.locationId,
   });
+  // const { data: stockOutData } = useGetStockOutDataForStockInQuery({
+  //     mainId: customerStockTransferIn.mainId,
+  //     locationId: parseInt(hasMultipleLocations[0]),
+  //   });
   const calculateStockGST = (item) => {
     if (!item) return { gstAmount: 0, slabNo: null, gstPercent: 0 };
 
@@ -550,7 +560,7 @@ const OpticalLens = () => {
       if (res?.data) {
         setBarcodeData((prev) => {
           // Check if product exists in StockTransferOut
-          const STOProduct = stockOutData?.data.details.find(
+          const STOProduct = stockOutData?.data?.details?.find(
             (item) => item.OpticalLensDetailId === res?.data.OpticalLensDetailId
           );
           if (!STOProduct) {
@@ -692,25 +702,10 @@ const OpticalLens = () => {
       (lensData.powerSingleORboth !== 1 && !selectedEyes.includes(eye))
     );
   };
-  const handleCheckboxChange = (eye) => {
-    if (lensData.powerSingleORboth === 0) {
-      setSelectedEyes([eye]);
-      const otherEye = eye === "R" ? "L" : "R";
-      setFormValues((prev) => ({
-        ...prev,
-        [otherEye]: {
-          SPH: "",
-          CYLD: "",
-          Dia: null,
-          transferQty: "",
-        },
-      }));
-    }
-  };
+
   const handleInputChange = (eye, field, value) => {
-    if (field === "transferQty") {
-      // allow only positive numbers
-      if (!/^[1-9]\d*$/.test(value)) {
+    if (field == "transferQty") {
+      if (!isValidNumericInput(value)) {
         return;
       }
     }
@@ -814,7 +809,7 @@ const OpticalLens = () => {
         return;
       }
       // Check if product exists in StockTransferOut
-      const STOProduct = stockOutData?.data.details.find(
+      const STOProduct = stockOutData?.data?.details?.find(
         (item) => item.OpticalLensDetailId === res?.data.OpticalLensDetailId
       );
       if (!STOProduct) {
@@ -838,7 +833,12 @@ const OpticalLens = () => {
         setBarcodeData((prev) => {
           return [
             ...prev,
-            { ...res.data, ...STOProduct, tiq: parseInt(formValues[eye]?.transferQty), STQtyIn: currentSTQtyIn + 1 },
+            {
+              ...res.data,
+              ...STOProduct,
+              tiq: parseInt(formValues[eye]?.transferQty),
+              STQtyIn: currentSTQtyIn + 1,
+            },
           ];
         });
 
@@ -1406,10 +1406,27 @@ const OpticalLens = () => {
                           <input
                             type={field === "transferQty" ? "number" : "text"}
                             min={field === "transferQty" ? "1" : undefined}
-                            value={formValues.R[field] || ""} // only from R, or unify
-                            onChange={(e) =>
-                              handleInputChange("R", field, e.target.value)
-                            }
+                            value={formValues.R[field] || ""}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              console.log("Input onChange", { field, value });
+                              if (field === "transferQty") {
+                                // Only allow digits and empty string
+                                if (value === "" || /^\d*$/.test(value)) {
+                                  handleInputChange("R", field, value);
+                                }
+                              } else {
+                                handleInputChange("R", field, value);
+                              }
+                            }}
+                            onKeyPress={(e) => {
+                              if (
+                                field === "transferQty" &&
+                                !/[0-9]/.test(e.key)
+                              ) {
+                                e.preventDefault();
+                              }
+                            }}
                             disabled={isFieldDisabled("R", field)}
                             className={`w-24 px-2 py-1 border rounded-md ${
                               isFieldDisabled("R", field)

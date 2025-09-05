@@ -791,7 +791,8 @@ const ContactLens = () => {
       toast.success("Contact lens transfer out successfully added");
       goToStockStep(4);
     } catch (error) {
-      toast.error(error?.data.error.message);
+      console.log(error)
+      toast.error("Stock Transfer Out Contact Lens unable to save!");
     }
   };
 

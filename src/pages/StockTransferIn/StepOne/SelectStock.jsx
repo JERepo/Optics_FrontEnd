@@ -88,7 +88,6 @@ const SelectStock = () => {
       toast.error(error.data.error.message);
     }
   };
-  console.log("stock", selectedStock);
   return (
     <div>
       <div className="max-w-8xl">
@@ -133,6 +132,7 @@ const SelectStock = () => {
                   <TableCell> ₹{formatINR(item.TotalValue)}</TableCell>
                 </TableRow>
               )}
+              emptyMessage={isStockLoading ? "Loading..":"No data found!"}
             />
 
             {selectedStock && (

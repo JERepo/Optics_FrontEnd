@@ -51,9 +51,11 @@ const getProductName = (item) => {
   };
 
   const formatPowerValue = (val) => {
-    const num = parseFloat(val);
-    if (isNaN(num)) return val;
-    return num > 0 ? `+${val}` : val;
+    const cleaned = clean(val);
+    if (!cleaned) return "";
+    const num = parseFloat(cleaned);
+    if (isNaN(num)) return "";
+    return num >= 0 ? `+${num.toFixed(2)}` : `${num.toFixed(2)}`;
   };
 
   // For Frame (typeid = 1)
@@ -87,10 +89,10 @@ const getProductName = (item) => {
 
     const specs = PowerSpecs
       ? [
-          PowerSpecs.Sph ? `Sph: ${clean(PowerSpecs.Sph)}` : "",
-          PowerSpecs.Cyl ? `Cyl: ${clean(PowerSpecs.Cyl)}` : "",
-          PowerSpecs.Axis ? `Axis: ${clean(PowerSpecs.Axis)}` : "",
-          PowerSpecs.Add ? `Add: ${clean(PowerSpecs.Add)}` : "",
+          PowerSpecs.Sph ? `Sph: ${formatPowerValue(PowerSpecs.Sph)}` : "",
+          PowerSpecs.Cyl ? `Cyl: ${formatPowerValue(PowerSpecs.Cyl)}` : "",
+          PowerSpecs.Axis ? `Axis: ${formatPowerValue(PowerSpecs.Axis)}` : "",
+          PowerSpecs.Add ? `Add: ${formatPowerValue(PowerSpecs.Add)}` : "",
         ]
           .filter(Boolean)
           .join(", ")
@@ -227,9 +229,7 @@ const PurchaseReturnView = () => {
 
           {PRDetails?.data.data.Vendor.TAXRegisteration === 1 && (
             <>
-              <div className="flex gap-1">
-                <strong>GST No:</strong> {PRDetails?.TAXNo}
-              </div>
+             
               <Info label="GST No:" value={PRDetails?.data.data.Vendor.TAXNo} />
 
               <Info

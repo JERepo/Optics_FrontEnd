@@ -70,6 +70,12 @@ export const stockTransferApi = createApi({
 
     // Stock transfer In APIs
 
+    getStockOutDataForStockIn: builder.query({
+      query: ({ mainId, locationId }) => ({
+        url: `/api/v1/stock-transfer/inbyout/details?STOutMainId=${mainId}&locationId=${locationId}`,
+      }),
+    }),
+
     getSelectStock: builder.query({
       query: ({ locationId }) => ({
         url: `/api/v1/stock-transfer/openstocktransfer?locationId=${locationId}`,
@@ -134,6 +140,7 @@ export const {
   useGetStockTransferOutByIdQuery,
 
   // Stock transfer In APIs
+  useGetStockOutDataForStockInQuery,
   useGetSelectStockQuery,
   useSaveSTKIDraftMutation,
   useLazyGetSTKIDraftDataQuery,
@@ -141,5 +148,5 @@ export const {
   useGetStockInDetailsQuery,
   useDeleteUpdateSTKInMutation,
   useGetAllStockInDataQuery,
-  useGetStockInByIdQuery
+  useGetStockInByIdQuery,
 } = stockTransferApi;

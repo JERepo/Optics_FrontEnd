@@ -115,7 +115,7 @@ const getProductNameYes = (item) => {
     tintName ? `Tint: ${tintName}` : "",
     addOns?.length > 0 ? `AddOn: ${addOns}` : "",
     clean(hSN) && `HSN: ${hSN}`,
-    clean(FittingPriceEdit) ? `Fitting Price: ${FittingPriceEdit}` : "",
+    clean(item.FittingPriceEdit) ? `Fitting Price: ₹${item.FittingPriceEdit}` : "",
   ];
 
   return lines.filter(Boolean).join("\n");
@@ -148,6 +148,13 @@ const getProductName = (order, allBrandsData, lensData) => {
     }
     return String(val).trim();
   };
+   const cleanPower = (val) => {
+    const cleaned = clean(val);
+    if (!cleaned) return "";
+    const num = parseFloat(cleaned);
+    if (isNaN(num)) return "";
+    return num >= 0 ? `+${num.toFixed(2)}` : `${num.toFixed(2)}`;
+  };
 
   if (ProductType === 0) {
     const name = clean(productName || ProductName);
@@ -157,9 +164,9 @@ const getProductName = (order, allBrandsData, lensData) => {
 
     // Power line
     const powers = [];
-    if (clean(Spherical)) powers.push(`Sph: ${clean(Spherical)}`);
-    if (clean(Cylinder)) powers.push(`Cyl: ${clean(Cylinder)}`);
-    if (clean(Diameter)) powers.push(`Dia: ${clean(Diameter)}`);
+    if (clean(Spherical)) powers.push(`Sph: ${cleanPower(Spherical)}`);
+    if (clean(Cylinder)) powers.push(`Cyl: ${cleanPower(Cylinder)}`);
+    if (clean(Diameter)) powers.push(`Dia: ${cleanPower(Diameter)}`);
     const powerLine = powers.length > 0 ? powers.join(", ") : "";
 
     // AddOns
@@ -199,13 +206,9 @@ const OpticalLens = () => {
 
   const { user } = useSelector((state) => state.auth);
   const [mainOLDetails, setMainOLDetails] = useState([]);
-  const [editingCell, setEditingCell] = useState(null);
-  const [editMode, setEditMode] = useState({}); // { [index]: { returnPrice: false, returnQty: false } }
-  const [editReturnPrice, setEditReturnPrice] = useState("");
-  const [editReturnQty, setEditReturnQty] = useState("");
+  const [editMode, setEditMode] = useState({});
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [editReturnFittingPrice, setEditReturnFittingprice] = useState(0);
-  const [returnPriceError, setReturnPriceError] = useState(null);
 
   const [lensData, setLensData] = useState({
     orderReference: null,
@@ -350,10 +353,7 @@ const OpticalLens = () => {
       id: customerSalesId.patientId,
       locationId: customerSalesId.locationId,
     });
-  const [
-    getInvoiceDetails,
-    { data: InvoiceDetails, isLoading: isInvoiceLoading },
-  ] = useLazyGetInvoiceDetailsQuery();
+
 
   // Update productName based on dropdown selections
   useEffect(() => {
@@ -416,19 +416,23 @@ const OpticalLens = () => {
     coatingsData,
     treatmentsData,
   ]);
-  // Initialize editMode for each item
   useEffect(() => {
     setEditMode((prev) => {
       const newEditMode = { ...prev };
       mainOLDetails.forEach((item, index) => {
-        const key = referenceApplicable === 1 ? `${item.Id}-${index}` : index;
+        const key = index;
         if (!newEditMode[key]) {
-          newEditMode[key] = { returnPrice: false, returnQty: false };
+          newEditMode[key] = {
+            SellingPrice: false,
+            qty: false,
+            originalPrice: item.returnPrice,
+            originalQty: item.returnQty,
+          };
         }
       });
       return newEditMode;
     });
-  }, [mainOLDetails, referenceApplicable]);
+  }, [mainOLDetails]);
   const handleRefresh = () => {
     setLensData({
       orderReference: null,
@@ -461,11 +465,94 @@ const OpticalLens = () => {
     // setMainOLDetails([]);
     setSelectedInvoice(null);
   };
-
   const handleOLensBack = () => {
     prevSalesStep();
   };
+  const handleSellingPriceChange = (price, index) => {
+    const item = mainOLDetails.find((i, idx) => idx === index);
+    const newPrice = Number(price);
 
+    if (newPrice > item.CLMRP) {
+      toast.error("Return Price cannot be greater than MRP!");
+      return;
+    }
+
+    setMainOLDetails((prev) =>
+      prev.map((i, idx) =>
+        idx === index ? { ...i, returnPrice: newPrice } : i
+      )
+    );
+  };
+  const handleQtyChange = (barcode, qty, index) => {
+    const newQty = Number(qty);
+    const avlQty = Number(mainOLDetails[index].Quantity);
+    // if (newQty > avlQty) {
+    //   toast.error("Stock quantity cannot exceed available quantity!");
+    //   return;
+    // }
+    if (newQty < 0) {
+      toast.error("Stock quantity must be greater than 0!");
+      return;
+    }
+    setMainOLDetails((prev) =>
+      prev.map((i, idx) => (idx === index ? { ...i, returnQty: newQty } : i))
+    );
+  };
+  const toggleEditMode = (id, index, field, action = "toggle") => {
+    setEditMode((prev) => {
+      const key = index;
+      const currentMode = prev[key]?.[field];
+      const item = mainOLDetails.find((i, idx) => idx === index);
+
+      if (field === "SellingPrice" && !currentMode) {
+        return {
+          ...prev,
+          [key]: {
+            ...prev[key],
+            [field]: !currentMode,
+            originalPrice: item.returnPrice,
+          },
+        };
+      }
+
+      if (field === "qty" && !currentMode) {
+        return {
+          ...prev,
+          [key]: {
+            ...prev[key],
+            [field]: !currentMode,
+            originalQty: item.returnQty, // Store original quantity
+          },
+        };
+      }
+
+      if (currentMode && action === "cancel") {
+        if (field === "SellingPrice") {
+          setMainOLDetails((prevItems) =>
+            prevItems.map((i, idx) =>
+              idx === index ? { ...i, returnPrice: prev[key].originalPrice } : i
+            )
+          );
+        } else if (field === "qty") {
+          setMainOLDetails((prevItems) =>
+            prevItems.map((i, idx) =>
+              idx === index ? { ...i, returnQty: prev[key].originalQty } : i
+            )
+          );
+        }
+      }
+
+      return {
+        ...prev,
+        [key]: {
+          ...prev[key],
+          [field]: !currentMode,
+          originalPrice: prev[key]?.originalPrice,
+          originalQty: prev[key]?.originalQty,
+        },
+      };
+    });
+  };
   const handleDelete = (index) => {
     setMainOLDetails((prev) => prev.filter((_, i) => i !== index));
     setEditMode((prev) => {
@@ -474,85 +561,7 @@ const OpticalLens = () => {
       return newEditMode;
     });
   };
-  const toggleEditMode = (id, index, field) => {
-    const key = referenceApplicable === 1 ? `${id}-${index}` : index;
-    setEditMode((prev) => ({
-      ...prev,
-      [key]: {
-        ...prev[key],
-        [field]: !prev[key]?.[field],
-      },
-    }));
-    const item = mainOLDetails[index];
-    if (!editMode[key]?.[field]) {
-      if (field === "returnPrice") {
-        setEditReturnPrice(item.returnPrice || item.ReturnPricePerUnit || "");
-      } else if (field === "returnQty") {
-        setEditReturnQty(item.returnQty || item.ReturnQty || "");
-      }
-    }
-  };
 
-  const saveEdit = (id, index, field) => {
-    const key = referenceApplicable === 1 ? `${id}-${index}` : index;
-    const parsedQty = parseFloat(editReturnQty);
-    const parsedPrice = parseFloat(editReturnPrice);
-    const item = mainOLDetails[index];
-
-    if (field === "returnQty") {
-      if (isNaN(parsedQty) || parsedQty < 1) {
-        toast.error("Return quantity must be a positive number");
-        return;
-      }
-    }
-    if (field === "returnPrice") {
-      if (parsedPrice > parseFloat(parseFloat(item.ActualSellingPrice))) {
-        toast.error("Return price cannot be greater than selling price");
-        return;
-      }
-      if (isNaN(parsedPrice) || parsedPrice < 0) {
-        toast.error("Return price must be a non-negative number");
-        return;
-      }
-    }
-
-    setMainOLDetails((prev) =>
-      prev.map((it, i) =>
-        i === index
-          ? {
-              ...it,
-              ...(field === "returnPrice" && {
-                [referenceApplicable === 1
-                  ? "ReturnPricePerUnit"
-                  : "returnPrice"]: parsedPrice,
-              }),
-              ...(field === "returnQty" && {
-                [referenceApplicable === 1 ? "ReturnQty" : "returnQty"]:
-                  parsedQty,
-              }),
-            }
-          : it
-      )
-    );
-    setEditMode((prev) => ({
-      ...prev,
-      [key]: {
-        ...prev[key],
-        [field]: false,
-      },
-    }));
-  };
-
-  const cancelEdit = (id, index, field) => {
-    const key = referenceApplicable === 1 ? `${id}-${index}` : index;
-    setEditMode((prev) => ({
-      ...prev,
-      [key]: {
-        ...prev[key],
-        [field]: false,
-      },
-    }));
-  };
   const handleAddToTable = () => {
     if (!lensData.productName) {
       toast.error("Please select all required fields before adding.");
@@ -571,10 +580,10 @@ const OpticalLens = () => {
         )
       : 0;
 
-    if (priceDetails?.data.Quantity <= 0) {
-      toast.error("Quantity should be greater than 0!");
-      return;
-    }
+    // if (priceDetails?.data.Quantity <= 0) {
+    //   toast.error("Quantity should be greater than 0!");
+    //   return;
+    // }
     setMainOLDetails((prev) => [
       ...prev,
       {
@@ -620,20 +629,14 @@ const OpticalLens = () => {
       returnQty: 1,
     });
   };
-  const handleDeleteYes = (id, index) => {
-    if (referenceApplicable === 1) {
-      setMainOLDetails((prev) => prev.filter((item, i) => i !== index));
-    } else {
-      setMainOLDetails((prev) =>
-        prev.filter((i, idx) => !(i.Barcode === id && idx === index))
-      );
-      setEditMode((prev) => {
-        const newEditMode = { ...prev };
-        delete newEditMode[`${id}-${index}`];
-        return newEditMode;
-      });
-    }
-  };
+const handleDeleteYes = (id, index) => {
+  setMainOLDetails((prev) => prev.filter((item, i) => i !== index));
+  setEditMode((prev) => {
+    const newEditMode = { ...prev };
+    delete newEditMode[index]; 
+    return newEditMode;
+  });
+};
   const handleAddInvoice = () => {
     if (!selectedInvoice) {
       toast.error("Please select an invoice before adding.");
@@ -659,7 +662,7 @@ const OpticalLens = () => {
       //   parseInt(selectedInvoice?.InvoiceQty) *
       //     parseFloat(selectedInvoice?.ActualSellingPrice) +
       //   parseFloat(editReturnFittingPrice),
-      ReturnPricePerUnit: parseFloat(selectedInvoice?.ActualSellingPrice),
+      returnPrice: parseFloat(selectedInvoice?.ActualSellingPrice),
       ReturnQty: selectedInvoice?.InvoiceQty,
       FittingPriceEdit: parseFloat(editReturnFittingPrice),
     };
@@ -794,7 +797,7 @@ const OpticalLens = () => {
           ReturnPrice:
             referenceApplicable === 0
               ? detail.returnPrice
-              : detail.ReturnPricePerUnit ?? null,
+              : detail.returnPrice ?? null,
           ProductTaxPercentage:
             referenceApplicable === 1
               ? parseFloat(detail.ProductDetails[0]?.taxPercentage) ?? null
@@ -901,18 +904,7 @@ const OpticalLens = () => {
       (lensData.powerSingleORboth !== 1 && !selectedEyes.includes(eye))
     );
   };
-  const handleCheckboxChange = (eye) => {
-    setSelectedEyes([eye]);
-    const otherEye = eye === "R" ? "L" : "R";
-    setFormValues((prev) => ({
-      ...prev,
-      [otherEye]: {
-        SPH: "",
-        CYLD: "",
-        Dia: null,
-      },
-    }));
-  };
+
   const handleInputChange = (eye, field, value) => {
     if (field === "transferQty") {
       // allow only positive numbers
@@ -926,7 +918,6 @@ const OpticalLens = () => {
       [eye]: { ...prev[eye], [field]: value },
     }));
   };
-  console.log(lensData.powerSingleORboth);
   const handleGetDia = async () => {
     const isRSelected = selectedEyes.includes("R");
     const isLSelected = selectedEyes.includes("L");
@@ -995,7 +986,6 @@ const OpticalLens = () => {
       setErrorModalOpen(true);
     }
   };
-
   const handleAddPowerData = async (eye) => {
     try {
       const payload = {
@@ -1009,18 +999,21 @@ const OpticalLens = () => {
       }
 
       const res = await getPowerByOl({ payload }).unwrap();
-      if(res?.data.Quantity <= 0){
-        toast.error("Stock Quantity must be greater than 0!")
-        return;
-      }
+      // if (res?.data.Quantity <= 0) {
+      //   toast.error("Stock Quantity must be greater than 0!");
+      //   return;
+      // }
 
-     
+      // if (parseInt(formValues["R"].transferQty) > res?.data.Quantity) {
+      //   toast.error("Stock Quantity cannot exceed the available Quantity!");
+      //   return;
+      // }
 
       if (res?.data) {
-        if ((res.data.Quantity || 0) <= 0) {
-          toast.error("No stock available for this barcode");
-          return;
-        }
+        // if ((res.data.Quantity || 0) <= 0) {
+        //   toast.error("No stock available for this barcode");
+        //   return;
+        // }
         if (!lensData.productName) {
           toast.error("Please select all required fields before adding.");
           return;
@@ -1053,7 +1046,7 @@ const OpticalLens = () => {
             ProductType: 0,
           },
         ]);
-
+        handleReset();
         setShowAdd(false);
         setLensData({
           orderReference: null,
@@ -1157,25 +1150,40 @@ const OpticalLens = () => {
                   </TableCell>
                   <TableCell>₹{item.CLMRP}</TableCell>
                   <TableCell>
-                    {editMode[index]?.returnPrice ? (
+                    {editMode[index]?.SellingPrice ? (
                       <div className="flex items-center gap-2">
                         <input
                           type="number"
-                          value={editReturnPrice}
-                          onChange={(e) => setEditReturnPrice(e.target.value)}
+                          value={item.returnPrice || ""}
+                          onChange={(e) =>
+                            handleSellingPriceChange(e.target.value, index)
+                          }
                           className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                           placeholder="Enter price"
-                          min="0"
                         />
                         <button
-                          onClick={() => saveEdit(null, index, "returnPrice")}
+                          onClick={() =>
+                            toggleEditMode(
+                              item.Barcode,
+                              index,
+                              "SellingPrice",
+                              "save"
+                            )
+                          }
                           className="text-neutral-400 transition"
                           title="Save"
                         >
                           <FiCheck size={18} />
                         </button>
                         <button
-                          onClick={() => cancelEdit(null, index, "returnPrice")}
+                          onClick={() =>
+                            toggleEditMode(
+                              item.Barcode,
+                              index,
+                              "SellingPrice",
+                              "cancel"
+                            )
+                          }
                           className="text-neutral-400 transition"
                           title="Cancel"
                         >
@@ -1184,14 +1192,12 @@ const OpticalLens = () => {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-700">
-                          ₹{item.returnPrice}
-                        </span>
+                        ₹{formatINR(item.returnPrice)}
                         <button
                           onClick={() =>
-                            toggleEditMode(null, index, "returnPrice")
+                            toggleEditMode(item.Barcode, index, "SellingPrice")
                           }
-                          className="text-neutral-400 hover:text-neutral-600 transition"
+                          className="text-neutral-400 transition"
                           title="Edit Price"
                         >
                           <FiEdit2 size={14} />
@@ -1200,25 +1206,31 @@ const OpticalLens = () => {
                     )}
                   </TableCell>
                   <TableCell>₹{findGSTPercentage(item).gstAmount}</TableCell>
-                  <TableCell className="min-w-[150px]">
-                    {editMode[index]?.returnQty ? (
+                  <TableCell>
+                    {editMode[index]?.qty ? (
                       <div className="flex items-center gap-2">
                         <input
                           type="number"
-                          value={editReturnQty}
-                          onChange={(e) => setEditReturnQty(e.target.value)}
+                          value={item.returnQty}
+                          onChange={(e) =>
+                            handleQtyChange(item.Barcode, e.target.value, index)
+                          }
                           className="w-20 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                           min="1"
                         />
                         <button
-                          onClick={() => saveEdit(null, index, "returnQty")}
+                          onClick={() =>
+                            toggleEditMode(item.Barcode, index, "qty", "save")
+                          }
                           className="text-neutral-400 transition"
                           title="Save"
                         >
                           <FiCheck size={18} />
                         </button>
                         <button
-                          onClick={() => cancelEdit(null, index, "returnQty")}
+                          onClick={() =>
+                            toggleEditMode(item.Barcode, index, "qty", "cancel")
+                          }
                           className="text-neutral-400 transition"
                           title="Cancel"
                         >
@@ -1227,12 +1239,12 @@ const OpticalLens = () => {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-700">{item.returnQty}</span>
+                        {item.returnQty}
                         <button
                           onClick={() =>
-                            toggleEditMode(null, index, "returnQty")
+                            toggleEditMode(item.Barcode, index, "qty")
                           }
-                          className="text-neutral-400 hover:text-neutral-600 transition"
+                          className="text-neutral-400 transition"
                           title="Edit Quantity"
                         >
                           <FiEdit2 size={14} />
@@ -1303,62 +1315,73 @@ const OpticalLens = () => {
                       ₹{formatINR(parseFloat(item.SRP || 0))}
                     </TableCell>
                     <TableCell>
-                      {editMode[`${item.Id}-${index}`]?.returnPrice ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            value={editReturnPrice}
-                            onChange={(e) => setEditReturnPrice(e.target.value)}
-                            className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                            placeholder="Enter return price"
-                            min="0"
-                          />
-                          <button
-                            onClick={() =>
-                              saveEdit(item.Id, index, "returnPrice")
-                            }
-                            className="text-neutral-400 transition"
-                            title="Save"
-                          >
-                            <FiCheck size={18} />
-                          </button>
-                          <button
-                            onClick={() =>
-                              cancelEdit(item.Id, index, "returnPrice")
-                            }
-                            className="text-neutral-400 transition"
-                            title="Cancel"
-                          >
-                            <FiX size={18} />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          ₹{formatINR(parseFloat(item.ReturnPricePerUnit || 0))}
-                          <button
-                            onClick={() =>
-                              toggleEditMode(item.Id, index, "returnPrice")
-                            }
-                            className="text-neutral-400 hover:text-neutral-600 transition"
-                            title="Edit Return Price"
-                          >
-                            <FiEdit2 size={14} />
-                          </button>
-                        </div>
-                      )}
-                    </TableCell>
+                    {editMode[index]?.SellingPrice ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          value={item.returnPrice || ""}
+                          onChange={(e) =>
+                            handleSellingPriceChange(e.target.value, index)
+                          }
+                          className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                          placeholder="Enter price"
+                        />
+                        <button
+                          onClick={() =>
+                            toggleEditMode(
+                              item.Barcode,
+                              index,
+                              "SellingPrice",
+                              "save"
+                            )
+                          }
+                          className="text-neutral-400 transition"
+                          title="Save"
+                        >
+                          <FiCheck size={18} />
+                        </button>
+                        <button
+                          onClick={() =>
+                            toggleEditMode(
+                              item.Barcode,
+                              index,
+                              "SellingPrice",
+                              "cancel"
+                            )
+                          }
+                          className="text-neutral-400 transition"
+                          title="Cancel"
+                        >
+                          <FiX size={18} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        ₹{formatINR(item.returnPrice)}
+                        <button
+                          onClick={() =>
+                            toggleEditMode(item.Barcode, index, "SellingPrice")
+                          }
+                          className="text-neutral-400 transition"
+                          title="Edit Price"
+                        >
+                          <FiEdit2 size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </TableCell>
                     <TableCell>
                       ₹
                       {formatINR(
                         calculateGST(
-                          parseFloat(item.ReturnPricePerUnit || 0),
+                          parseFloat(item.returnPrice || 0),
                           parseFloat(item.ProductDetails[0].taxPercentage || 0)
                         ).gstAmount
                       )}
                       (
                       {
                         calculateGST(
-                          parseFloat(item.ReturnPricePerUnit || 0),
+                          parseFloat(item.returnPrice || 0),
                           parseFloat(item.ProductDetails[0].taxPercentage || 0)
                         ).taxPercentage
                       }
@@ -1370,7 +1393,7 @@ const OpticalLens = () => {
                     <TableCell>
                       ₹
                       {formatINR(
-                        item.ReturnPricePerUnit * item.ReturnQty +
+                        item.returnPrice * item.ReturnQty +
                           (item.FittingPriceEdit || 0) +
                           ((item.FittingPriceEdit || 0) *
                             (parseFloat(item.ProductDetails[0].taxPercentage) ||
@@ -1748,59 +1771,67 @@ const OpticalLens = () => {
                         </tr>
                       </thead>
                       <tbody>
-                  <tr className="hover:bg-gray-50">
-                    {inputTableColumns.map((field) => (
-                      <td key={field} className="p-3 align-top">
-                        {field === "Dia" && isDiaFetched ? (
-                          <select
-                            className={`w-24 px-2 py-1 border rounded-md ${
-                              isFieldDisabled("R", field) 
-                                ? "bg-gray-100 border-gray-200 text-gray-400"
-                                : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            }`}
-                            value={formValues.R.Dia?.DiameterSize || ""} 
-                            onChange={(e) => {
-                              const selectedDia = diaOptions.find(
-                                (d) => d.DiameterSize === e.target.value
-                              );
-                              setFormValues((prev) => ({
-                                ...prev,
-                                R: {
-                                  ...prev.R,
-                                  Dia: selectedDia || null,
-                                  transferQty: selectedDia ? "1" : "",
-                                },
-                              }));
-                            }}
-                            disabled={isFieldDisabled("R", field)}
-                          >
-                            <option value="">Select</option>
-                            {diaOptions.map((d) => (
-                              <option key={d.Id} value={d.DiameterSize}>
-                                {d.DiameterSize}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <input
-                            type={field === "transferQty" ? "number" : "text"}
-                            min={field === "transferQty" ? "1" : undefined}
-                            value={formValues.R[field] || ""} // only from R, or unify
-                            onChange={(e) =>
-                              handleInputChange("R", field, e.target.value)
-                            }
-                            disabled={isFieldDisabled("R", field)}
-                            className={`w-24 px-2 py-1 border rounded-md ${
-                              isFieldDisabled("R", field)
-                                ? "bg-gray-100 border-gray-200 text-gray-400"
-                                : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            }`}
-                          />
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                </tbody>
+                        <tr className="hover:bg-gray-50">
+                          {inputTableColumns.map((field) => (
+                            <td key={field} className="p-3 align-top">
+                              {field === "Dia" && isDiaFetched ? (
+                                <select
+                                  className={`w-24 px-2 py-1 border rounded-md ${
+                                    isFieldDisabled("R", field)
+                                      ? "bg-gray-100 border-gray-200 text-gray-400"
+                                      : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  }`}
+                                  value={formValues.R.Dia?.DiameterSize || ""}
+                                  onChange={(e) => {
+                                    const selectedDia = diaOptions.find(
+                                      (d) => d.DiameterSize === e.target.value
+                                    );
+                                    setFormValues((prev) => ({
+                                      ...prev,
+                                      R: {
+                                        ...prev.R,
+                                        Dia: selectedDia || null,
+                                        transferQty: selectedDia ? "1" : "",
+                                      },
+                                    }));
+                                  }}
+                                  disabled={isFieldDisabled("R", field)}
+                                >
+                                  <option value="">Select</option>
+                                  {diaOptions.map((d) => (
+                                    <option key={d.Id} value={d.DiameterSize}>
+                                      {d.DiameterSize}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <input
+                                  type={
+                                    field === "transferQty" ? "number" : "text"
+                                  }
+                                  min={
+                                    field === "transferQty" ? "1" : undefined
+                                  }
+                                  value={formValues.R[field] || ""} // only from R, or unify
+                                  onChange={(e) =>
+                                    handleInputChange(
+                                      "R",
+                                      field,
+                                      e.target.value
+                                    )
+                                  }
+                                  disabled={isFieldDisabled("R", field)}
+                                  className={`w-24 px-2 py-1 border rounded-md ${
+                                    isFieldDisabled("R", field)
+                                      ? "bg-gray-100 border-gray-200 text-gray-400"
+                                      : "border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  }`}
+                                />
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                      </tbody>
                     </table>
                     <div className="mt-4 flex justify-end gap-4 items-center">
                       {showGetDiaButton && (

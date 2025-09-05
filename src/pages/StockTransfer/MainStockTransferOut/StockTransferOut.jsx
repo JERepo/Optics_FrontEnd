@@ -13,7 +13,10 @@ import { enGB } from "date-fns/locale";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { TextField } from "@mui/material";
-import { useGetAllStockOutDetailsQuery, useGetStockLocationsQuery } from "../../../api/stockTransfer";
+import {
+  useGetAllStockOutDetailsQuery,
+  useGetStockLocationsQuery,
+} from "../../../api/stockTransfer";
 import { formatINR } from "../../../utils/formatINR";
 
 const StockTransferOut = () => {
@@ -34,8 +37,8 @@ const StockTransferOut = () => {
     setCurrentPage(1);
   }, [fromDate, toDate, searchQuery]);
 
-   const {data:allStockOut,isLoading:isStockLoading} = useGetAllStockOutDetailsQuery()
-
+  const { data: allStockOut, isLoading: isStockLoading } =
+    useGetAllStockOutDetailsQuery();
 
   const StockOut = useMemo(() => {
     if (!allStockOut?.data) return [];
@@ -54,12 +57,22 @@ const StockTransferOut = () => {
       );
     }
 
-    // if (searchQuery) {
-    //   const query = searchQuery.toLowerCase();
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
 
-      
-    //   });
-    // }
+      filtered = filtered.filter((sto) => {
+        const toCompany = (
+          allLocations?.data?.data.find((item) => item.Id === sto.ToCompanyId)
+            .DisplayName || ""
+        ).toLowerCase();
+        const fromCompany = (
+          allLocations?.data?.data.find((item) => item.Id === sto.FromCompanyId)
+            .DisplayName || ""
+        ).toLowerCase();
+
+        return toCompany.includes(query) || fromCompany.includes(query);
+      });
+    }
 
     return filtered.map((s) => ({
       id: s.ID,
@@ -79,7 +92,7 @@ const StockTransferOut = () => {
       totalValue: s.TotalValueOut,
     }));
     // .filter((order) => order.CompanyId == hasMultipleLocations[0]);
-  }, [allStockOut, fromDate, toDate, searchQuery,allLocations]);
+  }, [allStockOut, fromDate, toDate, searchQuery, allLocations]);
 
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedOrders = StockOut.slice(startIndex, startIndex + pageSize);
@@ -227,7 +240,7 @@ const StockTransferOut = () => {
                 <TableCell>{item.fromCompany}</TableCell>
                 <TableCell>{item.toCompany}</TableCell>
                 <TableCell>{item.totalQty}</TableCell>
-                <TableCell>₹{formatINR( item.totalValue)}</TableCell>
+                <TableCell>₹{formatINR(item.totalValue)}</TableCell>
                 <TableCell>
                   <button
                     onClick={() => handleViewSalesReturn(item.id)}

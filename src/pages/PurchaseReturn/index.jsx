@@ -6,6 +6,7 @@ import SelectVendor from "./StepOne/SelectVendor";
 import PurchaseReturnDetails from "./StepFour/PurchaseReturnDetails";
 import SelectTwoMain from "./StepTwo/StepTwoMain";
 import StepThreeMain from "./StepThree";
+import { useGetCompanyIdQuery } from "../../api/customerApi";
 
 const TotalPurchaseReturn = () => {
   const [location, setLocation] = useState(null);
@@ -24,14 +25,20 @@ const TotalPurchaseReturn = () => {
 
   const companyId = locationById?.data?.data.Id;
   const countrId = locationById?.data?.data.BillingCountryCode;
+  const { data: companySettings } = useGetCompanyIdQuery(
+    { id: companyId },
+    { skip: !companyId }
+  );
+  const vendorPoolId = companySettings?.data?.data.VendorPoolID;
 
   useEffect(() => {
     setCustomerPurchase((prev) => ({
       ...prev,
       countryId: countrId,
       companyId: companyId,
+      vendorPoolId: vendorPoolId,
     }));
-  }, [countrId, locationById, companyId]);
+  }, [countrId, locationById, companyId,companySettings]);
 
   // Location handling
   useEffect(() => {

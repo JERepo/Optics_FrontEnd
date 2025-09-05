@@ -1,16 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { Table, TableCell, TableRow } from "../../components/Table";
 import { format } from "date-fns";
 import Button from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
 import {
+  useCreateEInvoiceMutation,
+  useGetEInvoiceDataQuery,
   useGetInvoiceByIdQuery,
   useGetInvoiceDetailsQuery,
 } from "../../api/InvoiceApi";
 import { formatINR } from "../../utils/formatINR";
 import { useSelector } from "react-redux";
-
 
 const getProductName = (order) => {
   const product = order?.productDetails?.[0];
@@ -41,7 +42,7 @@ const getProductName = (order) => {
 
   // Frame
   if (ProductType === 1) {
-    const name = clean(product.productName);
+    const name = clean(product.productDescName);
     const specDetails = clean(product.specs);
     const barcodeVal = clean(product.barcode);
     const hsn = clean(product.hSN);
@@ -53,8 +54,8 @@ const getProductName = (order) => {
 
     return [
       line1,
-      line2,
-      cat,
+      line2 && `Size: ${line2}`,
+      cat && `Category: ${cat}`,
       barcodeVal && `Barcode: ${barcodeVal}`,
       hsn && `HSN: ${hsn}`,
     ]
@@ -64,7 +65,7 @@ const getProductName = (order) => {
 
   // Accessory
   if (ProductType === 2) {
-    const name = clean(product.productName);
+    const name = clean(product.productDescName);
     const variation = clean(product.specs?.variation);
     const barcodeVal = clean(product.specs?.barcode || product.barcode);
     const hsn = clean(product.hSN);
@@ -81,11 +82,12 @@ const getProductName = (order) => {
 
   // Contact Lens
   if (ProductType === 3) {
-    const name = clean(product.productName);
+    const name = clean(product.productDescName);
     const hsn = clean(product.hSN);
     const barcodeVal = clean(product.barcode);
-    const batchCode = clean(order.BatchCode);
     const color = clean(product.specs?.color);
+    const batchCode = clean(product.stock[0]?.batchCode);
+    const expiry = clean(product.stock[0]?.cLBatchExpiry);
 
     const sph = cleanPower(product.specs?.sphericalPower);
     const cyld = cleanPower(product.specs?.cylindricalPower);
@@ -107,6 +109,7 @@ const getProductName = (order) => {
       color && `Color: ${color}`,
       barcodeVal && `Barcode: ${barcodeVal}`,
       batchCode && `Batch Code: ${batchCode || "-"}`,
+      expiry && `Expiry: ${expiry.split("-").reverse().join("/")}`,
       hsn && `HSN: ${hsn}`,
     ]
       .filter(Boolean)
@@ -115,7 +118,10 @@ const getProductName = (order) => {
 
   // Optical Lens
   if (ProductType === 0) {
-    const olLine = [product.productName].map(clean).filter(Boolean).join(" ");
+    const olLine = [product.productDescName]
+      .map(clean)
+      .filter(Boolean)
+      .join(" ");
 
     const right = product.specs?.powerDetails?.right || {};
     const left = product.specs?.powerDetails?.left || {};
@@ -163,8 +169,9 @@ const getProductName = (order) => {
       addOnLine,
       barcodeLine,
       tintLine,
-      hsnLine,
+
       fittingLine,
+      hsnLine,
     ]
       .filter(Boolean)
       .join("\n");
@@ -173,14 +180,14 @@ const getProductName = (order) => {
   return "";
 };
 
-
 const InvoiceView = () => {
-
-  const { hasMultipleLocations } = useSelector((state) => state.auth);
+  const { hasMultipleLocations, user } = useSelector((state) => state.auth);
   const navigate = useNavigate();
   const { search } = useLocation();
   const params = new URLSearchParams(search);
   const invoiceId = params.get("invoiceId");
+
+  const [InvoiceEnabled, setInvoiceEnabled] = useState(true);
 
   const { data: invoiceDetails, isLoading } = useGetInvoiceByIdQuery(
     { id: invoiceId },
@@ -192,13 +199,16 @@ const InvoiceView = () => {
       detailId: invoiceId,
       locationId: parseInt(hasMultipleLocations[0]),
     });
+  const { data: eInvoiceData, isLoading: isEInvoiceLoading } =
+    useGetEInvoiceDataQuery({ id: invoiceId }); //
+
+  const [createInvoice, { isLoading: isInvoiceCreating }] =
+    useCreateEInvoiceMutation();
 
   const getTypeName = (id) => {
     const types = { 1: "F/S", 2: "ACC", 3: "CL" };
     return types[id] || "OL";
   };
-
-
 
   const calculateGST = (sellingPrice, taxPercentage) => {
     const price = parseFloat(sellingPrice);
@@ -252,6 +262,24 @@ const InvoiceView = () => {
       4: "Cancelled",
     };
     return types[status] || "Draft";
+  };
+
+  const getEInvoiceData = async () => {
+    const eInvoicePayload = {
+      recordId: parseInt(invoiceId) ?? null,
+      type: "invoice",
+    };
+    try {
+      await createInvoice({
+        companyId: parseInt(hasMultipleLocations[0]),
+        userId: user.Id,
+        payload: eInvoicePayload,
+      }).unwrap();
+      setInvoiceEnabled(false);
+    } catch (error) {
+      setInvoiceEnabled(true);
+      console.log(error);
+    }
   };
 
   if (isViewLoading || isLoading) {
@@ -385,6 +413,51 @@ const InvoiceView = () => {
             </div>
           </div>
         )}
+        <div className="mt-10">
+          <div className="bg-white rounded-sm shadow-sm p-4">
+            <div className="flex justify-between items-center mb-5">
+              <div className="text-neutral-700 text-xl font-semibold ">
+                E-Invoice Details
+              </div>
+              <div>
+                <Button
+                  onClick={getEInvoiceData}
+                  isLoading={isInvoiceCreating}
+                  disabled={
+                    isInvoiceCreating ||
+                    (eInvoiceData?.data?.data?.length > 0 &&
+                      eInvoiceData.data.data[eInvoiceData.data.data.length - 1]
+                        ?.ErrorCode === "200") || (eInvoiceData?.data?.data?.length > 0 &&
+                      eInvoiceData.data.data[0]
+                        ?.ErrorCode === "200")
+                  }
+                >
+                  Generate Invoice
+                </Button>
+              </div>
+            </div>
+            <div>
+              <Table
+                columns={["S.No", "E-Invoice Date", "status"]}
+                data={eInvoiceData?.data.data}
+                renderRow={(ei, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>
+                      {ei?.CreatedOn
+                        ? format(new Date(ei.CreatedOn), "dd/MM/yyyy")
+                        : ""}
+                    </TableCell>
+                    <TableCell>{ei.ErrorMessage}</TableCell>
+                  </TableRow>
+                )}
+                emptyMessage={
+                  isEInvoiceLoading ? "Loading..." : "No data available"
+                }
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

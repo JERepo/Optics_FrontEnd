@@ -4,7 +4,7 @@ import { customBaseQuery } from "./customBaseQuery";
 export const InvoiceApi = createApi({
   reducerPath: "InvoiceApi",
   baseQuery: customBaseQuery,
-  tagTypes: ["Invoice"],
+  tagTypes: ["Invoice", "EInvoice"],
   endpoints: (builder) => ({
     getPatients: builder.query({
       query: ({ companyId }) => ({
@@ -62,6 +62,20 @@ export const InvoiceApi = createApi({
         url: `/api/v1/invoice/details/${detailId}?locationId=${locationId}`,
       }),
     }),
+    createEInvoice: builder.mutation({
+      query: ({ companyId, userId, payload }) => ({
+        url: `/api/v1/einvoice?companyId=${companyId}&ApplicationUserId=${userId}`,
+        method: "POST",
+        body: payload,
+      }),
+      invalidatesTags: ["EInvoice"],
+    }),
+    getEInvoiceData: builder.query({
+      query: ({ id }) => ({
+        url: `/api/v1/einvoice?type=invoice&recordId=${id}`,
+      }),
+      providesTags: ["EInvoice"],
+    }),
   }),
 });
 
@@ -74,5 +88,7 @@ export const {
   useGenerateInvoiceMutation,
   useGetAllInvoiceQuery,
   useGetInvoiceByIdQuery,
-  useGetInvoiceDetailsQuery
+  useGetInvoiceDetailsQuery,
+  useCreateEInvoiceMutation,
+  useGetEInvoiceDataQuery,
 } = InvoiceApi;

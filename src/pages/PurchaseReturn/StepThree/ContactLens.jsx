@@ -518,7 +518,7 @@ const ContactLens = () => {
           // Quantity:
           //   parseInt(newItem?.powerData?.AvlQty) ||
           //   parseInt(batchBarCodeDetails?.data?.data.Quantity),
-          ExpiryDate: isAvailable.CLBatchExpiry,
+          ExpiryDate: isAvailable.ExpiryDate,
           MRP: parseFloat(isAvailable.CLMRP),
           BuyingPrice: parseFloat(isAvailable.BuyingPrice),
           Quantity: isAvailable.Quantity,
@@ -669,7 +669,7 @@ const ContactLens = () => {
         ...newItem.powerData,
         sbatchCode: selectedBatchCode.CLBatchCode,
         sMRP: selectedBatchCode.CLMRP,
-        ExpiryDate: selectedBatchCode.CLBatchExpiry,
+        ExpiryDate: selectedBatchCode.ExpiryDate,
         stkQty: 1,
         Quantity: selectedBatchCode.Quantity,
         MRP: parseFloat(selectedBatchCode.CLMRP),
@@ -680,7 +680,7 @@ const ContactLens = () => {
         ...batchBarCodeDetails?.data.data,
         sbatchCode: selectedBatchCode.CLBatchCode,
         sMRP: selectedBatchCode.CLMRP,
-        ExpiryDate: selectedBatchCode.CLBatchExpiry,
+        ExpiryDate: selectedBatchCode.ExpiryDate,
         stkQty: 1,
         Quantity: selectedBatchCode.Quantity,
         BuyingPrice: parseFloat(selectedBatchCode.BuyingPrice),
