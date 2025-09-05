@@ -13,7 +13,10 @@ import { enGB } from "date-fns/locale";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { TextField } from "@mui/material";
-import { useGetAllStockInDataQuery, useGetStockLocationsQuery } from "../../../api/stockTransfer";
+import {
+  useGetAllStockInDataQuery,
+  useGetStockLocationsQuery,
+} from "../../../api/stockTransfer";
 import { formatINR } from "../../../utils/formatINR";
 
 const StockTransferIn = () => {
@@ -30,13 +33,13 @@ const StockTransferIn = () => {
     useGetStockLocationsQuery({
       locationId: parseInt(hasMultipleLocations[0]),
     });
-  
+
   useEffect(() => {
     setCurrentPage(1);
   }, [fromDate, toDate, searchQuery]);
 
-   const {data:allStockIn,isLoading:isStockLoading} = useGetAllStockInDataQuery()
-
+  const { data: allStockIn, isLoading: isStockLoading } =
+    useGetAllStockInDataQuery();
 
   const StockOut = useMemo(() => {
     if (!allStockIn?.data) return [];
@@ -55,13 +58,18 @@ const StockTransferIn = () => {
       );
     }
 
-    // if (searchQuery) {
-    //   const query = searchQuery.toLowerCase();
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
 
-      
-    //   });
-    // }
+      filtered = filtered.filter((sti) => {
+        const fromCompany = (
+          allLocations?.data?.data.find((item) => item.Id === sti.CompanyId)
+            .DisplayName || ""
+        ).toLowerCase();
 
+        return fromCompany.includes(query);
+      });
+    }
     return filtered.map((s) => ({
       id: s.ID,
       ton: `${s.STInPrefix}/${s.STInNo}`,
@@ -70,7 +78,7 @@ const StockTransferIn = () => {
         month: "2-digit",
         year: "numeric",
       }).format(new Date(s.STInCreateDate)),
-     
+
       fromCompany: allLocations?.data?.data.find(
         (item) => item.Id === s.CompanyId
       ).DisplayName,
@@ -78,7 +86,7 @@ const StockTransferIn = () => {
       totalValue: s.TotalValueIn,
     }));
     // .filter((order) => order.CompanyId == hasMultipleLocations[0]);
-  }, [allStockIn, fromDate, toDate, searchQuery,allLocations]);
+  }, [allStockIn, fromDate, toDate, searchQuery, allLocations]);
 
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedOrders = StockOut.slice(startIndex, startIndex + pageSize);
@@ -103,7 +111,9 @@ const StockTransferIn = () => {
         {/* Header */}
         <div className="px-6 py-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Stock TransferIn</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Stock TransferIn
+            </h1>
           </div>
         </div>
         <div className="px-6 py-5 border-b border-gray-100">
@@ -178,7 +188,7 @@ const StockTransferIn = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
             <div className="flex items-center gap-5">
               <h2 className="text-lg font-medium text-gray-900">
-                Stock Transfer Out
+                Stock Transfer In
               </h2>
               <div className="relative flex items-center w-full sm:w-64">
                 <FiSearch className="absolute left-3 text-gray-400" />
@@ -224,7 +234,7 @@ const StockTransferIn = () => {
                 <TableCell>{item.date}</TableCell>
                 <TableCell>{item.fromCompany}</TableCell>
                 <TableCell>{item.totalQty}</TableCell>
-                <TableCell>₹{formatINR( item.totalValue)}</TableCell>
+                <TableCell>₹{formatINR(item.totalValue)}</TableCell>
                 <TableCell>
                   <button
                     onClick={() => handleViewSalesReturn(item.id)}

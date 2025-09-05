@@ -221,7 +221,6 @@ const SalesView = () => {
     return "";
   };
   const getProductNameForYes = (order) => {
-    console.log("coming in yes also");
     const {
       productType,
       ProductType,
@@ -301,7 +300,7 @@ const SalesView = () => {
     if (order.ProductType === 3) {
       const bc = detail?.stock[0]?.batchCode ?? "";
 
-      const ex = detail?.stock[0]?.Expiry ?? "";
+      const ex = (detail?.stock[0]?.Expiry || detail.stock[0]?.cLBatchExpiry) ?? "";
 
       const specListYes = joinNonEmpty(
         [
@@ -507,7 +506,8 @@ const SalesView = () => {
                 <TableCell>
                   {s.InvoiceMain && (
                     <div>
-                      {s.InvoiceMain?.InvoicePrefix}/{s.InvoiceMain?.InvoiceNo}
+                      {s.InvoiceMain?.InvoicePrefix}/{s.InvoiceMain?.InvoiceNo}/
+                      {s.InvoiceDetails.InvoiceSlNo}
                     </div>
                   )}
                 </TableCell>
@@ -523,10 +523,14 @@ const SalesView = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    parseFloat(calculateGST(
-                      parseFloat(s.ReturnPricePerUnit) * s.ReturnQty,
-                      parseFloat(s.GSTPercentage)
-                    ).gstAmount) + (parseFloat(s.FittingCharges || 0) * (parseFloat(s.FittingGSTPercentage || 0)/100))
+                    parseFloat(
+                      calculateGST(
+                        parseFloat(s.ReturnPricePerUnit) * s.ReturnQty,
+                        parseFloat(s.GSTPercentage)
+                      ).gstAmount
+                    ) +
+                      parseFloat(s.FittingCharges || 0) *
+                        (parseFloat(s.FittingGSTPercentage || 0) / 100)
                   )}
                   (
                   {

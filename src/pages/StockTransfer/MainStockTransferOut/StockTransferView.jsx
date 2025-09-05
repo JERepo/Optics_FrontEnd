@@ -357,9 +357,9 @@ const StockTransferView = () => {
                   ₹
                   {formatINR(
                     getStockOutPrice(item) * item.STQtyOut +
-                      getStockOutPrice(item) *
+                      (getStockOutPrice(item) *
                         (parseFloat(item.ProductTaxPercentage) / 100) *
-                        item.STQtyOut
+                        item.STQtyOut)
                   )}
                 </TableCell>
               </TableRow>
@@ -382,6 +382,7 @@ const StockTransferView = () => {
                   )}
                 </span>
               </div>
+              {/* summation of (Buying Price * Qty*GST %) */}
               <div className="flex flex-col">
                 <span className="text-neutral-700 font-semibold text-lg">
                   Total GST
@@ -399,6 +400,7 @@ const StockTransferView = () => {
                   ) || "0"}
                 </span>
               </div>
+              {/* Buying Price*Qty + Buying Price * Qty*GST % */}
               <div className="flex flex-col">
                 <span className="text-neutral-700 font-semibold text-lg">
                   Total Amount
@@ -409,8 +411,8 @@ const StockTransferView = () => {
                     stockDetails?.data?.result?.details.reduce(
                       (sum, item) =>
                         sum +
-                        item.STQtyOut * getStockOutPrice(item) +
-                        getStockOutPrice(item) *
+                        (item.STQtyOut * getStockOutPrice(item)) +
+                        (getStockOutPrice(item) * item.STQtyOut) *
                           (parseFloat(item.ProductTaxPercentage) / 100),
                       0
                     )

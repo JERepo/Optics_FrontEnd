@@ -229,9 +229,7 @@ const PurchaseReturnView = () => {
 
           {PRDetails?.data.data.Vendor.TAXRegisteration === 1 && (
             <>
-              <div className="flex gap-1">
-                <strong>GST No:</strong> {PRDetails?.TAXNo}
-              </div>
+             
               <Info label="GST No:" value={PRDetails?.data.data.Vendor.TAXNo} />
 
               <Info

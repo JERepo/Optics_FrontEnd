@@ -43,7 +43,6 @@ const SelectVendor = () => {
 
     return Array.from(unique.values());
   }, [vendorsData]);
-console.log(customerPurchase)
   const handleSaveDraft = async () => {
     if (!selectedVendor) return;
 
@@ -115,7 +114,7 @@ console.log(customerPurchase)
               Select Vendor
             </label>
             <Autocomplete
-              options={vendorOptions}
+              options={vendorsData?.data?.data?.filter((item) => item.CompanyID == customerPurchase.locationId)}
               getOptionLabel={(option) => option.VendorName}
               value={
                 vendorOptions.find(

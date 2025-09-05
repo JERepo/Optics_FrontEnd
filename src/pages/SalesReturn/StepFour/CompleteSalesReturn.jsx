@@ -258,7 +258,7 @@ const getProductNameForYes = (order, referenceApplicable) => {
   if (productType === 3) {
     const bc = detail?.stock[0]?.batchCode ?? "";
 
-    const ex = detail?.stock[0]?.Expiry ?? "";
+    const ex = (detail?.stock[0]?.Expiry || detail.stock[0]?.cLBatchExpiry) ?? "";
     
     const specListYes = joinNonEmpty(
       [
@@ -286,7 +286,7 @@ const getProductNameForYes = (order, referenceApplicable) => {
                 detail.ExpiryDate.split("-").reverse().join("/")
               : "-"
           }`,
-        clean(detail.HSN) && `HSN: ${clean(detail.HSN)}`,
+        clean(detail.HSN || detail.hSN) && `HSN: ${clean(detail.HSN || detail.hSN)}`,
       ],
       "\n"
     );

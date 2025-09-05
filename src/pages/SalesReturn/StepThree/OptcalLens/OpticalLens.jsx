@@ -465,7 +465,6 @@ const OpticalLens = () => {
     // setMainOLDetails([]);
     setSelectedInvoice(null);
   };
-console.log(mainOLDetails)
   const handleOLensBack = () => {
     prevSalesStep();
   };
@@ -1048,7 +1047,7 @@ const handleDeleteYes = (id, index) => {
             ProductType: 0,
           },
         ]);
-
+        handleReset();
         setShowAdd(false);
         setLensData({
           orderReference: null,

@@ -55,6 +55,19 @@ const PurchaseReturn = () => {
       );
     }
 
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+
+      filtered = filtered.filter((order) => {
+        const vendorName = String(order.Vendor.VendorName || "").toLowerCase();
+        const mobile = String(
+          order.CustomerContactDetail?.MobNumber || ""
+        ).toLowerCase();
+
+        return vendorName.includes(query) || mobile.includes(query);
+      });
+    }
+
     return filtered.map((s) => ({
       id: s.Id,
       pn: s.DNNo,

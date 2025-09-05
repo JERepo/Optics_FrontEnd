@@ -7,6 +7,7 @@ import {
 } from "../../api/customerApi";
 import Loader from "../../components/ui/Loader";
 import {
+  useCreateEInvoiceMutation,
   useGenerateInvoiceMutation,
   useGetAllOrderMasterQuery,
   useGetPatientsQuery,
@@ -288,6 +289,8 @@ const CustomerSelect = () => {
     getProductDetails,
     { data: productData, isLoading: isProductDataLoading },
   ] = useGetProductDetailsMutation();
+  const [createInvoice, { isLoading: isInvoiceCreating }] =
+    useCreateEInvoiceMutation();
 
   // Memoized filtered products
   const filteredProducts = useMemo(() => {
@@ -759,7 +762,7 @@ const CustomerSelect = () => {
       .map((x) => x.identifier)
       .filter(Boolean);
 
-     for (const id of identifiers) {
+    for (const id of identifiers) {
       const groupItems = localProductData.filter((x) => x.identifier === id);
       const selectedGroupItems = groupItems.filter((x) =>
         selectedProducts.includes(x.orderDetailId)
@@ -890,7 +893,7 @@ const CustomerSelect = () => {
     });
     return payments;
   };
-  console.log("ss",selectedPatient)
+  console.log("ss", selectedPatient);
   const handleGenerateInvoiceCreditYes = () => {
     if (
       selectedPatient.CustomerMaster.CreditBilling === 1 &&
@@ -1000,15 +1003,34 @@ const CustomerSelect = () => {
     if (payload.creditBilling === 0) {
       payload.payments = preparePaymentsStructure();
     }
+
+    //  customerData use this
     try {
       const response = await generateInvoice({ payload }).unwrap();
+
+      const eInvoicePayload = {
+        recordId: response?.invoicemainid ?? null,
+        type: "invoice",
+      };
+
+      if (
+        customerData?.data?.data?.TAXRegisteration === 1 &&
+        customerData?.data?.data?.Company?.CompanyType === 1
+      ) {
+        await createInvoice({
+          companyId: parseInt(hasMultipleLocations[0]),
+          userId: user.Id,
+          payload: eInvoicePayload,
+        }).unwrap();
+      }
+
       toast.success(response?.message);
       setFullPayments([]);
       updatePaymentDetails(null);
       navigate("/invoice");
     } catch (error) {
       console.error(error);
-      const errors = error?.data.errors;
+      const errors = error?.data?.errors;
       if (errors?.length > 0) {
         errors.forEach((err) => toast.error(err));
       }
