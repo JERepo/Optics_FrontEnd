@@ -405,7 +405,7 @@ const SalesView = () => {
   }, 0);
 
   const totalGST = salesDetails?.data.reduce((sum, item) => {
-    const price = parseFloat(item.ReturnPricePerUnit) * item.ReturnQty;
+    const price = parseFloat(item.ReturnPricePerUnit);
     const totalPriceGst = parseFloat(
       calculateGST(price, parseFloat(item.GSTPercentage)).gstAmount
     );
@@ -525,7 +525,7 @@ const SalesView = () => {
                   {formatINR(
                     parseFloat(
                       calculateGST(
-                        parseFloat(s.ReturnPricePerUnit) * s.ReturnQty,
+                        parseFloat(s.ReturnPricePerUnit),
                         parseFloat(s.GSTPercentage)
                       ).gstAmount
                     ) +

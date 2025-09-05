@@ -51,14 +51,14 @@ const FrameSunglass = () => {
   const [selectedRows, setSelectedRows] = useState([]);
   const [singleOrCombine, setSingleOrCombine] = useState(0);
   const [editMode, setEditMode] = useState({}); // { [barcode-index]: { sellingPrice: false, qty: false } }
-  // const { data: stockOutData } = useGetStockOutDetailsQuery({
-  // mainId: customerStockTransferIn.mainId,
-  // locationId: parseInt(hasMultipleLocations[0]),
-  // });
-  const { data: stockOutData } = useGetStockOutDataForStockInQuery({
-    mainId: customerStockTransferIn.mainId,
-    locationId: parseInt(hasMultipleLocations[0]),
+  const { data: stockOutData } = useGetStockOutDetailsQuery({
+  mainId: customerStockTransferIn.mainId,
+  locationId: parseInt(hasMultipleLocations[0]),
   });
+  // const { data: stockOutData } = useGetStockOutDataForStockInQuery({
+  //   mainId: customerStockTransferIn.mainId,
+  //   locationId: parseInt(hasMultipleLocations[0]),
+  // });
 
   const { data: allBrands } = useGetAllBrandsQuery();
   const [
@@ -106,7 +106,7 @@ const FrameSunglass = () => {
 
       setItems((prev) => {
         // Check if product exists in StockTransferOut
-        const STOProduct = stockOutData?.data?.StockTransferInDetails?.find(
+        const STOProduct = stockOutData?.data?.details?.find(
           (item) => item.FrameDetailId === data.Id
         );
         if (!STOProduct) {
@@ -215,7 +215,7 @@ const FrameSunglass = () => {
       let updated = [...prev];
 
       selectedRows.forEach((selected) => {
-        const STOProduct = stockOutData?.data?.StockTransferInDetails?.find(
+        const STOProduct = stockOutData?.data?.details?.find(
           (item) => item.FrameDetailId === selected.Id
         );
 

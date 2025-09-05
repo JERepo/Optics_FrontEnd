@@ -22,27 +22,14 @@ const SelectVendor = () => {
     setCustomerPurchase,
   } = useOrder();
   const [selectedVendor, setSelectedVendor] = useState(null);
-
   const { data: vendorsData, isLoading } = useGetVendorsQuery({
-    locationId: customerPurchase.locationId,
+    locationId: customerPurchase.vendorPoolId,
   });
   const [purchaseDraft, { isLoading: isDraftLoading }] =
     useLazyGetDraftDataQuery();
 
   const [saveDraft, { isLoading: draftSaving }] = useSaveDraftMutation();
-  const vendorOptions = React.useMemo(() => {
-    const vendors = vendorsData?.data?.data || [];
-    const unique = new Map();
-
-    vendors.forEach((v) => {
-      const key = v.VendorName?.toLowerCase().trim();
-      if (key && !unique.has(key)) {
-        unique.set(key, v);
-      }
-    });
-
-    return Array.from(unique.values());
-  }, [vendorsData]);
+ 
   const handleSaveDraft = async () => {
     if (!selectedVendor) return;
 
@@ -117,7 +104,7 @@ const SelectVendor = () => {
               options={vendorsData?.data?.data?.filter((item) => item.CompanyID == customerPurchase.locationId)}
               getOptionLabel={(option) => option.VendorName}
               value={
-                vendorOptions.find(
+                vendorsData?.data?.data?.find(
                   (contact) => contact.Id === selectedVendor?.Id
                 ) || null
               }

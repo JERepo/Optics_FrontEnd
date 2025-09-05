@@ -1304,7 +1304,7 @@ const ContactLens = () => {
                   <TableCell className="whitespace-pre-line">
                     {getProductNameYes(item)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="">
                     ₹{formatINR(parseFloat(item.SRP || 0))}
                   </TableCell>
                   <TableCell>
@@ -1371,7 +1371,7 @@ const ContactLens = () => {
                         </div>
                       )}
                     </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="">
                     ₹
                     {formatINR(
                       calculateGST(
@@ -1388,10 +1388,10 @@ const ContactLens = () => {
                     }
                     %)
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="">
                     {item.ReturnQty || 0}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="">
                     ₹{formatINR(parseFloat(item.TotalAmount || 0))}
                   </TableCell>
                   <TableCell>

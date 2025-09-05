@@ -146,8 +146,6 @@ const getProductName = (order) => {
       specsList,
       clr && `Color: ${clr}`,
       barcodeVal && `Barcode: ${barcodeVal}`,
-      // (batchc || batchBar) &&
-      //   `Batch Code: ${batchBar || batchc || "-"}`,
       batchc && `BatchCode: ${batchc}`,
       batchBar && `BatchBarCode: ${batchBar}`,
       expiry && `Expiry : ${expiry.split("-").reverse().join("/")}`,
@@ -205,14 +203,14 @@ const ContactLens = () => {
   });
 
   const [errors, setErrors] = useState({});
-  // const { data: stockOutData } = useGetStockOutDetailsQuery({
-  //   mainId: customerStockTransferIn.mainId,
-  //   locationId: parseInt(hasMultipleLocations[0]),
-  // });
-    const { data: stockOutData } = useGetStockOutDataForStockInQuery({
-        mainId: customerStockTransferIn.mainId,
-        locationId: parseInt(hasMultipleLocations[0]),
-      });
+  const { data: stockOutData } = useGetStockOutDetailsQuery({
+    mainId: customerStockTransferIn.mainId,
+    locationId: parseInt(hasMultipleLocations[0]),
+  });
+    // const { data: stockOutData } = useGetStockOutDataForStockInQuery({
+    //     mainId: customerStockTransferIn.mainId,
+    //     locationId: parseInt(hasMultipleLocations[0]),
+    //   });
 
   const { data: modalities, isLoading: modalitiesLoading } =
     useGetModalitiesQuery();
@@ -382,7 +380,7 @@ const ContactLens = () => {
             toast.error("Stock quantity must be greater than 0!");
             return;
           }
-          const STOProduct = stockOutData?.data?.StockTransferInDetails?.find(
+          const STOProduct = stockOutData?.data?.details?.find(
             (item) => item.ContactLensDetailId === data.CLDetailId
           );
           if (!STOProduct) {
@@ -497,9 +495,9 @@ const ContactLens = () => {
     // const avlQty = Number(mainClDetails[index].Quantity);
     // Find existing in our items (local scanned state)
     const existing = mainClDetails[index];
-
+    console.log("ex",existing,newQty)
     // Determine current STQtyIn (from state if exists, else from backend)
-    const currentSTQtyIn = existing?.tiq;
+    const currentSTQtyIn = existing?.STQtyOut;
     if (newQty > currentSTQtyIn) {
       toast.error("TransferIn qty cannot exceed transferOut qty!");
       return;
@@ -509,7 +507,7 @@ const ContactLens = () => {
       return;
     }
     setMainClDetails((prev) =>
-      prev.map((i, idx) => (idx === index ? { ...i, stkQty: newQty } : i))
+      prev.map((i, idx) => (idx === index ? { ...i, tiq: newQty } : i))
     );
   };
   const handleGetBatchBarCodeDetails = async () => {
@@ -523,7 +521,7 @@ const ContactLens = () => {
       );
 
       if (isAvailable) {
-        const STOProduct = stockOutData?.data?.StockTransferInDetails?.find(
+        const STOProduct = stockOutData?.data?.details?.find(
           (item) =>
             item.ContactLensDetailId ===
             batchBarCodeDetails?.data?.data.CLDetailId
@@ -619,7 +617,7 @@ const ContactLens = () => {
       }).unwrap();
 
       if (response?.data.data.CLBatchCode === 0) {
-        const STOProduct = stockOutData?.data?.StockTransferInDetails?.find(
+        const STOProduct = stockOutData?.data?.details?.find(
           (item) => item.ContactLensDetailId === response?.data.data.CLDetailId
         );
         if (!STOProduct) {
@@ -633,6 +631,8 @@ const ContactLens = () => {
         const cc = {
           ...response?.data.data,
           ...STOProduct,
+          sbatchCode:response?.data.data.stock.BatchCode,
+          ExpiryDate :response?.data.data.Expiry,
           BuyingPrice:
             response?.data.data.CLBatchCode === 0
               ? parseFloat(response?.data.data.price.BuyingPrice)
@@ -675,7 +675,7 @@ const ContactLens = () => {
   const handleSaveBatchData = async () => {
     let sub;
     if ((!detailId || openBatch) && productSearch == 0) {
-      const STOProduct = stockOutData?.data?.StockTransferInDetails?.find(
+      const STOProduct = stockOutData?.data?.details?.find(
         (item) => item.ContactLensDetailId === newItem.CLDetailId
       );
       if (!STOProduct) {
@@ -698,7 +698,7 @@ const ContactLens = () => {
         BuyingPrice: parseFloat(selectedBatchCode.BuyingPrice),
       };
     } else if (detailId && productSearch == 1) {
-      const STOProduct = stockOutData?.data?.StockTransferInDetails?.find(
+      const STOProduct = stockOutData?.data?.details?.find(
         (item) =>
           item.ContactLensDetailId === batchBarCodeDetails?.data.data.CLDetailId
       );
@@ -1005,7 +1005,7 @@ const ContactLens = () => {
                           />
                           <button
                             onClick={() =>
-                              toggleEditMode(item.Barcode, index, "qty")
+                              toggleEditMode(item.Barcode, index, "qty","save")
                             }
                             className="text-neutral-400 transition"
                             title="Save"
@@ -1014,7 +1014,7 @@ const ContactLens = () => {
                           </button>
                           <button
                             onClick={() =>
-                              toggleEditMode(item.Barcode, index, "qty")
+                              toggleEditMode(item.Barcode, index, "qty","cancel")
                             }
                             className="text-neutral-400 transition"
                             title="Cancel"
