@@ -486,10 +486,10 @@ const OpticalLens = () => {
   const handleQtyChange = (barcode, qty, index) => {
     const newQty = Number(qty);
     const avlQty = Number(mainOLDetails[index].Quantity);
-    if (newQty > avlQty) {
-      toast.error("Stock quantity cannot exceed available quantity!");
-      return;
-    }
+    // if (newQty > avlQty) {
+    //   toast.error("Stock quantity cannot exceed available quantity!");
+    //   return;
+    // }
     if (newQty < 0) {
       toast.error("Stock quantity must be greater than 0!");
       return;
@@ -580,10 +580,10 @@ const OpticalLens = () => {
         )
       : 0;
 
-    if (priceDetails?.data.Quantity <= 0) {
-      toast.error("Quantity should be greater than 0!");
-      return;
-    }
+    // if (priceDetails?.data.Quantity <= 0) {
+    //   toast.error("Quantity should be greater than 0!");
+    //   return;
+    // }
     setMainOLDetails((prev) => [
       ...prev,
       {
@@ -986,7 +986,6 @@ const handleDeleteYes = (id, index) => {
       setErrorModalOpen(true);
     }
   };
-  console.log(mainOLDetails);
   const handleAddPowerData = async (eye) => {
     try {
       const payload = {
@@ -1000,21 +999,21 @@ const handleDeleteYes = (id, index) => {
       }
 
       const res = await getPowerByOl({ payload }).unwrap();
-      if (res?.data.Quantity <= 0) {
-        toast.error("Stock Quantity must be greater than 0!");
-        return;
-      }
+      // if (res?.data.Quantity <= 0) {
+      //   toast.error("Stock Quantity must be greater than 0!");
+      //   return;
+      // }
 
-      if (parseInt(formValues["R"].transferQty) > res?.data.Quantity) {
-        toast.error("Stock Quantity cannot exceed the available Quantity!");
-        return;
-      }
+      // if (parseInt(formValues["R"].transferQty) > res?.data.Quantity) {
+      //   toast.error("Stock Quantity cannot exceed the available Quantity!");
+      //   return;
+      // }
 
       if (res?.data) {
-        if ((res.data.Quantity || 0) <= 0) {
-          toast.error("No stock available for this barcode");
-          return;
-        }
+        // if ((res.data.Quantity || 0) <= 0) {
+        //   toast.error("No stock available for this barcode");
+        //   return;
+        // }
         if (!lensData.productName) {
           toast.error("Please select all required fields before adding.");
           return;

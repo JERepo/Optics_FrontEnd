@@ -663,10 +663,10 @@ const ContactLens = () => {
         if (existingIndex !== -1) {
           const item = mainClDetails[existingIndex];
           const newQty = item.returnQty + 1;
-          if (newQty > item.Quantity) {
-            toast.error("Stock quantity cannot exceed available quantity!");
-            return;
-          }
+          // if (newQty > item.Quantity) {
+          //   toast.error("Stock quantity cannot exceed available quantity!");
+          //   return;
+          // }
           setMainClDetails((prev) =>
             prev.map((it, idx) =>
               idx === existingIndex
@@ -745,10 +745,10 @@ const ContactLens = () => {
       }).unwrap();
 
       if (response?.data.data.CLBatchCode === 0 && referenceApplicable === 0) {
-        if (response?.data.data.stock.Quantity <= 0) {
-          toast.error("Stock quantity not available for this barcode!");
-          return;
-        }
+        // if (response?.data.data.stock.Quantity <= 0) {
+        //   toast.error("Stock quantity not available for this barcode!");
+        //   return;
+        // }
         const cc = {
           ...response?.data.data,
           returnPrice:
@@ -768,10 +768,10 @@ const ContactLens = () => {
         if (existingIndex !== -1) {
           const item = mainClDetails[existingIndex];
           const newQty = item.returnQty + 1;
-          if (newQty > item.Quantity) {
-            toast.error("Stock quantity cannot exceed available quantity!");
-            return;
-          }
+          // if (newQty > item.Quantity) {
+          //   toast.error("Stock quantity cannot exceed available quantity!");
+          //   return;
+          // }
           setMainClDetails((prev) =>
             prev.map((it, idx) =>
               idx === existingIndex
@@ -869,10 +869,10 @@ const ContactLens = () => {
       if (existingIndex !== -1) {
         const item = mainClDetails[existingIndex];
         const newQty = item.returnQty + 1;
-        if (newQty > item.Quantity) {
-          toast.error("Stock quantity cannot exceed available quantity!");
-          return;
-        }
+        // if (newQty > item.Quantity) {
+        //   toast.error("Stock quantity cannot exceed available quantity!");
+        //   return;
+        // }
         setMainClDetails((prev) =>
           prev.map((it, idx) =>
             idx === existingIndex ? { ...it, returnQty: it.returnQty + 1 } : it
