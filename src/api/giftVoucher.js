@@ -56,6 +56,13 @@ export const giftVoucher = createApi({
         body: formData,
       }),
     }),
+    createGiftVoucherForRefund: builder.mutation({
+      query: ({ payload }) => ({
+        url: `/api/v1/gift-voucher/create/refund`,
+        method: "POST",
+        body: payload,
+      }),
+    }),
   }),
 });
 
@@ -67,5 +74,6 @@ export const {
   useLazyValidateGiftVoucherQuery,
   useActivateVoucherCodeMutation,
   useLazyGetSampleExcelQuery,
-  useUploadFileMutation
+  useUploadFileMutation,
+  useCreateGiftVoucherForRefundMutation
 } = giftVoucher;

@@ -82,6 +82,7 @@ import NewGV from "../pages/GiftVoucher/NewGV/NewGV";
 import ActiveteGV from "../pages/GiftVoucher/ActivateGV/ActiveteGV";
 import StockTransferIn from "../pages/StockTransferIn/MainStockTransferIn/StockTransferIn";
 import StockTransferInView from "../pages/StockTransferIn/MainStockTransferIn/StockTransferInView";
+import SelectCustomer from "../pages/CustomerRefund/SelectCustomer";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -802,6 +803,10 @@ export const router = createBrowserRouter([
         path: "activate-gv",
         element: <ActiveteGV />,
       },
+      {
+        path :"customer-refund/create",
+        element : <SelectCustomer />
+      }
     ],
   },
   {
