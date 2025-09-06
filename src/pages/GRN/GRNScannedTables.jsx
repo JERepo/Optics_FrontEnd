@@ -105,12 +105,20 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                             <TableCell>{ }</TableCell>
                             <TableCell>{ }</TableCell>
                             <TableCell>{item.Barcode}</TableCell>
-                            <TableCell>{item.ProductName}{item.Size && <br />}{item.Size}</TableCell>
-                            <TableCell>₹{item.MRP}</TableCell>
+                            <TableCell>{item.ProductName}
+                                {item.Size && <br />}{item.Size}
+                                {item.SphericalPower && <br />}{item.SphericalPower ? `Sph: ${item.SphericalPower}` : `Sph: `}
+                                {item.CylindricalPower ? ` Cyl: ${item.CylindricalPower}` : ` Cyl: `}
+                                {item.Axis ? ` Axis: ${item.Axis}` : ` Axis: `}
+                                {item.Additional ? ` Add: ${item.Additional}` : ` Add: `}
+                                {item.Barcode && <br />}{item.Barcode && `Barcode: ${item.Barcode}`}
+
+                            </TableCell>
+                            <TableCell>₹{item.MRP || item.MRPMaster || 0}</TableCell>
                             <TableCell>₹{" "}
                                 <input
                                     type="number"
-                                    value={item.price || 0}
+                                    value={item.price || item.BuyingPriceMaster}
                                     onChange={(e) => updateScannedItemPrice(index, e.target.value)}
                                     className="w-20 px-2 py-1 border rounded"
                                 />

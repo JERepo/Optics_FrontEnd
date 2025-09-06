@@ -187,10 +187,10 @@ export default function GRNStep3() {
         const getDD = async () => {
             const payload = {
                 productType: (grnData?.step2?.productType === "Lens" ? 0
-                    : grnData?.step2?.productType === "Frame/Sunglass" ? 1 
-                    : grnData?.step2?.productType === "Accessories" ? 2 
-                    : grnData?.step2?.productType === "Contact Lens" ? 3 
-                    : null ) ?? null,
+                    : grnData?.step2?.productType === "Frame/Sunglass" ? 1
+                        : grnData?.step2?.productType === "Accessories" ? 2
+                            : grnData?.step2?.productType === "Contact Lens" ? 3
+                                : null) ?? null,
                 locationId: grnData?.step1?.selectedLocation,
                 masterId: []
             }
@@ -290,7 +290,8 @@ export default function GRNStep3() {
                     ...newItem,
                     quantity: 1,
                     price: newItem.BuyingPrice || 0,
-                    Id: newItem.Id || Date.now()
+                    Id: newItem.Id || Date.now(),
+                    timestamp: Date.now()
                 };
 
                 if (formState.EntryType === "combined") {
@@ -311,11 +312,14 @@ export default function GRNStep3() {
                     // Separate entry: always add new row
                     updatedItems.push({
                         ...itemToAdd,
-                        Id: Date.now() // Ensure unique ID for separate entries
+                        Id: Date.now(), // Ensure unique ID for separate entries
+                        timestamp: Date.now()
                     });
                 }
             });
 
+            // Sort by timestamp in descending order (latest first)
+            updatedItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
             return updatedItems;
         });
 
@@ -361,7 +365,8 @@ export default function GRNStep3() {
                         ...result.data.data,
                         quantity: 1,
                         price: result?.data?.data?.BuyingPrice,
-                        cLDetailId: result?.data?.data?.CLDetailId
+                        cLDetailId: result?.data?.data?.CLDetailId,
+                        timestamp: Date.now()
                     };
                     if (result.data.data.CLBatchCode === 1) {
                         setClSearchItems([newItem]);
@@ -390,7 +395,11 @@ export default function GRNStep3() {
                                     Id: Date.now()
                                 });
                             }
+
+                            // Sort by timestamp in descending order (latest first)
+                            updatedItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
                             return updatedItems;
+
                         });
                         toast.success("CL item added successfully");
                         setFormState(prev => ({
@@ -403,7 +412,8 @@ export default function GRNStep3() {
                         ...result.data,
                         quantity: 1,
                         price: result?.data?.BuyingPrice,
-                        Id: result?.data?.Id || Date.now()
+                        Id: result?.data?.Id || Date.now(),
+                        timestamp: Date.now()
                     };
 
                     setScannedItems(prevItems => {
@@ -420,7 +430,11 @@ export default function GRNStep3() {
                         } else {
                             updatedItems.push(newItem);
                         }
+
+                        // Sort by timestamp in descending order (latest first)
+                        updatedItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
                         return updatedItems;
+
                     });
 
                     toast.success("Item added successfully");
@@ -813,14 +827,16 @@ export default function GRNStep3() {
                 ...newItem,
                 Barcode: data.Barcode,
                 CLDetailId: data?.CLDetailId,
-                SphericalPower: data.SphericalPower,
-                CylindricalPower: data.CylindricalPower,
+                SphericalPower: data.SphericalPower ?? data.Spherical ,
+                CylindricalPower: data.CylindricalPower ?? data.Cylindrical,
                 Axis: data.Axis,
                 Additional: data.Additional,
                 avlQty: parseInt(data.AvlQty) || 0,
                 orderQty: data.DefaultOrderQty || 1,
                 quantity: 1,
                 BuyingPrice: data?.BuyingPrice || 0,
+                BuyingPriceMaster: data?.priceMaster?.buyingPrice || null,
+                MRPMaster: data?.priceMaster?.mrp || null,
                 CLBatchCode: data.CLBatchCode,
                 ProductName: data?.ProductName,
                 HSN: data?.HSN,
