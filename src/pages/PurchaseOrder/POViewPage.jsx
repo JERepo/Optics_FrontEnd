@@ -4,6 +4,7 @@ import { ArrowLeft, PenIcon, Trash2 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useGetAllPoDetailsForNewOrderMutation, useGetAllPoDetailsMutation } from "../../api/purchaseOrderApi";
+import { calculateTotalQuantity } from "./helperFunction";
 
 export function POViewPage() {
     const location = useLocation();
@@ -318,8 +319,42 @@ export function POViewPage() {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.barcode}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        {order?.ProductDetails?.productName}
-                                        {order?.ProductDetails?.hsncode && <><br />HSN: {order?.ProductDetails?.hsncode}</>}
+                                        {order?.ProductDetails?.ProductType == 0 ?
+                                            <td className="px-6 py-4 whitespace-wrap min-w-72">{order?.ProductDetails?.productName
+                                            }
+                                                <br />
+                                                {order?.ProductDetails?.Specs?.Spherical ? `Sph: ${order?.ProductDetails?.Specs?.Spherical} ` : `Sph: `}
+                                                {order?.ProductDetails?.Specs?.Cylinder ? `Cyl: ${order?.ProductDetails?.Specs?.Cylinder} ` : `Cyl: `}
+                                                {order?.ProductDetails?.Specs?.Diameter ? `Dia: ${order?.ProductDetails?.Specs?.Diameter} ` : `Dia: `}
+
+                                                <br></br>{order?.ProductDetails?.HSN && `HSN: ` + order?.ProductDetails?.HSN}
+
+                                            </td>
+                                            : order?.ProductDetails?.ProductType == 1 ?
+                                                <td className="px-6 py-4 whitespace-wrap">{order?.ProductDetails?.productName}
+                                                    <br></br>Size: {order?.ProductDetails?.Size?.Size}
+                                                    <br></br>{order?.ProductDetails?.ProductType === 0 ? `Category: Sunglass` : `Category: OpticalFrame`}
+                                                    <br></br>{order?.ProductDetails?.HSN && `HSN: ` + order?.ProductDetails?.HSN}
+                                                </td>
+                                                : order?.ProductDetails?.ProductType == 2 ?
+                                                    <td className="px-6 py-4 whitespace-wrap">{order?.ProductDetails?.productName}
+                                                        {order?.ProductDetails?.Variation?.Variation && (<><br />Variation: {order?.ProductDetails?.Variation?.Variation}</>)}
+                                                        <br></br>{order?.ProductDetails?.HSN && `HSN: ` + order?.ProductDetails?.HSN}
+                                                    </td>
+                                                    : order?.ProductDetails?.ProductType == 3 ?
+                                                        <td className="px-6 py-4 whitespace-wrap">{order?.ProductDetails?.productName}
+                                                            <br />
+                                                            {order?.ProductDetails?.PowerSpecs?.Sph ? `Sph: ${order?.ProductDetails?.PowerSpecs?.Sph} ` : `Sph: `}
+                                                            {order?.ProductDetails?.PowerSpecs?.Cyl ? `Cyl: ${order?.ProductDetails?.PowerSpecs?.Cyl} ` : `Cyl: `}
+                                                            {order?.ProductDetails?.PowerSpecs?.Axis ? `Axis: ${order?.ProductDetails?.PowerSpecs?.Axis} ` : `Axis: `}
+                                                            {order?.ProductDetails?.PowerSpecs?.Add ? `Add: ${order?.ProductDetails?.PowerSpecs?.Axis} ` : `Add: `}
+                                                            <br></br>{order?.ProductDetails?.HSN && `HSN: ` + order?.ProductDetails?.HSN}
+                                                        </td>
+                                                        :
+                                                        <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.productName}
+                                                            <br />{order?.ProductDetails?.hsncode ? `HSN: ` + order?.ProductDetails?.hsncode : null}
+                                                        </td>
+                                        }
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {order?.ProductDetails?.ProductType === 3 ?
@@ -332,15 +367,22 @@ export function POViewPage() {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.Stock?.Quantity}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        {(() => {
-                                            const quantity = order.poQty ?? order?.POQty;
-                                            const price = order?.ProductDetails?.ProductType === 3 ?
-                                                parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0 :
-                                                parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
-                                            const taxPercentage = parseFloat(order?.ProductDetails?.GSTPercentage) / 100 || 0;
-
-                                            return (price * quantity * (1 + taxPercentage)).toFixed(2);
-                                        })()}
+                                        {order?.ProductDetails?.ProductType === 3 ? (
+                                            (
+                                                ((order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) * (order.poQty ?? order?.POQty)) +
+                                                ((order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) *
+                                                    (order.poQty ?? order?.POQty) *
+                                                    ((order?.taxPercent) / 100) || 1)
+                                                ).toFixed(2)
+                                            ) : (
+                                            // Default calculation
+                                            (
+                                                ((order?.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) * (order.poQty ?? order?.POQty)) +
+                                                ((order?.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) *
+                                                    (order.poQty ?? order?.POQty) *
+                                                    ((order?.taxPercent) / 100) || 1)
+                                            ).toFixed(2)
+                                        )}
                                     </td>
                                 </tr>
                             ))}
@@ -354,28 +396,28 @@ export function POViewPage() {
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total Quantity:</span>
                     <span className="font-bold text-lg">
-                        {poreviewDetails[0]?.TotalQty}
+                        {poData.totalQty}
                     </span>
                 </div>
 
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total Gross Value:</span>
                     <span className="font-bold text-lg">
-                        ₹ {poreviewDetails[0]?.TotalBasicValue}
+                        ₹ {poData.totalGrossValue}
                     </span>
                 </div>
 
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total GST:</span>
                     <span className="font-bold text-lg">
-                        ₹{poreviewDetails[0]?.TotalGSTValue}
+                        ₹ {poData.totalGSTValue}
                     </span>
                 </div>
 
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total Net Value:</span>
                     <span className="font-bold text-lg">
-                        ₹{poreviewDetails[0]?.TotalValue}
+                        ₹ {poData.totalValue}
                     </span>
                 </div>
             </div>

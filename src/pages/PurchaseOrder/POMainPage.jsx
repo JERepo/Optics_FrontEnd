@@ -98,6 +98,8 @@ export function PurchaseOrderMainPage() {
             status: getOrderStatus(po.Status),
             totalQty: po.TotalQty,
             totalValue: po.TotalValue,
+            totalGrossValue: po.TotalBasicValue,
+            totalGSTValue: po.TotalGSTValue,
             createdOn: po.CreatedOn,
             poReference: po.POReferenceNo || "N/A",
             shipToCompany: po.ShipToCompanyID,
