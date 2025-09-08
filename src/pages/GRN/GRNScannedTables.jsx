@@ -26,7 +26,7 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                                 <input
                                     type="number"
                                     value={item.price || 0}
-                                    onChange={(e) => updateScannedItemPrice(item.Id, e.target.value)}
+                                    onChange={(e) => updateScannedItemPrice(index, e.target.value)}
                                     className="w-20 px-2 py-1 border rounded"
                                 />
                             </TableCell>
@@ -34,7 +34,7 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                                 <input
                                     type="number"
                                     value={item.quantity || 1}
-                                    onChange={(e) => updateScannedItemQuantity(item.Id, e.target.value)}
+                                    onChange={(e) => updateScannedItemQuantity(index, e.target.value)}
                                     className="w-16 px-2 py-1 border rounded"
                                     min="1"
                                 />

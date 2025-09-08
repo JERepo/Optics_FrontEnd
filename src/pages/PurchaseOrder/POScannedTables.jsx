@@ -62,7 +62,7 @@ export function POLensScannedTable({ headerItems, scannedItems, updateScannedIte
             data={scannedItems}
             renderRow={(ol, index) => (
                 <TableRow key={index}>
-                    <TableCell>{ol.Barcode}</TableCell>
+                    <TableCell>{""}</TableCell>
                     <TableCell>{ol.Spherical}</TableCell>
                     <TableCell>{ol.Cylinder}</TableCell>
                     <TableCell>₹{" "}
