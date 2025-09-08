@@ -676,7 +676,7 @@ export default function SavePurchaseOrder() {
                     newItem = {
                         ...result.data.data,
                         quantity: 1, // Default quantity
-                        price: result?.data?.data?.BuyingPrice, // Default price
+                        price: result?.data?.data?.price?.BuyingPrice, // Default price
                         cLDetailId: result?.data?.data?.CLDetailId,
                         taxPercentage: result?.data?.data?.TaxDetails[0]?.PurTaxPerct || 0,
                         Id: formState.EntryType === "seperate"
@@ -1529,8 +1529,8 @@ export default function SavePurchaseOrder() {
                         detailId: order.olDetailId || order.cLDetailId || order.frameDetailId || order.accessoryDetailId,
                         orderDetailId: order.orderDetailId,
                         poQty: order.poQty ?? order?.orderQty - order?.billedQty - order?.cancelledQty,
-                        poPrice: order.poPrice ?? order?.priceMaster?.buyingPrice,
-                        // : order.poPrice ?? order?.pricing?.buyingPrice,
+                        poPrice: order.productType == 3 ? order.poPrice ?? order?.priceMaster?.buyingPrice
+                            : order.poPrice ?? order?.pricing?.buyingPrice,
                         taxPercentage: formState.selectedOption === 'Lens' ? order?.TaxPrectTaxMain
                             : formState.selectedOption === 'Contact Lens' ? order?.TaxPrectTaxMain
                                 : formState.selectedOption === 'Frame/Sunglass' ? order?.TaxPrectTaxMain
@@ -1741,7 +1741,7 @@ export default function SavePurchaseOrder() {
         if (formState.shiptoAddress === "against") {
             price = item?.poPrice || (item?.productType == 3 ? item?.priceMaster?.buyingPrice : item.pricing?.buyingPrice);
         } else {
-            price = item?.poPrice || (item?.ProductDetails?.price?.BuyingPrice);
+            price = item?.poPrice || (item?.ProductDetails?.ProductType == 3 ? item?.ProductDetails?.price?.BuyingPrice : item?.ProductDetails?.Stock?.BuyingPrice);
         }
         setCurrentEditingItem(item);
         setEditedBuyingPrice(price);
@@ -3159,12 +3159,30 @@ export default function SavePurchaseOrder() {
 
                                                     {/* // In the table cell where Total Amount is displayed: */}
                                                     <td className="px-6 py-4 whitespace-nowrap">
-                                                        {(
-                                                            ((order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) * (order.poQty ?? order?.POQty)) +
-                                                            ((order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) *
-                                                                (order.poQty ?? order?.POQty) *
-                                                                ((order?.ProductDetails?.GSTPercentage || order?.taxPercent) / 100))
-                                                        ).toFixed(2)}
+
+                                                        {order?.ProductDetails?.ProductType === 3 ? (
+                                                            (
+                                                                ((order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) * (order.poQty ?? order?.POQty)) +
+                                                                ((order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) *
+                                                                    (order.poQty ?? order?.POQty) *
+                                                                    ((order?.ProductDetails?.GSTPercentage || order?.taxPercent) / 100))
+                                                            ).toFixed(2)
+                                                        ) : order?.ProductDetails?.ProductType === 0 ? (
+                                                            (
+                                                                ((order?.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) * (order.poQty ?? order?.POQty)) +
+                                                                ((order?.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) *
+                                                                    (order.poQty ?? order?.POQty) *
+                                                                    ((order?.ProductDetails?.GSTPercentage || order?.taxPercent) / 100))
+                                                            ).toFixed(2)
+                                                        ) : (
+                                                            // Default calculation
+                                                            (
+                                                                ((order?.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) * (order.poQty ?? order?.POQty)) +
+                                                                ((order?.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) *
+                                                                    (order.poQty ?? order?.POQty) *
+                                                                    ((order?.ProductDetails?.GSTPercentage || order?.taxPercent) / 100))
+                                                            ).toFixed(2)
+                                                        )}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <button

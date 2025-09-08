@@ -167,7 +167,7 @@ export function POCLScannedTable({ headerItems, scannedItems, updateScannedItemQ
                             type="number"
                             min="1"
                             step="0.01"
-                            value={scannedItems.find(item => item.Id === cl.Id)?.price || cl.BuyingPrice}
+                            value={scannedItems.find(item => item.Id === cl.Id)?.price || cl?.price?.BuyingPrice || cl.BuyingPrice}
                             onChange={(e) => updateScannedItemPrice(index, e.target.value)}
                             className="w-30 px-2 py-1 border rounded"
                         />
