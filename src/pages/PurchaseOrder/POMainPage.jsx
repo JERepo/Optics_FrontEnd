@@ -81,6 +81,9 @@ export function PurchaseOrderMainPage() {
             });
         }
 
+        // Sort by CreatedOn in descending order (latest first)
+        filtered.sort((a, b) => new Date(b.CreatedOn) - new Date(a.CreatedOn));
+
         return filtered.map((po) => ({
             id: po.Id,
             poDate: new Intl.DateTimeFormat("en-GB", {

@@ -1527,10 +1527,10 @@ export default function SavePurchaseOrder() {
                         poQty: order.poQty ?? order?.orderQty - order?.billedQty - order?.cancelledQty,
                         poPrice: order.productType == 3 ? order.poPrice ?? order?.priceMaster?.buyingPrice
                             : order.poPrice ?? order?.pricing?.buyingPrice,
-                        taxPercentage: formState.selectedOption === 'Lens' ? order?.TaxPrectTaxMain 
-                                        : formState.selectedOption === 'Contact Lens' ? order?.TaxPrectTaxMain
-                                        : formState.selectedOption === 'Frame/Sunglass' ? order?.TaxPrectTaxMain 
-                                        : formState.selectedOption === 'Accessories' ? order?.TaxPrectTaxMain : order?.taxPercentage || 0,
+                        taxPercentage: formState.selectedOption === 'Lens' ? order?.TaxPrectTaxMain
+                            : formState.selectedOption === 'Contact Lens' ? order?.TaxPrectTaxMain
+                                : formState.selectedOption === 'Frame/Sunglass' ? order?.TaxPrectTaxMain
+                                    : formState.selectedOption === 'Accessories' ? order?.TaxPrectTaxMain : order?.taxPercentage || 0,
                         Status: 0, // Default status
                         ApplicationUserId: user.Id
                     }));
@@ -1581,7 +1581,11 @@ export default function SavePurchaseOrder() {
                     detailId: formState.selectedOption === "Contact Lens" ? item.CLDetailId : formState.selectedOption === "Lens" ? item.OpticalLensDetailId : item.Id,
                     poQty: item.quantity || 1,
                     poPrice: item.price || item.BuyingPrice,
-                    taxPercentage: item.taxPercentage || 0,
+                    // taxPercentage: item.taxPercentage || 0,
+                    taxPercentage: formState.selectedOption === 'Lens' ? order?.TaxPrectTaxMain
+                        : formState.selectedOption === 'Contact Lens' ? order?.TaxPrectTaxMain
+                            : formState.selectedOption === 'Frame/Sunglass' ? order?.TaxPrectTaxMain
+                                : formState.selectedOption === 'Accessories' ? order?.TaxPrectTaxMain : order?.taxPercentage || 0,
                     Status: 0,
                     ApplicationUserId: user.Id
                 }));
