@@ -213,7 +213,7 @@ export function POAgainstOrderTableComponent({ filteredOrderDetails, formState, 
                                         (order?.priceMaster?.buyingPrice * (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty)) +
                                         (order?.priceMaster?.buyingPrice *
                                             (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty) *
-                                            (order?.taxPercentage / 100))
+                                            (order?.TaxPrectTaxMain / 100))
                                     ).toFixed(2)
                                 ) : (
                                     // Default calculation
@@ -221,7 +221,7 @@ export function POAgainstOrderTableComponent({ filteredOrderDetails, formState, 
                                         (order?.pricing?.buyingPrice * (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty)) +
                                         (order?.pricing?.buyingPrice *
                                             (order.poQty ?? order.orderQty - order.billedQty - order.cancelledQty) *
-                                            (order?.taxPercentage / 100))
+                                            (order?.TaxPrectTaxMain / 100))
                                     ).toFixed(2)
                                 )}
                             </td>
