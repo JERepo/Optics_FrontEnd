@@ -403,7 +403,7 @@ export function POViewPage() {
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total Gross Value:</span>
                     <span className="font-bold text-lg">
-                        ₹ {Number(poData.totalGrossValue).toFixed}
+                        ₹ {Number(poData.totalGrossValue).toFixed(2)}
                     </span>
                 </div>
 
