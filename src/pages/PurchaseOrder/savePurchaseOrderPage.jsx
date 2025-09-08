@@ -1582,10 +1582,10 @@ export default function SavePurchaseOrder() {
                     poQty: item.quantity || 1,
                     poPrice: item.price || item.BuyingPrice,
                     // taxPercentage: item.taxPercentage || 0,
-                    taxPercentage: formState.selectedOption === 'Lens' ? order?.TaxPrectTaxMain
-                        : formState.selectedOption === 'Contact Lens' ? order?.TaxPrectTaxMain
-                            : formState.selectedOption === 'Frame/Sunglass' ? order?.TaxPrectTaxMain
-                                : formState.selectedOption === 'Accessories' ? order?.TaxPrectTaxMain : order?.taxPercentage || 0,
+                    taxPercentage: formState.selectedOption === 'Lens' ? item?.TaxPrectTaxMain
+                        : formState.selectedOption === 'Contact Lens' ? item?.TaxPrectTaxMain
+                            : formState.selectedOption === 'Frame/Sunglass' ? item?.TaxPrectTaxMain
+                                : formState.selectedOption === 'Accessories' ? item?.TaxPrectTaxMain : item?.taxPercentage || 0,
                     Status: 0,
                     ApplicationUserId: user.Id
                 }));
