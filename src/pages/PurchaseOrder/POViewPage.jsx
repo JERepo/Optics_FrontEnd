@@ -317,7 +317,7 @@ export function POViewPage() {
                                                 order?.ProductDetails?.ProductType === 2 ? 'Acc' :
                                                     order?.ProductDetails?.ProductType === 3 ? 'CL' : 'N/A'}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.barcode}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.ProductType == 0 ? "" : order?.ProductDetails?.barcode}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {order?.ProductDetails?.ProductType == 0 ?
                                             <td className="px-6 py-4 whitespace-wrap min-w-72">{order?.ProductDetails?.productName
