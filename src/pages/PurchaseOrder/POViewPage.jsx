@@ -280,6 +280,7 @@ export function POViewPage() {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {(() => {
+                                            const bothLens = order?.specs?.powerDetails?.bothLens === 1;
                                             const quantity = order.poQty ?? (order.orderQty - order.billedQty - order.cancelledQty);
                                             const price = order.productType === 3 ?
                                                 parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0 :
