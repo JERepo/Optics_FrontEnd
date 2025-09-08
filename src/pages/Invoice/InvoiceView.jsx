@@ -12,6 +12,8 @@ import {
 } from "../../api/InvoiceApi";
 import { formatINR } from "../../utils/formatINR";
 import { useSelector } from "react-redux";
+import { useGetLocationByIdQuery } from "../../api/roleManagementApi";
+import { useGetCompanyIdQuery } from "../../api/customerApi";
 
 const getProductName = (order) => {
   const product = order?.productDetails?.[0];
@@ -204,6 +206,19 @@ const InvoiceView = () => {
 
   const [createInvoice, { isLoading: isInvoiceCreating }] =
     useCreateEInvoiceMutation();
+
+  const { data: locationById } = useGetLocationByIdQuery(
+    { id: parseInt(hasMultipleLocations[0]) },
+    { skip: !parseInt(hasMultipleLocations[0]) }
+  );
+  const companyId = locationById?.data?.data.Id;
+
+  const { data: companySettings } = useGetCompanyIdQuery(
+    { id: companyId },
+    { skip: !companyId }
+  );
+  const EInvoiceEnable = companySettings?.data?.data.EInvoiceEnable;
+  const InvInvoiceEnable = companySettings?.data?.data.INVEInvoiceEnable;
 
   const getTypeName = (id) => {
     const types = { 1: "F/S", 2: "ACC", 3: "CL" };
@@ -413,51 +428,56 @@ const InvoiceView = () => {
             </div>
           </div>
         )}
-        <div className="mt-10">
-          <div className="bg-white rounded-sm shadow-sm p-4">
-            <div className="flex justify-between items-center mb-5">
-              <div className="text-neutral-700 text-xl font-semibold ">
-                E-Invoice Details
-              </div>
-              <div>
-                <Button
-                  onClick={getEInvoiceData}
-                  isLoading={isInvoiceCreating}
-                  disabled={
-                    isInvoiceCreating ||
-                    (eInvoiceData?.data?.data?.length > 0 &&
-                      eInvoiceData.data.data[eInvoiceData.data.data.length - 1]
-                        ?.ErrorCode === "200") || (eInvoiceData?.data?.data?.length > 0 &&
-                      eInvoiceData.data.data[0]
-                        ?.ErrorCode === "200")
-                  }
-                >
-                  Generate Invoice
-                </Button>
+        {invoiceDetails?.CustomerMaster?.TAXRegisteration === 1 &&
+          EInvoiceEnable === 1 &&
+          InvInvoiceEnable === 1 && (
+            <div className="mt-10">
+              <div className="bg-white rounded-sm shadow-sm p-4">
+                <div className="flex justify-between items-center mb-5">
+                  <div className="text-neutral-700 text-xl font-semibold ">
+                    E-Invoice Details
+                  </div>
+                  <div>
+                    <Button
+                      onClick={getEInvoiceData}
+                      isLoading={isInvoiceCreating}
+                      disabled={
+                        isInvoiceCreating ||
+                        (eInvoiceData?.data?.data?.length > 0 &&
+                          eInvoiceData.data.data[
+                            eInvoiceData.data.data.length - 1
+                          ]?.ErrorCode === "200") ||
+                        (eInvoiceData?.data?.data?.length > 0 &&
+                          eInvoiceData.data.data[0]?.ErrorCode === "200")
+                      }
+                    >
+                      Generate Invoice
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <Table
+                    columns={["S.No", "E-Invoice Date", "status"]}
+                    data={eInvoiceData?.data.data}
+                    renderRow={(ei, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>
+                          {ei?.CreatedOn
+                            ? format(new Date(ei.CreatedOn), "dd/MM/yyyy")
+                            : ""}
+                        </TableCell>
+                        <TableCell>{ei.ErrorMessage}</TableCell>
+                      </TableRow>
+                    )}
+                    emptyMessage={
+                      isEInvoiceLoading ? "Loading..." : "No data available"
+                    }
+                  />
+                </div>
               </div>
             </div>
-            <div>
-              <Table
-                columns={["S.No", "E-Invoice Date", "status"]}
-                data={eInvoiceData?.data.data}
-                renderRow={(ei, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell>
-                      {ei?.CreatedOn
-                        ? format(new Date(ei.CreatedOn), "dd/MM/yyyy")
-                        : ""}
-                    </TableCell>
-                    <TableCell>{ei.ErrorMessage}</TableCell>
-                  </TableRow>
-                )}
-                emptyMessage={
-                  isEInvoiceLoading ? "Loading..." : "No data available"
-                }
-              />
-            </div>
-          </div>
-        </div>
+          )}
       </div>
     </div>
   );

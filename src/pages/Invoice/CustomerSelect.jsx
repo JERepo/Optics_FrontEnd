@@ -598,7 +598,6 @@ const CustomerSelect = () => {
       setSelectedProducts([]);
     }
   };
-  console.log("sele", selectedPatient);
   const handleClickNext = () => {
     setCustomerId({
       companyId: selectedPatient?.CustomerMaster?.CompanyID,
@@ -893,7 +892,6 @@ const CustomerSelect = () => {
     });
     return payments;
   };
-  console.log("ss", selectedPatient);
   const handleGenerateInvoiceCreditYes = () => {
     if (
       selectedPatient.CustomerMaster.CreditBilling === 1 &&
@@ -1017,11 +1015,15 @@ const CustomerSelect = () => {
         customerData?.data?.data?.TAXRegisteration === 1 &&
         customerData?.data?.data?.Company?.CompanyType === 1
       ) {
-        await createInvoice({
-          companyId: parseInt(hasMultipleLocations[0]),
-          userId: user.Id,
-          payload: eInvoicePayload,
-        }).unwrap();
+        try {
+          await createInvoice({
+            companyId: parseInt(hasMultipleLocations[0]),
+            userId: user.Id,
+            payload: eInvoicePayload,
+          }).unwrap();
+        } catch (error) {
+          navigate("/invoice");
+        }
       }
 
       toast.success(response?.message);

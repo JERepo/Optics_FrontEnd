@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { Table, TableCell, TableRow } from "../../../components/Table";
 import { format } from "date-fns";
@@ -11,6 +11,13 @@ import {
   useGetPRByIdQuery,
   useGetPRDataForViewQuery,
 } from "../../../api/purchaseReturn";
+import {
+  useCreateEInvoiceMutation,
+  useGetEInvoiceDataQuery,
+} from "../../../api/InvoiceApi";
+import toast from "react-hot-toast";
+import { useGetLocationByIdQuery } from "../../../api/roleManagementApi";
+import { useGetCompanyIdQuery } from "../../../api/customerApi";
 
 const getProductName = (item) => {
   const type = item.ProductType;
@@ -153,9 +160,10 @@ const getPurchaseValue = (item) => {
 const PurchaseReturnView = () => {
   const navigate = useNavigate();
   const { search } = useLocation();
-  const { hasMultipleLocations } = useSelector((state) => state.auth);
+  const { hasMultipleLocations, user } = useSelector((state) => state.auth);
   const params = new URLSearchParams(search);
   const PR = params.get("purchaseId");
+  const [InvoiceEnabled, setInvoiceEnabled] = useState(true);
 
   const { data: PRDetails, isLoading } = useGetPRByIdQuery(PR, {
     skip: !PR,
@@ -166,6 +174,22 @@ const PurchaseReturnView = () => {
       locationId: parseInt(hasMultipleLocations[0]),
     });
 
+  const [createInvoice, { isLoading: isInvoiceCreating }] =
+    useCreateEInvoiceMutation();
+  const { data: eInvoiceData, isLoading: isEInvoiceLoading } =
+    useGetEInvoiceDataQuery({ id: parseInt(PR) });
+  const { data: locationById } = useGetLocationByIdQuery(
+    { id: parseInt(hasMultipleLocations[0]) },
+    { skip: !parseInt(hasMultipleLocations[0]) }
+  );
+  const companyId = locationById?.data?.data.Id;
+
+  const { data: companySettings } = useGetCompanyIdQuery(
+    { id: companyId },
+    { skip: !companyId }
+  );
+  const EInvoiceEnable = companySettings?.data?.data.EInvoiceEnable;
+  const InvInvoiceEnable = companySettings?.data?.data.DNEInvoiceEnable;
   const getShortTypeName = (id) => {
     if (id === null || id === undefined) return;
     if (id === 1) return "F/S";
@@ -200,6 +224,26 @@ const PurchaseReturnView = () => {
     totalBasicValue: formatINR(totals.totalBasicValue),
     totalReturnValue: formatINR(totals.totalReturnValue),
   };
+  const getEInvoiceData = async () => {
+    const eInvoicePayload = {
+      recordId: parseInt(PR) ?? null,
+      type: "purchaseReturn",
+    };
+    try {
+      await createInvoice({
+        companyId: parseInt(hasMultipleLocations[0]),
+        userId: user.Id,
+        payload: eInvoicePayload,
+      }).unwrap();
+      setInvoiceEnabled(false);
+    } catch (error) {
+      setInvoiceEnabled(true);
+      console.log(error);
+      toast.error(
+        error?.data.error || "E-Invoice Not enabled for this customer"
+      );
+    }
+  };
 
   if (isLoading) {
     return <Loader color="black" />;
@@ -229,7 +273,6 @@ const PurchaseReturnView = () => {
 
           {PRDetails?.data.data.Vendor.TAXRegisteration === 1 && (
             <>
-             
               <Info label="GST No:" value={PRDetails?.data.data.Vendor.TAXNo} />
 
               <Info
@@ -330,6 +373,56 @@ const PurchaseReturnView = () => {
             </div>
           </div>
         )}
+        {PRDetails?.data.data.Vendor.TAXRegisteration === 1 &&
+          EInvoiceEnable === 1 &&
+          InvInvoiceEnable === 1 && (
+            <div className="mt-10">
+              <div className="bg-white rounded-sm shadow-sm p-4">
+                <div className="flex justify-between items-center mb-5">
+                  <div className="text-neutral-700 text-xl font-semibold ">
+                    E-Invoice Details
+                  </div>
+                  <div>
+                    <Button
+                      onClick={getEInvoiceData}
+                      isLoading={isInvoiceCreating}
+                      disabled={
+                        isInvoiceCreating ||
+                        (eInvoiceData?.data?.data?.length > 0 &&
+                          eInvoiceData.data.data[
+                            eInvoiceData.data.data.length - 1
+                          ]?.ErrorCode === "200") ||
+                        (eInvoiceData?.data?.data?.length > 0 &&
+                          eInvoiceData.data.data[0]?.ErrorCode === "200")
+                      }
+                    >
+                      Generate Invoice
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <Table
+                    columns={["S.No", "E-Invoice Date", "status"]}
+                    data={eInvoiceData?.data.data}
+                    renderRow={(ei, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>
+                          {ei?.CreatedOn
+                            ? format(new Date(ei.CreatedOn), "dd/MM/yyyy")
+                            : ""}
+                        </TableCell>
+                        <TableCell>{ei.ErrorMessage}</TableCell>
+                      </TableRow>
+                    )}
+                    emptyMessage={
+                      isEInvoiceLoading ? "Loading..." : "No data available"
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+          )}
       </div>
     </div>
   );

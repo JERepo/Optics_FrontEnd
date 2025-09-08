@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { Table, TableCell, TableRow } from "../../../components/Table";
 import { format } from "date-fns";
@@ -11,18 +11,26 @@ import {
 import { useOrder } from "../../../features/OrderContext";
 import { formatINR } from "../../../utils/formatINR";
 import { useSelector } from "react-redux";
+import {
+  useCreateEInvoiceMutation,
+  useGetEInvoiceDataQuery,
+} from "../../../api/InvoiceApi";
 
+import { toast } from "react-hot-toast";
+import { useGetLocationByIdQuery } from "../../../api/roleManagementApi";
+import { useGetCompanyIdQuery } from "../../../api/customerApi";
 const formatNumber = (num) => {
   return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "0";
 };
 
 const SalesView = () => {
   const { calculateGST } = useOrder();
-  const { hasMultipleLocations } = useSelector((state) => state.auth);
+  const { hasMultipleLocations, user } = useSelector((state) => state.auth);
   const navigate = useNavigate();
   const { search } = useLocation();
   const params = new URLSearchParams(search);
   const salesId = params.get("salesId");
+  const [InvoiceEnabled, setInvoiceEnabled] = useState(true);
 
   const { data: salesDetails, isLoading } = useGetMainSalesByIdQuery(
     { id: salesId, locationId: parseInt(hasMultipleLocations[0]) },
@@ -30,7 +38,23 @@ const SalesView = () => {
   );
   const { data: customerDataById, isLoading: isViewLoading } =
     useGetSalesReturnByIdQuery({ id: salesId });
+  const [createInvoice, { isLoading: isInvoiceCreating }] =
+    useCreateEInvoiceMutation();
+  const { data: eInvoiceData, isLoading: isEInvoiceLoading } =
+    useGetEInvoiceDataQuery({ id: parseInt(salesId) }); //
 
+  const { data: locationById } = useGetLocationByIdQuery(
+    { id: parseInt(hasMultipleLocations[0]) },
+    { skip: !parseInt(hasMultipleLocations[0]) }
+  );
+  const companyId = locationById?.data?.data.Id;
+
+  const { data: companySettings } = useGetCompanyIdQuery(
+    { id: companyId },
+    { skip: !companyId }
+  );
+  const EInvoiceEnable = companySettings?.data?.data.EInvoiceEnable;
+  const InvInvoiceEnable = companySettings?.data?.data.CNEInvoiceEnable;
   const getTypeName = (id) => {
     const types = { 1: "F/S", 2: "ACC", 3: "CL" };
     return types[id] || "OL";
@@ -300,7 +324,8 @@ const SalesView = () => {
     if (order.ProductType === 3) {
       const bc = detail?.stock[0]?.batchCode ?? "";
 
-      const ex = (detail?.stock[0]?.Expiry || detail.stock[0]?.cLBatchExpiry) ?? "";
+      const ex =
+        (detail?.stock[0]?.Expiry || detail.stock[0]?.cLBatchExpiry) ?? "";
 
       const specListYes = joinNonEmpty(
         [
@@ -414,6 +439,27 @@ const SalesView = () => {
     const fittingGst = fittingPrice * (gst / 100);
     return sum + totalPriceGst + fittingGst;
   }, 0);
+
+  const getEInvoiceData = async () => {
+    const eInvoicePayload = {
+      recordId: parseInt(salesId) ?? null,
+      type: "salesReturn",
+    };
+    try {
+      await createInvoice({
+        companyId: parseInt(hasMultipleLocations[0]),
+        userId: user.Id,
+        payload: eInvoicePayload,
+      }).unwrap();
+      setInvoiceEnabled(false);
+    } catch (error) {
+      setInvoiceEnabled(true);
+      console.log(error);
+      toast.error(
+        error?.data.error || "E-Invoice Not enabled for this customer"
+      );
+    }
+  };
 
   if (isViewLoading || isLoading) {
     return (
@@ -596,6 +642,56 @@ const SalesView = () => {
             </div>
           </div>
         )}
+        {customerDataById?.data.CustomerMaster?.TAXRegisteration === 1 &&
+          EInvoiceEnable === 1 &&
+          InvInvoiceEnable === 1 && (
+            <div className="mt-10">
+              <div className="bg-white rounded-sm shadow-sm p-4">
+                <div className="flex justify-between items-center mb-5">
+                  <div className="text-neutral-700 text-xl font-semibold ">
+                    E-Invoice Details
+                  </div>
+                  <div>
+                    <Button
+                      onClick={getEInvoiceData}
+                      isLoading={isInvoiceCreating}
+                      disabled={
+                        isInvoiceCreating ||
+                        (eInvoiceData?.data?.data?.length > 0 &&
+                          eInvoiceData.data.data[
+                            eInvoiceData.data.data.length - 1
+                          ]?.ErrorCode === "200") ||
+                        (eInvoiceData?.data?.data?.length > 0 &&
+                          eInvoiceData.data.data[0]?.ErrorCode === "200")
+                      }
+                    >
+                      Generate Invoice
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <Table
+                    columns={["S.No", "E-Invoice Date", "status"]}
+                    data={eInvoiceData?.data.data}
+                    renderRow={(ei, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>
+                          {ei?.CreatedOn
+                            ? format(new Date(ei.CreatedOn), "dd/MM/yyyy")
+                            : ""}
+                        </TableCell>
+                        <TableCell>{ei.ErrorMessage}</TableCell>
+                      </TableRow>
+                    )}
+                    emptyMessage={
+                      isEInvoiceLoading ? "Loading..." : "No data available"
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+          )}
       </div>
     </div>
   );

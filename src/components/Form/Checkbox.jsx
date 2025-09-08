@@ -1,6 +1,6 @@
 const Checkbox = ({ label, name, checked, onChange, className = "", ...props }) => {
   return (
-    <div className={`flex items-center mb-4 ${className}`}>
+    <div className={`flex items-center ${className}`}>
       <input
         type="checkbox"
         id={name}
