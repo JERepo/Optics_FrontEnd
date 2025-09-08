@@ -47,7 +47,7 @@ export function calculateTotalGrossValue(poreviewDetails, formStateShiptoAddress
 
                 // Ensure both price and quantity are valid numbers
                 if (price && !isNaN(price) && !isNaN(quantity)) {
-                    return total + (addOn + tint + (price * quantity));
+                    return total + ((addOn || 0) + (tint || 0) + (price * quantity));
                 }
                 return total;
             }, 0)
@@ -82,7 +82,7 @@ export function calculateTotalGrossValue(poreviewDetails, formStateShiptoAddress
 
                 // Ensure both price and quantity are valid numbers
                 if (price && !isNaN(price) && !isNaN(quantity)) {
-                    return total + ((price + addOn + tint) * quantity);
+                    return total + ((price + (addOn || 0) + (tint || 0)) * quantity);
                 }
                 return total;
 
@@ -124,7 +124,7 @@ export function calculateTotalGST(poreviewDetails, formStateShiptoAddress) {
                 console.log("Tax ------- ", taxPercentage);
 
                 if (price && !isNaN(price) && !isNaN(quantity)) {
-                    return total + (((price * quantity) + tint + addOn) * taxPercentage);
+                    return total + (((price * quantity) + (tint || 0) + (addOn || 0)) * taxPercentage);
                 }
                 return total;
             }, 0)
@@ -137,26 +137,13 @@ export function calculateTotalGST(poreviewDetails, formStateShiptoAddress) {
                     ? parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0
                     : parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
 
-                let addOn = order.productType === 0
-                    ? (Array.isArray(order?.specs?.addOn)
-                        ? order.specs.addOn.reduce(
-                            (sum, add) => sum + (parseFloat(add?.addOnBuyingPrice || 0) || 0),
-                            0
-                        )
-                        : parseFloat(order?.specs?.addOn?.addOnBuyingPrice || 0) || 0) : 0;
+                const taxPercentage = order?.ProductDetails?.ProductType === 0
+                    ? parseFloat(order?.taxPercent / 100) || 0
+                    : parseFloat(order?.ProductDetails?.GSTPercentage / 100) || 0;
 
-                let tint = order.productType === 0
-                    ? parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) : 0;
-
-                if (order?.specs?.powerDetails?.bothLens === 0) {
-                    addOn = addOn / 2;
-                    tint = tint / 2;
-                }
-
-                const taxPercentage = parseFloat(order?.taxPercent / 100) || 1;
 
                 if (price && !isNaN(price) && !isNaN(quantity)) {
-                    return total + ((price + tint + addOn) * quantity * taxPercentage);
+                    return total + (price * quantity * (taxPercentage || 1));
                 }
                 return total;
             }, 0)
@@ -189,15 +176,17 @@ export function calculateTotalNetValue(poreviewDetails, formStateShiptoAddress) 
                 // Calculate base
                 let subtotal;
                 if (bothLens) {
-                    subtotal = buyingPrice * quantity + tintBuying + addonBuying;
+                    subtotal = buyingPrice * quantity + (tintBuying || 0) + (addonBuying || 0);
                 } else {
-                    subtotal = buyingPrice * quantity + tintBuying / 2 + addonBuying / 2;
+                    subtotal = buyingPrice * quantity + ((tintBuying / 2) || 0) + ((addonBuying / 2) || 0);
                 }
+
+                console.log("subtotal ----------- ", subtotal);
 
                 const taxPercentage = parseFloat((order.taxPercentage) / 100) || 1;
 
                 // Add tax
-                return total + (subtotal + subtotal * (taxPercentage || 1));
+                return total + (subtotal + subtotal * (taxPercentage || 0));
             } else if ((order.productType === 3)) {
                 const price = parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0
                 const tax = parseFloat(order?.taxPercentage / 100) || 1
@@ -219,7 +208,11 @@ export function calculateTotalNetValue(poreviewDetails, formStateShiptoAddress) 
                 const price = order?.ProductDetails?.ProductType === 3
                     ? parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0
                     : parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
-                const taxPercentage = parseFloat(order?.taxPercent / 100) || 0;
+
+                const taxPercentage = order?.ProductDetails?.ProductType === 0
+                    ? parseFloat(order?.taxPercent / 100) || 0
+                    : parseFloat(order?.ProductDetails?.GSTPercentage / 100) || 0;
+
                 if (price && !isNaN(price) && !isNaN(quantity)) {
                     return total + ((price * quantity) + (price * quantity * taxPercentage));
                 }

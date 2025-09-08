@@ -391,7 +391,7 @@ export default function SavePurchaseOrder() {
                     return;
 
                 } else {
-                    setFormState((prev) => ({ ...prev, referenceNo: ""}));
+                    setFormState((prev) => ({ ...prev, referenceNo: "" }));
                 }
             }
 
@@ -891,6 +891,8 @@ export default function SavePurchaseOrder() {
             const data = response.data.data;
             toast.success(response?.data.message || "Power details found");
 
+            console.log("data ------------ ", data);
+
             // Create updated item with response data
             const updatedItem = {
                 ...newItem,
@@ -904,6 +906,7 @@ export default function SavePurchaseOrder() {
                 orderQty: data.DefaultOrderQty || 1,
                 quantity: 1,
                 BuyingPrice: data?.priceMaster?.buyingPrice || 0,
+                taxPercentage: data?.TaxDetails[0]?.PurTaxPerct || 0,
                 // Add truly unique ID for separate entries
                 Id: formState.EntryType === "seperate"
                     ? `cl-${data.CLDetailId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -1103,6 +1106,7 @@ export default function SavePurchaseOrder() {
                     ...newItem,
                     quantity: 1,
                     price: newItem.BuyingPrice || 0,
+                    taxPercentage: newItem?.Tax?.Details[0]?.PurTaxPerct,
                     // Generate truly unique ID for separate entries, use existing ID for combined
                     Id: formState.EntryType === "seperate"
                         ? `sep-${newItem.Id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -1130,7 +1134,7 @@ export default function SavePurchaseOrder() {
                     }
                 }
             });
-
+            console.log(" updatedItems ------------ ", updatedItems);
             return updatedItems;
         });
 
@@ -1559,7 +1563,7 @@ export default function SavePurchaseOrder() {
                     return;
                 }
 
-                console.log("scannedItems in po details ", scannedItems);
+                console.log("scannedItems in po details djhbajdb ", scannedItems);
 
                 // Prepare PO details payload for new orders
                 poDetails = scannedItems.map((item, index) => ({
@@ -1599,6 +1603,7 @@ export default function SavePurchaseOrder() {
             setSelectedOrders([]);
             setSelectAll(false);
             setFilteredOrderDetails([]);
+            setShowSearchInputs(false);
             // setPoreviewDetails([]);
             handleRefreshForm();
             // Move to step 4
@@ -3081,7 +3086,7 @@ export default function SavePurchaseOrder() {
                                                 <tr key={index}>
                                                     <td className="px-6 py-4 whitespace-nowrap">{index + 1}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.ProductType == 0 && `OL` || order?.ProductDetails?.ProductType == 1 && `F` || order?.ProductDetails?.ProductType == 2 && `Acc` || order?.ProductDetails?.ProductType == 3 && `CL`}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.barcode}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">{formState.shiptoAddress === "new" ? "" : order?.ProductDetails?.barcode}</td>
                                                     {/* <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.productName}
                                                         <br />{order?.ProductDetails?.hsncode ? `HSN: ` + order?.ProductDetails?.hsncode : null}
                                                     </td> */}
@@ -3162,6 +3167,13 @@ export default function SavePurchaseOrder() {
                                                                     (order.poQty ?? order?.POQty) *
                                                                     (order?.ProductDetails?.GSTPercentage / 100))
                                                             ).toFixed(2)
+                                                        ) : order?.ProductDetails?.ProductType === 0 ? (
+                                                            (
+                                                                ((order?.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) * (order.poQty ?? order?.POQty)) +
+                                                                ((order?.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) *
+                                                                    (order.poQty ?? order?.POQty) *
+                                                                    (order?.taxPercent / 100))
+                                                            ).toFixed(2)
                                                         ) : (
                                                             // Default calculation
                                                             (
@@ -3218,7 +3230,7 @@ export default function SavePurchaseOrder() {
                                 <div className="flex justify-between gap-4">
                                     <span className="text-gray-600 font-bold text-lg">Total Net Value :</span>
                                     <span className="font-bold text-lg">
-                                        ₹ {calculateTotalNetValue(poreviewDetails)}
+                                        ₹ {calculateTotalNetValue(poreviewDetails, formState.shiptoAddress)}
                                     </span>
                                 </div>
                             </div>
@@ -3249,7 +3261,7 @@ export default function SavePurchaseOrder() {
                                     <div className="flex justify-between gap-4">
                                         <span className="text-gray-600 font-bold text-lg">Total Net Value :</span>
                                         <span className="font-bold text-lg">
-                                            ₹ {calculateTotalNetValue(poreviewDetails)}
+                                            ₹ {calculateTotalNetValue(poreviewDetails, formState.shiptoAddress)}
                                         </span>
                                     </div>
                                 </div>)

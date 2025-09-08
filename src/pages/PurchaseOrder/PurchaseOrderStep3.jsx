@@ -204,7 +204,7 @@ export function POAgainstOrderTableComponent({ filteredOrderDetails, formState, 
 
                                         // Add tax
                                         const totalWithTax =
-                                            total + total * (parseFloat(order?.taxPercentage) / 100 || 0);
+                                            total + total * (parseFloat(order?.TaxPrectTaxMain) / 100 || 0);
 
                                         return totalWithTax.toFixed(2);
                                     })()
