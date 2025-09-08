@@ -3163,7 +3163,7 @@ export default function SavePurchaseOrder() {
                                                             ((order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) * (order.poQty ?? order?.POQty)) +
                                                             ((order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) *
                                                                 (order.poQty ?? order?.POQty) *
-                                                                (order?.ProductDetails?.GSTPercentage / 100))
+                                                                ((order?.ProductDetails?.GSTPercentage || order?.taxPercent) / 100))
                                                         ).toFixed(2)}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">

@@ -256,7 +256,7 @@ export function calculateTotalAmount(order) {
 
                 // Add tax
                 const totalWithTax =
-                    total + total * (parseFloat(order?.taxPercentage) / 100 || 0);
+                    total + total * (parseFloat(order?.taxPercentage ?? order?.taxPercent) / 100 || 0);
 
                 return totalWithTax.toFixed(2);
             })()
