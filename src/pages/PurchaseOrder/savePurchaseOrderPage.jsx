@@ -2828,7 +2828,7 @@ export default function SavePurchaseOrder() {
                                 ) :
                                     formState.selectedOption === "Lens" ? (
                                         <POLensScannedTable
-                                            headerItems={["Barcode", "Spherical Power", "Cylindrical Power", "Buying Price", "PO QTY", "Action"]}
+                                            headerItems={["Spherical Power", "Cylindrical Power", "Buying Price", "PO QTY", "Action"]}
                                             scannedItems={scannedItems}
                                             updateScannedItemQuantity={updateScannedItemQuantity}
                                             updateScannedItemPrice={updateScannedItemPrice}
@@ -3210,28 +3210,28 @@ export default function SavePurchaseOrder() {
                                 <div className="flex justify-between gap-4">
                                     <span className="text-gray-600 font-bold text-lg">Total Quantity :</span>
                                     <span className="font-bold text-lg">
-                                        {calculateTotalQuantity(poreviewDetails, formState.shiptoAddress)}
+                                        {Number(calculateTotalQuantity(poreviewDetails, formState.shiptoAddress))}
                                     </span>
                                 </div>
 
                                 <div className="flex justify-between gap-4">
                                     <span className="text-gray-600 font-bold text-lg">Total Gross Value :</span>
                                     <span className="font-bold text-lg">
-                                        ₹ {calculateTotalGrossValue(poreviewDetails, formState.shiptoAddress)}
+                                        ₹ {Number(calculateTotalGrossValue(poreviewDetails, formState.shiptoAddress)).toFixed(2)}
                                     </span>
                                 </div>
 
                                 <div className="flex justify-between gap-4">
                                     <span className="text-gray-600 font-bold text-lg">Total GST :</span>
                                     <span className="font-bold text-lg">
-                                        ₹ {calculateTotalGST(poreviewDetails, formState.shiptoAddress)}
+                                        ₹ {Number(calculateTotalGST(poreviewDetails, formState.shiptoAddress)).toFixed(2)}
                                     </span>
                                 </div>
 
                                 <div className="flex justify-between gap-4">
                                     <span className="text-gray-600 font-bold text-lg">Total Net Value :</span>
                                     <span className="font-bold text-lg">
-                                        ₹ {calculateTotalNetValue(poreviewDetails, formState.shiptoAddress)}
+                                        ₹ {Number(calculateTotalNetValue(poreviewDetails, formState.shiptoAddress)).toFixed(2)}
                                     </span>
                                 </div>
                             </div>
@@ -3241,28 +3241,28 @@ export default function SavePurchaseOrder() {
                                     <div className="flex justify-between gap-4">
                                         <span className="text-gray-600 font-bold text-lg">Total Quantity :</span>
                                         <span className="font-bold text-lg">
-                                            {calculateTotalQuantity(poreviewDetails, formState.shiptoAddress)}
+                                            {Number(calculateTotalQuantity(poreviewDetails, formState.shiptoAddress))}
                                         </span>
                                     </div>
 
                                     <div className="flex justify-between gap-4">
                                         <span className="text-gray-600 font-bold text-lg">Total Gross Value :</span>
                                         <span className="font-bold text-lg">
-                                            ₹ {calculateTotalGrossValue(poreviewDetails, formState.shiptoAddress)}
+                                            ₹ {Number(calculateTotalGrossValue(poreviewDetails, formState.shiptoAddress)).toFixed(2)}
                                         </span>
                                     </div>
 
                                     <div className="flex justify-between gap-4">
                                         <span className="text-gray-600 font-bold text-lg">Total GST :</span>
                                         <span className="font-bold text-lg">
-                                            ₹ {calculateTotalGST(poreviewDetails, formState.shiptoAddress)}
+                                            ₹ {Number(calculateTotalGST(poreviewDetails, formState.shiptoAddress)).toFixed(2)}
                                         </span>
                                     </div>
 
                                     <div className="flex justify-between gap-4">
                                         <span className="text-gray-600 font-bold text-lg">Total Net Value :</span>
                                         <span className="font-bold text-lg">
-                                            ₹ {calculateTotalNetValue(poreviewDetails, formState.shiptoAddress)}
+                                            ₹ {Number(calculateTotalNetValue(poreviewDetails, formState.shiptoAddress)).toFixed(2)}
                                         </span>
                                     </div>
                                 </div>)

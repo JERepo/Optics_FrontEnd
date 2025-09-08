@@ -396,28 +396,28 @@ export function POViewPage() {
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total Quantity:</span>
                     <span className="font-bold text-lg">
-                        {poData.totalQty}
+                        {Number(poData.totalQty)}
                     </span>
                 </div>
 
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total Gross Value:</span>
                     <span className="font-bold text-lg">
-                        ₹ {poData.totalGrossValue}
+                        ₹ {Number(poData.totalGrossValue).toFixed}
                     </span>
                 </div>
 
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total GST:</span>
                     <span className="font-bold text-lg">
-                        ₹ {poData.totalGSTValue}
+                        ₹ {Number(poData.totalGSTValue).toFixed(2)}
                     </span>
                 </div>
 
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total Net Value:</span>
                     <span className="font-bold text-lg">
-                        ₹ {poData.totalValue}
+                        ₹ {Number(poData.totalValue).toFixed(2)}
                     </span>
                 </div>
             </div>
