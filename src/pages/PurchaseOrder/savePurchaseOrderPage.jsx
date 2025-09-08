@@ -392,6 +392,7 @@ export default function SavePurchaseOrder() {
 
                 } else {
                     setFormState((prev) => ({ ...prev, referenceNo: "" }));
+                    setCreatedPOMainId(null);
                 }
             }
 

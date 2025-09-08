@@ -130,6 +130,8 @@ export default function GRNStep3() {
         }
     )
 
+    console.log("GRN data --------------- ", grnData);
+
     console.log("isUniqueResponse ------------------ ", isUniqueResponse);
 
     const isUnique = isUniqueResponse?.isUnique;
@@ -827,7 +829,7 @@ export default function GRNStep3() {
                 ...newItem,
                 Barcode: data.Barcode,
                 CLDetailId: data?.CLDetailId,
-                SphericalPower: data.SphericalPower ?? data.Spherical ,
+                SphericalPower: data.SphericalPower ?? data.Spherical,
                 CylindricalPower: data.CylindricalPower ?? data.Cylindrical,
                 Axis: data.Axis,
                 Additional: data.Additional,
