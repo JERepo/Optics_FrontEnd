@@ -75,9 +75,8 @@ export function POViewPage() {
         if (poData.againstOrder === 1) {
             return poreviewDetails.reduce((total, order) => {
                 const quantity = order.poQty ?? (order.orderQty - order.billedQty - order.cancelledQty);
-                const price = order.productType === 3
-                    ? parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0
-                    : parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
+                const price = parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0;
+                // : parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
                 const taxPercentage = parseFloat(order.taxPercentage) / 100 || 0;
 
                 return total + (price * quantity * (1 + taxPercentage));
@@ -85,9 +84,8 @@ export function POViewPage() {
         } else {
             return poreviewDetails.reduce((total, order) => {
                 const quantity = order.poQty ?? order.POQty;
-                const price = order?.ProductDetails?.ProductType === 3
-                    ? parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0
-                    : parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
+                const price = parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0;
+                // : parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
                 const taxPercentage = parseFloat(order?.ProductDetails?.GSTPercentage) / 100 || 0;
 
                 return total + (price * quantity * (1 + taxPercentage));
@@ -263,9 +261,10 @@ export function POViewPage() {
                                     </td>
                                     {renderProductDetails(order)}
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        {order.productType === 3 ?
-                                            (order.poPrice ?? order?.priceMaster?.buyingPrice) :
-                                            (order.poPrice ?? order?.pricing?.buyingPrice)
+                                        {
+                                            {/* {order.productType === 3 ? */ }
+                                                (order.poPrice ?? order?.priceMaster?.buyingPrice)
+                                            // (order.poPrice ?? order?.pricing?.buyingPrice)
                                         }
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">{order?.orderQty}</td>
@@ -282,9 +281,8 @@ export function POViewPage() {
                                         {(() => {
                                             const bothLens = order?.specs?.powerDetails?.bothLens === 1;
                                             const quantity = order.poQty ?? (order.orderQty - order.billedQty - order.cancelledQty);
-                                            const price = order.productType === 3 ?
-                                                parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0 :
-                                                parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
+                                            const price = parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0
+                                            // parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
                                             const taxPercentage = parseFloat(order.taxPercentage) / 100 || 0;
 
                                             // Tint buying price
@@ -378,9 +376,8 @@ export function POViewPage() {
                                         }
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        {order?.ProductDetails?.ProductType === 3 ?
-                                            (order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) :
-                                            (order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice)
+                                        {
+                                            (order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice)
                                         }
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
@@ -388,22 +385,14 @@ export function POViewPage() {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.Stock?.Quantity}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        {order?.ProductDetails?.ProductType === 3 ? (
-                                            (
-                                                ((order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) * (order.poQty ?? order?.POQty)) +
-                                                ((order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) *
-                                                    (order.poQty ?? order?.POQty) *
-                                                    ((order?.taxPercent) / 100) || 1)
-                                            ).toFixed(2)
-                                        ) : (
-                                            // Default calculation
-                                            (
-                                                ((order?.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) * (order.poQty ?? order?.POQty)) +
-                                                ((order?.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) *
-                                                    (order.poQty ?? order?.POQty) *
-                                                    ((order?.taxPercent) / 100) || 1)
-                                            ).toFixed(2)
-                                        )}
+
+                                        {(
+                                            ((order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) * (order.poQty ?? order?.POQty)) +
+                                            ((order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) *
+                                                (order.poQty ?? order?.POQty) *
+                                                ((order?.taxPercent) / 100) || 1)
+                                        ).toFixed(2)}
+
                                     </td>
                                 </tr>
                             ))}

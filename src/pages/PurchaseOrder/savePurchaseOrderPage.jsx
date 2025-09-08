@@ -690,7 +690,7 @@ export default function SavePurchaseOrder() {
                         quantity: 1, // Default quantity
                         price: result?.data?.BuyingPrice, // Default price
                         cLDetailId: result?.data?.CLDetailId,
-                        taxPercentage: result?.data?.Tax?.Details[0]?.PurTaxPerct || 0,
+                        taxPercentage: (result?.data?.Tax?.Details[0]?.PurTaxPerct ?? result?.data?.TaxDetails[0]?.PurTaxPerct) || 0,
                         timestamp: Date.now()
                     };
                 }
