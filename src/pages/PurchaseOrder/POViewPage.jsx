@@ -286,7 +286,27 @@ export function POViewPage() {
                                                 parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
                                             const taxPercentage = parseFloat(order.taxPercentage) / 100 || 0;
 
-                                            return (price * quantity * (1 + taxPercentage)).toFixed(2);
+                                            // Tint buying price
+                                            const tintBuying =
+                                                parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) || 0;
+
+                                            // Sum of addon buying prices
+                                            const addonBuying = Array.isArray(order?.specs?.addOn)
+                                                ? order.specs.addOn.reduce(
+                                                    (sum, add) => sum + (parseFloat(add?.addOnBuyingPrice || 0) || 0),
+                                                    0
+                                                )
+                                                : parseFloat(order?.specs?.addOn?.addOnBuyingPrice || 0) || 0;
+
+                                            // Calculate base
+                                            let total;
+                                            if (bothLens) {
+                                                total = (price * quantity) + tintBuying + addonBuying;
+                                            } else {
+                                                total = (price * quantity) + tintBuying / 2 + addonBuying / 2;
+                                            }
+
+                                            return (total + total * (taxPercentage)).toFixed(2);
                                         })()}
                                     </td>
                                 </tr>
@@ -373,8 +393,8 @@ export function POViewPage() {
                                                 ((order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) *
                                                     (order.poQty ?? order?.POQty) *
                                                     ((order?.taxPercent) / 100) || 1)
-                                                ).toFixed(2)
-                                            ) : (
+                                            ).toFixed(2)
+                                        ) : (
                                             // Default calculation
                                             (
                                                 ((order?.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) * (order.poQty ?? order?.POQty)) +
