@@ -1529,8 +1529,8 @@ export default function SavePurchaseOrder() {
                         detailId: order.olDetailId || order.cLDetailId || order.frameDetailId || order.accessoryDetailId,
                         orderDetailId: order.orderDetailId,
                         poQty: order.poQty ?? order?.orderQty - order?.billedQty - order?.cancelledQty,
-                        poPrice: order.productType == 3 ? order.poPrice ?? order?.priceMaster?.buyingPrice
-                            : order.poPrice ?? order?.pricing?.buyingPrice,
+                        poPrice: order.poPrice ?? order?.priceMaster?.buyingPrice,
+                        // : order.poPrice ?? order?.pricing?.buyingPrice,
                         taxPercentage: formState.selectedOption === 'Lens' ? order?.TaxPrectTaxMain
                             : formState.selectedOption === 'Contact Lens' ? order?.TaxPrectTaxMain
                                 : formState.selectedOption === 'Frame/Sunglass' ? order?.TaxPrectTaxMain
@@ -1741,7 +1741,7 @@ export default function SavePurchaseOrder() {
         if (formState.shiptoAddress === "against") {
             price = item?.poPrice || (item?.productType == 3 ? item?.priceMaster?.buyingPrice : item.pricing?.buyingPrice);
         } else {
-            price = item?.poPrice || (item?.ProductDetails?.ProductType == 3 ? item?.ProductDetails?.price?.BuyingPrice : item?.ProductDetails?.Stock?.BuyingPrice);
+            price = item?.poPrice || (item?.ProductDetails?.price?.BuyingPrice);
         }
         setCurrentEditingItem(item);
         setEditedBuyingPrice(price);
@@ -3136,26 +3136,16 @@ export default function SavePurchaseOrder() {
                                                                     </td>
                                                     }
 
-                                                    {order?.ProductDetails?.ProductType == 3 ?
-                                                        <td className="px-6 py-4 whitespace-nowrap">{order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice}
-                                                            <button
-                                                                onClick={() => handleEditPriceClick(order)}
-                                                                className="ml-2 text-gray-500 hover:text-[#000060]"
-                                                            >
-                                                                <PenIcon className="w-4 h-4" />
-                                                            </button>
-                                                        </td>
-                                                        :
-                                                        <td className="px-6 py-4 whitespace-nowrap">{order?.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice}
-                                                            <button
-                                                                onClick={() => handleEditPriceClick(order)}
-                                                                className="ml-2 text-gray-500 hover:text-[#000060]"
-                                                            >
-                                                                <PenIcon className="w-4 h-4" />
-                                                            </button>
-                                                        </td>
+                                                    {/* {order?.ProductDetails?.ProductType == 3 ? */}
+                                                    <td className="px-6 py-4 whitespace-nowrap">{order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice}
+                                                        <button
+                                                            onClick={() => handleEditPriceClick(order)}
+                                                            className="ml-2 text-gray-500 hover:text-[#000060]"
+                                                        >
+                                                            <PenIcon className="w-4 h-4" />
+                                                        </button>
+                                                    </td>
 
-                                                    }
                                                     <td className="px-6 py-4 whitespace-nowrap">{order?.poQty ?? order?.POQty}
                                                         <button
                                                             onClick={() => handleEditQtyClick(order)}
@@ -3169,29 +3159,12 @@ export default function SavePurchaseOrder() {
 
                                                     {/* // In the table cell where Total Amount is displayed: */}
                                                     <td className="px-6 py-4 whitespace-nowrap">
-                                                        {order?.ProductDetails?.ProductType === 3 ? (
-                                                            (
-                                                                ((order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) * (order.poQty ?? order?.POQty)) +
-                                                                ((order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) *
-                                                                    (order.poQty ?? order?.POQty) *
-                                                                    (order?.ProductDetails?.GSTPercentage / 100))
-                                                            ).toFixed(2)
-                                                        ) : order?.ProductDetails?.ProductType === 0 ? (
-                                                            (
-                                                                ((order?.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) * (order.poQty ?? order?.POQty)) +
-                                                                ((order?.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) *
-                                                                    (order.poQty ?? order?.POQty) *
-                                                                    (order?.taxPercent / 100))
-                                                            ).toFixed(2)
-                                                        ) : (
-                                                            // Default calculation
-                                                            (
-                                                                ((order?.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) * (order.poQty ?? order?.POQty)) +
-                                                                ((order?.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) *
-                                                                    (order.poQty ?? order?.POQty) *
-                                                                    (order?.ProductDetails?.GSTPercentage / 100))
-                                                            ).toFixed(2)
-                                                        )}
+                                                        {(
+                                                            ((order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) * (order.poQty ?? order?.POQty)) +
+                                                            ((order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) *
+                                                                (order.poQty ?? order?.POQty) *
+                                                                (order?.ProductDetails?.GSTPercentage / 100))
+                                                        ).toFixed(2)}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <button
