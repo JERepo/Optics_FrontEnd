@@ -262,9 +262,7 @@ export function POViewPage() {
                                     {renderProductDetails(order)}
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {
-                                            {/* {order.productType === 3 ? */ }
-                                                (order.poPrice ?? order?.priceMaster?.buyingPrice)
-                                            // (order.poPrice ?? order?.pricing?.buyingPrice)
+                                            (order.poPrice ?? order?.priceMaster?.buyingPrice)
                                         }
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">{order?.orderQty}</td>
@@ -383,9 +381,7 @@ export function POViewPage() {
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {order.poQty ?? order?.POQty}
                                     </td>
-                                    {/* <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.Stock?.Quantity}</td> */}
                                     {order?.ProductDetails?.ProductType === 3 ?
-                                        // logic for sum of quantities in stock
                                         <td className="px-6 py-4 whitespace-nowrap text-center">
                                             {order?.ProductDetails?.Stock.reduce((total, item) => total + item.Quantity, 0)}
                                         </td>
