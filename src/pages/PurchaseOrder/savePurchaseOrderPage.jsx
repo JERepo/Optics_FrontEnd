@@ -669,7 +669,7 @@ export default function SavePurchaseOrder() {
 
             // Handle successful response
             if (result.data) {
-                console.log("Scanned cl item:", result.data.data);
+                console.log("Scanned barcode item:", result);
 
                 let newItem = {};
                 if (formState.selectedOption === "Contact Lens") {
@@ -678,6 +678,7 @@ export default function SavePurchaseOrder() {
                         quantity: 1, // Default quantity
                         price: result?.data?.data?.BuyingPrice, // Default price
                         cLDetailId: result?.data?.data?.CLDetailId,
+                        taxPercentage: result?.data?.data?.TaxDetails[0]?.PurTaxPerct || 0,
                         Id: formState.EntryType === "seperate"
                             ? `cl-${data.OpticalLensDetailId}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
                             : data.OpticalLensDetailId || Date.now(),
@@ -687,8 +688,9 @@ export default function SavePurchaseOrder() {
                     newItem = {
                         ...result.data,
                         quantity: 1, // Default quantity
-                        price: result?.data?.data?.BuyingPrice, // Default price
-                        cLDetailId: result?.data?.data?.CLDetailId,
+                        price: result?.data?.BuyingPrice, // Default price
+                        cLDetailId: result?.data?.CLDetailId,
+                        taxPercentage: result?.data?.Tax?.Details[0]?.PurTaxPerct || 0,
                         timestamp: Date.now()
                     };
                 }
@@ -1097,6 +1099,8 @@ export default function SavePurchaseOrder() {
             toast.error("Please select at least one item");
             return;
         }
+
+        console.log("selectedRows ------------ ", selectedRows);
 
         setScannedItems(prevItems => {
             const updatedItems = [...prevItems];
@@ -1582,10 +1586,7 @@ export default function SavePurchaseOrder() {
                     poQty: item.quantity || 1,
                     poPrice: item.price || item.BuyingPrice,
                     // taxPercentage: item.taxPercentage || 0,
-                    taxPercentage: formState.selectedOption === 'Lens' ? item?.TaxPrectTaxMain
-                        : formState.selectedOption === 'Contact Lens' ? item?.TaxPrectTaxMain
-                            : formState.selectedOption === 'Frame/Sunglass' ? item?.TaxPrectTaxMain
-                                : formState.selectedOption === 'Accessories' ? item?.TaxPrectTaxMain : item?.taxPercentage || 0,
+                    taxPercentage: item?.taxPercentage || 0,
                     Status: 0,
                     ApplicationUserId: user.Id
                 }));
