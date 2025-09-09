@@ -35,6 +35,7 @@ import { purchaseReturnApi } from "../api/purchaseReturn";
 import { grnApi } from "../api/grnApi";
 import { giftVoucher } from "../api/giftVoucher";
 import { customerRefundApi } from "../api/customerRefund";
+import { offerApi } from "../api/offerApi";
 
 const persistConfig = {
   key: "auth",
@@ -87,6 +88,7 @@ export const store = configureStore({
     [grnApi.reducerPath]: grnApi.reducer,
     [giftVoucher.reducerPath]: giftVoucher.reducer,
     [customerRefundApi.reducerPath]: customerRefundApi.reducer,
+    [offerApi.reducerPath]: offerApi.reducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -124,7 +126,8 @@ export const store = configureStore({
       // salesReturnApi.middleware,
       grnApi.middleware,
       giftVoucher.middleware,
-      customerRefundApi.middleware
+      customerRefundApi.middleware,
+      offerApi.middleware
     ),
 });
 

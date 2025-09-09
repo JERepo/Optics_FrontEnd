@@ -71,8 +71,8 @@ export const InvoiceApi = createApi({
       invalidatesTags: ["EInvoice"],
     }),
     getEInvoiceData: builder.query({
-      query: ({ id }) => ({
-        url: `/api/v1/einvoice?type=invoice&recordId=${id}`,
+      query: ({ id ,type}) => ({
+        url: `/api/v1/einvoice?type=${type}&recordId=${id}`,
       }),
       providesTags: ["EInvoice"],
     }),

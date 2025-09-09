@@ -177,7 +177,7 @@ const PurchaseReturnView = () => {
   const [createInvoice, { isLoading: isInvoiceCreating }] =
     useCreateEInvoiceMutation();
   const { data: eInvoiceData, isLoading: isEInvoiceLoading } =
-    useGetEInvoiceDataQuery({ id: parseInt(PR) });
+    useGetEInvoiceDataQuery({ id: parseInt(PR),type:"purchaseReturn" });
   const { data: locationById } = useGetLocationByIdQuery(
     { id: parseInt(hasMultipleLocations[0]) },
     { skip: !parseInt(hasMultipleLocations[0]) }
@@ -240,7 +240,9 @@ const PurchaseReturnView = () => {
       setInvoiceEnabled(true);
       console.log(error);
       toast.error(
-        error?.data.error || "E-Invoice Not enabled for this customer"
+        error?.data?.error?.message ||
+          error?.data?.error?.createdRecord?.ErrorMessage ||
+          "E-Invoice Not enabled for this customer"
       );
     }
   };
@@ -396,7 +398,7 @@ const PurchaseReturnView = () => {
                           eInvoiceData.data.data[0]?.ErrorCode === "200")
                       }
                     >
-                      Generate Invoice
+                      Generate E-Invoice
                     </Button>
                   </div>
                 </div>

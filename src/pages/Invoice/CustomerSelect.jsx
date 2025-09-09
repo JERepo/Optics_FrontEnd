@@ -1505,7 +1505,7 @@ const CustomerSelect = () => {
                           >
                             {customerData?.data?.data?.BillingMethod === 1
                               ? "Generate DC"
-                              : "Generate Invoice"}
+                              : "Generate E-Invoice"}
                           </Button>
                         )}
                       </div>
