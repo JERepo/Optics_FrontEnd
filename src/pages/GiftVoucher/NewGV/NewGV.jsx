@@ -39,7 +39,7 @@ const NewGV = ({
   const [gvData, setGVData] = useState({
     giftCode: null,
     gvType: 0,
-    partialUse: null,
+    partialUse: 0,
     amount: null,
     activateNow: 0,
     days: null,
@@ -145,7 +145,7 @@ const NewGV = ({
       return;
     }
 
-    if (gvData.activateNow === 1 && !gvData.validityDays) {
+    if (gvData.activateNow === 1 && !gvData.days) {
       toast.error("Please enter validaty days");
       return;
     }
@@ -155,6 +155,11 @@ const NewGV = ({
     }
     if(gvData.partialUse === null){
       toast.error("Please select Partial use!")
+      return;
+    }
+
+    if(selectedLocation.length <= 0){
+      toast.error("Please select atleast one location!")
       return;
     }
     try {
@@ -224,7 +229,7 @@ const NewGV = ({
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between w-1/2">
                 <label
-                  htmlFor="barcode"
+                  htmlFor="giftCode"
                   className="text-sm font-medium text-gray-700"
                 >
                   Enter Gift Code
@@ -233,7 +238,7 @@ const NewGV = ({
               <div className="flex gap-2">
                 <div className="relative flex items-center">
                   <input
-                    id="barcode"
+                    id="giftCode"
                     type="text"
                     value={gvData.giftCode || ""}
                     onChange={(e) =>
@@ -266,12 +271,15 @@ const NewGV = ({
               </label>
               <div className="flex items-center gap-5">
                 <Radio
+                name="type"
                   value="0"
                   onChange={() => handleChange("gvType", 0, "number")}
                   checked={gvData.gvType === 0}
                   label="One time use"
                 />
                 <Radio
+                                name="type"
+
                   value="1"
                   onChange={() => handleChange("gvType", 1, "number")}
                   checked={gvData.gvType === 1}
@@ -288,12 +296,14 @@ const NewGV = ({
               </label>
               <div className="flex items-center gap-5">
                 <Radio
+                name="use"
                   value="0"
                   onChange={() => handleChange("partialUse", 0, "number")}
                   checked={gvData.partialUse === 0}
                   label="No"
                 />
                 <Radio
+                name="use"
                   value="1"
                   onChange={() => handleChange("partialUse", 1, "number")}
                   checked={gvData.partialUse === 1}
@@ -397,7 +407,7 @@ const NewGV = ({
                       onChange={() => handleChange("allCustomer", 1, "number")}
                       checked={gvData.allCustomer === 1}
                       label="Select Customer"
-                      disabled={gvData.partialUse === 1}
+                      disabled={gvData.gvType === 1}
                     />
                     {gvData.allCustomer === 1 && (
                       <div className="w-[400px]">
@@ -448,7 +458,7 @@ const NewGV = ({
                 <Loader color="black" />
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 border border-gray-200 rounded-lg">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 border border-gray-200 rounded-lg">
                 {allLocations?.data?.map((loc) => (
                   <div key={loc.Id} className="flex items-center">
                     <input

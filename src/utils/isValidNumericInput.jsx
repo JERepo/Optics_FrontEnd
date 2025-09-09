@@ -2,11 +2,11 @@ import toast from "react-hot-toast";
 
 // utils/validators.js
 export function isValidNumericInput(value) {
-  // Allow only numbers or decimal values (e.g., 123, 12.34, .5, 0.5)
-  const regex = /^\d*\.?\d*$/;
-
+  // Allow only positive integers or decimals (e.g., 123, 12.34, .5, 0.5)
+  const regex = /^(?:\d+|\d*\.\d+)$/;
   return regex.test(value);
 }
+
 
 export const validateQuantity = (item, barcodeField = "Barcode") => {
   const qty = Number(item.Quantity);

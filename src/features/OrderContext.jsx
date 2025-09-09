@@ -3,8 +3,9 @@ import { createContext, useContext, useState } from "react";
 const TOTAL_STEPS = 6;
 const TOTAL_SALES_STEPS = 4;
 const TOTAL_STOCK_STEPS = 4;
-const TOTAL_PURCHASE_STEPS = 4
+const TOTAL_PURCHASE_STEPS = 4;
 const TOTAL_STOCKIN_STEPS = 4;
+const TOTAL_OFFER_STEPS = 4;
 
 const OrderContext = createContext();
 
@@ -45,8 +46,6 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
     frameDetailedId: null,
     identifier: null,
   });
-
-
 
   const goToStep = (step) => {
     if (step >= 1 && step <= TOTAL_STEPS) {
@@ -219,8 +218,6 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
     return calculateGST(price, gstPercent);
   };
 
-
-
   // Stock Transfer
   const [customerStock, setCustomerStockOut] = useState({
     countryId: null,
@@ -231,7 +228,7 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
     customerId: null,
     mobileNo: null,
     customerData: null,
-    inState :null
+    inState: null,
   });
 
   const [stockDraftData, setStockDraftData] = useState(null);
@@ -277,8 +274,8 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
     setCurrentStockSubStep(step);
   };
   const updateCurrentStockStep = (step) => {
-    setCurrentStockStep(step)
-  }
+    setCurrentStockStep(step);
+  };
 
   // Purchase Return
   const [customerPurchase, setCustomerPurchase] = useState({
@@ -290,7 +287,7 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
     customerId: null,
     mobileNo: null,
     customerData: null,
-    vendorPoolId :null
+    vendorPoolId: null,
   });
 
   const [purchaseDraftData, setPurchaseDraftData] = useState(null);
@@ -311,7 +308,9 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
   };
 
   const nextPurchaseStep = () => {
-    setCurrentPurchaseStep((prev) => (prev < TOTAL_PURCHASE_STEPS ? prev + 1 : prev));
+    setCurrentPurchaseStep((prev) =>
+      prev < TOTAL_PURCHASE_STEPS ? prev + 1 : prev
+    );
     setCurrentPurchaseSubStep(1);
   };
 
@@ -345,19 +344,24 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
     locationId: null,
     customerId: null,
     mobileNo: null,
-    mainId:null,
+    mainId: null,
     customerData: null,
   });
 
-  const [stockTransferInDraftData, setStockTransferInDraftData] = useState(null);
+  const [stockTransferInDraftData, setStockTransferInDraftData] =
+    useState(null);
 
-  const [currentStockTransferInStep, setCurrentStockTransferInStep] = useState(1);
-  const [currentStockTransferInSubStep, setCurrentStockTransferInSubStep] = useState(1);
-  const [selectedStockTransferInProduct, setSelectedStockTransferInProduct] = useState({
-    value: 1,
-    label: "Frame/Sunglass",
-  });
-  const [selectedStockTransferInPatient, setSelectedStockTransferInPatient] = useState(null);
+  const [currentStockTransferInStep, setCurrentStockTransferInStep] =
+    useState(1);
+  const [currentStockTransferInSubStep, setCurrentStockTransferInSubStep] =
+    useState(1);
+  const [selectedStockTransferInProduct, setSelectedStockTransferInProduct] =
+    useState({
+      value: 1,
+      label: "Frame/Sunglass",
+    });
+  const [selectedStockTransferInPatient, setSelectedStockTransferInPatient] =
+    useState(null);
 
   const goToStockTransferInStep = (step) => {
     if (step >= 1 && step <= TOTAL_STOCKIN_STEPS) {
@@ -367,7 +371,9 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
   };
 
   const nextStockTransferInStep = () => {
-    setCurrentStockTransferInStep((prev) => (prev < TOTAL_STOCKIN_STEPS ? prev + 1 : prev));
+    setCurrentStockTransferInStep((prev) =>
+      prev < TOTAL_STOCKIN_STEPS ? prev + 1 : prev
+    );
     setCurrentStockTransferInSubStep(1);
   };
 
@@ -391,13 +397,96 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
   const setSubStockTransferInStep = (step) => {
     setCurrentStockTransferInSubStep(step);
   };
-   const updateCurrentSTINStep = (step) => {
-    setCurrentStockTransferInStep(step)
-  }
+  const updateCurrentSTINStep = (step) => {
+    setCurrentStockTransferInStep(step);
+  };
+
+  // Offer Module
+  const [customerOffer, setCusomerOffer] = useState({
+    countryId: null,
+    companyId: null,
+    patientName: null,
+    patientId: null,
+    locationId: null,
+    customerId: null,
+    mobileNo: null,
+    customerData: null,
+    inState: null,
+    customerPoolId:null,
+    offerMainId:null
+  });
+
+  const [offerData, setOfferData] = useState(null);
+
+  const [currentOfferStep, setCurrentOfferStep] = useState(1);
+  const [currentOfferSubStep, setCurrentOfferSubStep] = useState(1);
+  const [selectedOfferProduct, setSelectedOfferProduct] = useState({
+    value: 1,
+    label: "Frame/Sunglass",
+  });
+  const [selectedOfferPatient, setSelectedOfferPatient] = useState(null);
+
+  const goToOfferStep = (step) => {
+    if (step >= 1 && step <= TOTAL_OFFER_STEPS) {
+      setCurrentOfferStep(step);
+      setCurrentOfferSubStep(1);
+    }
+  };
+
+  const nextOfferStep = () => {
+    setCurrentOfferStep((prev) => (prev < TOTAL_OFFER_STEPS ? prev + 1 : prev));
+    setCurrentOfferSubStep(1);
+  };
+
+  const prevOfferStep = () => {
+    setCurrentOfferStep((prev) => (prev > 1 ? prev - 1 : prev));
+    setCurrentOfferSubStep(1);
+  };
+
+  const goToSubOfferStep = (subStep) => {
+    setCurrentOfferSubStep(subStep);
+  };
+
+  const nextSubOfferStep = () => {
+    setCurrentOfferSubStep((prev) => prev + 1);
+  };
+
+  const prevSubOfferStep = () => {
+    setCurrentOfferSubStep((prev) => (prev > 1 ? prev - 1 : prev));
+  };
+
+  const setSubOfferStep = (step) => {
+    setCurrentOfferSubStep(step);
+  };
+  const updateCurrentOfferStep = (step) => {
+    setCurrentOfferStep(step);
+  };
 
   return (
     <OrderContext.Provider
       value={{
+        // offer values
+        customerOffer,
+        setCusomerOffer,
+        offerData,
+        setOfferData,
+        currentOfferStep,
+        setCurrentOfferStep,
+        currentOfferSubStep,
+        setCurrentOfferSubStep,
+        selectedOfferProduct,
+        setSelectedOfferProduct,
+        selectedOfferPatient,
+        setSelectedOfferPatient,
+        goToOfferStep,
+        nextOfferStep,
+        prevOfferStep,
+        goToSubOfferStep,
+        nextSubOfferStep,
+        prevSubOfferStep,
+        setSubOfferStep,
+        updateCurrentOfferStep,
+
         // Order values
         currentStep,
         currentSubStep,
@@ -480,7 +569,7 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
         setSelectedStockPatient,
         updateCurrentStockStep,
 
-         // purchase return
+        // purchase return
         totalPurchaseSteps: TOTAL_PURCHASE_STEPS,
         selectedPurchaseProduct,
         setSelectedPurchaseProduct,
@@ -523,7 +612,7 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
         setCustomerStockTransferIn,
         selectedStockTransferInPatient,
         setSelectedStockTransferInPatient,
-        updateCurrentSTINStep
+        updateCurrentSTINStep,
       }}
     >
       {children}

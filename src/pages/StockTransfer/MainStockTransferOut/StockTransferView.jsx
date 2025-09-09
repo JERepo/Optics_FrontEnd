@@ -15,7 +15,8 @@ import toast from "react-hot-toast";
 import { useGetLocationByIdQuery } from "../../../api/roleManagementApi";
 import { useGetCompanyIdQuery } from "../../../api/customerApi";
 
-const getProductName = (item) => {
+const getProductName = (data) => {
+  const item = {...data,...data.ProductDetails}
   const {
     typeid,
     ProductName,
@@ -174,7 +175,8 @@ const getProductName = (item) => {
   return "";
 };
 
-const getStockOutPrice = (item) => {
+const getStockOutPrice = (data) => {
+  const item = {...data,...data.ProductDetails}
   if (!item) {
     return 0;
   }
@@ -214,7 +216,9 @@ const getStockOutPrice = (item) => {
 
   return 0;
 };
-const getStockOutMRP = (item) => {
+const getStockOutMRP = (data) => {
+    const item = {...data,...data.ProductDetails}
+
   if (!item) {
     return 0;
   }
@@ -269,7 +273,7 @@ const StockTransferView = () => {
   const [createInvoice, { isLoading: isInvoiceCreating }] =
     useCreateEInvoiceMutation();
   const { data: eInvoiceData, isLoading: isEInvoiceLoading } =
-    useGetEInvoiceDataQuery({ id: parseInt(stockOut) });
+    useGetEInvoiceDataQuery({ id: parseInt(stockOut),type:"STOut" });
 
   const { data: locationById } = useGetLocationByIdQuery(
     { id: parseInt(hasMultipleLocations[0]) },
@@ -306,8 +310,10 @@ const StockTransferView = () => {
     } catch (error) {
       setInvoiceEnabled(true);
       console.log(error);
-      toast.error(
-        error?.data.error || "E-Invoice Not enabled for this customer"
+     toast.error(
+        error?.data?.error?.message ||
+          error?.data?.error?.createdRecord?.ErrorMessage ||
+          "E-Invoice Not enabled for this customer"
       );
     }
   };
@@ -394,9 +400,9 @@ const StockTransferView = () => {
 
                 <TableCell>{item.STQtyOut}</TableCell>
                 <TableCell>
-                  {Array.isArray(item.Stock)
-                    ? item.Stock[0].Quantity
-                    : item.Stock.Quantity}
+                  {Array.isArray(item.ProductDetails.Stock)
+                    ? item.ProductDetails.Stock[0].Quantity
+                    : item.ProductDetails.Stock.Quantity}
                 </TableCell>
                 <TableCell>
                   ₹
@@ -490,7 +496,7 @@ const StockTransferView = () => {
                         eInvoiceData.data.data[0]?.ErrorCode === "200")
                     }
                   >
-                    Generate Invoice
+                    Generate E-Invoice
                   </Button>
                 </div>
               </div>

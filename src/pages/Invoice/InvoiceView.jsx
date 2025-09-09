@@ -14,6 +14,7 @@ import { formatINR } from "../../utils/formatINR";
 import { useSelector } from "react-redux";
 import { useGetLocationByIdQuery } from "../../api/roleManagementApi";
 import { useGetCompanyIdQuery } from "../../api/customerApi";
+import toast from "react-hot-toast";
 
 const getProductName = (order) => {
   const product = order?.productDetails?.[0];
@@ -202,7 +203,7 @@ const InvoiceView = () => {
       locationId: parseInt(hasMultipleLocations[0]),
     });
   const { data: eInvoiceData, isLoading: isEInvoiceLoading } =
-    useGetEInvoiceDataQuery({ id: invoiceId }); //
+    useGetEInvoiceDataQuery({ id: invoiceId, type: "invoice" }); //
 
   const [createInvoice, { isLoading: isInvoiceCreating }] =
     useCreateEInvoiceMutation();
@@ -294,6 +295,11 @@ const InvoiceView = () => {
     } catch (error) {
       setInvoiceEnabled(true);
       console.log(error);
+      toast.error(
+        error?.data?.error?.message ||
+          error?.data?.error?.createdRecord?.ErrorMessage ||
+          "E-Invoice Not enabled for this customer"
+      );
     }
   };
 
@@ -451,7 +457,7 @@ const InvoiceView = () => {
                           eInvoiceData.data.data[0]?.ErrorCode === "200")
                       }
                     >
-                      Generate Invoice
+                      Generate E-Invoice
                     </Button>
                   </div>
                 </div>
