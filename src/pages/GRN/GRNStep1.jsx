@@ -125,13 +125,15 @@ export default function GRNStep1() {
 
             if (GRNMainResponse.data.length > 0) {
 
-                // const grnMainId = GRNMainResponse.data[0]?.Id;
+                const grnMainId = GRNMainResponse.data[0]?.Id;
+                console.log("grnMainId ------------ ", grnMainId);
                 const vendorDocDate = GRNMainResponse.data[0]?.VendorDocDate;
 
                 const dateObj = vendorDocDate ? new Date(vendorDocDate) : null;
 
                 updateStep1Data({
-                    GrnMainId: GRNMainResponse.data[0]?.Id
+                    GrnMainId: GRNMainResponse.data[0]?.Id,
+                    selectedLocation: parseInt(selectedLocation)
                 });
                 setFormState((prev) => ({
                     ...prev,
@@ -195,10 +197,11 @@ export default function GRNStep1() {
 
         // 1. Check if GRN main and detail entry exists
         try {
-            if (grnData.step1.GrnMainId) {
+
+            if (grnData?.step1?.GrnMainId) {
 
                 const grnMainPayload = {
-                    grnMain: grnData.step1.GrnMainId, 
+                    grnMain: grnData.step1.GrnMainId,
                     docNo: formState.documentNo,
                     docDate: formState.documentDate
                 }
