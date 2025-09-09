@@ -133,7 +133,9 @@ export default function GRNStep1() {
 
                 updateStep1Data({
                     GrnMainId: GRNMainResponse.data[0]?.Id,
-                    selectedLocation: parseInt(selectedLocation)
+                    selectedLocation: parseInt(selectedLocation),
+                    selectedVendor: parseInt(selectedVendor),
+                    againstPO: formState?.againstPO
                 });
                 setFormState((prev) => ({
                     ...prev,
