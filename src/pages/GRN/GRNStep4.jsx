@@ -42,12 +42,18 @@ export default function GRNStep4() {
             const response = await getGRNDetails(payload);
 
             if (response?.data) {
-                console.log("getAllGRNDetails response -------------- ", response?.data);
+                console.log("getAllGRNDetails response -------------- ", response);
+                console.log("MAIN Id: ", response?.data?.data[0]?.GRNMainId);
 
                 setGrnViewDetails(response?.data?.data || []);
-                updateStep1Data({
-                    GrnMainId: response?.data?.data[0]?.GRNMainId || null,
-                });
+
+                //Update the context
+                if(response?.data?.data[0]?.GRNMainId) {
+                    updateStep1Data({
+                        GrnMainId: response?.data?.data[0]?.GRNMainId,
+                    });
+                    console.log("Updated GRNMainId in context.", response?.data?.data[0]?.GRNMainId);
+                }
             }
         } catch (error) {
             console.error("Error fetching GRN details:", error);
@@ -55,24 +61,24 @@ export default function GRNStep4() {
         }
     }
 
-    const updateGRNItemPrice = (barcode, newPrice) => {
+    const updateGRNItemPrice = (index, newPrice) => {
         setGrnViewDetails(prevItems =>
-            prevItems.map(item =>
-                item.barcode === barcode ? { ...item, GRNPrice: parseFloat(newPrice) } : item
+            prevItems.map((item, i) =>
+                i === index ? { ...item, GRNPrice: parseFloat(newPrice) } : item
             )
         );
     };
 
-    const updateGRNItemQuantity = (barcode, newQuantity) => {
+    const updateGRNItemQuantity = (index, newQuantity) => {
         setGrnViewDetails(prevItems =>
-            prevItems.map(item =>
-                item.barcode === barcode ? { ...item, quantity: parseInt(newQuantity) } : item
+            prevItems.map((item, i) =>
+                i === index ? { ...item, GRNQty: parseInt(newQuantity) } : item
             )
         );
     };
 
-    const removeGRNItem = (barcode) => {
-        setGrnViewDetails(prevItems => prevItems.filter(item => item.barcode !== barcode));
+    const removeGRNItem = (index) => {
+        setGrnViewDetails(prevItems => prevItems.filter((_, i) => i !== index));
         toast.success("Item removed");
     };
 
@@ -84,14 +90,6 @@ export default function GRNStep4() {
         }));
     };
 
-    const handleNewGRNAdd = () => {
-        if (grnViewDetails) {
-            updateStep1Data({
-                GrnMainId: grnViewDetails[0]?.GRNMainID || null,
-            })
-        };
-        setCurrentStep(2);
-    }
 
     const handleCompleteGRN = async () => {
         try {
@@ -162,7 +160,7 @@ export default function GRNStep4() {
                 <div className="flex justify-between items-center">
                     <h2 className="text-xl font-bold text-[#000060] mb-6">Step 4: Review Selected GRN</h2>
                     <button
-                        onClick={handleNewGRNAdd}
+                        onClick={() => {setCurrentStep(2)}}
                         className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
                     >
                         Add Product
@@ -207,7 +205,7 @@ export default function GRNStep4() {
                             <TableRow key={item.Barcode || index}>
                                 <TableCell>{index + 1}</TableCell>
                                 <TableCell>{item.OrderNo || null}</TableCell>
-                                <TableCell>{item.OrderNo || null}</TableCell>
+                                <TableCell>{item.VendorOrderNo || null}</TableCell>
                                 <TableCell>{item?.ProductDetails?.ProductType == 0 && `OL` || item?.ProductDetails?.ProductType == 1 && `F` || item?.ProductDetails?.ProductType == 2 && `Acc` || item?.ProductDetails?.ProductType == 3 && `CL`}</TableCell>
                                 <TableCell>{item?.ProductDetails?.barcode}</TableCell>
                                 <TableCell>{item?.ProductDetails?.productName}<br />
@@ -216,12 +214,12 @@ export default function GRNStep4() {
                                     HSN: {item?.ProductDetails?.HSN}
                                 </TableCell>
                                 <TableCell>{item.MRP || null}</TableCell>
-                                <TableCell>₹{" "} {parseFloat(parseInt(item?.GRNPrice) * (parseInt(item?.ProductDetails?.GSTPercentage) / 100))}</TableCell>
+                                <TableCell>₹{" "} {parseFloat(parseInt(item?.GRNPrice) * (parseInt(item?.TaxPercent) / 100)).toFixed(2)}</TableCell>
                                 <TableCell>
                                     <input
                                         type="number"
-                                        value={item.GRNQty || 1}
-                                        onChange={(e) => updateGRNItemQuantity(item.barcode, e.target.value)}
+                                        value={item?.GRNQty || 1}
+                                        onChange={(e) => updateGRNItemQuantity(index, e.target.value)}
                                         className="w-16 px-2 py-1 border rounded"
                                         min="1"
                                     />
@@ -230,15 +228,15 @@ export default function GRNStep4() {
                                     <input
                                         type="number"
                                         value={grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (item.GRNPrice || 0)}
-                                        onChange={(e) => updateGRNItemPrice(item.barcode, e.target.value)}
+                                        onChange={(e) => updateGRNItemPrice(index, e.target.value)}
                                         className="w-20 px-2 py-1 border rounded"
                                     />
                                 </TableCell>
-                                <TableCell>₹{" "}{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (parseFloat(parseInt(item?.GRNPrice * item?.GRNQty) * (parseInt(item?.ProductDetails?.GSTPercentage) / 100)) + parseInt(item?.GRNPrice * item?.GRNQty))}
+                                <TableCell>₹{" "}{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (parseFloat(parseInt(item?.GRNPrice * item?.GRNQty) * (parseInt(item?.TaxPercent) / 100)) + parseInt(item?.GRNPrice * item?.GRNQty)).toFixed(2)}
                                 </TableCell>
                                 <TableCell className="px-6 py-4 whitespace-nowrap">
                                     <button
-                                        onClick={() => removeGRNItem(item.barcode)}
+                                        onClick={() => removeGRNItem(index)}
                                         className="p-1 text-red-600 hover:text-red-800"
                                         aria-label="Delete item"
                                     >

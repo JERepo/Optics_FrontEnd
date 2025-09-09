@@ -9,7 +9,7 @@ import { AlertCircle, ArrowLeft } from "lucide-react";
 import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
 import { useGetAllvendorByLocationQuery } from "../../api/vendorApi";
 import { useGetCompanySettingsQuery } from "../../api/companySettingsApi";
-import { useCheckDocNoUniqueQuery, useGetGRNDetailsMutation } from "../../api/grnApi";
+import { useCheckDocNoUniqueQuery, useGetGRNDetailsMutation, useGetGRNMainMutation, useUpdateGRNMainMutation } from "../../api/grnApi";
 import { useSaveGRNMainMutation } from "../../api/grnApi";
 import { useGRN } from "../../features/GRNContext";
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -55,6 +55,8 @@ export default function GRNStep1() {
     // Mutation--------------------------------------------------------------------------------------------------------------------
     const [SaveGRNMain] = useSaveGRNMainMutation();
     const [getGRNDetails] = useGetGRNDetailsMutation();
+    const [grnMainData] = useGetGRNMainMutation();
+    const [updateGRNMain] = useUpdateGRNMainMutation();
 
     // Query-----------------------------------------------------------------------------------------------------------------------
     const { data: allLocations } = useGetAllLocationsQuery();
@@ -74,7 +76,7 @@ export default function GRNStep1() {
     );
 
     const { data: isUniqueResponse, refetch: checkDocNoUnique } = useCheckDocNoUniqueQuery(
-        { docNo: formState.documentNo, vendorId: formState.vendorDetails?.Id, companyId: selectedLocation, grnMainId: (grnData?.step1?.GrnMainId || null)  },
+        { docNo: formState.documentNo, vendorId: formState.vendorDetails?.Id, companyId: selectedLocation, grnMainId: (grnData?.step1?.GrnMainId || null) },
         {
             skip: (!formState.documentNo || !formState.vendorDetails?.Id || !selectedLocation),
             refetchOnMountOrArgChange: true  // Always refetch to get latest data
@@ -108,6 +110,47 @@ export default function GRNStep1() {
             checkDocNoUnique();
         }
     }, [formState.documentNo, formState.vendorDetails?.Id, selectedLocation, checkDocNoUnique]);
+
+    // fetch draft on vendor and against order changes
+    useEffect(() => {
+        const fetchGRNMain = async () => {
+            const payload = {
+                companyId: selectedLocation,
+                vendorId: selectedVendor,
+                againstPo: formState?.againstPO,
+                applicationUserId: user?.Id
+            }
+
+            const GRNMainResponse = await grnMainData(payload).unwrap();
+
+            if (GRNMainResponse.data.length > 0) {
+
+                // const grnMainId = GRNMainResponse.data[0]?.Id;
+                const vendorDocDate = GRNMainResponse.data[0]?.VendorDocDate;
+
+                const dateObj = vendorDocDate ? new Date(vendorDocDate) : null;
+
+                updateStep1Data({
+                    GrnMainId: GRNMainResponse.data[0]?.Id
+                });
+                setFormState((prev) => ({
+                    ...prev,
+                    documentNo: GRNMainResponse.data[0]?.VendorDocNo,
+                    documentDate: dateObj
+                }));
+                return;
+
+            } else {
+                setFormState((prev) => ({
+                    ...prev,
+                    documentNo: "",
+                    documentDate: null
+                }));
+            }
+        }
+
+        fetchGRNMain();
+    }, [selectedVendor, formState.againstPO])
 
 
 
@@ -152,11 +195,20 @@ export default function GRNStep1() {
 
         // 1. Check if GRN main and detail entry exists
         try {
-            if(grnData.step1.GrnMainId) {
-                // setCurrentStep(4);
+            if (grnData.step1.GrnMainId) {
+
+                const grnMainPayload = {
+                    grnMain: grnData.step1.GrnMainId, 
+                    docNo: formState.documentNo,
+                    docDate: formState.documentDate
+                }
+
+                await updateGRNMain(grnMainPayload);
+
                 nextStep();
                 return;
             }
+
             const payload = {
                 companyId: selectedLocation,
                 vendorId: formState?.vendorDetails?.Id,
@@ -183,8 +235,8 @@ export default function GRNStep1() {
                         againstPO: formState?.againstPO
                     }
                 }));
-                setCurrentStep(4);
-                return;
+                // setCurrentStep(4);
+                // return;
                 // return;
                 // setGrnViewDetails(response?.data?.data || []);
             }

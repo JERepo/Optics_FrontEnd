@@ -598,8 +598,9 @@ export default function GRNStep3() {
     };
 
     const handleSubmitGRNDetails = async () => {
+        console.log("GRN data", grnData);
         try {
-            if (!grnData?.step1?.GrnMainId) {
+            if (!formState.grnMainId || !grnData?.step1?.GrnMainId) {
                 throw new Error("GRN main ID not found");
             }
 
@@ -640,16 +641,16 @@ export default function GRNStep3() {
                             }
                         }
                     }
-
+                    console.log("jhsgdjabd ------ ", formState.grnMainId);
                     return {
-                        GRNMainID: formState.grnMainId,
+                        GRNMainID: formState.grnMainId || grnData.step1.GrnMainId,
                         GRNSlNo: index + 1,
                         ProductType: formState.productType === 'Frame/Sunglass' ? 1
                             : formState.productType === 'Lens' ? 0
                                 : formState.productType === 'Accessories' ? 2
                                     : formState.productType === 'Contact Lens' ? 3
                                         : null,
-                        detailId: formState.productType === 'Contact Lens' ? item.CLDetailId : search.Id,
+                        detailId: formState.productType === 'Contact Lens' ? item.CLDetailId : item.Id,
                         BatchCode: item.CLBatchCode || null,
                         OrderDetailId: null,
                         VendorOrderNo: null,
@@ -687,7 +688,7 @@ export default function GRNStep3() {
             // }
 
             if (formState.productType === "Lens") {
-
+                console.log("GRNOrderPowerDetails ------------- ", GRNOrderPowerDetails);
                 grnDetails = [{
                     GRNMainID: formState.grnMainId,
                     GRNSlNo: 1,
