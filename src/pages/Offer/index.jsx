@@ -7,6 +7,7 @@ import { useOrder } from "../../features/OrderContext";
 import SelectOffer from "./StepOne/SelectOffer";
 import StepTwoMain from "./StepTwo/StepTwoMain";
 import StepThreeMain from "./StepThree";
+import OfferTypeFour from "./StepThree/OfferTypeFour";
 
 const OfferModule = () => {
   const [location, setLocation] = useState(null);
@@ -62,6 +63,8 @@ const OfferModule = () => {
         return <StepTwoMain />
       case 3:
         return <StepThreeMain />
+      case 4:
+        return <OfferTypeFour />
     }
   };
 

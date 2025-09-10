@@ -413,7 +413,8 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
     customerData: null,
     inState: null,
     customerPoolId:null,
-    offerMainId:null
+    offerMainId:null,
+    selectedProduct:null,
   });
 
   const [offerData, setOfferData] = useState(null);

@@ -375,7 +375,7 @@ const InvoiceView = () => {
             renderRow={(invoice, index) => (
               <TableRow key={index}>
                 <TableCell>{index + 1}</TableCell>
-                <TableCell>{`${invoice.OrderDetail?.OrderMaster.OrderPrefix}/${invoice.OrderDetail?.OrderMaster?.OrderNo}/${invoice.InvoiceSlNo}`}</TableCell>
+                <TableCell>{`${invoice.OrderDetail?.OrderMaster.OrderPrefix}/${invoice.OrderDetail?.OrderMaster?.OrderNo}/${invoice.OrderDetail?.OrderDetailSlNo}`}</TableCell>
                 <TableCell>{getTypeName(invoice?.ProductType)}</TableCell>
                 <TableCell>
                   <div className="whitespace-pre-wrap">
@@ -390,11 +390,11 @@ const InvoiceView = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    parseFloat(invoice.InvoiceQty) *
+                    (parseFloat(invoice.InvoiceQty) *
                       parseFloat(invoice.InvoicePrice) +
                       (invoice.ProductType === 0
-                        ? parseFloat(invoice.FittingPrice)
-                        : 0)
+                        ? parseFloat(invoice.FittingPrice || 0)
+                        : 0) + (parseFloat(invoice.FittingPrice || 0) * (parseFloat(invoice.FittingGSTPercentage || 0)/100)))
                   )}
                 </TableCell>
               </TableRow>

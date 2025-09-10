@@ -68,7 +68,6 @@ const getProductName = (order) => {
     batchCode,
     expiry,
   } = order;
-  console.log("order", order);
   const clean = (val) => {
     if (
       val === null ||
@@ -230,6 +229,41 @@ const getProductName = (order) => {
   return "";
 };
 
+const getSRP = (item) => {
+  if (!item) {
+    return 0;
+  }
+
+  if (item.productType === 3) {
+    if (item.cLBatchCode === 0) {
+      return item.priceMaster?.mrp;
+    } else if (item.cLBatchCode === 1) {
+      return item.stock[0]?.mrp;
+    }
+    return 0;
+  }
+
+  if (item.productType === 1) {
+    if (item.cLBatchCode === 0) {
+      return item.pricing.mrp;
+    }
+    return 0;
+  }
+  if (item.productType === 2) {
+    if (item.cLBatchCode === 0) {
+      return item.pricing.mrp;
+    }
+    return 0;
+  }
+
+  if (item.productType === 0) {
+    if (item.cLBatchCode === 0) {
+      return item.pricing.mrp;
+    }
+    return 0;
+  }
+};
+
 const CustomerSelect = () => {
   const navigate = useNavigate();
   const {
@@ -329,14 +363,16 @@ const CustomerSelect = () => {
       return isAllowedStatus && hasStock;
     });
   }, [localProductData, hasMultipleLocations]);
-
   // Initialize product data
   useEffect(() => {
     if (productData) {
       const updatedProductData = productData.map((order) => ({
         ...order,
         toBillQty: order.orderQty - order.billedQty - order.cancelledQty,
-        sellingPrice: order.discountedSellingPrice || 0,
+        sellingPrice:
+          order.cLBatchCode === 0 && order.productType === 3
+            ? order.priceMaster?.sellingPrice
+            : order.discountedSellingPrice || 0,
         totalValue:
           (order.discountedSellingPrice || 0) *
           (order.orderQty - order.billedQty - order.cancelledQty),
@@ -565,17 +601,14 @@ const CustomerSelect = () => {
       order.productType === 1 ||
       order.productType === 2
     ) {
-      return order.pricing?.mrp || 0;
+      return order.pricing?.sellingPrice || 0;
     } else if (order.productType === 3) {
-      if (order.cLBatchCode === 1) {
+      if (order.cLBatchCode === 0) {
         return order.priceMaster?.mrp || 0;
+      } else if (order.cLBatchCode === 1) {
+        return order.stock[0]?.mrp;
       }
-
-      const mrp = order.stock?.reduce(
-        (sum, item) => sum + parseFloat(item.mrp || 0),
-        0
-      );
-      return mrp;
+      return 0;
     } else {
       return 0;
     }
@@ -598,6 +631,7 @@ const CustomerSelect = () => {
       setSelectedProducts([]);
     }
   };
+  console.log("filter", filteredProducts);
   const handleClickNext = () => {
     setCustomerId({
       companyId: selectedPatient?.CustomerMaster?.CompanyID,
@@ -779,7 +813,6 @@ const CustomerSelect = () => {
         const idx = filteredProducts.findIndex(
           (x) => x.orderDetailId === missingItem.orderDetailId
         );
-        console.log("idx", idx);
         if (idx === -1) {
           continue;
         }
@@ -844,6 +877,8 @@ const CustomerSelect = () => {
           return "cash";
         case "advance":
           return "advance";
+        case "gift voucher":
+          return "giftVoucher";
         default:
           return type.toLowerCase();
       }
@@ -884,9 +919,15 @@ const CustomerSelect = () => {
           payments[typeKey].BankAccountID = payment.BankAccountID || null;
           payments[typeKey].ReferenceNo = payment.RefNo || "";
           break;
+        case "giftVoucher":
+          payments[typeKey].GVCode = payment.GVCode || null;
+          break;
+        // case "advance":
+        //   payments[typeKey].CustomerAdvanceIDs =
+        //     payment.CustomerAdvanceIDs || [];
+        //   break;
         case "advance":
-          payments[typeKey].CustomerAdvanceIDs =
-            payment.CustomerAdvanceIDs || [];
+          payments[typeKey].advanceId = payment.advanceId;
           break;
       }
     });
@@ -907,6 +948,7 @@ const CustomerSelect = () => {
   };
 
   const handleGenerateInvoice = async () => {
+    
     if (!validateBatchCodes()) {
       toast.error(
         "Please add BatchCode details for the selected CL products to complete invoicing"
@@ -941,7 +983,6 @@ const CustomerSelect = () => {
         const idx = filteredProducts.findIndex(
           (x) => x.orderDetailId === missingItem.orderDetailId
         );
-        console.log("idx", idx);
         if (idx === -1) {
           continue;
         }
@@ -1001,16 +1042,14 @@ const CustomerSelect = () => {
     if (payload.creditBilling === 0) {
       payload.payments = preparePaymentsStructure();
     }
-
+    console.log(payload)
     //  customerData use this
     try {
       const response = await generateInvoice({ payload }).unwrap();
-
       const eInvoicePayload = {
         recordId: response?.invoicemainid ?? null,
         type: "invoice",
       };
-
       if (
         customerData?.data?.data?.TAXRegisteration === 1 &&
         customerData?.data?.data?.Company?.CompanyType === 1
@@ -1025,7 +1064,6 @@ const CustomerSelect = () => {
           navigate("/invoice");
         }
       }
-
       toast.success(response?.message);
       setFullPayments([]);
       updatePaymentDetails(null);
@@ -1038,7 +1076,6 @@ const CustomerSelect = () => {
       }
     }
   };
-
   return (
     <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-sm">
@@ -1314,9 +1351,7 @@ const CustomerSelect = () => {
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-700">
-                            ₹{formatINR(order.sellingPrice) || 0}
-                          </span>
+                          ₹{formatINR(order.sellingPrice) || 0}
                           {companySettings?.data?.data?.EditInvoicePrice ===
                             1 && (
                             <button
@@ -1463,6 +1498,8 @@ const CustomerSelect = () => {
                 isOpen={collectPayment}
                 onClose={() => setCollectPayment(false)}
                 collectPayment={collectPayment}
+                selectedPatient={selectedPatient}
+                companyId={parseInt(hasMultipleLocations[0])}
               />
 
               <div className="flex justify-end mt-4 gap-2">
@@ -1505,7 +1542,7 @@ const CustomerSelect = () => {
                           >
                             {customerData?.data?.data?.BillingMethod === 1
                               ? "Generate DC"
-                              : "Generate E-Invoice"}
+                              : "Generate Invoice"}
                           </Button>
                         )}
                       </div>
@@ -1708,6 +1745,7 @@ const BatchCode = ({
           batchBarCode: batch.BatchBarCode,
           expiry: batch.Expiry,
           mrp: batch.MRP,
+          sellingPrice :batch.DiscountedSellingPrice,
           discountedSellingPrice: batch.DiscountedSellingPrice,
           availableQty: batch.AvailableQty,
           toBillQty: batch.ToBillQty,
@@ -1872,10 +1910,21 @@ const BatchCode = ({
   );
 };
 
-const PaymentDetails = ({ isOpen, onClose, collectPayment }) => {
+const PaymentDetails = ({
+  isOpen,
+  onClose,
+  collectPayment,
+  selectedPatient,
+  companyId,
+}) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} width="max-w-5xl">
-      <PaymentFlow collectPayment={collectPayment} onClose={onClose} />
+      <PaymentFlow
+        collectPayment={collectPayment}
+        onClose={onClose}
+        selectedPatient={selectedPatient}
+        companyId={companyId}
+      />
     </Modal>
   );
 };

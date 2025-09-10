@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useOrder } from "../../../features/OrderContext";
-import { FiArrowLeft, FiTrash2, FiPlus, FiInfo, FiSave } from "react-icons/fi";
+import {
+  FiArrowLeft,
+  FiTrash2,
+  FiPlus,
+  FiInfo,
+  FiSave,
+  FiSearch,
+} from "react-icons/fi";
 import Button from "../../../components/ui/Button";
 import { Autocomplete, TextField } from "@mui/material";
 import Input from "../../../components/Form/Input";
@@ -16,6 +23,8 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { isBefore, isAfter, subDays, startOfDay, format } from "date-fns";
 import { useSaveFinalPaymentMutation } from "../../../api/orderApi";
 import { useNavigate } from "react-router";
+import { useGetAdvanceDataForInvoiceQuery } from "../../../api/customerRefund";
+import { useLazyValidateGiftVoucherQuery } from "../../../api/giftVoucher";
 
 const methods = [
   { value: 1, type: "Cash" },
@@ -24,9 +33,15 @@ const methods = [
   { value: 4, type: "Cheque" },
   { value: 5, type: "Bank Transfer" },
   { value: 6, type: "Advance" },
+  { value: 7, type: "Gift Voucher" },
 ];
 
-const PaymentFlow = ({ collectPayment, onClose }) => {
+const PaymentFlow = ({
+  collectPayment,
+  onClose,
+  selectedPatient,
+  companyId: InvoiceCompanyId,
+}) => {
   const navigate = useNavigate();
   const {
     goToStep,
@@ -59,6 +74,9 @@ const PaymentFlow = ({ collectPayment, onClose }) => {
     EMI: false,
     EMIMonths: null,
     EMIBank: null,
+    advanceId: null,
+    advanceData: null,
+    GVCode: null,
   });
   const [errors, setErrors] = useState({});
 
@@ -105,6 +123,10 @@ const PaymentFlow = ({ collectPayment, onClose }) => {
   const { data: bankAccountDetails } = useGetAllBankAccountsQuery();
   const [saveFinalPayment, { isLoading: isFinalSaving }] =
     useSaveFinalPaymentMutation();
+  const { data: advanceData } = useGetAdvanceDataForInvoiceQuery({
+    customerId: selectedPatient?.CustomerMaster?.Id,
+    companyId: InvoiceCompanyId,
+  });
 
   const filteredCardPaymentMachines = paymentMachine?.data.data.filter(
     (p) =>
@@ -213,7 +235,7 @@ const PaymentFlow = ({ collectPayment, onClose }) => {
 
     return payments;
   };
- 
+
   const handleSave = async () => {
     if (updatedDetails.RemainingToPay > 0) {
       toast.error("Please cover the remaining balance before saving.");
@@ -526,6 +548,8 @@ const PaymentFlow = ({ collectPayment, onClose }) => {
                 UPIMachine={filteredUpiPaymentMachines}
                 banks={allbanks?.data.data || []}
                 accounts={filteredBankAccounts}
+                advanceData={advanceData}
+                selectedPatient={selectedPatient}
               />
 
               {updatedDetails.RemainingToPay > 0 && (
@@ -592,8 +616,15 @@ const MethodForm = ({
   cardMachines,
   banks,
   accounts,
+  advanceData,
+  selectedPatient,
 }) => {
   if (!method) return null;
+
+  const [gvCode, setGVCode] = useState(null);
+  const [gvData,setGVData] = useState(null)
+  const [validateGiftVoucher, { isFetching: isValidating }] =
+    useLazyValidateGiftVoucherQuery();
 
   const handleInputChange = (key) => (e) =>
     setNewPayment((prev) => ({ ...prev, [key]: e.target.value }));
@@ -613,6 +644,28 @@ const MethodForm = ({
       new Map(accounts?.map((item) => [item.AccountNumber, item])).values()
     );
   }, [accounts]);
+
+  const advances = advanceData?.data?.advances || [];
+
+  const handleGIftVoucher = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await validateGiftVoucher({
+        GVCode: gvCode,
+        // CustomerID: selectedPatient?.CustomerMaster?.Id ?? null,
+        CustomerID:null
+      }).unwrap();
+      toast.success("Entered GVCode Valid");
+      setNewPayment((prev) => ({
+        ...prev,
+        GVCode: gvCode,
+      }));
+      setGVData(res?.data)
+    } catch (error) {
+      console.log(error);
+      toast.error("Entered GVCode Not Valid!");
+    }
+  };
 
   return (
     <div className="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
@@ -859,6 +912,117 @@ const MethodForm = ({
           </>
         )}
       </div>
+      {method === 6 && (
+        <div className="w-full">
+          <div className="w-1/2 mb-5">
+            <Autocomplete
+              options={advances}
+              getOptionLabel={(option) =>
+                `${option.ReferenceDetails ?? ""}-${option.Remarks ?? ""}`
+              }
+              value={
+                advances.find((b) => b.Id === newPayment.advanceId) || null
+              }
+              onChange={(_, newValue) => {
+                setNewPayment((prev) => ({
+                  ...prev,
+                  advanceId: newValue?.Id ?? null,
+                  RefNo: newValue?.ReferenceDetails ?? null,
+                  advanceData: newValue || null,
+                }));
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Select Reference No"
+                  size="small"
+                />
+              )}
+              fullWidth
+            />
+          </div>
+          {newPayment?.advanceData && (
+            <div className="flex gap-3 w-full">
+              <div className="flex-1 min-w-0">
+                <Input
+                  label="Date"
+                  value={
+                    newPayment?.advanceData?.AdvanceDate
+                      ? format(
+                          new Date(newPayment?.advanceData?.AdvanceDate),
+                          "dd/MM/yyyy"
+                        )
+                      : ""
+                  }
+                  readOnly
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <Input
+                  label="Balance Amount"
+                  value={newPayment?.advanceData?.BalanceAmount}
+                  readOnly
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                {/* Wrap commonAmountInput if it has fullWidth */}
+                <div className="w-full">{commonAmountInput}</div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      {method === 7 && (
+        <div>
+          <form onSubmit={handleGIftVoucher} className="space-y-2">
+            <div className="flex flex-col gap-3">
+              <label
+                htmlFor="barcode"
+                className="text-sm font-medium text-gray-700"
+              >
+                Enter Barcode
+              </label>
+              <div className="flex gap-2">
+                <div className="relative flex items-center">
+                  <input
+                    id="barcode"
+                    type="text"
+                    value={gvCode}
+                    onChange={(e) => setGVCode(e.target.value)}
+                    placeholder="Scan or enter barcode"
+                    className="w-[400px] pl-10 pr-4 py-3 border border-gray-300 rounded-lg"
+                  />
+                  <FiSearch className="absolute left-3 text-gray-400" />
+                </div>
+
+                <Button
+                  type="submit"
+                  isLoading={isValidating}
+                  disabled={isValidating}
+                >
+                  Search
+                </Button>
+              </div>
+            </div>
+          </form>
+          {gvData && (
+            <div className="flex gap-3 w-full mt-5">
+             
+              <div className="flex-1 min-w-0">
+                <Input
+                  label="Balance Amount"
+                  value={gvData?.GVBalanceAmount}
+                  readOnly
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                {/* Wrap commonAmountInput if it has fullWidth */}
+                <div className="w-full">{commonAmountInput}</div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

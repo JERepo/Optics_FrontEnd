@@ -1,9 +1,15 @@
 import toast from "react-hot-toast";
 
 // utils/validators.js
+// export function isValidNumericInput(value) {
+//   // Allow only positive integers or decimals (e.g., 123, 12.34, .5, 0.5)
+//   const regex = /^(?:\d+|\d*\.\d+)$/;
+//   return regex.test(value);
+// }
+
 export function isValidNumericInput(value) {
-  // Allow only positive integers or decimals (e.g., 123, 12.34, .5, 0.5)
-  const regex = /^(?:\d+|\d*\.\d+)$/;
+  // Allow empty, or positive integers/decimals (e.g., "", 123, 12.34, .5, 0.5)
+  const regex = /^(?:\d+|\d*\.\d+)?$/;
   return regex.test(value);
 }
 

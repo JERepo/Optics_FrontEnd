@@ -33,6 +33,7 @@ import Input from "../../components/Form/Input";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import NewGV from "../GiftVoucher/NewGV/NewGV";
 import Modal from "../../components/ui/Modal";
+import { useCreateGiftVoucherForRefundMutation } from "../../api/giftVoucher";
 
 const methods = [
   { value: 1, type: "Cash" },
@@ -72,6 +73,7 @@ const SelectCustomer = () => {
     EMIBank: null,
     GVCode: null,
     GVMasterID: null,
+    GVData: null,
   });
   const [errors, setErrors] = useState({});
   const [remainingRefundAmt, setRemainingRefundAmt] = useState(0);
@@ -103,6 +105,8 @@ const SelectCustomer = () => {
   const [createRefund, { isLoading: isRefundCreating }] =
     useCreateCustomerRefundMutation();
 
+  const [createGVForRefund, { isLoading: isGVRefundLoading }] =
+    useCreateGiftVoucherForRefundMutation();
   //   data change on actions
 
   useEffect(() => {
@@ -372,18 +376,19 @@ const SelectCustomer = () => {
     setErrors({});
     toast.success("Payment added successfully!");
   };
-
+  console.log("full", fullPaymentDetails);
   const handleAddGiftAmount = (data) => {
+    console.log("data", data);
     setCollectGiftAmount(false);
-    console.log("coming in the handler for gift voucher", data);
     if (data) {
       setFullPaymentDetails((prev) => [
         ...prev,
         {
           Type: selectedPaymentMethod.type || "Gift Voucher",
-          GVMasterID: data.ID,
-          Amount: data.GVAmount,
+          GVMasterID: data?.ID ?? null,
+          Amount: data.amount,
           GVCode: data.GVCode,
+          GVData: data,
         },
       ]);
     }
@@ -491,33 +496,57 @@ const SelectCustomer = () => {
       companyId: parseInt(hasMultipleLocations[0]),
       advanceId: advanceItems
         ?.filter((item) => selectedProducts.includes(item.Id))
-        .map((item) => {
-          return {
-            id: item.Id,
-            amount: parseFloat(item.refundAmount),
-          };
-        }),
+        .map((item) => ({
+          id: item.Id,
+          amount: parseFloat(item.refundAmount),
+        })),
       applicationUserId: user.Id,
       remarks: "",
       payments: {
         totalAmount: -advanceItems
           ?.filter((item) => selectedProducts.includes(item.Id))
-          .reduce((sum, item) => sum + parseFloat(item.refundAmount || 0), 0), // refundValue please pass negative value
-
+          .reduce((sum, item) => sum + parseFloat(item.refundAmount || 0), 0),
         payments: preparePaymentsStructure(),
       },
     };
+
     try {
+      const gvDetails = fullPaymentDetails
+        .filter((item) => item.Type === "Gift Voucher")
+        .map((item, index) => ({ ...item.GVData, index }));
+
+      console.log("gv", gvDetails);
+      if (gvDetails.length > 0) {
+        for (const gv of gvDetails) {
+          try {
+            const res = await createGVForRefund({
+              payload: gv.GVData,
+            }).unwrap();
+
+            setFullPaymentDetails((prev) =>
+              prev.map((p, i) =>
+                i === gv.index ? { ...p, GVMasterID: res?.data?.ID ?? null } : p
+              )
+            );
+          } catch (error) {
+            console.error("GV creation failed", error);
+            toast.error("Failed to create Gift Voucher");
+            return;
+          }
+        }
+      }
+
       await createRefund({ payload }).unwrap();
       toast.success("Customer refund successfully generated!");
     } catch (error) {
-      console.log("error");
+      console.error("Refund error", error);
       toast.error(
-        error?.data.error ||
+        error?.data?.error ||
           "Something went wrong while generating Customer refund!"
       );
     }
   };
+
   const filteredBankAccounts = bankAccountDetails?.data.data.filter(
     (b) =>
       b.IsActive === 1 &&

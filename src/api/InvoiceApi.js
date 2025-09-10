@@ -23,6 +23,14 @@ export const InvoiceApi = createApi({
       }),
     }),
 
+    // getProductDetails: builder.mutation({
+    //   query: ({ payload }) => ({
+    //     url: `/api/v1/order/productdetails`,
+    //     method: "POST",
+    //     body: payload,
+    //   }),
+    //   invalidatesTags: ["Invoice"],
+    // }),
     getProductDetails: builder.mutation({
       query: ({ payload }) => ({
         url: `/api/v1/order/productdetails`,
@@ -30,7 +38,12 @@ export const InvoiceApi = createApi({
         body: payload,
       }),
       invalidatesTags: ["Invoice"],
+      transformResponse: (response) => {
+        // Sort by slNo ascending
+        return response.sort((a, b) => a.slNo - b.slNo);
+      },
     }),
+
     saveBatchDetails: builder.mutation({
       query: ({ orderDetailedId, locationId, payload }) => ({
         url: `/api/v1/invoice/batch/${orderDetailedId}/${locationId}`,
@@ -71,7 +84,7 @@ export const InvoiceApi = createApi({
       invalidatesTags: ["EInvoice"],
     }),
     getEInvoiceData: builder.query({
-      query: ({ id ,type}) => ({
+      query: ({ id, type }) => ({
         url: `/api/v1/einvoice?type=${type}&recordId=${id}`,
       }),
       providesTags: ["EInvoice"],

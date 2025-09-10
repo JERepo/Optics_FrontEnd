@@ -178,10 +178,7 @@ const NewGV = ({
           ApplicationUserID: user.Id,
           locationIds: selectedLocation, // array of locations to link voucher
         };
-
-        console.log("Collect Gift Amount Payload:", payload);
-        const res = await createGVForRefund({ payload }).unwrap();
-        handleAddGiftAmount({ ...res?.data });
+        handleAddGiftAmount({...payload });
         toast.success("Gift Voucher collected successfully!");
       } else {
         const payload = {

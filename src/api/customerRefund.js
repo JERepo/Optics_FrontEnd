@@ -10,6 +10,11 @@ export const customerRefundApi = createApi({
         url: `/api/v1/customer-refund/advancebyCm?customerId=${customerId}&CompanyId=${companyId}`,
       }),
     }),
+     getAdvanceDataForInvoice: builder.query({
+      query: ({ customerId, companyId }) => ({
+        url: `/api/v1/customer-refund/advancebyCm?customerId=${customerId}&CompanyId=${companyId}`,
+      }),
+    }),
     createCustomerRefund: builder.mutation({
       query: ({ payload }) => ({
         url: `/api/v1/customer-refund/create`,
@@ -20,4 +25,4 @@ export const customerRefundApi = createApi({
   }),
 });
 
-export const { useLazyGetAdvanceDataQuery,useCreateCustomerRefundMutation } = customerRefundApi;
+export const { useLazyGetAdvanceDataQuery,useCreateCustomerRefundMutation,useGetAdvanceDataForInvoiceQuery } = customerRefundApi;
