@@ -101,7 +101,7 @@ const SelectOffer = () => {
       const payload = {
         OfferCode: offer.offerCode,
         OfferName: offer.offerDetails,
-        OfferType: 0,
+        OfferType: selectedOffer,
         LowerValue: 0,
         SamePower: 0,
         IsBrandOffer: offer.isBrandOffer,

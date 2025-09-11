@@ -1,20 +1,24 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { Table, TableCell, TableRow } from "../../components/Table";
 import { format } from "date-fns";
 import Button from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
 import {
+  useCancelInvoiceMutation,
   useCreateEInvoiceMutation,
   useGetEInvoiceDataQuery,
   useGetInvoiceByIdQuery,
   useGetInvoiceDetailsQuery,
+  useGetPaymentDetailsQuery,
 } from "../../api/InvoiceApi";
 import { formatINR } from "../../utils/formatINR";
 import { useSelector } from "react-redux";
 import { useGetLocationByIdQuery } from "../../api/roleManagementApi";
 import { useGetCompanyIdQuery } from "../../api/customerApi";
 import toast from "react-hot-toast";
+import Modal from "../../components/ui/Modal";
+import Radio from "../../components/Form/Radio";
 
 const getProductName = (order) => {
   const product = order?.productDetails?.[0];
@@ -183,6 +187,16 @@ const getProductName = (order) => {
   return "";
 };
 
+const PaymentTypes = {
+  1: "Cash",
+  2: "Card",
+  3: "UPI",
+  4: "Cheque",
+  5: "Bank Transfer",
+  6: "Advance",
+  7: "Gift Voucher",
+};
+
 const InvoiceView = () => {
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
   const navigate = useNavigate();
@@ -191,6 +205,9 @@ const InvoiceView = () => {
   const invoiceId = params.get("invoiceId");
 
   const [InvoiceEnabled, setInvoiceEnabled] = useState(true);
+  const [isCancelOpen, setIsCancelOpen] = useState(false);
+  const [cancelDisabled, setIsCancelDisabled] = useState(false);
+  const [carry, setCarry] = useState(null);
 
   const { data: invoiceDetails, isLoading } = useGetInvoiceByIdQuery(
     { id: invoiceId },
@@ -221,9 +238,34 @@ const InvoiceView = () => {
   const EInvoiceEnable = companySettings?.data?.data.EInvoiceEnable;
   const InvInvoiceEnable = companySettings?.data?.data.INVEInvoiceEnable;
 
+  const { data: paymentDetails } = useGetPaymentDetailsQuery({
+    id: parseInt(invoiceId),
+  });
+  const [cancelInvoice, { isLoading: isCancelling }] =
+    useCancelInvoiceMutation();
+  console.log("pp", paymentDetails?.data?.receiptDetails);
+
   const getTypeName = (id) => {
     const types = { 1: "F/S", 2: "ACC", 3: "CL" };
     return types[id] || "OL";
+  };
+  const getPricing = (order) => {
+    if (
+      order.productType === 0 ||
+      order.productType === 1 ||
+      order.productType === 2
+    ) {
+      return order.pricing?.mrp || 0;
+    } else if (order.productType === 3) {
+      if (order.cLBatchCode === 0) {
+        return order.priceMaster?.mrp || 0;
+      } else if (order.cLBatchCode === 1) {
+        return order.stock[0]?.mrp;
+      }
+      return 0;
+    } else {
+      return 0;
+    }
   };
 
   const calculateGST = (sellingPrice, taxPercentage) => {
@@ -246,9 +288,11 @@ const InvoiceView = () => {
     const invoicePrice = parseFloat(item.InvoicePrice || 0);
     const qty = parseFloat(item.InvoiceQty || 0);
     const fittingPrice = parseFloat(item.FittingPrice || 0);
-
+    const fittingGst = parseFloat(item.FittingGSTPercentage || 0);
+    const FittingAmt = fittingPrice * (fittingGst / 100);
     return (
       sum +
+      FittingAmt +
       (invoicePrice * qty +
         (item.ProductType == 0 ? parseFloat(fittingPrice) : 0))
     );
@@ -302,7 +346,89 @@ const InvoiceView = () => {
       );
     }
   };
+  function canCancelInvoice(invoiceDateStr) {
+    const invoiceDate = new Date(invoiceDateStr);
+    const now = new Date();
 
+    const diffMs = now - invoiceDate;
+    const diffMinutes = diffMs / (1000 * 60);
+
+    // 23 hours 55 minutes = 1435 minutes
+    const limitMinutes = 23 * 60 + 55;
+
+    if (invoiceDetails?.Status === 3) {
+      return { allowed: false, message: "Invoice already cancelled!" };
+    } else if (diffMinutes <= limitMinutes) {
+      return { allowed: true, message: "Invoice cancellation allowed." };
+    } else {
+      return {
+        allowed: false,
+        message: "Invoice Cancellation is only allowed within 24 hours.",
+      };
+    }
+  }
+  const isUPIBankAvl = !!paymentDetails?.data?.receiptDetails?.some(
+    (item) => PaymentTypes[item.Type] === 3 || PaymentTypes[item.Type] === 5
+  );
+
+  useEffect(() => {
+    setCarry(!isUPIBankAvl ? 1 : 0);
+  }, [isUPIBankAvl, paymentDetails]);
+
+  const handleCancelInvoice = async () => {
+    if (invoiceDetails?.CustomerMaster?.CreditBilling === 0) {
+      const result = canCancelInvoice(invoiceDetails?.InvoiceDate);
+      if (result.allowed) {
+        setIsCancelOpen(true);
+      } else {
+        toast.error(result.message);
+        return;
+      }
+    } else if (invoiceDetails?.CustomerMaster?.CreditBilling === 1) {
+      try {
+        const payload = {
+          InvoiceMainId: parseInt(invoiceId) ?? null,
+          CustomerMasterID: invoiceDetails?.CustomerMaster?.Id ?? null,
+          locationId: parseInt(hasMultipleLocations[0]),
+        };
+
+        const res = await cancelInvoice({ payload }).unwrap();
+        toast.success("Invoice Cancelled Successfully");
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  };
+
+  const handleUpdateCanceInvoice = async () => {
+    const payload = {
+      InvoiceMainId: parseInt(invoiceId) ?? null,
+      CustomerMasterID: invoiceDetails?.CustomerMaster?.Id ?? null,
+
+      locationId: parseInt(hasMultipleLocations[0]),
+    };
+
+    if (carry === 0) {
+      payload.selectedrefund =
+        paymentDetails?.data?.receiptDetails?.map((item) => item.Type) || [];
+    } else if (carry === 1) {
+      payload.selectedCarryForwardTypes =
+        paymentDetails?.data?.receiptDetails?.map((item) => item.Type) || [];
+    }
+    try {
+      const payload = {
+        InvoiceMainId: parseInt(invoiceId) ?? null,
+        CustomerMasterID: invoiceDetails?.CustomerMaster?.Id ?? null,
+        locationId: parseInt(hasMultipleLocations[0]),
+      };
+
+      const res = await cancelInvoice({ payload }).unwrap();
+      toast.success("Invoice Cancelled Successfully");
+      setIsCancelOpen(false);
+    } catch (error) {
+      console.log(error);
+    }
+  };
   if (isViewLoading || isLoading) {
     return (
       <div>
@@ -318,10 +444,20 @@ const InvoiceView = () => {
           <div className="text-neutral-800 text-2xl font-semibold">
             Invoice Details
           </div>
-          <div>
+          <div className="flex items-center gap-3">
             <Button variant="outline" onClick={() => navigate("/invoice")}>
               Back
             </Button>
+            {invoiceDetails?.InvoiceType === 0 && (
+              <Button
+                variant="danger"
+                onClick={handleCancelInvoice}
+                disabled={cancelDisabled}
+                isLoading={!isCancelOpen ? isCancelling : false}
+              >
+                Cancel Invoice
+              </Button>
+            )}
           </div>
         </div>
         {/* Order Details */}
@@ -382,7 +518,16 @@ const InvoiceView = () => {
                     {getProductName(invoice)}
                   </div>
                 </TableCell>
-                <TableCell>₹{formatINR(parseFloat(invoice.SRP))}</TableCell>
+                <TableCell>
+                  ₹
+                  {formatINR(
+                    getPricing(
+                      Array.isArray(invoice?.productDetails)
+                        ? invoice?.productDetails[0]
+                        : invoice?.productDetails
+                    )
+                  )}
+                </TableCell>
                 <TableCell>
                   ₹{formatINR(parseFloat(invoice.InvoicePrice))}
                 </TableCell>
@@ -390,11 +535,13 @@ const InvoiceView = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    (parseFloat(invoice.InvoiceQty) *
+                    parseFloat(invoice.InvoiceQty) *
                       parseFloat(invoice.InvoicePrice) +
                       (invoice.ProductType === 0
                         ? parseFloat(invoice.FittingPrice || 0)
-                        : 0) + (parseFloat(invoice.FittingPrice || 0) * (parseFloat(invoice.FittingGSTPercentage || 0)/100)))
+                        : 0) +
+                      parseFloat(invoice.FittingPrice || 0) *
+                        (parseFloat(invoice.FittingGSTPercentage || 0) / 100)
                   )}
                 </TableCell>
               </TableRow>
@@ -484,6 +631,150 @@ const InvoiceView = () => {
               </div>
             </div>
           )}
+
+        <Modal
+          isOpen={isCancelOpen}
+          onClose={() => setIsCancelOpen(false)}
+          width="max-w-2xl"
+        >
+          <div className=" ">
+            <h2 className="text-xl font-semibold text-gray-800 mb-6">
+              Payment Options
+            </h2>
+
+            {/* Type Selection */}
+            <div className="mb-8">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Refund Type
+              </label>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div
+                  className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all ${
+                    carry === 0
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200"
+                  } ${!isUPIBankAvl ? "opacity-50 cursor-not-allowed" : ""}`}
+                  onClick={() => isUPIBankAvl && setCarry(0)}
+                >
+                  <div className="flex items-center h-5">
+                    <input
+                      id="refund-option"
+                      name="refund-type"
+                      type="radio"
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      checked={carry === 0}
+                      onChange={() => setCarry(0)}
+                      disabled={!isUPIBankAvl}
+                    />
+                  </div>
+                  <div className="ml-3 flex flex-col">
+                    <span className="text-sm font-medium text-gray-900">
+                      Refund
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      Amount will be refunded to original payment method
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all ${
+                    carry === 1
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200"
+                  }`}
+                  onClick={() => setCarry(1)}
+                >
+                  <div className="flex items-center h-5">
+                    <input
+                      id="carry-forward-option"
+                      name="refund-type"
+                      type="radio"
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      checked={carry === 1}
+                      onChange={() => setCarry(1)}
+                    />
+                  </div>
+                  <div className="ml-3 flex flex-col">
+                    <span className="text-sm font-medium text-gray-900">
+                      Carry Forward
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      Amount will be credited to your account for future
+                      purchases
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {!isUPIBankAvl && (
+                <p className="mt-2 text-sm text-amber-600">
+                  Refund option is currently unavailable. Please select Carry
+                  Forward.
+                </p>
+              )}
+            </div>
+
+            {/* Payment Methods */}
+            <div className="mb-8">
+              <h3 className="text-lg font-medium text-gray-800 mb-4">
+                Payment Methods
+              </h3>
+
+              {paymentDetails?.data?.receiptDetails?.length > 0 ? (
+                <div className="bg-gray-50 rounded-lg divide-y divide-gray-200">
+                  {paymentDetails.data.receiptDetails.map((item, index) => (
+                    <div
+                      key={index}
+                      className="p-4 flex items-center justify-between"
+                    >
+                      <div className="flex items-center">
+                        <div className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-700 font-medium mr-3">
+                          {index + 1}
+                        </div>
+                        <div className="text-sm font-medium text-gray-700">
+                          {PaymentTypes[item.Type]}
+                        </div>
+                      </div>
+                      <div className="text-sm font-semibold text-neutral-700">
+                        ₹{item.Amount.toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Total row */}
+                  <div className="p-4 flex items-center justify-between bg-gray-100">
+                    <div className="text-sm font-medium text-gray-700">
+                      Total
+                    </div>
+                    <div className="text-lg font-bold text-neutral-700">
+                      ₹
+                      {paymentDetails.data.receiptDetails
+                        .reduce((sum, item) => sum + parseFloat(item.Amount), 0)
+                        .toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-6 bg-gray-50 rounded-lg">
+                  <p className="text-gray-500">No payment details available</p>
+                </div>
+              )}
+            </div>
+
+            {/* Cancel Invoice Button */}
+            <div className="flex justify-end">
+              <Button
+                variant="danger"
+                onClick={handleUpdateCanceInvoice}
+                isLoading={isCancelling}
+                disabled={isCancelling}
+              >
+                Cancel Invoice
+              </Button>
+            </div>
+          </div>
+        </Modal>
       </div>
     </div>
   );

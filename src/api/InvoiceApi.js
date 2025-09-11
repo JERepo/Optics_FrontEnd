@@ -4,7 +4,7 @@ import { customBaseQuery } from "./customBaseQuery";
 export const InvoiceApi = createApi({
   reducerPath: "InvoiceApi",
   baseQuery: customBaseQuery,
-  tagTypes: ["Invoice", "EInvoice"],
+  tagTypes: ["Invoice", "EInvoice", "CancelInvoice"],
   endpoints: (builder) => ({
     getPatients: builder.query({
       query: ({ companyId }) => ({
@@ -69,11 +69,13 @@ export const InvoiceApi = createApi({
       query: ({ id }) => ({
         url: `/api/v1/invoice/getbyid/${id}`,
       }),
+      providesTags: ["CancelInvoice"],
     }),
     getInvoiceDetails: builder.query({
       query: ({ detailId, locationId }) => ({
         url: `/api/v1/invoice/details/${detailId}?locationId=${locationId}`,
       }),
+      providesTags: ["CancelInvoice"],
     }),
     createEInvoice: builder.mutation({
       query: ({ companyId, userId, payload }) => ({
@@ -88,6 +90,20 @@ export const InvoiceApi = createApi({
         url: `/api/v1/einvoice?type=${type}&recordId=${id}`,
       }),
       providesTags: ["EInvoice"],
+    }),
+
+    getPaymentDetails: builder.query({
+      query: ({ id }) => ({
+        url: `/api/v1/invoice/PaymentDetails/${id}`,
+      }),
+    }),
+    cancelInvoice: builder.mutation({
+      query: ({ payload }) => ({
+        url: `/api/v1/invoice/cancel`,
+        method: "PUT",
+        body: payload,
+      }),
+      invalidatesTags: ["CancelInvoice"],
     }),
   }),
 });
@@ -104,4 +120,6 @@ export const {
   useGetInvoiceDetailsQuery,
   useCreateEInvoiceMutation,
   useGetEInvoiceDataQuery,
+  useGetPaymentDetailsQuery,
+  useCancelInvoiceMutation,
 } = InvoiceApi;

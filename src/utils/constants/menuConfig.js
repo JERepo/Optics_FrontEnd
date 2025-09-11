@@ -13,6 +13,8 @@ import {
   FiCornerUpLeft,
   FiFileMinus,
   FiGift,
+  FiRotateCcw,
+  FiTag,
 } from "react-icons/fi";
 import {
   IoPeopleOutline,
@@ -268,5 +270,17 @@ export const menuItems = [
         icon: IoConstructOutline, // Suggests building/setup
       }
     ],
+  },
+    {
+    name: "Customer Refund",
+    icon: FiRotateCcw,
+    module: "Customer-Refund",
+    path: "/customer-refund/create",
+  },
+   {
+    name: "Offer",
+    icon: FiTag,
+    module: "Offer",
+    path: "/offer/create",
   },
 ];

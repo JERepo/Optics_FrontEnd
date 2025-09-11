@@ -601,7 +601,7 @@ const CustomerSelect = () => {
       order.productType === 1 ||
       order.productType === 2
     ) {
-      return order.pricing?.sellingPrice || 0;
+      return order.pricing?.mrp || 0;
     } else if (order.productType === 3) {
       if (order.cLBatchCode === 0) {
         return order.priceMaster?.mrp || 0;
@@ -1776,6 +1776,7 @@ const BatchCode = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="flex flex-col gap-4">
+        <h4>To Bill Qty: {selectedOrder?.toBillQty}</h4>
         <div className="flex items-center gap-3">
           <Radio
             label="Select Batch Code"

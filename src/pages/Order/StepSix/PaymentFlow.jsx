@@ -55,8 +55,8 @@ const PaymentFlow = ({
     updateFullPayments,
     resetOrderContext,
   } = useOrder();
-  const { hasMultipleLocations, user } = useSelector((state) => state.auth);
 
+  const { hasMultipleLocations, user } = useSelector((state) => state.auth);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
   const [fullPaymentDetails, setFullPaymentDetails] = useState([]);
   const [newPayment, setNewPayment] = useState({
@@ -550,6 +550,7 @@ const PaymentFlow = ({
                 accounts={filteredBankAccounts}
                 advanceData={advanceData}
                 selectedPatient={selectedPatient}
+                remainingToPay={updatedDetails.RemainingToPay} // Add this prop
               />
 
               {updatedDetails.RemainingToPay > 0 && (
@@ -618,11 +619,12 @@ const MethodForm = ({
   accounts,
   advanceData,
   selectedPatient,
+  remainingToPay,
 }) => {
   if (!method) return null;
 
   const [gvCode, setGVCode] = useState(null);
-  const [gvData,setGVData] = useState(null)
+  const [gvData, setGVData] = useState(null);
   const [validateGiftVoucher, { isFetching: isValidating }] =
     useLazyValidateGiftVoucherQuery();
 
@@ -647,26 +649,52 @@ const MethodForm = ({
 
   const advances = advanceData?.data?.advances || [];
 
+  // const handleGIftVoucher = async (e) => {
+  //   e.preventDefault();
+  //   try {
+  //     const res = await validateGiftVoucher({
+  //       GVCode: gvCode,
+  //       // CustomerID: selectedPatient?.CustomerMaster?.Id ?? null,
+  //       CustomerID: null,
+  //     }).unwrap();
+  //     toast.success("Entered GVCode Valid");
+  //     setNewPayment((prev) => ({
+  //       ...prev,
+  //       GVCode: gvCode,
+  //     }));
+  //     setGVData(res?.data);
+  //   } catch (error) {
+  //     console.log(error);
+  //     toast.error("Entered GVCode Not Valid!");
+  //   }
+  // };
   const handleGIftVoucher = async (e) => {
     e.preventDefault();
     try {
       const res = await validateGiftVoucher({
         GVCode: gvCode,
-        // CustomerID: selectedPatient?.CustomerMaster?.Id ?? null,
-        CustomerID:null
+        CustomerID: null,
       }).unwrap();
       toast.success("Entered GVCode Valid");
+
+      // Calculate the amount to set
+      const balanceAmount = parseFloat(res?.data?.GVBalanceAmount) || 0;
+      const amountToSet =
+        parseFloat(balanceAmount) <= parseFloat(remainingToPay)
+          ? balanceAmount
+          : remainingToPay;
+
       setNewPayment((prev) => ({
         ...prev,
         GVCode: gvCode,
+        Amount: amountToSet, // Set the calculated amount
       }));
-      setGVData(res?.data)
+      setGVData(res?.data);
     } catch (error) {
       console.log(error);
       toast.error("Entered GVCode Not Valid!");
     }
   };
-
   return (
     <div className="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
@@ -924,11 +952,19 @@ const MethodForm = ({
                 advances.find((b) => b.Id === newPayment.advanceId) || null
               }
               onChange={(_, newValue) => {
+                // Calculate the amount to set
+                const balanceAmount = newValue?.BalanceAmount || 0;
+                const amountToSet =
+                  parseFloat(balanceAmount) <= parseFloat(remainingToPay)
+                    ? balanceAmount
+                    : remainingToPay;
+
                 setNewPayment((prev) => ({
                   ...prev,
                   advanceId: newValue?.Id ?? null,
                   RefNo: newValue?.ReferenceDetails ?? null,
                   advanceData: newValue || null,
+                  Amount: amountToSet, // Set the calculated amount
                 }));
               }}
               renderInput={(params) => (
@@ -965,13 +1001,21 @@ const MethodForm = ({
                 />
               </div>
               <div className="flex-1 min-w-0">
-                {/* Wrap commonAmountInput if it has fullWidth */}
-                <div className="w-full">{commonAmountInput}</div>
+                <div className="w-full">
+                  <Input
+                    label="Amount *"
+                    type="number"
+                    value={newPayment.Amount}
+                    onChange={handleInputChange("Amount")}
+                    error={errors.amount}
+                  />
+                </div>
               </div>
             </div>
           )}
         </div>
       )}
+
       {method === 7 && (
         <div>
           <form onSubmit={handleGIftVoucher} className="space-y-2">
@@ -1007,7 +1051,6 @@ const MethodForm = ({
           </form>
           {gvData && (
             <div className="flex gap-3 w-full mt-5">
-             
               <div className="flex-1 min-w-0">
                 <Input
                   label="Balance Amount"

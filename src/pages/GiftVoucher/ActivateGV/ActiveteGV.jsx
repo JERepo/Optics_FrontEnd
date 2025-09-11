@@ -10,6 +10,7 @@ import {
 } from "../../../api/giftVoucher";
 import toast from "react-hot-toast";
 import { Table, TableCell, TableRow } from "../../../components/Table";
+import { format } from "date-fns";
 
 const ActiveteGV = () => {
   const [gv, setGV] = useState(0);
@@ -172,18 +173,18 @@ const ActiveteGV = () => {
                 </div>
               </div>
             </div>
-             {selectedFile && (
-                <div className="mt-3 p-3 border rounded-lg bg-gray-50 w-1/2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">{selectedFile.name}</p>
-                      <p className="text-sm text-gray-600">
-                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
+            {selectedFile && (
+              <div className="mt-3 p-3 border rounded-lg bg-gray-50 w-1/2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{selectedFile.name}</p>
+                    <p className="text-sm text-gray-600">
+                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
             {gv === 0 && (
               <form onSubmit={handleCheckVoucher} className="space-y-2 mt-4">
                 <div className="flex flex-col gap-3">
@@ -237,8 +238,14 @@ const ActiveteGV = () => {
                       <TableRow key={`${item.GVCode}-${index}`}>
                         <TableCell>{index + 1}</TableCell>
                         <TableCell>{item.GVCode}</TableCell>
-                        <TableCell>{item.GVActivationDate}</TableCell>
-                        <TableCell>{item.GVExpiryDate}</TableCell>
+                        <TableCell>
+                          {item.GVActivationDate
+                            ? format(new Date(item.GVActivationDate), "dd/MM/yyyy")
+                            : "-"}
+                        </TableCell>
+                        <TableCell>{item.GVExpiryDate
+                            ? format(new Date(item.GVExpiryDate), "dd/MM/yyyy")
+                            : "-"}</TableCell>
                         <TableCell>
                           <button
                             onClick={() => handleDelete(item.GVCode, index)}
@@ -300,21 +307,20 @@ const ActiveteGV = () => {
               </div>
 
               {/* File info display */}
-             
             </div>
           )}
 
-{gv === 0 && 
-          <div className="mt-5">
-            <Button
-              onClick={handleActivateGV}
-              isLoading={isActivatingGV}
-              disabled={isActivatingGV}
-            >
-              Activate GV
-            </Button>
-          </div>
-}
+          {gv === 0 && (
+            <div className="mt-5">
+              <Button
+                onClick={handleActivateGV}
+                isLoading={isActivatingGV}
+                disabled={isActivatingGV}
+              >
+                Activate GV
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>
