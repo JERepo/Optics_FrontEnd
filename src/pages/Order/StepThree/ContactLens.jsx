@@ -244,6 +244,11 @@ const ContactLens = () => {
   const handleAdd = () => {
     if (!isFormValid()) return;
 
+    if (newItem.orderQty > newItem.avlQty) {
+      toast.error("Order Qty cannot exeed Avl Qty!");
+      return;
+    }
+
     const updatedItem = { ...newItem };
 
     const existingIndex = items.findIndex(
@@ -287,12 +292,15 @@ const ContactLens = () => {
         setNewItem({
           CLDetailId: data.CLDetailId,
           sphericalPower: data.SphericalPower || data.Spherical,
-          cylindricalPower: data.CylindricalPower ||  data.Cylindrical,
+          cylindricalPower: data.CylindricalPower || data.Cylindrical,
           axis: data.Axis,
           additional: data.Additional,
-          avlQty: parseInt(data.stock[0]?.quantity),
+          avlQty: data.stock?.reduce(
+            (sum, ite) => sum + parseInt(ite.quantity),
+            0
+          ),
           orderQty: data.DefaultOrderQty || 0,
-          sellingPrice:data?.CLBatchCode === 0? parseFloat(data.priceMaster?.sellingPrice) : parseFloat(data?.stock[0]?.sellingPrice),
+          sellingPrice: parseFloat(data.priceMaster?.sellingPrice),
         });
         setSearchFetched(true);
       } else {

@@ -101,7 +101,7 @@ const SelectOffer = () => {
       const payload = {
         OfferCode: offer.offerCode,
         OfferName: offer.offerDetails,
-        OfferType: 0,
+        OfferType: selectedOffer,
         LowerValue: 0,
         SamePower: 0,
         IsBrandOffer: offer.isBrandOffer,
@@ -119,9 +119,14 @@ const SelectOffer = () => {
         setCusomerOffer((prev) => ({
           ...prev,
           offerMainId: res?.data?.data?.Id,
+          selectedProduct: selectedOffer,
         }));
         toast.success("Offer created successfully");
-        goToOfferStep(2);
+        if (selectedOffer === 3) {
+          goToOfferStep(2);
+        } else if (selectedOffer === 4) {
+          goToOfferStep(4);
+        }
       }
     } catch (error) {
       console.log(error);

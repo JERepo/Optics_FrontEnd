@@ -162,6 +162,11 @@ const NewGV = ({
       toast.error("Please select atleast one location!")
       return;
     }
+
+    if(collectGiftAmount && !gvData.giftCode){
+      toast.error("Please add Gift Voucher Code!")
+      return;
+    }
     try {
       if (collectGiftAmount) {
         const payload = {
@@ -176,12 +181,10 @@ const NewGV = ({
           //"validityDays": 30,            // required if activateNow = false
           customerId: gvData.selectCustomer,
           ApplicationUserID: user.Id,
-          locationIds: selectedLocation, // array of locations to link voucher
+          locationIds: selectedLocation,
+          submit :true // array of locations to link voucher
         };
-
-        console.log("Collect Gift Amount Payload:", payload);
-        const res = await createGVForRefund({ payload }).unwrap();
-        handleAddGiftAmount({ ...res?.data });
+        handleAddGiftAmount({...payload });
         toast.success("Gift Voucher collected successfully!");
       } else {
         const payload = {
@@ -216,13 +219,13 @@ const NewGV = ({
           <div className="text-2xl text-neutral-700 font-semibold">
             New Gift Voucher
           </div>
-          {/* {!collectGiftAmount && (
+          {!collectGiftAmount && (
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
               <Button variant="outline" onClick={() => navigate(-1)}>
                 Back
               </Button>
             </div>
-          )} */}
+          )}
         </div>
         <div>
           <form onSubmit={handleGenerateCode} className="space-y-2 mt-4">

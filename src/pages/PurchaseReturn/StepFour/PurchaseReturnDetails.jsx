@@ -15,6 +15,9 @@ import {
   useGetPurchaseDetailsQuery,
 } from "../../../api/purchaseReturn";
 import { useSelector } from "react-redux";
+import { useCreateEInvoiceMutation } from "../../../api/InvoiceApi";
+import { useGetLocationByIdQuery } from "../../../api/roleManagementApi";
+import { useGetCompanyIdQuery } from "../../../api/customerApi";
 
 const getProductName = (item) => {
   const type = item.ProductType;
@@ -101,7 +104,7 @@ const getProductName = (item) => {
       : "";
 
     const lines = [
-      (productName) && `${productName}`,
+      productName && `${productName}`,
       specs ? `${specs}` : "",
       clean(colour) ? `Colour: ${clean(colour)}` : "",
       barcode ? `Barcode: ${barcode}` : "",
@@ -113,8 +116,6 @@ const getProductName = (item) => {
 
     return lines.filter(Boolean).join("\n");
   }
-
-  
 
   return "";
 };
@@ -168,7 +169,7 @@ const getPurchaseValue = (item) => {
 const CompleteStockTransfer = () => {
   const [comment, setComment] = useState("");
   const navigate = useNavigate();
-  const { user } = useSelector((state) => state.auth);
+  const { user, hasMultipleLocations } = useSelector((state) => state.auth);
   const [deletingId, setDeletingId] = useState(null);
 
   const {
@@ -177,7 +178,6 @@ const CompleteStockTransfer = () => {
     customerPurchase,
     purchaseDraftData,
   } = useOrder();
-
   const { data: purchaseDetails, isLoading: isPurchaseDetailsLoading } =
     useGetPurchaseDetailsQuery({
       mainId: purchaseDraftData.Id || purchaseDraftData[0].Id,
@@ -185,6 +185,20 @@ const CompleteStockTransfer = () => {
     });
 
   const [updatePR, { isLoading: isPRUpdating }] = useDeleteUpdatePRMutation();
+  const [createInvoice, { isLoading: isInvoiceCreating }] =
+    useCreateEInvoiceMutation();
+  const { data: locationById } = useGetLocationByIdQuery(
+    { id: parseInt(hasMultipleLocations[0]) },
+    { skip: !parseInt(hasMultipleLocations[0]) }
+  );
+  const companyId = locationById?.data?.data.Id;
+
+  const { data: companySettings } = useGetCompanyIdQuery(
+    { id: companyId },
+    { skip: !companyId }
+  );
+  const EInvoiceEnable = companySettings?.data?.data.EInvoiceEnable;
+  const InvInvoiceEnable = companySettings?.data?.data.DNEInvoiceEnable;
 
   const handleDeleteItem = async (id) => {
     setDeletingId(id);
@@ -230,7 +244,6 @@ const CompleteStockTransfer = () => {
     { totalQty: 0, totalGST: 0, totalBasicValue: 0, totalReturnValue: 0 }
   );
 
-  console.log(totals);
   const formattedTotals = {
     totalQty: totals.totalQty,
     totalGST: formatINR(totals.totalGST),
@@ -253,7 +266,25 @@ const CompleteStockTransfer = () => {
         locationId: customerPurchase.locationId,
         payload,
       }).unwrap();
-      console.log(payload);
+      const eInvoicePayload = {
+        recordId: purchaseDraftData.Id ?? null,
+        type: "purchaseReturn",
+      };
+      if (
+        customerPurchase?.customerData?.TAXRegisteration === 1 &&
+        InvInvoiceEnable === 1 &&
+        EInvoiceEnable === 1
+      ) {
+        try {
+          await createInvoice({
+            companyId: parseInt(hasMultipleLocations[0]),
+            userId: user.Id,
+            payload: eInvoicePayload,
+          }).unwrap();
+        } catch (error) {
+          console.log(error);
+        }
+      }
       toast.success("Purchase return successfully updated");
       navigate("/purchase-return");
     } catch (error) {

@@ -38,7 +38,14 @@ export const offerApi = createApi({
       query: ({ id }) => ({
         url: `/api/v1/optical-lens/gettreatment/${id}`
       })
-    })
+    }),
+    createOfferType4: builder.mutation({
+      query: (payload) => ({
+        url: `/api/v1/offer/create/OfferType4`,
+        method: "POST",
+        body: payload,
+      }),
+    }),
   }),
 });
 
@@ -48,5 +55,6 @@ export const {
   useSaveOfferProductMutation,
   useGetAddOnByBrandIdQuery,
   useGetCoatingsByBrandQuery,
-  useGetTreatmentsByBrandQuery
+  useGetTreatmentsByBrandQuery,
+  useCreateOfferType4Mutation
 } = offerApi;

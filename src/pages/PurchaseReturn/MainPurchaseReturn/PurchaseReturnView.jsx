@@ -260,7 +260,7 @@ const PurchaseReturnView = () => {
           <div>
             <Button
               variant="outline"
-              onClick={() => navigate("/stock-transfer")}
+              onClick={() => navigate("/purchase-return")}
             >
               Back
             </Button>
@@ -285,8 +285,8 @@ const PurchaseReturnView = () => {
               <Info
                 label="Address"
                 value={
-                  PRDetails?.data.data.Vendor.Address1 &&
-                  PRDetails?.data.data.Vendor.Landmark &&
+                  (PRDetails?.data.data.Vendor.Address1 &&
+                  PRDetails?.data.data.Vendor.Landmark) ||
                   PRDetails?.data.data.Vendor.City &&
                   `${PRDetails?.data.data.Vendor.Address1} ${PRDetails?.data.data.Vendor.Landmark} ${PRDetails?.data.data.Vendor.City}`
                 }

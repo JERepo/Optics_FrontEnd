@@ -68,7 +68,6 @@ const getProductName = (order) => {
     batchCode,
     expiry,
   } = order;
-  console.log("order", order);
   const clean = (val) => {
     if (
       val === null ||
@@ -230,6 +229,41 @@ const getProductName = (order) => {
   return "";
 };
 
+const getSRP = (item) => {
+  if (!item) {
+    return 0;
+  }
+
+  if (item.productType === 3) {
+    if (item.cLBatchCode === 0) {
+      return item.priceMaster?.mrp;
+    } else if (item.cLBatchCode === 1) {
+      return item.stock[0]?.mrp;
+    }
+    return 0;
+  }
+
+  if (item.productType === 1) {
+    if (item.cLBatchCode === 0) {
+      return item.pricing.mrp;
+    }
+    return 0;
+  }
+  if (item.productType === 2) {
+    if (item.cLBatchCode === 0) {
+      return item.pricing.mrp;
+    }
+    return 0;
+  }
+
+  if (item.productType === 0) {
+    if (item.cLBatchCode === 0) {
+      return item.pricing.mrp;
+    }
+    return 0;
+  }
+};
+
 const CustomerSelect = () => {
   const navigate = useNavigate();
   const {
@@ -257,6 +291,8 @@ const CustomerSelect = () => {
   const [loadingOrderId, setLoadingOrderId] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showConfirmModalInvoice, setShowConfirmInvoiceModal] = useState(false);
+  const [showByPassCheck, setShowByPassModal] = useState(false);
+  const [creditDays, setCreditDays] = useState(0);
 
   const { data: contactResp, isLoading: isPatientLoading } =
     useGetPatientsQuery({ companyId: hasMultipleLocations[0] });
@@ -268,6 +304,8 @@ const CustomerSelect = () => {
     { id: companyId },
     { skip: !companyId }
   );
+  const EInvoiceEnable = companySettings?.data?.data.EInvoiceEnable;
+  const InvInvoiceEnable = companySettings?.data?.data.INVEInvoiceEnable;
   const { data: customerData, isLoading: isCustomerLoading } =
     useGetCustomerByIdQuery(
       { id: selectedPatient?.CustomerMasterID },
@@ -329,14 +367,16 @@ const CustomerSelect = () => {
       return isAllowedStatus && hasStock;
     });
   }, [localProductData, hasMultipleLocations]);
-
   // Initialize product data
   useEffect(() => {
     if (productData) {
       const updatedProductData = productData.map((order) => ({
         ...order,
         toBillQty: order.orderQty - order.billedQty - order.cancelledQty,
-        sellingPrice: order.discountedSellingPrice || 0,
+        sellingPrice:
+          order.cLBatchCode === 0 && order.productType === 3
+            ? order.priceMaster?.sellingPrice
+            : order.discountedSellingPrice || 0,
         totalValue:
           (order.discountedSellingPrice || 0) *
           (order.orderQty - order.billedQty - order.cancelledQty),
@@ -567,15 +607,12 @@ const CustomerSelect = () => {
     ) {
       return order.pricing?.mrp || 0;
     } else if (order.productType === 3) {
-      if (order.cLBatchCode === 1) {
+      if (order.cLBatchCode === 0) {
         return order.priceMaster?.mrp || 0;
+      } else if (order.cLBatchCode === 1) {
+        return order.stock[0]?.mrp;
       }
-
-      const mrp = order.stock?.reduce(
-        (sum, item) => sum + parseFloat(item.mrp || 0),
-        0
-      );
-      return mrp;
+      return 0;
     } else {
       return 0;
     }
@@ -589,7 +626,6 @@ const CustomerSelect = () => {
       return [...prev, order.orderDetailId];
     });
   };
-
   const handleSelectAllProducts = (e) => {
     if (e.target.checked) {
       const allOrderIds = filteredProducts.map((order) => order.orderDetailId);
@@ -605,8 +641,8 @@ const CustomerSelect = () => {
       customerId: selectedPatient?.CustomerMaster?.Id,
     });
     if (
-      selectedPatient.CustomerMaster.CreditBilling === 1 &&
-      parseFloat(selectedPatient.CustomerMaster.CreditLimit) <= 0
+      customerData?.data?.data?.CreditBilling === 1 &&
+      parseFloat(customerData?.data?.data?.CustomerCreditLimit) <= 0
     ) {
       setShowConfirmModal(true);
     } else {
@@ -779,7 +815,6 @@ const CustomerSelect = () => {
         const idx = filteredProducts.findIndex(
           (x) => x.orderDetailId === missingItem.orderDetailId
         );
-        console.log("idx", idx);
         if (idx === -1) {
           continue;
         }
@@ -844,6 +879,8 @@ const CustomerSelect = () => {
           return "cash";
         case "advance":
           return "advance";
+        case "gift voucher":
+          return "giftVoucher";
         default:
           return type.toLowerCase();
       }
@@ -884,9 +921,15 @@ const CustomerSelect = () => {
           payments[typeKey].BankAccountID = payment.BankAccountID || null;
           payments[typeKey].ReferenceNo = payment.RefNo || "";
           break;
+        case "giftVoucher":
+          payments[typeKey].GVCode = payment.GVCode || null;
+          break;
+        // case "advance":
+        //   payments[typeKey].CustomerAdvanceIDs =
+        //     payment.CustomerAdvanceIDs || [];
+        //   break;
         case "advance":
-          payments[typeKey].CustomerAdvanceIDs =
-            payment.CustomerAdvanceIDs || [];
+          payments[typeKey].advanceId = payment.advanceId;
           break;
       }
     });
@@ -905,6 +948,8 @@ const CustomerSelect = () => {
       handleGenerateInvoice();
     }
   };
+
+  const handleByPassCheck = () => {};
 
   const handleGenerateInvoice = async () => {
     if (!validateBatchCodes()) {
@@ -941,7 +986,6 @@ const CustomerSelect = () => {
         const idx = filteredProducts.findIndex(
           (x) => x.orderDetailId === missingItem.orderDetailId
         );
-        console.log("idx", idx);
         if (idx === -1) {
           continue;
         }
@@ -994,8 +1038,9 @@ const CustomerSelect = () => {
       totalGSTValue: totalGst,
       totalValue: totalAmount,
       roundOff: 0.0,
-      balanceAmount: 0,
+      balanceAmount: totalBalance,
       applicationUserId: user.Id,
+      // bypassCreditCheck :
       creditBilling: selectedPatient?.CustomerMaster?.CreditBilling,
     };
     if (payload.creditBilling === 0) {
@@ -1005,15 +1050,14 @@ const CustomerSelect = () => {
     //  customerData use this
     try {
       const response = await generateInvoice({ payload }).unwrap();
-
       const eInvoicePayload = {
         recordId: response?.invoicemainid ?? null,
         type: "invoice",
       };
-
       if (
         customerData?.data?.data?.TAXRegisteration === 1 &&
-        customerData?.data?.data?.Company?.CompanyType === 1
+        EInvoiceEnable === 1 &&
+        InvInvoiceEnable === 1
       ) {
         try {
           await createInvoice({
@@ -1022,10 +1066,9 @@ const CustomerSelect = () => {
             payload: eInvoicePayload,
           }).unwrap();
         } catch (error) {
-          navigate("/invoice");
+          console.log(error);
         }
       }
-
       toast.success(response?.message);
       setFullPayments([]);
       updatePaymentDetails(null);
@@ -1038,7 +1081,6 @@ const CustomerSelect = () => {
       }
     }
   };
-
   return (
     <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-sm">
@@ -1314,9 +1356,7 @@ const CustomerSelect = () => {
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-700">
-                            ₹{formatINR(order.sellingPrice) || 0}
-                          </span>
+                          ₹{formatINR(order.sellingPrice) || 0}
                           {companySettings?.data?.data?.EditInvoicePrice ===
                             1 && (
                             <button
@@ -1463,6 +1503,8 @@ const CustomerSelect = () => {
                 isOpen={collectPayment}
                 onClose={() => setCollectPayment(false)}
                 collectPayment={collectPayment}
+                selectedPatient={selectedPatient}
+                companyId={parseInt(hasMultipleLocations[0])}
               />
 
               <div className="flex justify-end mt-4 gap-2">
@@ -1505,7 +1547,7 @@ const CustomerSelect = () => {
                           >
                             {customerData?.data?.data?.BillingMethod === 1
                               ? "Generate DC"
-                              : "Generate E-Invoice"}
+                              : "Generate Invoice"}
                           </Button>
                         )}
                       </div>
@@ -1559,6 +1601,19 @@ const CustomerSelect = () => {
             }}
             title="Credit Limit Warning!"
             message="Sufficient Credit Limit is not available for the customer. Do you wish to continue?"
+            confirmText="Yes, Proceed"
+            cancelText="Cancel"
+            danger={false}
+          />
+          <ConfirmationModal
+            isOpen={showByPassCheck}
+            onClose={() => setShowByPassModal(false)}
+            onConfirm={() => {
+              setShowByPassModal(false);
+              handleGenerateInvoice();
+            }}
+            title="Credit Check!"
+            message={`There are invoices which have crossed ${creditDays} days. Do you still wish to continue?`}
             confirmText="Yes, Proceed"
             cancelText="Cancel"
             danger={false}
@@ -1708,6 +1763,7 @@ const BatchCode = ({
           batchBarCode: batch.BatchBarCode,
           expiry: batch.Expiry,
           mrp: batch.MRP,
+          sellingPrice: batch.DiscountedSellingPrice,
           discountedSellingPrice: batch.DiscountedSellingPrice,
           availableQty: batch.AvailableQty,
           toBillQty: batch.ToBillQty,
@@ -1738,6 +1794,7 @@ const BatchCode = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="flex flex-col gap-4">
+        <h4>Total To Bill Qty: {selectedOrder?.toBillQty}</h4>
         <div className="flex items-center gap-3">
           <Radio
             label="Select Batch Code"
@@ -1872,10 +1929,21 @@ const BatchCode = ({
   );
 };
 
-const PaymentDetails = ({ isOpen, onClose, collectPayment }) => {
+const PaymentDetails = ({
+  isOpen,
+  onClose,
+  collectPayment,
+  selectedPatient,
+  companyId,
+}) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} width="max-w-5xl">
-      <PaymentFlow collectPayment={collectPayment} onClose={onClose} />
+      <PaymentFlow
+        collectPayment={collectPayment}
+        onClose={onClose}
+        selectedPatient={selectedPatient}
+        companyId={companyId}
+      />
     </Modal>
   );
 };

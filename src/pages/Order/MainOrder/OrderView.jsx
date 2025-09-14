@@ -274,7 +274,20 @@ const OrderView = () => {
           {customerDataById?.data.data?.CustomerMaster?.BillAddress1 && (
             <Info
               label="Customer Address"
-              value={`${customerDataById?.data.data?.CustomerMaster?.BillAddress1} ${customerDataById?.data.data?.CustomerMaster?.BillAddress2} ${customerDataById?.data.data?.CustomerMaster?.BillCity}`}
+              value={
+                (customerDataById?.data.data?.CustomerMaster?.BillAddress1 ||
+                  customerDataById?.data.data?.CustomerMaster?.BillAddress2) &&
+                customerDataById?.data.data?.CustomerMaster?.BillCity &&
+                `${
+                  customerDataById?.data.data?.CustomerMaster?.BillAddress1 ??
+                  ""
+                } ${
+                  customerDataById?.data.data?.CustomerMaster?.BillAddress2 ??
+                  ""
+                } ${
+                  customerDataById?.data.data?.CustomerMaster?.BillCity ?? ""
+                }`
+              }
             />
           )}
           <Info
@@ -308,10 +321,10 @@ const OrderView = () => {
                 <TableCell>₹{formatINR(order?.Rate)}</TableCell>
                 <TableCell>
                   <div className="flex flex-col items-center">
-                  <div>
-                    ₹{order?.DiscountValue ? `${order.DiscountValue}` : 0}
-                  </div>
-                  <div>({order.DiscountPercentage || 0}%)</div>
+                    <div>
+                      ₹{order?.DiscountValue ? `${order.DiscountValue}` : 0}
+                    </div>
+                    <div>({order.DiscountPercentage || 0}%)</div>
                   </div>
                 </TableCell>
                 <TableCell>

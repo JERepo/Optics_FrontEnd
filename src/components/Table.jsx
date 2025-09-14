@@ -32,9 +32,9 @@ export const Table = ({
                   key={index}
                   scope="col"
                   className={`px-4 py-3 min-h-[3.5rem] text-left text-xs font-medium text-neutral-500 uppercase tracking-wider align-top  ${
-                    expand && column === name
+                    (expand && column === name)
                       ? "min-w-[220px] max-w-[300px]"
-                      : ""
+                      : expand ? "min-w-[150px]" : ""
                   } ${freeze ? "sticky top-0 z-10 bg-blue-50" : ""}`} // Applied sticky to <th>
                 >
                   {typeof renderHeader === "function"

@@ -10,6 +10,7 @@ import {
 } from "../../../api/giftVoucher";
 import toast from "react-hot-toast";
 import { Table, TableCell, TableRow } from "../../../components/Table";
+import { addDays, format } from "date-fns";
 
 const ActiveteGV = () => {
   const [gv, setGV] = useState(0);
@@ -71,6 +72,8 @@ const ActiveteGV = () => {
       const res = await activateGV({ payload }).unwrap();
       if (res?.data) {
         toast.success(res?.data);
+        setItems([]);
+
       }
     } catch (error) {
       toast.error(error?.data?.error || error?.error || "Invalid Gift Voucher");
@@ -145,9 +148,9 @@ const ActiveteGV = () => {
             <div className="text-2xl text-neutral-700 font-semibold">
               Activate Gift Voucher
             </div>
-            <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+            {/* <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
               <Button variant="outline">Back</Button>
-            </div>
+            </div> */}
           </div>
 
           <div>
@@ -172,18 +175,18 @@ const ActiveteGV = () => {
                 </div>
               </div>
             </div>
-             {selectedFile && (
-                <div className="mt-3 p-3 border rounded-lg bg-gray-50 w-1/2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">{selectedFile.name}</p>
-                      <p className="text-sm text-gray-600">
-                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
+            {selectedFile && (
+              <div className="mt-3 p-3 border rounded-lg bg-gray-50 w-1/2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{selectedFile.name}</p>
+                    <p className="text-sm text-gray-600">
+                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
             {gv === 0 && (
               <form onSubmit={handleCheckVoucher} className="space-y-2 mt-4">
                 <div className="flex flex-col gap-3">
@@ -237,8 +240,17 @@ const ActiveteGV = () => {
                       <TableRow key={`${item.GVCode}-${index}`}>
                         <TableCell>{index + 1}</TableCell>
                         <TableCell>{item.GVCode}</TableCell>
-                        <TableCell>{item.GVActivationDate}</TableCell>
-                        <TableCell>{item.GVExpiryDate}</TableCell>
+                        <TableCell>
+                          {format(new Date(), "dd/MM/yyyy")}
+                        </TableCell>
+                        <TableCell>
+                          {item.GVValidityDays
+                            ? format(
+                                addDays(new Date(), item.GVValidityDays),
+                                "dd/MM/yyyy"
+                              )
+                            : "-"}
+                        </TableCell>
                         <TableCell>
                           <button
                             onClick={() => handleDelete(item.GVCode, index)}
@@ -300,21 +312,21 @@ const ActiveteGV = () => {
               </div>
 
               {/* File info display */}
-             
             </div>
           )}
 
-{gv === 0 && 
-          <div className="mt-5">
-            <Button
-              onClick={handleActivateGV}
-              isLoading={isActivatingGV}
-              disabled={isActivatingGV}
-            >
-              Activate GV
-            </Button>
-          </div>
-}
+          {gv === 0 && (
+            <div className="mt-5">
+              <Button
+                onClick={handleActivateGV}
+                isLoading={isActivatingGV}
+                disabled={isActivatingGV || items.length <= 0}
+                // className={`${items.length <= 0 ? "bg-neutral-100" : ""}`}
+              >
+                Activate GV
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

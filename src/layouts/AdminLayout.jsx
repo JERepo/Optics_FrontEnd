@@ -10,7 +10,7 @@ export default function AdminLayout() {
     <div className="bg-gray-100 min-h-screen">
       <AdminSidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
       <main
-        className={`flex-1 overflow-x-hidden transition-all duration-500 ${
+        className={`flex-1 transition-all duration-500 ${
           isCollapsed ? "ml-20" : "ml-64"
         }`}
       >

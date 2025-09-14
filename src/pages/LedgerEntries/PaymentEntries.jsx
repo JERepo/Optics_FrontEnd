@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useOrder } from "../../../features/OrderContext";
+import { useOrder } from "../../features/OrderContext";
 import {
   FiArrowLeft,
   FiTrash2,
@@ -8,23 +8,26 @@ import {
   FiSave,
   FiSearch,
 } from "react-icons/fi";
-import Button from "../../../components/ui/Button";
+import Button from "../../components/ui/Button";
 import { Autocomplete, TextField } from "@mui/material";
-import Input from "../../../components/Form/Input";
-import { Table, TableCell, TableRow } from "../../../components/Table";
-import { useGetAllPaymentMachinesQuery } from "../../../api/paymentMachineApi";
+import Input from "../../components/Form/Input";
+import { Table, TableCell, TableRow } from "../../components/Table";
+import { useGetAllPaymentMachinesQuery } from "../../api/paymentMachineApi";
 import { useSelector } from "react-redux";
-import { useGetAllBankMastersQuery } from "../../../api/bankMasterApi";
-import { useGetAllBankAccountsQuery } from "../../../api/BankAccountDetailsApi";
+import { useGetAllBankMastersQuery } from "../../api/bankMasterApi";
+import { useGetAllBankAccountsQuery } from "../../api/BankAccountDetailsApi";
 import { toast } from "react-hot-toast";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { isBefore, isAfter, subDays, startOfDay, format } from "date-fns";
-import { useSaveFinalPaymentMutation } from "../../../api/orderApi";
+import { useSaveFinalPaymentMutation } from "../../api/orderApi";
 import { useNavigate } from "react-router";
-import { useGetAdvanceDataForInvoiceQuery } from "../../../api/customerRefund";
-import { useLazyValidateGiftVoucherQuery } from "../../../api/giftVoucher";
+import { useGetAdvanceDataForInvoiceQuery } from "../../api/customerRefund";
+import { useLazyValidateGiftVoucherQuery } from "../../api/giftVoucher";
+import { formatINR } from "../../utils/formatINR";
+import { useSaveCustomerPaymentMutation } from "../../api/customerPayment";
+import Textarea from "../../components/Form/Textarea";
 
 const methods = [
   { value: 1, type: "Cash" },
@@ -36,24 +39,20 @@ const methods = [
   { value: 7, type: "Gift Voucher" },
 ];
 
-const PaymentFlow = ({
-  collectPayment,
-  onClose,
+const PaymentEntries = ({
+  totalValue,
+  amountToPay,
   selectedPatient,
-  companyId: InvoiceCompanyId,
+  companyId,
+  items,
 }) => {
   const navigate = useNavigate();
   const {
     goToStep,
     currentStep,
     paymentDetails,
-    customerId,
     fullPayments,
     setFullPayments,
-    setPaymentDetails,
-    updatePaymentDetails,
-    updateFullPayments,
-    resetOrderContext,
   } = useOrder();
 
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
@@ -80,10 +79,11 @@ const PaymentFlow = ({
     GVMasterID: null,
   });
   const [errors, setErrors] = useState({});
+  const [remarks, setRemarks] = useState("");
 
   const updatedDetails = useMemo(() => {
-    const total = paymentDetails?.TotalValue || 0;
-    const advance = paymentDetails?.totalAdvance || 0;
+    const total = totalValue || 0;
+    const advance = amountToPay || 0;
 
     const totalPaid =
       fullPayments?.length > 0
@@ -96,41 +96,23 @@ const PaymentFlow = ({
     // Round to 2 decimal places to avoid floating-point precision issues
     const remainingToPay = Number(Math.max(advance - totalPaid, 0).toFixed(2));
 
-    if (collectPayment) {
-      return {
-        TotalAmount: total,
-        AdvanceAmount: paymentDetails.advance,
-        BalanceAmount: advance,
-        RemainingToPay: remainingToPay,
-      };
-    } else {
-      return {
-        TotalAmount: total,
-        AdvanceAmount: advance,
-        BalanceAmount: total - advance,
-        RemainingToPay: remainingToPay,
-      };
-    }
+    return {
+      TotalAmount: total,
+      AdvanceAmount: advance,
+      BalanceAmount: total - advance,
+      RemainingToPay: remainingToPay,
+    };
   }, [paymentDetails, fullPaymentDetails, fullPayments]);
-
-  useEffect(() => {
-    if (updatedDetails?.RemainingToPay <= 0 && collectPayment) {
-      onClose();
-    }
-  }, [updatedDetails?.RemainingToPay]);
 
   const { data: paymentMachine } = useGetAllPaymentMachinesQuery();
   const { data: allbanks } = useGetAllBankMastersQuery();
   const { data: bankAccountDetails } = useGetAllBankAccountsQuery();
   const [saveFinalPayment, { isLoading: isFinalSaving }] =
-    useSaveFinalPaymentMutation();
+    useSaveCustomerPaymentMutation();
   const { data: advanceData } = useGetAdvanceDataForInvoiceQuery({
-    customerId: collectPayment
-      ? selectedPatient?.CustomerMaster?.Id
-      : customerId.customerId,
-    companyId: collectPayment ? InvoiceCompanyId : customerId?.companyId,
+    customerId: selectedPatient?.Id,
+    companyId: companyId,
   });
-
   const filteredCardPaymentMachines = paymentMachine?.data.data.filter(
     (p) =>
       p.MachineType === 0 &&
@@ -231,20 +213,24 @@ const PaymentFlow = ({
           payments[typeKey].BankAccountID = payment.BankAccountID || null;
           payments[typeKey].ReferenceNo = payment.RefNo || "";
           break;
-        case "advance":
-          payments[typeKey].CustomerAdvanceIDs =
-            payment.CustomerAdvanceIDs || [];
-          break;
-        //  case "advance":
-        //   payments[typeKey].advanceId = payment.advanceId;
+        // case "advance":
+        //   payments[typeKey].CustomerAdvanceIDs =
+        //     payment.CustomerAdvanceIDs || [];
         //   break;
+        case "advance":
+          payments[typeKey].advanceId = payment.advanceId;
+          break;
         // case "giftVoucher":
-        //   payments[typeKey].GVMasterID = payment.GVMasterID || null;
+        //   payments[typeKey].GVCode = payment.GVCode || null;
+        //   break;
+        case "giftVoucher":
+          payments[typeKey].GVMasterID = payment.GVMasterID || null;
       }
     });
 
     return payments;
   };
+
   const handleSave = async () => {
     if (updatedDetails.RemainingToPay > 0) {
       toast.error("Please cover the remaining balance before saving.");
@@ -257,34 +243,31 @@ const PaymentFlow = ({
     }
 
     const finalStructure = {
-      CompanyID: customerId.locationId,
+      companyId: parseInt(hasMultipleLocations[0]),
       CreatedBy: user.Id,
-      totalQty: paymentDetails.TotalQty,
-      totalGST: paymentDetails.TotalGSTValue,
-      totalValue: updatedDetails.TotalAmount,
-
-      AdvanceAmount: Object.entries(paymentDetails.advancedAmounts).map(
-        ([key, value]) => ({
-          detailid: Number(key),
-          Amount: Number(value),
-        })
-      ),
-      detailidwithoutadvance: paymentDetails?.withOutAdvance,
+      customerId: selectedPatient?.Id,
+      totalAmount: totalValue,
+      totalAmountToPay: amountToPay,
+      remark:"Advance collected from Customer payment",
       payments: preparePaymentsStructure(),
+      entries: items.map((item) => {
+        return {
+          InvoiceId: item.Invoice?.Id ?? null,
+          SalesReturnId: item?.salesMaster?.Id ?? null,
+          AmountToPay: parseFloat(item.AmountToPay),
+          Amount: parseFloat(item.Amount),
+        };
+      }),
     };
-
+    console.log("payload", finalStructure);
     try {
       await saveFinalPayment({
-        orderId: customerId.orderId,
         payload: finalStructure,
       }).unwrap();
-      toast.success("Order created Successfully");
-      resetOrderContext();
-      updatePaymentDetails([]);
-      setFullPaymentDetails([]);
-      updateFullPayments([]);
+      toast.success("Payments created Successfully");
+      navigate("/customer-payment");
 
-      navigate("/order-list");
+      // navigate("/order-list");
     } catch (error) {
       console.log("error");
       toast.error("Please try again!");
@@ -328,9 +311,9 @@ const PaymentFlow = ({
           const minDate = subDays(today, 90);
           const selectedDate = startOfDay(new Date(newPayment.ChequeDate));
 
-          if (isBefore(selectedDate, minDate) || isAfter(selectedDate, today)) {
+          if (isBefore(selectedDate, minDate)) {
             validationErrors.chequeDate =
-              "Cheque date must be within the past 90 days";
+              "Cheque date must be within the last 90 days or in the future";
           }
         }
         break;
@@ -370,18 +353,14 @@ const PaymentFlow = ({
     setErrors({});
     toast.success("Payment added successfully!");
   };
-
+  console.log("ite", items);
   const handleDeletePayment = (index) => {
     setFullPaymentDetails((prev) => prev.filter((_, i) => i !== index));
     toast.success("Payment removed successfully!");
   };
 
   const handlePaymentBack = () => {
-    if (collectPayment) {
-      onClose();
-    } else {
-      goToStep(currentStep - 1);
-    }
+    goToStep(currentStep - 1);
   };
 
   return (
@@ -394,47 +373,23 @@ const PaymentFlow = ({
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">
                   Payment Summary{" "}
-                  {!collectPayment && (
-                    <span className="ml-2 text-gray-500">
-                      (Step {currentStep})
-                    </span>
-                  )}
                 </h1>
                 <p className="text-gray-500 mt-1">
                   Review your payment details
                 </p>
               </div>
-              {!collectPayment && (
-                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                  <Button
-                    icon={FiArrowLeft}
-                    variant="outline"
-                    onClick={handlePaymentBack}
-                  >
-                    Back
-                  </Button>
-                </div>
-              )}
             </div>
 
             {/* Summary Cards */}
             <div className="mt-5 grid grid-cols-1 md:grid-cols-4 gap-4">
-              {Object.entries(updatedDetails).map(([key, value]) => (
-                <div
-                  key={key}
-                  className="bg-gray-50 rounded-lg p-4 border border-gray-200"
-                >
-                  <div className="text-gray-500 text-sm font-medium capitalize">
-                    {key.replace(/([A-Z])/g, " $1").trim()}
-                  </div>
-                  <div className="text-2xl font-semibold mt-2 text-neutral-700">
-                    ₹
-                    {value?.toLocaleString("en-IN", {
-                      minimumFractionDigits: 2,
-                    })}
-                  </div>
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="text-gray-500 text-sm font-medium capitalize">
+                  Remaining Amount To Pay
                 </div>
-              ))}
+                <div className="text-2xl font-semibold mt-2 text-neutral-700">
+                  ₹{formatINR(updatedDetails.RemainingToPay)}
+                </div>
+              </div>
             </div>
 
             {/* Payment Entries */}
@@ -524,6 +479,15 @@ const PaymentFlow = ({
                           ) || null
                         }
                         onChange={(_, newValue) => {
+                          if (
+                            newValue.value === 6 &&
+                            !advanceData?.data?.advances
+                          ) {
+                            toast.error(
+                              "No Advance Receipt data exists for this customer"
+                            );
+                            return;
+                          }
                           setSelectedPaymentMethod(newValue?.value || null);
                           setNewPayment((prev) => ({
                             ...prev,
@@ -560,8 +524,6 @@ const PaymentFlow = ({
                 advanceData={advanceData}
                 selectedPatient={selectedPatient}
                 remainingToPay={updatedDetails.RemainingToPay} // Add this prop
-                collectPayment={collectPayment}
-                customerId={customerId}
               />
 
               {updatedDetails.RemainingToPay > 0 && (
@@ -574,23 +536,20 @@ const PaymentFlow = ({
                   </Button>
                 </div>
               )}
-              {!collectPayment && (
-                <>
-                  {updatedDetails.RemainingToPay <= 0 &&
-                    fullPaymentDetails.length > 0 && (
-                      <div className="mt-4 flex justify-end">
-                        <Button
-                          isLoading={isFinalSaving}
-                          disabled={isFinalSaving}
-                          onClick={handleSave}
-                          className="flex items-center gap-2"
-                        >
-                          Complete Order
-                        </Button>
-                      </div>
-                    )}
-                </>
-              )}
+
+              {updatedDetails.RemainingToPay <= 0 &&
+                fullPaymentDetails.length > 0 && (
+                  <div className="mt-4 flex justify-end">
+                    <Button
+                      isLoading={isFinalSaving}
+                      disabled={isFinalSaving}
+                      onClick={handleSave}
+                      className="flex items-center gap-2"
+                    >
+                      Complete Order
+                    </Button>
+                  </div>
+                )}
 
               {updatedDetails.RemainingToPay > 0 &&
                 fullPaymentDetails.length > 0 && (
@@ -611,6 +570,15 @@ const PaymentFlow = ({
                   </div>
                 )}
             </div>
+            {fullPaymentDetails?.length > 0 && (
+              <div className="mt-5">
+                <Textarea
+                  label="Remarks"
+                  value={remarks || ""}
+                  onChange={(e) => setRemarks(e.target.value)}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -631,8 +599,6 @@ const MethodForm = ({
   advanceData,
   selectedPatient,
   remainingToPay,
-  collectPayment,
-  customerId,
 }) => {
   if (!method) return null;
 
@@ -640,6 +606,7 @@ const MethodForm = ({
   const [gvData, setGVData] = useState(null);
   const [validateGiftVoucher, { isFetching: isValidating }] =
     useLazyValidateGiftVoucherQuery();
+  const [partPaymentEnabled, setPartPaymentEnabled] = useState(false);
 
   const handleInputChange = (key) => (e) =>
     setNewPayment((prev) => ({ ...prev, [key]: e.target.value }));
@@ -651,6 +618,7 @@ const MethodForm = ({
       value={newPayment.Amount}
       onChange={handleInputChange("Amount")}
       error={errors.amount}
+      disabled={method === 7 ? partPaymentEnabled : false}
     />
   );
 
@@ -660,7 +628,10 @@ const MethodForm = ({
     );
   }, [accounts]);
 
-  const advances = advanceData?.data?.advances || [];
+  const advances =
+    advanceData?.data?.advances?.filter(
+      (item) => parseFloat(item.BalanceAmount) > 0
+    ) || [];
 
   // const handleGIftVoucher = async (e) => {
   //   e.preventDefault();
@@ -681,18 +652,22 @@ const MethodForm = ({
   //     toast.error("Entered GVCode Not Valid!");
   //   }
   // };
-  console.log("new payment",newPayment)
   const handleGIftVoucher = async (e) => {
     e.preventDefault();
     try {
       const res = await validateGiftVoucher({
         GVCode: gvCode,
-        CustomerID: collectPayment ? null : customerId.customerId,
+        CustomerID: selectedPatient?.Id || null,
       }).unwrap();
       toast.success("Entered GVCode Valid");
 
       // Calculate the amount to set
       const balanceAmount = parseFloat(res?.data?.GVBalanceAmount) || 0;
+      if (balanceAmount <= 0) {
+        toast.error("No Balance Amount in the entered Gift Voucher Code");
+        return;
+      }
+
       const amountToSet =
         parseFloat(balanceAmount) <= parseFloat(remainingToPay)
           ? balanceAmount
@@ -701,13 +676,16 @@ const MethodForm = ({
       setNewPayment((prev) => ({
         ...prev,
         GVCode: gvCode,
-        Amount: amountToSet,
-        GVMasterID: res?.data.ID, // Set the calculated amount
+        GVMasterID: res?.data.ID,
+        Amount: amountToSet, // Set the calculated amount
       }));
+      setPartPaymentEnabled(res?.data.PartPayment === 0);
       setGVData(res?.data);
     } catch (error) {
       console.log(error);
-      toast.error(error?.data?.message || "Entered GVCode Not Valid!");
+      toast.error(
+        error?.data?.message || "Entered GVCode Not Valid or Expired!"
+      );
     }
   };
   return (
@@ -880,14 +858,13 @@ const MethodForm = ({
                 label="Cheque Date *"
                 value={newPayment.ChequeDate}
                 onChange={(date) => {
-                  const today = startOfDay(new Date());
-                  const minDate = subDays(today, 90);
+                  const minDate = subDays(startOfDay(new Date()), 90);
 
                   if (date && isBefore(date, minDate)) {
                     setErrors((prev) => ({
                       ...prev,
                       chequeDate:
-                        "Cheque date must be within the last 90 days or in the future",
+                        "Cheque date must be within the last 90 days or future",
                     }));
                   } else {
                     setErrors((prev) => ({ ...prev, chequeDate: "" }));
@@ -1039,7 +1016,7 @@ const MethodForm = ({
                 htmlFor="barcode"
                 className="text-sm font-medium text-gray-700"
               >
-                Enter Gift Voucher Code
+                Enter Barcode
               </label>
               <div className="flex gap-2">
                 <div className="relative flex items-center">
@@ -1085,4 +1062,4 @@ const MethodForm = ({
   );
 };
 
-export default PaymentFlow;
+export default PaymentEntries;

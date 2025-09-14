@@ -1,30 +1,26 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { useOrder } from "../../../features/OrderContext";
-import {
-  FiArrowLeft,
-  FiTrash2,
-  FiPlus,
-  FiInfo,
-  FiSave,
-  FiSearch,
-} from "react-icons/fi";
-import Button from "../../../components/ui/Button";
+import React, { useState, useMemo } from "react";
+import { useOrder } from "../../features/OrderContext";
+import { FiArrowLeft, FiTrash2, FiPlus, FiInfo, FiSave } from "react-icons/fi";
+import Button from "../../components/ui/Button";
 import { Autocomplete, TextField } from "@mui/material";
-import Input from "../../../components/Form/Input";
-import { Table, TableCell, TableRow } from "../../../components/Table";
-import { useGetAllPaymentMachinesQuery } from "../../../api/paymentMachineApi";
+import Input from "../../components/Form/Input";
+import { Table, TableCell, TableRow } from "../../components/Table";
+import { useGetAllPaymentMachinesQuery } from "../../api/paymentMachineApi";
 import { useSelector } from "react-redux";
-import { useGetAllBankMastersQuery } from "../../../api/bankMasterApi";
-import { useGetAllBankAccountsQuery } from "../../../api/BankAccountDetailsApi";
+import { useGetAllBankMastersQuery } from "../../api/bankMasterApi";
+import { useGetAllBankAccountsQuery } from "../../api/BankAccountDetailsApi";
 import { toast } from "react-hot-toast";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { isBefore, isAfter, subDays, startOfDay, format } from "date-fns";
-import { useSaveFinalPaymentMutation } from "../../../api/orderApi";
+import {
+  useSaveAdvanceAmountMutation,
+  useSaveCustomerPaymentMutation,
+} from "../../api/customerPayment";
 import { useNavigate } from "react-router";
-import { useGetAdvanceDataForInvoiceQuery } from "../../../api/customerRefund";
-import { useLazyValidateGiftVoucherQuery } from "../../../api/giftVoucher";
+import { formatINR } from "../../utils/formatINR";
+import Textarea from "../../components/Form/Textarea";
 
 const methods = [
   { value: 1, type: "Cash" },
@@ -32,28 +28,23 @@ const methods = [
   { value: 3, type: "UPI" },
   { value: 4, type: "Cheque" },
   { value: 5, type: "Bank Transfer" },
-  { value: 6, type: "Advance" },
-  { value: 7, type: "Gift Voucher" },
 ];
 
-const PaymentFlow = ({
-  collectPayment,
-  onClose,
+const CollectAdvance = ({
+  totalValue,
+  amountToPay,
   selectedPatient,
-  companyId: InvoiceCompanyId,
+  companyId,
+  items,
+  collectPayment,
 }) => {
   const navigate = useNavigate();
   const {
     goToStep,
     currentStep,
     paymentDetails,
-    customerId,
     fullPayments,
     setFullPayments,
-    setPaymentDetails,
-    updatePaymentDetails,
-    updateFullPayments,
-    resetOrderContext,
   } = useOrder();
 
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
@@ -74,16 +65,14 @@ const PaymentFlow = ({
     EMI: false,
     EMIMonths: null,
     EMIBank: null,
-    advanceId: null,
-    advanceData: null,
-    GVCode: null,
-    GVMasterID: null,
   });
   const [errors, setErrors] = useState({});
+  const [advanceRefceNo, setAdvanceRefNo] = useState(null);
+  const [remarks, setRemarks] = useState("");
 
   const updatedDetails = useMemo(() => {
-    const total = paymentDetails?.TotalValue || 0;
-    const advance = paymentDetails?.totalAdvance || 0;
+    const total = totalValue || 0;
+    const advance = amountToPay || 0;
 
     const totalPaid =
       fullPayments?.length > 0
@@ -96,40 +85,19 @@ const PaymentFlow = ({
     // Round to 2 decimal places to avoid floating-point precision issues
     const remainingToPay = Number(Math.max(advance - totalPaid, 0).toFixed(2));
 
-    if (collectPayment) {
-      return {
-        TotalAmount: total,
-        AdvanceAmount: paymentDetails.advance,
-        BalanceAmount: advance,
-        RemainingToPay: remainingToPay,
-      };
-    } else {
-      return {
-        TotalAmount: total,
-        AdvanceAmount: advance,
-        BalanceAmount: total - advance,
-        RemainingToPay: remainingToPay,
-      };
-    }
+    return {
+      TotalAmount: total,
+      AdvanceAmount: advance,
+      BalanceAmount: total - advance,
+      RemainingToPay: remainingToPay,
+    };
   }, [paymentDetails, fullPaymentDetails, fullPayments]);
-
-  useEffect(() => {
-    if (updatedDetails?.RemainingToPay <= 0 && collectPayment) {
-      onClose();
-    }
-  }, [updatedDetails?.RemainingToPay]);
 
   const { data: paymentMachine } = useGetAllPaymentMachinesQuery();
   const { data: allbanks } = useGetAllBankMastersQuery();
   const { data: bankAccountDetails } = useGetAllBankAccountsQuery();
   const [saveFinalPayment, { isLoading: isFinalSaving }] =
-    useSaveFinalPaymentMutation();
-  const { data: advanceData } = useGetAdvanceDataForInvoiceQuery({
-    customerId: collectPayment
-      ? selectedPatient?.CustomerMaster?.Id
-      : customerId.customerId,
-    companyId: collectPayment ? InvoiceCompanyId : customerId?.companyId,
-  });
+    useSaveAdvanceAmountMutation();
 
   const filteredCardPaymentMachines = paymentMachine?.data.data.filter(
     (p) =>
@@ -156,15 +124,6 @@ const PaymentFlow = ({
       )
   );
 
-  useEffect(() => {
-    if (selectedPaymentMethod && updatedDetails.RemainingToPay > 0) {
-      setNewPayment((prev) => ({
-        ...prev,
-        Amount: Number(updatedDetails.RemainingToPay.toFixed(2)),
-      }));
-    }
-  }, [selectedPaymentMethod, updatedDetails.RemainingToPay]);
-
   const preparePaymentsStructure = () => {
     const payments = {};
 
@@ -180,10 +139,6 @@ const PaymentFlow = ({
           return "card";
         case "cash":
           return "cash";
-        case "advance":
-          return "advance";
-        case "gift voucher":
-          return "giftVoucher";
         default:
           return type.toLowerCase();
       }
@@ -195,12 +150,10 @@ const PaymentFlow = ({
       if (isNaN(amount)) return;
 
       if (typeKey === "cash") {
-        // Cash should be a single numeric value
         payments.cash = (payments.cash || 0) + amount;
         return;
       }
 
-      // Initialize only if not cash
       if (!payments[typeKey]) {
         payments[typeKey] = { amount: 0 };
       }
@@ -231,62 +184,40 @@ const PaymentFlow = ({
           payments[typeKey].BankAccountID = payment.BankAccountID || null;
           payments[typeKey].ReferenceNo = payment.RefNo || "";
           break;
-        case "advance":
-          payments[typeKey].CustomerAdvanceIDs =
-            payment.CustomerAdvanceIDs || [];
-          break;
-        //  case "advance":
-        //   payments[typeKey].advanceId = payment.advanceId;
-        //   break;
-        // case "giftVoucher":
-        //   payments[typeKey].GVMasterID = payment.GVMasterID || null;
       }
     });
 
     return payments;
   };
   const handleSave = async () => {
-    if (updatedDetails.RemainingToPay > 0) {
-      toast.error("Please cover the remaining balance before saving.");
+    if (selectedPatient?.CreditBilling === 0 && (!advanceRefceNo || advanceRefceNo.trim() === "")) {
+      toast.error("Please enter advance reference no!");
       return;
     }
-
-    if (fullPaymentDetails.length === 0 && updatedDetails.TotalAmount > 0) {
-      toast.error("Please add at least one payment method.");
+    if (selectedPatient?.CreditBilling === 0 && (!remarks || remarks.trim() === "")) {
+      toast.error("Please enter advance remarks!");
       return;
     }
 
     const finalStructure = {
-      CompanyID: customerId.locationId,
+      companyId: parseInt(hasMultipleLocations[0]),
       CreatedBy: user.Id,
-      totalQty: paymentDetails.TotalQty,
-      totalGST: paymentDetails.TotalGSTValue,
-      totalValue: updatedDetails.TotalAmount,
-
-      AdvanceAmount: Object.entries(paymentDetails.advancedAmounts).map(
-        ([key, value]) => ({
-          detailid: Number(key),
-          Amount: Number(value),
-        })
+      customerId: selectedPatient?.Id,
+      advanceAmount: fullPaymentDetails.reduce(
+        (sum, item) => sum + parseFloat(item.Amount),
+        0
       ),
-      detailidwithoutadvance: paymentDetails?.withOutAdvance,
       payments: preparePaymentsStructure(),
+      refdetail: advanceRefceNo,
+      remarks: remarks,
+      creditBilling: parseInt(selectedPatient?.CreditBilling),
     };
 
     try {
-      await saveFinalPayment({
-        orderId: customerId.orderId,
-        payload: finalStructure,
-      }).unwrap();
-      toast.success("Order created Successfully");
-      resetOrderContext();
-      updatePaymentDetails([]);
-      setFullPaymentDetails([]);
-      updateFullPayments([]);
-
-      navigate("/order-list");
+      await saveFinalPayment({ payload: finalStructure }).unwrap();
+      toast.success("Advance taken Successfully");
+      navigate("/customer-payment");
     } catch (error) {
-      console.log("error");
       toast.error("Please try again!");
     }
   };
@@ -299,8 +230,9 @@ const PaymentFlow = ({
     if (!newPayment.Amount || isNaN(newPayment.Amount)) {
       validationErrors.amount = "Please enter a valid amount";
     } else if (
+      !collectPayment &&
       Number(parseFloat(newPayment.Amount).toFixed(2)) >
-      Number(parseFloat(updatedDetails.RemainingToPay).toFixed(2))
+        Number(parseFloat(updatedDetails.RemainingToPay).toFixed(2))
     ) {
       validationErrors.amount = "Amount cannot exceed remaining balance";
     }
@@ -376,14 +308,6 @@ const PaymentFlow = ({
     toast.success("Payment removed successfully!");
   };
 
-  const handlePaymentBack = () => {
-    if (collectPayment) {
-      onClose();
-    } else {
-      goToStep(currentStep - 1);
-    }
-  };
-
   return (
     <div className="">
       <div className="max-w-8xl">
@@ -393,49 +317,27 @@ const PaymentFlow = ({
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">
-                  Payment Summary{" "}
-                  {!collectPayment && (
-                    <span className="ml-2 text-gray-500">
-                      (Step {currentStep})
-                    </span>
-                  )}
+                  Payment Summary
                 </h1>
                 <p className="text-gray-500 mt-1">
                   Review your payment details
                 </p>
               </div>
-              {!collectPayment && (
-                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                  <Button
-                    icon={FiArrowLeft}
-                    variant="outline"
-                    onClick={handlePaymentBack}
-                  >
-                    Back
-                  </Button>
-                </div>
-              )}
             </div>
 
-            {/* Summary Cards */}
-            <div className="mt-5 grid grid-cols-1 md:grid-cols-4 gap-4">
-              {Object.entries(updatedDetails).map(([key, value]) => (
-                <div
-                  key={key}
-                  className="bg-gray-50 rounded-lg p-4 border border-gray-200"
-                >
+            {/* Summary Cards - Only show if collectPayment is false */}
+            {!collectPayment && (
+              <div className="mt-5 grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <div className="text-gray-500 text-sm font-medium capitalize">
-                    {key.replace(/([A-Z])/g, " $1").trim()}
+                    Remaining Amount To Pay
                   </div>
                   <div className="text-2xl font-semibold mt-2 text-neutral-700">
-                    ₹
-                    {value?.toLocaleString("en-IN", {
-                      minimumFractionDigits: 2,
-                    })}
+                    ₹{formatINR(updatedDetails.RemainingToPay)}
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
 
             {/* Payment Entries */}
             {fullPaymentDetails?.length > 0 && (
@@ -503,49 +405,45 @@ const PaymentFlow = ({
 
             {/* Add Payment Method */}
             <div className="mt-8">
-              {!parseInt(updatedDetails.RemainingToPay) <= 0 && (
-                <>
-                  <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                    <FiPlus className="text-blue-500" />
-                    Add Payment Method
-                  </h2>
+              <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                <FiPlus className="text-blue-500" />
+                Add Payment Method
+              </h2>
 
-                  <div className="flex flex-col md:flex-row gap-4 items-center">
-                    <div className="text-lg text-neutral-700 font-medium">
-                      Choose Payment Method
-                    </div>
-                    <div className="w-full md:w-1/3">
-                      <Autocomplete
-                        options={methods}
-                        getOptionLabel={(option) => option.type}
-                        value={
-                          methods.find(
-                            (p) => p.value === selectedPaymentMethod
-                          ) || null
-                        }
-                        onChange={(_, newValue) => {
-                          setSelectedPaymentMethod(newValue?.value || null);
-                          setNewPayment((prev) => ({
-                            ...prev,
-                            Type: newValue?.type || "",
-                          }));
-                          setErrors({});
-                        }}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            placeholder="Select Payment method"
-                            size="small"
-                            error={!!errors.method}
-                            helperText={errors.method}
-                          />
-                        )}
-                        fullWidth
+              <div className="flex flex-col md:flex-row gap-4 items-center">
+                <div className="text-lg text-neutral-700 font-medium">
+                  Choose Payment Method
+                </div>
+                <div className="w-full md:w-1/3">
+                  <Autocomplete
+                    options={methods}
+                    getOptionLabel={(option) => option.type}
+                    value={
+                      methods.find((p) => p.value === selectedPaymentMethod) ||
+                      null
+                    }
+                    onChange={(_, newValue) => {
+                      setSelectedPaymentMethod(newValue?.value || null);
+                      setNewPayment((prev) => ({
+                        ...prev,
+                        Type: newValue?.type || "",
+                      }));
+                      setErrors({});
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        placeholder="Select Payment method"
+                        size="small"
+                        error={!!errors.method}
+                        helperText={errors.method}
                       />
-                    </div>
-                  </div>
-                </>
-              )}
+                    )}
+                    fullWidth
+                  />
+                </div>
+              </div>
+
               {/* Method-Specific Forms */}
               <MethodForm
                 method={selectedPaymentMethod}
@@ -557,42 +455,32 @@ const PaymentFlow = ({
                 UPIMachine={filteredUpiPaymentMachines}
                 banks={allbanks?.data.data || []}
                 accounts={filteredBankAccounts}
-                advanceData={advanceData}
-                selectedPatient={selectedPatient}
-                remainingToPay={updatedDetails.RemainingToPay} // Add this prop
-                collectPayment={collectPayment}
-                customerId={customerId}
               />
 
-              {updatedDetails.RemainingToPay > 0 && (
+              <div className="mt-4 flex justify-end">
+                <Button
+                  onClick={handleAddPayment}
+                  className="flex items-center gap-2"
+                >
+                  <FiPlus /> Add Payment
+                </Button>
+              </div>
+
+              {fullPaymentDetails.length > 0 && (
                 <div className="mt-4 flex justify-end">
                   <Button
-                    onClick={handleAddPayment}
+                    isLoading={isFinalSaving}
+                    disabled={isFinalSaving}
+                    onClick={handleSave}
                     className="flex items-center gap-2"
                   >
-                    <FiPlus /> Add Payment
+                    Complete Order
                   </Button>
                 </div>
               )}
-              {!collectPayment && (
-                <>
-                  {updatedDetails.RemainingToPay <= 0 &&
-                    fullPaymentDetails.length > 0 && (
-                      <div className="mt-4 flex justify-end">
-                        <Button
-                          isLoading={isFinalSaving}
-                          disabled={isFinalSaving}
-                          onClick={handleSave}
-                          className="flex items-center gap-2"
-                        >
-                          Complete Order
-                        </Button>
-                      </div>
-                    )}
-                </>
-              )}
 
-              {updatedDetails.RemainingToPay > 0 &&
+              {!collectPayment &&
+                updatedDetails.RemainingToPay > 0 &&
                 fullPaymentDetails.length > 0 && (
                   <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3">
                     <FiInfo className="text-yellow-500 mt-1 flex-shrink-0" />
@@ -611,6 +499,19 @@ const PaymentFlow = ({
                   </div>
                 )}
             </div>
+            {selectedPatient?.CreditBilling === 0 && 
+            <div className="mt-5 grid grid-cols-2 gap-5 w-full">
+              <Textarea
+                label="Advance Reference No *"
+                value={advanceRefceNo || ""}
+                onChange={(e) => setAdvanceRefNo(e.target.value)}
+              />
+              <Textarea
+                label="Advance Remarks *"
+                value={remarks || ""}
+                onChange={(e) => setRemarks(e.target.value)}
+              />
+            </div>}
           </div>
         </div>
       </div>
@@ -628,18 +529,8 @@ const MethodForm = ({
   cardMachines,
   banks,
   accounts,
-  advanceData,
-  selectedPatient,
-  remainingToPay,
-  collectPayment,
-  customerId,
 }) => {
   if (!method) return null;
-
-  const [gvCode, setGVCode] = useState(null);
-  const [gvData, setGVData] = useState(null);
-  const [validateGiftVoucher, { isFetching: isValidating }] =
-    useLazyValidateGiftVoucherQuery();
 
   const handleInputChange = (key) => (e) =>
     setNewPayment((prev) => ({ ...prev, [key]: e.target.value }));
@@ -660,56 +551,6 @@ const MethodForm = ({
     );
   }, [accounts]);
 
-  const advances = advanceData?.data?.advances || [];
-
-  // const handleGIftVoucher = async (e) => {
-  //   e.preventDefault();
-  //   try {
-  //     const res = await validateGiftVoucher({
-  //       GVCode: gvCode,
-  //       // CustomerID: selectedPatient?.CustomerMaster?.Id ?? null,
-  //       CustomerID: null,
-  //     }).unwrap();
-  //     toast.success("Entered GVCode Valid");
-  //     setNewPayment((prev) => ({
-  //       ...prev,
-  //       GVCode: gvCode,
-  //     }));
-  //     setGVData(res?.data);
-  //   } catch (error) {
-  //     console.log(error);
-  //     toast.error("Entered GVCode Not Valid!");
-  //   }
-  // };
-  console.log("new payment",newPayment)
-  const handleGIftVoucher = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await validateGiftVoucher({
-        GVCode: gvCode,
-        CustomerID: collectPayment ? null : customerId.customerId,
-      }).unwrap();
-      toast.success("Entered GVCode Valid");
-
-      // Calculate the amount to set
-      const balanceAmount = parseFloat(res?.data?.GVBalanceAmount) || 0;
-      const amountToSet =
-        parseFloat(balanceAmount) <= parseFloat(remainingToPay)
-          ? balanceAmount
-          : remainingToPay;
-
-      setNewPayment((prev) => ({
-        ...prev,
-        GVCode: gvCode,
-        Amount: amountToSet,
-        GVMasterID: res?.data.ID, // Set the calculated amount
-      }));
-      setGVData(res?.data);
-    } catch (error) {
-      console.log(error);
-      toast.error(error?.data?.message || "Entered GVCode Not Valid!");
-    }
-  };
   return (
     <div className="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
@@ -955,134 +796,8 @@ const MethodForm = ({
           </>
         )}
       </div>
-      {method === 6 && (
-        <div className="w-full">
-          <div className="w-1/2 mb-5">
-            <Autocomplete
-              options={advances}
-              getOptionLabel={(option) =>
-                `${option.ReferenceDetails ?? ""}-${option.Remarks ?? ""}`
-              }
-              value={
-                advances.find((b) => b.Id === newPayment.advanceId) || null
-              }
-              onChange={(_, newValue) => {
-                // Calculate the amount to set
-                const balanceAmount = newValue?.BalanceAmount || 0;
-                const amountToSet =
-                  parseFloat(balanceAmount) <= parseFloat(remainingToPay)
-                    ? balanceAmount
-                    : remainingToPay;
-
-                setNewPayment((prev) => ({
-                  ...prev,
-                  advanceId: newValue?.Id ?? null,
-                  RefNo: newValue?.ReferenceDetails ?? null,
-                  advanceData: newValue || null,
-                  Amount: amountToSet, // Set the calculated amount
-                }));
-              }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Select Reference No"
-                  size="small"
-                />
-              )}
-              fullWidth
-            />
-          </div>
-          {newPayment?.advanceData && (
-            <div className="flex gap-3 w-full">
-              <div className="flex-1 min-w-0">
-                <Input
-                  label="Date"
-                  value={
-                    newPayment?.advanceData?.AdvanceDate
-                      ? format(
-                          new Date(newPayment?.advanceData?.AdvanceDate),
-                          "dd/MM/yyyy"
-                        )
-                      : ""
-                  }
-                  readOnly
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                <Input
-                  label="Balance Amount"
-                  value={newPayment?.advanceData?.BalanceAmount}
-                  readOnly
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="w-full">
-                  <Input
-                    label="Amount *"
-                    type="number"
-                    value={newPayment.Amount}
-                    onChange={handleInputChange("Amount")}
-                    error={errors.amount}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {method === 7 && (
-        <div>
-          <form onSubmit={handleGIftVoucher} className="space-y-2">
-            <div className="flex flex-col gap-3">
-              <label
-                htmlFor="barcode"
-                className="text-sm font-medium text-gray-700"
-              >
-                Enter Gift Voucher Code
-              </label>
-              <div className="flex gap-2">
-                <div className="relative flex items-center">
-                  <input
-                    id="barcode"
-                    type="text"
-                    value={gvCode}
-                    onChange={(e) => setGVCode(e.target.value)}
-                    placeholder="Scan or enter barcode"
-                    className="w-[400px] pl-10 pr-4 py-3 border border-gray-300 rounded-lg"
-                  />
-                  <FiSearch className="absolute left-3 text-gray-400" />
-                </div>
-
-                <Button
-                  type="submit"
-                  isLoading={isValidating}
-                  disabled={isValidating}
-                >
-                  Search
-                </Button>
-              </div>
-            </div>
-          </form>
-          {gvData && (
-            <div className="flex gap-3 w-full mt-5">
-              <div className="flex-1 min-w-0">
-                <Input
-                  label="Balance Amount"
-                  value={gvData?.GVBalanceAmount}
-                  readOnly
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                {/* Wrap commonAmountInput if it has fullWidth */}
-                <div className="w-full">{commonAmountInput}</div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 };
 
-export default PaymentFlow;
+export default CollectAdvance;

@@ -400,17 +400,39 @@ const AccessoryFrame = () => {
       )
     );
   };
-  const toggleEditMode = (id, index, field) => {
-    setEditMode((prev) => {
-      const key = `${id}-${index}`;
-      const currentMode = prev[key]?.[field];
+const toggleEditMode = (id, index, field, action) => {
+  setEditMode((prev) => {
+    const key = `${id}-${index}`;
+    const currentMode = prev[key]?.[field];
 
+    // If entering edit mode, store the current price as originalPrice
+    if (!currentMode) {
+      const item = items.find((i, idx) => i.Id === id && idx === index);
+      let originalPrice = prev[key]?.originalPrice;
+      if (field === "sellingPrice" && referenceApplicable === 0) {
+        originalPrice = item.SellingPrice || item.MRP;
+      } else if (field === "returnPrice" && referenceApplicable === 1) {
+        originalPrice = item.ReturnPricePerUnit || item.ActualSellingPrice;
+      }
+
+      return {
+        ...prev,
+        [key]: {
+          ...prev[key],
+          [field]: true,
+          originalPrice,
+        },
+      };
+    }
+
+    // If exiting edit mode
+    if (currentMode) {
       if (
-        currentMode &&
         field === "sellingPrice" &&
-        referenceApplicable === 0
+        referenceApplicable === 0 &&
+        action === "cancel"
       ) {
-        // Revert to original price or MRP if canceling
+        // Revert to original price on cancel
         setItems((prevItems) =>
           prevItems.map((i, idx) =>
             i.Barcode === id && idx === index
@@ -419,11 +441,11 @@ const AccessoryFrame = () => {
           )
         );
       } else if (
-        currentMode &&
         field === "returnPrice" &&
-        referenceApplicable === 1
+        referenceApplicable === 1 &&
+        action === "cancel"
       ) {
-        // Revert to original price or ActualSellingPrice if canceling
+        // Revert to original price on cancel
         setItems((prevItems) =>
           prevItems.map((i, idx) =>
             i.Id === id && idx === index
@@ -441,12 +463,22 @@ const AccessoryFrame = () => {
         ...prev,
         [key]: {
           ...prev[key],
-          [field]: !currentMode,
-          originalPrice: prev[key]?.originalPrice, // Preserve original price
+          [field]: false,
+          originalPrice: prev[key].originalPrice, // Preserve original price
         },
       };
-    });
-  };
+    }
+
+    return {
+      ...prev,
+      [key]: {
+        ...prev[key],
+        [field]: !currentMode,
+        originalPrice: prev[key]?.originalPrice,
+      },
+    };
+  });
+};
 
   const handleConfirmBypassWarnings = async () => {
     if (!warningPayload) return;

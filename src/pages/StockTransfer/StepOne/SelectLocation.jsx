@@ -78,7 +78,9 @@ const SelectLocation = () => {
         ...prev,
         inState: response?.data.draft.InState,
       }));
-      setStockDraftData(response?.data.data);
+      // setStockDraftData(response?.data.data);
+        setStockDraftData(response?.data?.draft);
+
       goToStockStep(2);
     } catch (error) {
       toast.error(error.data.error.message);

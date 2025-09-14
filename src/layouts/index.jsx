@@ -84,6 +84,10 @@ import StockTransferIn from "../pages/StockTransferIn/MainStockTransferIn/StockT
 import StockTransferInView from "../pages/StockTransferIn/MainStockTransferIn/StockTransferInView";
 import SelectCustomer from "../pages/CustomerRefund/SelectCustomer";
 import OfferModule from "../pages/Offer";
+import SearchFrameStock from "../pages/SearchStock/SearchFrameStock";
+import CustomerPayment from "../pages/LedgerEntries/CustomerPayment";
+import CustomerPaymentList from "../pages/LedgerEntries/CustomerPaymentList";
+import CustomerPaymentView from "../pages/LedgerEntries/CustomerPaymentView";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -811,6 +815,22 @@ export const router = createBrowserRouter([
       {
         path :"offer/create",
         element : <OfferModule />
+      },
+      {
+        path:"search-stock/frame",
+        element : <SearchFrameStock />
+      },
+      {
+        path : "customer-payment/create",
+        element : <CustomerPayment />
+      },
+      {
+        path : "customer-payment",
+        element : <CustomerPaymentList />
+      },
+      {
+        path :"customer-payment/view",
+        element : <CustomerPaymentView />
       }
     ],
   },

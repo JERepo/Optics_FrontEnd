@@ -13,6 +13,9 @@ import {
   FiCornerUpLeft,
   FiFileMinus,
   FiGift,
+  FiRotateCcw,
+  FiTag,
+  FiBook,
 } from "react-icons/fi";
 import {
   IoPeopleOutline,
@@ -267,6 +270,32 @@ export const menuItems = [
         module: "Gift-Voucher",
         icon: IoConstructOutline, // Suggests building/setup
       }
+    ],
+  },
+    {
+    name: "Customer Refund",
+    icon: FiRotateCcw,
+    module: "Customer-Refund",
+    path: "/customer-refund/create",
+  },
+   {
+    name: "Offer",
+    icon: FiTag,
+    module: "Offer",
+    path: "/offer/create",
+  },
+   {
+    name: "Ledger Entries",
+    icon: FiBook,
+    module: "Customer-Payment",
+    subItems: [
+      {
+        name: "Customer Payment",
+        path: "customer-payment",
+        module: "Customer-Payment",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+     
     ],
   },
 ];
