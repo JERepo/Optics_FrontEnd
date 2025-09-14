@@ -55,7 +55,7 @@ export const grnApi = createApi({
             })
         }),
         checkSupplierOrderNo: builder.query({
-            query: ({vendorOrderNo, vendorId, companyId}) => ({
+            query: ({ vendorOrderNo, vendorId, companyId }) => ({
                 url: `/api/v1/grn/check-unique-order/${vendorOrderNo}/${vendorId}/${companyId}`,
                 method: 'GET'
             })
@@ -72,6 +72,43 @@ export const grnApi = createApi({
                 url: `/api/v1/grn/update-grn-main`,
                 method: 'POST',
                 body: payload
+            })
+        }),
+        getFrameByBarcode: builder.query({
+            query: ({ barcode, locationId, vendorId, productType }) => ({
+                url: `/api/v1/grn/get-frame-bybarcode?barcode=${barcode}&locationId=${locationId}&vendorId=${vendorId ?? null}&createdCompanyId=${locationId ?? null}&productType=${productType ?? null}`,
+                method: 'GET'
+            })
+        }),
+        getFrameByBrandModel: builder.query({
+            query: ({ brand, search, locationId, vendorId, productType }) => ({
+                url: `/api/v1/grn/get-frame-byBrandModel?brand=${brand}&search=${search}&locationId=${locationId}&vendorId=${vendorId ?? null}&createdCompanyId=${locationId ?? null}&productType=${productType ?? null}`,
+                method: 'GET'
+            })
+        }),
+        getAccessoryByBarcode: builder.query({
+            query: ({ barcode, locationId, vendorId, productType }) => ({
+                url: `/api/v1/grn/get-accessory-bybarcode?barcode=${barcode}&locationId=${locationId}&vendorId=${vendorId ?? null}&createdCompanyId=${locationId ?? null}&productType=${productType ?? null}`,
+                method: 'GET'
+            })
+        }),
+        getAccessoryByBrandProductName: builder.query({
+            query: ({ brand, product, locationId, vendorId, productType }) => ({
+                url: `/api/v1/grn/get-accessory-bybrandProduct?brand=${brand}&product=${product}&locationId=${locationId}&vendorId=${vendorId ?? null}&createdCompanyId=${locationId ?? null}&productType=${productType ?? null}`,
+                method: 'GET'
+            })
+        }),
+        getGRNPOdetailsById: builder.mutation({
+            query: (payload) => ({
+                url: `/api/v1/grn/get-frame-bydetailId`,
+                method: 'POST',
+                body: payload
+            })
+        }),
+        checkGRNQtyValidation: builder.query({
+            query: ({ PODetailsId, GRNQty, grnMainId }) => ({
+                url: `/api/v1/grn/update-grn-qty?PODetailsId=${PODetailsId}&GRNQty=${GRNQty}&grnMainId=${grnMainId}`,
+                method: 'GET'
             })
         })
     })
@@ -90,5 +127,11 @@ export const {
     useGetOrderDetailsByorderDetasilIdMutation,
     useCheckSupplierOrderNoQuery,
     useGetGRNMainMutation,
-    useUpdateGRNMainMutation
+    useUpdateGRNMainMutation,
+    useLazyGetFrameByBarcodeQuery,
+    useLazyGetFrameByBrandModelQuery,
+    useLazyGetAccessoryByBarcodeQuery,
+    useLazyGetAccessoryByBrandProductNameQuery,
+    useGetGRNPOdetailsByIdMutation,
+    useLazyCheckGRNQtyValidationQuery
 } = grnApi;

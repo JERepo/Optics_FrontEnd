@@ -5,6 +5,8 @@ import GRNStep2 from "./GRNStep2";
 import { ArrowLeft } from "lucide-react";
 import GRNStep3 from "./GRNStep3";
 import GRNStep4 from "./GRNStep4";
+import GRNStep3AgainstPO from "./GRNStep3AgainstPO";
+import GRNStep4AgainstPO from "./GRNStep4AgainstPO";
 
 export default function GRNMain() {
     // Context
@@ -17,8 +19,10 @@ export default function GRNMain() {
             case 2:
                 return <GRNStep2 />;
             case 3:
-                return <GRNStep3 />;
+                return (grnData?.step1?.againstPO ? <GRNStep3AgainstPO /> : <GRNStep3 />);
             case 4:
+                return (grnData?.step1?.againstPO ? <GRNStep4AgainstPO /> : <GRNStep4 />);
+            case 5:
                 return <GRNStep4 />;
             default:
                 return <GRNStep1 />;

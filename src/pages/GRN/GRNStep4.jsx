@@ -33,7 +33,12 @@ export default function GRNStep4() {
             companyId: grnData?.step1?.selectedLocation,
             vendorId: grnData?.step1?.selectedVendor,
             againstPo: grnData?.step1?.againstPO,
-            applicationUserId: user?.Id
+            applicationUserId: user?.Id,
+
+        }
+
+        if(grnData?.step1?.GrnMainId){
+            payload.grnMain = grnData?.step1?.GrnMainId;
         }
 
         try {
@@ -142,7 +147,7 @@ export default function GRNStep4() {
     // UseEffects ---------------------------------------------------------------------------------
 
     useEffect(() => {
-        if (currentStep === 4) {
+        if (currentStep === 4 || currentStep === 5) {
             fetchGRNDetails();
         }
     }, currentStep)

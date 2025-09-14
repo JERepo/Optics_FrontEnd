@@ -208,7 +208,29 @@ export default function GRNStep1() {
                     docDate: formState.documentDate
                 }
 
-                await updateGRNMain(grnMainPayload);
+                const grnResponse = await updateGRNMain(grnMainPayload);
+
+                console.log("grnResponse ---------------- ", grnResponse);
+
+                // console.log("Grn REsponse ================== ", grnResponse.data.status);
+                if (grnResponse.data.status === 'success') {
+                    const body = {
+                        companyId: selectedLocation,
+                        vendorId: formState?.vendorDetails?.Id,
+                        againstPo: formState?.againstPO,
+                        applicationUserId: user?.Id,
+                        grnMain: grnData?.step1?.GrnMainId,
+                        status: 0
+                    }
+
+                    const grnDataResponse = await getGRNDetails(body);
+                    console.log("grnDataResponse --------------- ", grnDataResponse.data.data);
+
+                    if (grnDataResponse?.data?.data && grnDataResponse?.data?.data.length > 0) {
+                        setCurrentStep(5);
+                        return;
+                    }
+                }
 
                 nextStep();
                 return;
@@ -218,7 +240,8 @@ export default function GRNStep1() {
                 companyId: selectedLocation,
                 vendorId: formState?.vendorDetails?.Id,
                 againstPo: formState?.againstPO,
-                applicationUserId: user?.Id
+                applicationUserId: user?.Id,
+                // grnMain: grnData?.step1?.GrnMainId 
             }
 
             console.log("fetchGRNDetails payload -------------- ", payload);
@@ -240,7 +263,7 @@ export default function GRNStep1() {
                         againstPO: formState?.againstPO
                     }
                 }));
-                // setCurrentStep(4);
+                // setCurrentStep(5);
                 // return;
                 // return;
                 // setGrnViewDetails(response?.data?.data || []);

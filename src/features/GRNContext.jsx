@@ -26,7 +26,7 @@ export const GRNProvider = ({ children }) => {
       productType: null,
     },
     step3: {
-      // Add step3 specific data
+      GRNAgainstPOorderType: null,
     },
     step4: {
       // Add step4 specific data
@@ -46,6 +46,13 @@ export const GRNProvider = ({ children }) => {
     setGRNData(prev => ({
       ...prev,
       step2: { ...prev.step2, ...data }
+    }));
+  };
+
+  const updateStep3Data = (data) => {
+    setGRNData(prev => ({
+      ...prev,
+      step3: { ...prev.step3, ...data }
     }));
   };
 
@@ -82,6 +89,7 @@ export const GRNProvider = ({ children }) => {
     setCurrentStep,
     updateStep1Data,
     updateStep2Data,
+    updateStep3Data,
     nextStep,
     prevStep,
     resetGRN
