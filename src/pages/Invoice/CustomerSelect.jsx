@@ -291,6 +291,8 @@ const CustomerSelect = () => {
   const [loadingOrderId, setLoadingOrderId] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showConfirmModalInvoice, setShowConfirmInvoiceModal] = useState(false);
+  const [showByPassCheck, setShowByPassModal] = useState(false);
+  const [creditDays, setCreditDays] = useState(0);
 
   const { data: contactResp, isLoading: isPatientLoading } =
     useGetPatientsQuery({ companyId: hasMultipleLocations[0] });
@@ -302,6 +304,8 @@ const CustomerSelect = () => {
     { id: companyId },
     { skip: !companyId }
   );
+  const EInvoiceEnable = companySettings?.data?.data.EInvoiceEnable;
+  const InvInvoiceEnable = companySettings?.data?.data.INVEInvoiceEnable;
   const { data: customerData, isLoading: isCustomerLoading } =
     useGetCustomerByIdQuery(
       { id: selectedPatient?.CustomerMasterID },
@@ -622,7 +626,6 @@ const CustomerSelect = () => {
       return [...prev, order.orderDetailId];
     });
   };
-
   const handleSelectAllProducts = (e) => {
     if (e.target.checked) {
       const allOrderIds = filteredProducts.map((order) => order.orderDetailId);
@@ -631,7 +634,6 @@ const CustomerSelect = () => {
       setSelectedProducts([]);
     }
   };
-  console.log("filter", filteredProducts);
   const handleClickNext = () => {
     setCustomerId({
       companyId: selectedPatient?.CustomerMaster?.CompanyID,
@@ -639,8 +641,8 @@ const CustomerSelect = () => {
       customerId: selectedPatient?.CustomerMaster?.Id,
     });
     if (
-      selectedPatient.CustomerMaster.CreditBilling === 1 &&
-      parseFloat(selectedPatient.CustomerMaster.CreditLimit) <= 0
+      customerData?.data?.data?.CreditBilling === 1 &&
+      parseFloat(customerData?.data?.data?.CustomerCreditLimit) <= 0
     ) {
       setShowConfirmModal(true);
     } else {
@@ -947,8 +949,9 @@ const CustomerSelect = () => {
     }
   };
 
+  const handleByPassCheck = () => {};
+
   const handleGenerateInvoice = async () => {
-    
     if (!validateBatchCodes()) {
       toast.error(
         "Please add BatchCode details for the selected CL products to complete invoicing"
@@ -1035,14 +1038,15 @@ const CustomerSelect = () => {
       totalGSTValue: totalGst,
       totalValue: totalAmount,
       roundOff: 0.0,
-      balanceAmount: 0,
+      balanceAmount: totalBalance,
       applicationUserId: user.Id,
+      // bypassCreditCheck :
       creditBilling: selectedPatient?.CustomerMaster?.CreditBilling,
     };
     if (payload.creditBilling === 0) {
       payload.payments = preparePaymentsStructure();
     }
-    console.log(payload)
+
     //  customerData use this
     try {
       const response = await generateInvoice({ payload }).unwrap();
@@ -1052,7 +1056,8 @@ const CustomerSelect = () => {
       };
       if (
         customerData?.data?.data?.TAXRegisteration === 1 &&
-        customerData?.data?.data?.Company?.CompanyType === 1
+        EInvoiceEnable === 1 &&
+        InvInvoiceEnable === 1
       ) {
         try {
           await createInvoice({
@@ -1061,7 +1066,7 @@ const CustomerSelect = () => {
             payload: eInvoicePayload,
           }).unwrap();
         } catch (error) {
-          navigate("/invoice");
+          console.log(error);
         }
       }
       toast.success(response?.message);
@@ -1600,6 +1605,19 @@ const CustomerSelect = () => {
             cancelText="Cancel"
             danger={false}
           />
+          <ConfirmationModal
+            isOpen={showByPassCheck}
+            onClose={() => setShowByPassModal(false)}
+            onConfirm={() => {
+              setShowByPassModal(false);
+              handleGenerateInvoice();
+            }}
+            title="Credit Check!"
+            message={`There are invoices which have crossed ${creditDays} days. Do you still wish to continue?`}
+            confirmText="Yes, Proceed"
+            cancelText="Cancel"
+            danger={false}
+          />
         </div>
       </div>
     </div>
@@ -1745,7 +1763,7 @@ const BatchCode = ({
           batchBarCode: batch.BatchBarCode,
           expiry: batch.Expiry,
           mrp: batch.MRP,
-          sellingPrice :batch.DiscountedSellingPrice,
+          sellingPrice: batch.DiscountedSellingPrice,
           discountedSellingPrice: batch.DiscountedSellingPrice,
           availableQty: batch.AvailableQty,
           toBillQty: batch.ToBillQty,
@@ -1776,7 +1794,7 @@ const BatchCode = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="flex flex-col gap-4">
-        <h4>To Bill Qty: {selectedOrder?.toBillQty}</h4>
+        <h4>Total To Bill Qty: {selectedOrder?.toBillQty}</h4>
         <div className="flex items-center gap-3">
           <Radio
             label="Select Batch Code"

@@ -10,7 +10,7 @@ import {
 } from "../../../api/giftVoucher";
 import toast from "react-hot-toast";
 import { Table, TableCell, TableRow } from "../../../components/Table";
-import { format } from "date-fns";
+import { addDays, format } from "date-fns";
 
 const ActiveteGV = () => {
   const [gv, setGV] = useState(0);
@@ -72,6 +72,8 @@ const ActiveteGV = () => {
       const res = await activateGV({ payload }).unwrap();
       if (res?.data) {
         toast.success(res?.data);
+        setItems([]);
+
       }
     } catch (error) {
       toast.error(error?.data?.error || error?.error || "Invalid Gift Voucher");
@@ -146,9 +148,9 @@ const ActiveteGV = () => {
             <div className="text-2xl text-neutral-700 font-semibold">
               Activate Gift Voucher
             </div>
-            <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+            {/* <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
               <Button variant="outline">Back</Button>
-            </div>
+            </div> */}
           </div>
 
           <div>
@@ -239,13 +241,16 @@ const ActiveteGV = () => {
                         <TableCell>{index + 1}</TableCell>
                         <TableCell>{item.GVCode}</TableCell>
                         <TableCell>
-                          {item.GVActivationDate
-                            ? format(new Date(item.GVActivationDate), "dd/MM/yyyy")
+                          {format(new Date(), "dd/MM/yyyy")}
+                        </TableCell>
+                        <TableCell>
+                          {item.GVValidityDays
+                            ? format(
+                                addDays(new Date(), item.GVValidityDays),
+                                "dd/MM/yyyy"
+                              )
                             : "-"}
                         </TableCell>
-                        <TableCell>{item.GVExpiryDate
-                            ? format(new Date(item.GVExpiryDate), "dd/MM/yyyy")
-                            : "-"}</TableCell>
                         <TableCell>
                           <button
                             onClick={() => handleDelete(item.GVCode, index)}
@@ -315,7 +320,8 @@ const ActiveteGV = () => {
               <Button
                 onClick={handleActivateGV}
                 isLoading={isActivatingGV}
-                disabled={isActivatingGV}
+                disabled={isActivatingGV || items.length <= 0}
+                // className={`${items.length <= 0 ? "bg-neutral-100" : ""}`}
               >
                 Activate GV
               </Button>

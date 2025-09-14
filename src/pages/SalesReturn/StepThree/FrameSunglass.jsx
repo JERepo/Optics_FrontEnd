@@ -351,7 +351,7 @@ const FrameSunglass = () => {
   };
   const handleReturnPriceChange = (id, price, index) => {
     const item = items.find((i, idx) => i.Id === id && idx === index);
-    const newPrice = Number(price);
+    const newPrice = parseFloat(price);
 
     // Validate that Return Price does not exceed Invoice Price (ActualSellingPrice)
     if (newPrice > item.ActualSellingPrice) {
@@ -372,40 +372,73 @@ const FrameSunglass = () => {
       )
     );
   };
-  const toggleEditMode = (id, index, field) => {
+  const toggleEditMode = (id, index, field, action) => {
     setEditMode((prev) => {
       const key = `${id}-${index}`;
       const currentMode = prev[key]?.[field];
 
-      if (
-        currentMode &&
-        field === "sellingPrice" &&
-        referenceApplicable === 0
-      ) {
-        setItems((prevItems) =>
-          prevItems.map((i, idx) =>
-            i.Barcode === id && idx === index
-              ? { ...i, SellingPrice: prev[key].originalPrice || i.MRP } // Revert to original or MRP
-              : i
-          )
-        );
-      } else if (
-        currentMode &&
-        field === "returnPrice" &&
-        referenceApplicable === 1
-      ) {
-        // Revert to original price if canceling
-        setItems((prevItems) =>
-          prevItems.map((i, idx) =>
-            i.Id === id && idx === index
-              ? {
-                  ...i,
-                  ReturnPricePerUnit:
-                    prev[key].originalPrice || i.ActualSellingPrice,
-                } // Revert to original or ActualSellingPrice
-              : i
-          )
-        );
+      // If entering edit mode, store the current price as originalPrice
+      if (!currentMode) {
+        const item = items.find((i, idx) => i.Id === id && idx === index);
+        let originalPrice = prev[key]?.originalPrice;
+        if (field === "sellingPrice" && referenceApplicable === 0) {
+          originalPrice = item.SellingPrice || item.MRP;
+        } else if (field === "returnPrice" && referenceApplicable === 1) {
+          originalPrice = item.ReturnPricePerUnit || item.ActualSellingPrice;
+        }
+
+        return {
+          ...prev,
+          [key]: {
+            ...prev[key],
+            [field]: true,
+            originalPrice,
+          },
+        };
+      }
+
+      // If exiting edit mode
+      if (currentMode) {
+        if (
+          field === "sellingPrice" &&
+          referenceApplicable === 0 &&
+          action === "cancel"
+        ) {
+          // Revert to original price on cancel
+          setItems((prevItems) =>
+            prevItems.map((i, idx) =>
+              i.Barcode === id && idx === index
+                ? { ...i, SellingPrice: prev[key].originalPrice || i.MRP }
+                : i
+            )
+          );
+        } else if (
+          field === "returnPrice" &&
+          referenceApplicable === 1 &&
+          action === "cancel"
+        ) {
+          // Revert to original price on cancel
+          setItems((prevItems) =>
+            prevItems.map((i, idx) =>
+              i.Id === id && idx === index
+                ? {
+                    ...i,
+                    ReturnPricePerUnit:
+                      prev[key].originalPrice || i.ActualSellingPrice,
+                  }
+                : i
+            )
+          );
+        }
+
+        return {
+          ...prev,
+          [key]: {
+            ...prev[key],
+            [field]: false,
+            originalPrice: prev[key].originalPrice, // Preserve original price
+          },
+        };
       }
 
       return {
@@ -413,7 +446,7 @@ const FrameSunglass = () => {
         [key]: {
           ...prev[key],
           [field]: !currentMode,
-          originalPrice: prev[key]?.originalPrice, // Preserve original price
+          originalPrice: prev[key]?.originalPrice,
         },
       };
     });
@@ -490,7 +523,8 @@ const FrameSunglass = () => {
       ...selectedInvoice,
       ReturnQty: selectedInvoiceReturnQty,
       ReturnPricePerUnit: selectedInvoice.ActualSellingPrice,
-      GSTPercentage: 18,
+      GSTPercentage:
+        parseFloat(selectedInvoice.ProductDetails[0]?.taxPercentage) || 0,
       TotalAmount:
         parseFloat(selectedInvoice.ActualSellingPrice) *
         selectedInvoiceReturnQty,

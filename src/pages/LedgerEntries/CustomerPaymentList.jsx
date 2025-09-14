@@ -12,9 +12,9 @@ import { Table, TableCell, TableRow } from "../../components/Table";
 import { enGB } from "date-fns/locale";
 import Loader from "../../components/ui/Loader";
 import { useSelector } from "react-redux";
-import { useGetAllInvoiceQuery } from "../../api/InvoiceApi";
+import { useGetAllCPQuery } from "../../api/customerPayment";
 
-const InvoiceList = () => {
+const CustomerPaymentList = () => {
   const navigate = useNavigate();
   const { hasMultipleLocations } = useSelector((state) => state.auth);
   const { goToStep, updateSelectedOrderDetails } = useOrder();
@@ -25,17 +25,17 @@ const InvoiceList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const { data: allOrders, isLoading: isAllOrdersLoading } =
-    useGetAllInvoiceQuery();
+  const { data: allCp, isLoading: isAllOrdersLoading } =
+    useGetAllCPQuery();
 
   useEffect(() => {
     setCurrentPage(1);
   }, [fromDate, toDate, searchQuery]);
 
-  const Orders = useMemo(() => {
-    if (!allOrders) return [];
+  const customerPayments = useMemo(() => {
+    if (!allCp?.data) return [];
 
-    let filtered = allOrders;
+    let filtered = allCp?.data;
 
     if (fromDate) {
       filtered = filtered.filter(
@@ -49,68 +49,48 @@ const InvoiceList = () => {
       );
     }
 
-    if (searchQuery) {
-      filtered = filtered.filter((invoice) => {
-        const query = searchQuery.toLowerCase();
+    // if (searchQuery) {
+    //   filtered = filtered.filter((invoice) => {
+    //     const query = searchQuery.toLowerCase();
 
-        const customerName =
-          invoice.CustomerMaster?.CustomerName?.toLowerCase() || "";
-        const patientName = invoice.Patient?.CustomerName?.toLowerCase() || "";
-        const patientMobile =
-          invoice.CustomerMaster?.MobNumber?.toLowerCase() || "";
-        const invoiceNo = String(invoice.InvoiceNo)?.toLowerCase() || "";
+    //     const customerName =
+    //       invoice.CustomerMaster?.CustomerName?.toLowerCase() || "";
+    //     const patientName = invoice.Patient?.CustomerName?.toLowerCase() || "";
+    //     const patientMobile =
+    //       invoice.CustomerMaster?.MobNumber?.toLowerCase() || "";
+    //     const invoiceNo = String(invoice.InvoiceNo)?.toLowerCase() || "";
 
-        return (
-          customerName.includes(query) ||
-          patientName.includes(query) ||
-          patientMobile.includes(query) ||
-          invoiceNo.includes(query)
-        );
-      });
-    }
+    //     return (
+    //       customerName.includes(query) ||
+    //       patientName.includes(query) ||
+    //       patientMobile.includes(query) ||
+    //       invoiceNo.includes(query)
+    //     );
+    //   });
+    // }
 
-    return filtered.map((invoice) => ({
-      id: invoice.Id,
-      invoice: invoice,
-      prefix: invoice.InvoicePrefix,
-      invoiceDate: new Intl.DateTimeFormat("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }).format(new Date(invoice.InvoiceDate)),
-      invoiceNo: invoice.InvoiceNo,
-      customerName: invoice.CustomerMaster.CustomerName,
-      patientName: invoice.Patient.CustomerName,
-      mobileNo: invoice.Patient.MobNumber,
-      qty: invoice.TotalQty,
-      amount: invoice.TotalValue,
-      status: invoice.Status === 1 ? "Confirmed" : "Draft",
+    return filtered.map((c) => ({
+        id:c.Id,
+        customerName:c.CustomerMaster?.CustomerName,
+        mobile:c?.CustomerMaster?.MobNumber,
+        amount :c.Amount
     }));
     // .filter((order) => order.CompanyID === parseInt(hasMultipleLocations[0]));
-  }, [allOrders, fromDate, toDate, searchQuery]);
+  }, [allCp, fromDate, toDate, searchQuery]);
 
   const startIndex = (currentPage - 1) * pageSize;
-  const paginatedOrders = Orders.slice(startIndex, startIndex + pageSize);
-  const totalPages = Math.ceil(Orders.length / pageSize);
+  const paginatedOrders = customerPayments.slice(startIndex, startIndex + pageSize);
+  const totalPages = Math.ceil(customerPayments.length / pageSize);
 
-  const totalOrders = allOrders?.length || 0;
-  const filteredOrders = Orders.length;
+  const totalOrders = customerPayments.length || 0;
+  const filteredOrders = customerPayments.length;
   const today = new Date();
 
-  const handleViewinvoice = (invoice) => {
-    updateSelectedOrderDetails(invoice);
-    navigate(`/invoice/view?invoiceId=${invoice}`);
+  const handleViewinvoice = (id) => {
+    // updateSelectedOrderDetails(invoice);
+    navigate(`/customer-payment/view?cpId=${id}`);
   };
 
-  const getOrderStatus = (status) => {
-    const types = {
-      1: "Confirmed",
-      2: "Partially Invoiced",
-      3: "Invoiced",
-      4: "Cancelled",
-    };
-    return types[status] || "Draft";
-  };
 
   if (isAllOrdersLoading) {
     return (
@@ -125,10 +105,10 @@ const InvoiceList = () => {
         {/* Header */}
         <div className="px-6 py-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Invoice List</h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <h1 className="text-2xl font-bold text-gray-900">Customer Payment</h1>
+            {/* <p className="text-sm text-gray-500 mt-1">
               Manage and track all your invoices
-            </p>
+            </p> */}
           </div>
         </div>
 
@@ -206,14 +186,14 @@ const InvoiceList = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
             <div className="flex items-center gap-5">
               <h2 className="text-lg font-medium text-gray-900">
-                Invoice Details
+                Customer Payment
               </h2>
 
               <div className="relative flex items-center w-full sm:w-64">
                 <FiSearch className="absolute left-3 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search invoice..."
+                  placeholder="Search ..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -226,55 +206,33 @@ const InvoiceList = () => {
                 className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
                 onClick={() => {
                   goToStep(1);
-                  navigate("/invoice/create");
+                  navigate("/customer-payment/create");
                 }}
               >
-                From Order
+                Add Customer payment
               </Button>
-              <Button
-                icon={FiPlus}
-                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
-                onClick={() => {
-                  goToStep(1);
-                  navigate("/add-order");
-                }}
-              >
-                DC Invoice
-              </Button>
+             
             </div>
           </div>
 
           <Table
             columns={[
               "S.No",
-              "invoice date",
-              "invoice no",
-              "patient name",
               "customer name",
-
-              "mobile no",
-              "qty",
+              "mobile",
               "amount",
-              "status",
               "action",
             ]}
             data={paginatedOrders}
-            renderRow={(invoice, index) => (
-              <TableRow key={invoice.id}>
+            renderRow={(item, index) => (
+              <TableRow key={item.id}>
                 <TableCell>{startIndex + index + 1}</TableCell>
-                <TableCell>{invoice.invoiceDate}</TableCell>
-                <TableCell>{`${invoice.prefix ? invoice.prefix : "NA"}/${
-                  invoice.invoiceNo
-                }`}</TableCell>
-                <TableCell>{invoice.patientName}</TableCell>
-                <TableCell>{invoice.customerName}</TableCell>
-                <TableCell>{invoice.mobileNo}</TableCell>
-                <TableCell>{invoice.qty}</TableCell>
-                <TableCell>₹{invoice.amount}</TableCell>
-                <TableCell>{invoice.status}</TableCell>
+                <TableCell>{item.customerName}</TableCell>
+                <TableCell>{item.mobile}</TableCell>
+                <TableCell>₹{item.amount}</TableCell>
                 <TableCell>
                   <button
-                    onClick={() => handleViewinvoice(invoice.id)}
+                    onClick={() => handleViewinvoice(item.id)}
                     className="flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
                     <FiEye className="mr-1.5" />
@@ -285,8 +243,8 @@ const InvoiceList = () => {
             )}
             emptyMessage={
               isAllOrdersLoading
-                ? "Loading orders..."
-                : "No orders match the filters."
+                ? "Loading customers..."
+                : "No customer payments match the filters."
             }
             pagination={true}
             currentPage={currentPage}
@@ -302,4 +260,4 @@ const InvoiceList = () => {
   );
 };
 
-export default InvoiceList;
+export default CustomerPaymentList;

@@ -41,6 +41,7 @@ const FrameSunglass = () => {
     calculateGST,
     currentStockStep,
   } = useOrder();
+  console.log("st",stockDraftData)
   const { user } = useSelector((state) => state.auth);
   const [barcode, setBarcode] = useState("");
   const [searchMode, setSearchMode] = useState(false);

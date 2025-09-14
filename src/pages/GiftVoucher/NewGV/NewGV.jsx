@@ -213,13 +213,13 @@ const NewGV = ({
           <div className="text-2xl text-neutral-700 font-semibold">
             New Gift Voucher
           </div>
-          {/* {!collectGiftAmount && (
+          {!collectGiftAmount && (
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
               <Button variant="outline" onClick={() => navigate(-1)}>
                 Back
               </Button>
             </div>
-          )} */}
+          )}
         </div>
         <div>
           <form onSubmit={handleGenerateCode} className="space-y-2 mt-4">

@@ -385,6 +385,13 @@ const InvoiceView = () => {
         return;
       }
     } else if (invoiceDetails?.CustomerMaster?.CreditBilling === 1) {
+      const result = canCancelInvoice(invoiceDetails?.InvoiceDate);
+      if (result.allowed) {
+        setIsCancelOpen(true);
+      } else {
+        toast.error(result.message);
+        return;
+      }
       try {
         const payload = {
           InvoiceMainId: parseInt(invoiceId) ?? null,

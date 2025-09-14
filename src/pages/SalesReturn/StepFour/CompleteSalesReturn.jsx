@@ -12,6 +12,9 @@ import { FiTrash2 } from "react-icons/fi";
 import { formatINR } from "../../../utils/formatINR";
 import toast from "react-hot-toast";
 import { useSelector } from "react-redux";
+import { useCreateEInvoiceMutation } from "../../../api/InvoiceApi";
+import { useGetLocationByIdQuery } from "../../../api/roleManagementApi";
+import { useGetCompanyIdQuery } from "../../../api/customerApi";
 
 const getProductNameForNo = (order, referenceApplicable) => {
   const {
@@ -106,7 +109,6 @@ const getProductNameForNo = (order, referenceApplicable) => {
       ],
       ", "
     );
-   
 
     return joinNonEmpty(
       [
@@ -145,7 +147,7 @@ const getProductNameForNo = (order, referenceApplicable) => {
         : Array.isArray(detail.addOn)
         ? detail.addOn?.map((item) => clean(item.addOnName)).filter(Boolean)
         : "";
-   
+
     const singlePower = detail?.Specs;
 
     const singlePowerData = joinNonEmpty([
@@ -154,7 +156,6 @@ const getProductNameForNo = (order, referenceApplicable) => {
       cleanPower(singlePower?.Diameter) && `Dia: ${singlePower?.Diameter}`,
     ]);
 
-  
     let fittingLine = "";
     const fitPrice = parseFloat(fittingPrice);
     const gstPerc = parseFloat(fittingGSTPercentage);
@@ -258,8 +259,9 @@ const getProductNameForYes = (order, referenceApplicable) => {
   if (productType === 3) {
     const bc = detail?.stock[0]?.batchCode ?? "";
 
-    const ex = (detail?.stock[0]?.Expiry || detail.stock[0]?.cLBatchExpiry) ?? "";
-    
+    const ex =
+      (detail?.stock[0]?.Expiry || detail.stock[0]?.cLBatchExpiry) ?? "";
+
     const specListYes = joinNonEmpty(
       [
         cleanPower(detail.specs?.sphericalPower) &&
@@ -275,7 +277,7 @@ const getProductNameForYes = (order, referenceApplicable) => {
 
     return joinNonEmpty(
       [
-       clean(detail.productDescName) && detail.productDescName,
+        clean(detail.productDescName) && detail.productDescName,
         specListYes,
         clean(detail.colour) && `Color: ${clean(detail.colour)}`,
         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
@@ -286,7 +288,8 @@ const getProductNameForYes = (order, referenceApplicable) => {
                 detail.ExpiryDate.split("-").reverse().join("/")
               : "-"
           }`,
-        clean(detail.HSN || detail.hSN) && `HSN: ${clean(detail.HSN || detail.hSN)}`,
+        clean(detail.HSN || detail.hSN) &&
+          `HSN: ${clean(detail.HSN || detail.hSN)}`,
       ],
       "\n"
     );
@@ -357,7 +360,7 @@ const getShortTypeName = (id) => {
 };
 
 const CompleteSalesReturn = () => {
-  const { user } = useSelector((state) => state.auth);
+  const { user, hasMultipleLocations } = useSelector((state) => state.auth);
   const [comment, setComment] = useState("");
   const navigate = useNavigate();
   const [itemsToDelete, setItemsToDelete] = useState([]);
@@ -380,6 +383,20 @@ const CompleteSalesReturn = () => {
     );
   const [completeSales, { isLoading: isCompleteSalesLoading }] =
     useCompleteSaleReturnMutation();
+  const [createInvoice, { isLoading: isInvoiceCreating }] =
+    useCreateEInvoiceMutation();
+  const { data: locationById } = useGetLocationByIdQuery(
+    { id: parseInt(hasMultipleLocations[0]) },
+    { skip: !parseInt(hasMultipleLocations[0]) }
+  );
+  const companyId = locationById?.data?.data.Id;
+
+  const { data: companySettings } = useGetCompanyIdQuery(
+    { id: companyId },
+    { skip: !companyId }
+  );
+  const EInvoiceEnable = companySettings?.data?.data.EInvoiceEnable;
+  const InvInvoiceEnable = companySettings?.data?.data.CNEInvoiceEnable;
   // Calculate totals
   const totals = finalProducts?.data?.reduce(
     (acc, item) => {
@@ -420,7 +437,6 @@ const CompleteSalesReturn = () => {
       : "0.00",
     totalReturnValue: totals ? totals.totalReturnValue.toFixed(2) : "0.00",
   };
-  console.log("patient", selectedPatient);
   const handleDelete = async (id) => {
     try {
       setDeletingId(id);
@@ -438,7 +454,6 @@ const CompleteSalesReturn = () => {
       setDeletingId(null);
     }
   };
-
   const handleCompleteSalesReturn = async () => {
     try {
       if (!finalProducts?.data || finalProducts.data.length === 0) {
@@ -461,6 +476,25 @@ const CompleteSalesReturn = () => {
         locationId: customerSalesId.locationId,
         payload,
       }).unwrap();
+      const eInvoicePayload = {
+        recordId: salesDraftData.Id ?? null,
+        type: "salesReturn",
+      };
+      if (
+        selectedPatient?.mainCustomerObject?.TAXRegisteration === 1 &&
+        EInvoiceEnable === 1 &&
+        InvInvoiceEnable === 1
+      ) {
+        try {
+          await createInvoice({
+            companyId: parseInt(hasMultipleLocations[0]),
+            userId: user.Id,
+            payload: eInvoicePayload,
+          }).unwrap();
+        } catch (error) {
+          console.log(error);
+        }
+      }
       setItemsToDelete([]);
       setComment("");
       navigate("/sales-return");

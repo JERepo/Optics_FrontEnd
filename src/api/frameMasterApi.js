@@ -42,6 +42,12 @@ export const frameMasterApi = createApi({
       }),
       invalidatesTags: ["Frame"],
     }),
+
+    getFrameSizes:builder.query({
+      query : () => ({
+        url : `/api/v1/frame-main/getSizes`,
+      })
+    })
   }),
 });
 
@@ -51,4 +57,5 @@ export const {
   useCreateFrameMasterMutation,
   useGetFrameMasterByIdQuery,
   useUpdateFramemasterMutation,
+  useGetFrameSizesQuery
 } = frameMasterApi;

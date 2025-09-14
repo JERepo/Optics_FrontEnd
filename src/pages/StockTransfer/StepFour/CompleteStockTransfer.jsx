@@ -13,6 +13,10 @@ import {
 } from "../../../api/stockTransfer";
 import toast from "react-hot-toast";
 import Loader from "../../../components/ui/Loader";
+import { useCreateEInvoiceMutation } from "../../../api/InvoiceApi";
+import { useSelector } from "react-redux";
+import { useGetLocationByIdQuery } from "../../../api/roleManagementApi";
+import { useGetCompanyIdQuery } from "../../../api/customerApi";
 
 const getProductName = (data) => {
   const item = { ...data.ProductDetails, ...data };
@@ -253,6 +257,8 @@ const getStockOutMRP = (data) => {
 
 const CompleteStockTransfer = () => {
   const [comment, setComment] = useState("");
+  const { user, hasMultipleLocations } = useSelector((state) => state.auth);
+
   const navigate = useNavigate();
   const [deletingId, setDeletingId] = useState(null);
 
@@ -263,6 +269,7 @@ const CompleteStockTransfer = () => {
     stockDraftData,
     updateCurrentStockStep,
   } = useOrder();
+  console.log("stock", stockDraftData);
   const { data: stockDetails, isLoading: isStockDetailsLoading } =
     useGetStockOutDetailsQuery({
       mainId: stockDraftData.ID || stockDraftData[0].ID,
@@ -271,6 +278,20 @@ const CompleteStockTransfer = () => {
 
   const [updateStockTO, { isLoading: isUpdating }] =
     useUpdateStockTransferOutMutation();
+  const [createInvoice, { isLoading: isInvoiceCreating }] =
+    useCreateEInvoiceMutation();
+  const { data: locationById } = useGetLocationByIdQuery(
+    { id: parseInt(hasMultipleLocations[0]) },
+    { skip: !parseInt(hasMultipleLocations[0]) }
+  );
+  const companyId = locationById?.data?.data.Id;
+
+  const { data: companySettings } = useGetCompanyIdQuery(
+    { id: companyId },
+    { skip: !companyId }
+  );
+  const EInvoiceEnable = companySettings?.data?.data.EInvoiceEnable;
+  const InvInvoiceEnable = companySettings?.data?.data.STEInvoiceEnable;
 
   const handleDeleteItem = async (id) => {
     setDeletingId(id);
@@ -291,7 +312,7 @@ const CompleteStockTransfer = () => {
   const totals = (stockDetails?.data?.details || []).reduce(
     (acc, item) => {
       const qty = item.STQtyOut || 0;
-      const unitPrice = getStockOutPrice(item);
+      const unitPrice = parseFloat(item.TransferPrice) || 0;
       const gstRate = parseFloat(item.ProductTaxPercentage) / 100;
 
       const basicValue = unitPrice * qty;
@@ -327,7 +348,25 @@ const CompleteStockTransfer = () => {
         totalGST: parseFloat(totals.totalGST),
       };
       await updateStockTO({ payload }).unwrap();
-      console.log(payload);
+      const eInvoicePayload = {
+        recordId: stockDraftData.ID ?? null,
+        type: "STOut",
+      };
+      if (
+        stockDraftData?.FromCompany?.TaxRegistration === 1 &&
+        EInvoiceEnable === 1 &&
+        InvInvoiceEnable === 1
+      ) {
+        try {
+          await createInvoice({
+            companyId: parseInt(hasMultipleLocations[0]),
+            userId: user.Id,
+            payload: eInvoicePayload,
+          }).unwrap();
+        } catch (error) {
+          console.log(error);
+        }
+      }
       toast.success("Stock TransferOut successfully updated");
       navigate("/stock-transfer");
       updateCurrentStockStep(1);
@@ -378,7 +417,7 @@ const CompleteStockTransfer = () => {
                   {getProductName(item)}
                 </TableCell>
                 <TableCell>₹{formatINR(getStockOutMRP(item))}</TableCell>
-                <TableCell>₹{formatINR(getStockOutPrice(item))}</TableCell>
+                <TableCell>₹{formatINR(item.TransferPrice)}</TableCell>
                 <TableCell>
                   ₹
                   {formatINR(
@@ -399,7 +438,7 @@ const CompleteStockTransfer = () => {
                   ₹
                   {formatINR(
                     getStockOutPrice(item) * item.STQtyOut +
-                      getStockOutPrice(item) *
+                      parseFloat(item.TransferPrice) *
                         (parseFloat(item.ProductTaxPercentage) / 100) *
                         item.STQtyOut
                   )}

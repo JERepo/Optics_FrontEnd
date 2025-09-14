@@ -387,12 +387,13 @@ const StockTransferView = () => {
                   {getProductName(item)}
                 </TableCell>
                 <TableCell>₹{formatINR(getStockOutMRP(item))}</TableCell>
-                <TableCell>₹{formatINR(getStockOutPrice(item))}</TableCell>
+                <TableCell>₹{formatINR(item.TransferPrice)}</TableCell>
+                {/* i.	GST = Buying Price *GST % */}
                 <TableCell>
                   ₹
                   {formatINR(
-                    getStockOutPrice(item) *
-                      item.STQtyOut *
+                    parseFloat(item.TransferPrice) *
+                     
                       (parseFloat(item.ProductTaxPercentage) / 100)
                   )}
                   ({item.ProductTaxPercentage}%)
@@ -407,8 +408,8 @@ const StockTransferView = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    getStockOutPrice(item) * item.STQtyOut +
-                      getStockOutPrice(item) *
+                    parseFloat(item.TransferPrice) * item.STQtyOut +
+                      parseFloat(item.TransferPrice) *
                         (parseFloat(item.ProductTaxPercentage) / 100) *
                         item.STQtyOut
                   )}
@@ -444,7 +445,7 @@ const StockTransferView = () => {
                     stockDetails?.data?.result?.details.reduce(
                       (sum, item) =>
                         sum +
-                        getStockOutPrice(item) *
+                        parseFloat(item.TransferPrice) *
                           item.STQtyOut *
                           (parseFloat(item.ProductTaxPercentage) / 100),
                       0
@@ -463,8 +464,8 @@ const StockTransferView = () => {
                     stockDetails?.data?.result?.details.reduce(
                       (sum, item) =>
                         sum +
-                        item.STQtyOut * getStockOutPrice(item) +
-                        getStockOutPrice(item) *
+                        item.STQtyOut * parseFloat(item.TransferPrice) +
+                        parseFloat(item.TransferPrice) *
                           item.STQtyOut *
                           (parseFloat(item.ProductTaxPercentage) / 100),
                       0

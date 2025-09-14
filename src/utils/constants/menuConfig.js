@@ -15,6 +15,7 @@ import {
   FiGift,
   FiRotateCcw,
   FiTag,
+  FiBook,
 } from "react-icons/fi";
 import {
   IoPeopleOutline,
@@ -282,5 +283,19 @@ export const menuItems = [
     icon: FiTag,
     module: "Offer",
     path: "/offer/create",
+  },
+   {
+    name: "Ledger Entries",
+    icon: FiBook,
+    module: "Customer-Payment",
+    subItems: [
+      {
+        name: "Customer Payment",
+        path: "customer-payment",
+        module: "Customer-Payment",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+     
+    ],
   },
 ];
