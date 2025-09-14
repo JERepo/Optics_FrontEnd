@@ -189,7 +189,6 @@ const CollectAdvance = ({
 
     return payments;
   };
-console.log("se",selectedPatient)
   const handleSave = async () => {
     if (!advanceRefceNo || advanceRefceNo.trim() === "") {
       toast.error("Please enter advance reference no!");
@@ -500,6 +499,7 @@ console.log("se",selectedPatient)
                   </div>
                 )}
             </div>
+            {selectedPatient?.CreditBilling === 0 && 
             <div className="mt-5 grid grid-cols-2 gap-5 w-full">
               <Textarea
                 label="Advance Reference No *"
@@ -511,7 +511,7 @@ console.log("se",selectedPatient)
                 value={remarks || ""}
                 onChange={(e) => setRemarks(e.target.value)}
               />
-            </div>
+            </div>}
           </div>
         </div>
       </div>

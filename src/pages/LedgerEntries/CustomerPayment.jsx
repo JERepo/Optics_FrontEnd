@@ -246,15 +246,14 @@ const CustomerPayment = () => {
         </div>
         {selectedCustomer && (
           <div className="flex justify-between mt-5 items-center">
-            {items.length > 0 && (
-              <div className="text-lg text-neutral-900">
-                <Checkbox
-                  checked={collectPayment}
-                  onChange={(e) => setCollectPayment(e.target.checked)}
-                  label="Collect Advance"
-                />
-              </div>
-            )}
+            <div className="text-lg text-neutral-900">
+              <Checkbox
+                checked={collectPayment}
+                onChange={(e) => setCollectPayment(e.target.checked)}
+                label="Collect Advance"
+              />
+            </div>
+
             <Button
               onClick={handleFetch}
               isLoading={isPaymentsLoading}
@@ -265,7 +264,7 @@ const CustomerPayment = () => {
           </div>
         )}
 
-        {(items.length > 0 && !collectPayment) && (
+        {items.length > 0 && !collectPayment && (
           <Table
             className="mt-5"
             columns={[
@@ -378,7 +377,7 @@ const CustomerPayment = () => {
           />
         )}
 
-        {(items.length > 0 && !collectPayment) && (
+        {items.length > 0 && !collectPayment && (
           <div className="flex gap-10 justify-end mt-5 p-6 border-t border-gray-200 bg-gray-50">
             <div className="flex gap-6">
               <span className="text-lg font-semibold">
@@ -423,7 +422,7 @@ const CustomerPayment = () => {
               collectPayment={collectPayment}
             />
           </div>
-         )}
+        )}
       </div>
     </div>
   );
