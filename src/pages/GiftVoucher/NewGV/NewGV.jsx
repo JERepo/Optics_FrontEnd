@@ -162,6 +162,11 @@ const NewGV = ({
       toast.error("Please select atleast one location!")
       return;
     }
+
+    if(collectGiftAmount && !gvData.giftCode){
+      toast.error("Please add Gift Voucher Code!")
+      return;
+    }
     try {
       if (collectGiftAmount) {
         const payload = {
@@ -176,7 +181,8 @@ const NewGV = ({
           //"validityDays": 30,            // required if activateNow = false
           customerId: gvData.selectCustomer,
           ApplicationUserID: user.Id,
-          locationIds: selectedLocation, // array of locations to link voucher
+          locationIds: selectedLocation,
+          submit :true // array of locations to link voucher
         };
         handleAddGiftAmount({...payload });
         toast.success("Gift Voucher collected successfully!");

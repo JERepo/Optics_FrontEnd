@@ -381,7 +381,7 @@ const FrameSunglass = () => {
                       }
                     }}
                     value={
-                      filteredBrands.find((b) => b.BrandName === z) ||
+                      filteredBrands.find((b) => b.Id === brandId) ||
                       null
                     }
                     isOptionEqualToValue={(option, value) =>
@@ -449,13 +449,20 @@ const FrameSunglass = () => {
                   <TableCell>
                     {item.Category == "O" ? "Optical Frame" : "Sunglass"}
                   </TableCell>
-                  <TableCell>
-                    <div className="whitespace-pre-wrap">
-                      <div>{item.PO === 1 ? "Photochromatic" : ""}</div>
-                      <div>{item.Ph === 1 ? "Polarised" : ""}</div>
-                      {/* <div>{item.Cl && }</div> */}
-                    </div>
-                  </TableCell>
+                  <TableCell className="w-[80px]">
+                                         <div className="grid grid-cols-2 gap-2 w-auto">
+                                           {[
+                                             item.PO == 1 ? "PH" : null,
+                                             item.Ph == 1 ? "PO" : null,
+                                             item.Cl ? `CL: ${item.Cl}` : null,
+                                             item.IsRxable === 1 ? "Rx" : null,
+                                           ]
+                                             .filter(Boolean)
+                                             .map((val, idx) => (
+                                               <div key={idx}>{val}</div>
+                                             ))}
+                                         </div>
+                                       </TableCell>
                   <TableCell>{item.MRP}</TableCell>
                   <TableCell>{item.SellingPrice}</TableCell>
                   <TableCell>
@@ -546,7 +553,20 @@ const FrameSunglass = () => {
                   <TableCell>
                     {item.Category == 0 ? "Optical Frame" : "Sunglass"}
                   </TableCell>
-                  <TableCell>{item.PO}</TableCell>
+                  <TableCell className="w-[80px]">
+                                         <div className="grid grid-cols-2 gap-2 w-auto">
+                                           {[
+                                             item.PO == 1 ? "PH" : null,
+                                             item.Ph == 1 ? "PO" : null,
+                                             item.Cl ? `CL: ${item.Cl}` : null,
+                                             item.IsRxable === 1 ? "Rx" : null,
+                                           ]
+                                             .filter(Boolean)
+                                             .map((val, idx) => (
+                                               <div key={idx}>{val}</div>
+                                             ))}
+                                         </div>
+                                       </TableCell>
                   <TableCell>{item.MRP}</TableCell>
                   <TableCell>{item.SellingPrice}</TableCell>
                 </TableRow>

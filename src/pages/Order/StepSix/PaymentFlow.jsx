@@ -77,6 +77,7 @@ const PaymentFlow = ({
     advanceId: null,
     advanceData: null,
     GVCode: null,
+    GVMasterID: null,
   });
   const [errors, setErrors] = useState({});
 
@@ -124,8 +125,10 @@ const PaymentFlow = ({
   const [saveFinalPayment, { isLoading: isFinalSaving }] =
     useSaveFinalPaymentMutation();
   const { data: advanceData } = useGetAdvanceDataForInvoiceQuery({
-    customerId: selectedPatient?.CustomerMaster?.Id,
-    companyId: InvoiceCompanyId,
+    customerId: collectPayment
+      ? selectedPatient?.CustomerMaster?.Id
+      : customerId.customerId,
+    companyId: collectPayment ? InvoiceCompanyId : customerId?.companyId,
   });
 
   const filteredCardPaymentMachines = paymentMachine?.data.data.filter(
@@ -179,6 +182,8 @@ const PaymentFlow = ({
           return "cash";
         case "advance":
           return "advance";
+        case "gift voucher":
+          return "giftVoucher";
         default:
           return type.toLowerCase();
       }
@@ -230,12 +235,16 @@ const PaymentFlow = ({
           payments[typeKey].CustomerAdvanceIDs =
             payment.CustomerAdvanceIDs || [];
           break;
+        //  case "advance":
+        //   payments[typeKey].advanceId = payment.advanceId;
+        //   break;
+        // case "giftVoucher":
+        //   payments[typeKey].GVMasterID = payment.GVMasterID || null;
       }
     });
 
     return payments;
   };
-
   const handleSave = async () => {
     if (updatedDetails.RemainingToPay > 0) {
       toast.error("Please cover the remaining balance before saving.");
@@ -551,6 +560,8 @@ const PaymentFlow = ({
                 advanceData={advanceData}
                 selectedPatient={selectedPatient}
                 remainingToPay={updatedDetails.RemainingToPay} // Add this prop
+                collectPayment={collectPayment}
+                customerId={customerId}
               />
 
               {updatedDetails.RemainingToPay > 0 && (
@@ -620,6 +631,8 @@ const MethodForm = ({
   advanceData,
   selectedPatient,
   remainingToPay,
+  collectPayment,
+  customerId,
 }) => {
   if (!method) return null;
 
@@ -668,12 +681,13 @@ const MethodForm = ({
   //     toast.error("Entered GVCode Not Valid!");
   //   }
   // };
+  console.log("new payment",newPayment)
   const handleGIftVoucher = async (e) => {
     e.preventDefault();
     try {
       const res = await validateGiftVoucher({
         GVCode: gvCode,
-        CustomerID: null,
+        CustomerID: collectPayment ? null : customerId.customerId,
       }).unwrap();
       toast.success("Entered GVCode Valid");
 
@@ -687,12 +701,13 @@ const MethodForm = ({
       setNewPayment((prev) => ({
         ...prev,
         GVCode: gvCode,
-        Amount: amountToSet, // Set the calculated amount
+        Amount: amountToSet,
+        GVMasterID: res?.data.ID, // Set the calculated amount
       }));
       setGVData(res?.data);
     } catch (error) {
       console.log(error);
-      toast.error("Entered GVCode Not Valid!");
+      toast.error(error?.data?.message || "Entered GVCode Not Valid!");
     }
   };
   return (
@@ -1024,7 +1039,7 @@ const MethodForm = ({
                 htmlFor="barcode"
                 className="text-sm font-medium text-gray-700"
               >
-                Enter Barcode
+                Enter Gift Voucher Code
               </label>
               <div className="flex gap-2">
                 <div className="relative flex items-center">

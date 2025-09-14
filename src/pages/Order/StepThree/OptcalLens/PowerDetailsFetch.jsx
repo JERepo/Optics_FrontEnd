@@ -568,6 +568,7 @@ const PowerDetailsFetch = ({
               setSelectedEyes([]);
             }}
             checked={lensData.powerSingleORboth == 0}
+            disabled={isDiaFetched}
           />
           <Radio
             label="Both"
@@ -577,6 +578,7 @@ const PowerDetailsFetch = ({
               setLensData((prev) => ({ ...prev, powerSingleORboth: 1 }));
               setSelectedEyes(["R", "L"]);
             }}
+            disabled={isDiaFetched}
             checked={lensData.powerSingleORboth == 1}
           />
         </div>

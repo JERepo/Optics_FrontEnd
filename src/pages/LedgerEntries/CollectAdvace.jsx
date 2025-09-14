@@ -68,6 +68,7 @@ const CollectAdvance = ({
   });
   const [errors, setErrors] = useState({});
   const [advanceRefceNo, setAdvanceRefNo] = useState(null);
+  const [remarks, setRemarks] = useState("");
 
   const updatedDetails = useMemo(() => {
     const total = totalValue || 0;
@@ -188,12 +189,17 @@ const CollectAdvance = ({
 
     return payments;
   };
-
+console.log("se",selectedPatient)
   const handleSave = async () => {
     if (!advanceRefceNo || advanceRefceNo.trim() === "") {
       toast.error("Please enter advance reference no!");
       return;
     }
+    if (!remarks || remarks.trim() === "") {
+      toast.error("Please enter advance remarks!");
+      return;
+    }
+
     const finalStructure = {
       companyId: parseInt(hasMultipleLocations[0]),
       CreatedBy: user.Id,
@@ -204,11 +210,14 @@ const CollectAdvance = ({
       ),
       payments: preparePaymentsStructure(),
       refdetail: advanceRefceNo,
+      remarks: remarks,
+      creditBilling: parseInt(selectedPatient?.CreditBilling),
     };
 
     try {
       await saveFinalPayment({ payload: finalStructure }).unwrap();
       toast.success("Advance taken Successfully");
+      navigate("/customer-payment");
     } catch (error) {
       toast.error("Please try again!");
     }
@@ -298,10 +307,6 @@ const CollectAdvance = ({
   const handleDeletePayment = (index) => {
     setFullPaymentDetails((prev) => prev.filter((_, i) => i !== index));
     toast.success("Payment removed successfully!");
-  };
-
-  const handlePaymentBack = () => {
-    goToStep(currentStep - 1);
   };
 
   return (
@@ -495,11 +500,16 @@ const CollectAdvance = ({
                   </div>
                 )}
             </div>
-            <div className="mt-5">
+            <div className="mt-5 grid grid-cols-2 gap-5 w-full">
               <Textarea
                 label="Advance Reference No *"
                 value={advanceRefceNo || ""}
                 onChange={(e) => setAdvanceRefNo(e.target.value)}
+              />
+              <Textarea
+                label="Advance Remarks *"
+                value={remarks || ""}
+                onChange={(e) => setRemarks(e.target.value)}
               />
             </div>
           </div>

@@ -376,25 +376,23 @@ const SelectCustomer = () => {
     setErrors({});
     toast.success("Payment added successfully!");
   };
-  console.log("full", fullPaymentDetails);
   const handleAddGiftAmount = (data) => {
-    console.log("data", data);
     setCollectGiftAmount(false);
-    if (data) {
+    if (data?.submit) {
+      const { submit, ...restData } = data;
       setFullPaymentDetails((prev) => [
         ...prev,
         {
           Type: selectedPaymentMethod.type || "Gift Voucher",
-          GVMasterID: data?.ID ?? null,
           Amount: data.amount,
           GVCode: data.GVCode,
-          GVData: data,
+          GVData: restData,
         },
       ]);
     }
     setSelectedPaymentMethod(null);
   };
-  const preparePaymentsStructure = () => {
+  const preparePaymentsStructure = (updatedPayments) => {
     const payments = {};
 
     const normalizeType = (type) => {
@@ -411,39 +409,30 @@ const SelectCustomer = () => {
           return "cash";
         case "advance":
           return "advance";
-        case "giftvoucher":
-          return "giftVoucher";
+        case "Gift Voucher":
+          return "gift voucher";
         default:
           return type.toLowerCase();
       }
     };
 
-    fullPaymentDetails.forEach((payment) => {
+    updatedPayments.forEach((payment) => {
+      console.log("payment", payment);
       const typeKey = normalizeType(payment.Type || "");
       const amount = parseFloat(payment.Amount);
       if (isNaN(amount)) return;
 
       if (typeKey === "cash") {
-        // Cash should be a single numeric value
         payments.cash = (payments.cash || 0) + amount;
         return;
       }
 
-      // Gift Voucher: treat as individual objects
-      // if (typeKey === "giftVoucher") {
-      //   payments[`giftVoucher`] = {
-      //     GVMasterID: payment.GVMasterID || null,
-      //     GVCode: payment.GVCode || null,
-      //     amount,
-      //   };
-      //   return;
-      // }
-      // Initialize only if not cash
       if (!payments[typeKey]) {
         payments[typeKey] = { amount: 0 };
       }
 
       payments[typeKey].amount += amount;
+      console.log("payme", payments[typeKey], typeKey);
 
       switch (typeKey) {
         case "card":
@@ -469,12 +458,13 @@ const SelectCustomer = () => {
           payments[typeKey].BankAccountID = payment.BankAccountID || null;
           payments[typeKey].ReferenceNo = payment.RefNo || "";
           break;
-        case "advance":
-          payments[typeKey].CustomerAdvanceIDs =
-            payment.CustomerAdvanceIDs || [];
+        // case "advance":
+        //   payments[typeKey].CustomerAdvanceIDs =
+        //     payment.CustomerAdvanceIDs || [];
+        //   break;
+        case "gift voucher":
+          payments[typeKey].GVMasterID = payment.GVMasterID ?? null;
           break;
-        case "giftVoucher":
-          payments[typeKey].GVMasterID = payment.GVMasterID || null;
       }
     });
 
@@ -491,50 +481,56 @@ const SelectCustomer = () => {
       return;
     }
 
-    const payload = {
-      customerId: selectedCustomer?.Id,
-      companyId: parseInt(hasMultipleLocations[0]),
-      advanceId: advanceItems
-        ?.filter((item) => selectedProducts.includes(item.Id))
-        .map((item) => ({
-          id: item.Id,
-          amount: parseFloat(item.refundAmount),
-        })),
-      applicationUserId: user.Id,
-      remarks: "",
-      payments: {
-        totalAmount: -advanceItems
-          ?.filter((item) => selectedProducts.includes(item.Id))
-          .reduce((sum, item) => sum + parseFloat(item.refundAmount || 0), 0),
-        payments: preparePaymentsStructure(),
-      },
-    };
-
     try {
+      let updatedPayments = [...fullPaymentDetails];
       const gvDetails = fullPaymentDetails
         .filter((item) => item.Type === "Gift Voucher")
-        .map((item, index) => ({ ...item.GVData, index }));
+        .map((item, index) => ({ ...item.GVData, index, GVCode: item.GVCode }));
 
-      console.log("gv", gvDetails);
       if (gvDetails.length > 0) {
         for (const gv of gvDetails) {
           try {
             const res = await createGVForRefund({
-              payload: gv.GVData,
+              payload: { ...gv, customerId: selectedCustomer?.Id },
             }).unwrap();
-
-            setFullPaymentDetails((prev) =>
-              prev.map((p, i) =>
-                i === gv.index ? { ...p, GVMasterID: res?.data?.ID ?? null } : p
-              )
+            console.log("current", gv.GVCode);
+            console.log("update payments", updatedPayments);
+            updatedPayments = updatedPayments.map((p) =>
+              p.GVCode == gv.GVCode
+                ? { ...p, GVMasterID: res?.data?.ID ?? null }
+                : p
             );
           } catch (error) {
             console.error("GV creation failed", error);
-            toast.error("Failed to create Gift Voucher");
+            toast.error(
+              error?.data?.message || "Failed to create Gift Voucher"
+            );
             return;
           }
         }
+
+        // Update state after the loop
+        setFullPaymentDetails(updatedPayments);
       }
+
+      const payload = {
+        customerId: selectedCustomer?.Id,
+        companyId: parseInt(hasMultipleLocations[0]),
+        advanceId: advanceItems
+          ?.filter((item) => selectedProducts.includes(item.Id))
+          .map((item) => ({
+            id: item.Id,
+            amount: parseFloat(item.refundAmount),
+          })),
+        applicationUserId: user.Id,
+        remarks: "",
+        payments: {
+          totalAmount: -advanceItems
+            ?.filter((item) => selectedProducts.includes(item.Id))
+            .reduce((sum, item) => sum + parseFloat(item.refundAmount || 0), 0),
+          payments: preparePaymentsStructure(updatedPayments), // Use updatedPayments directly
+        },
+      };
 
       await createRefund({ payload }).unwrap();
       toast.success("Customer refund successfully generated!");
@@ -542,6 +538,7 @@ const SelectCustomer = () => {
       console.error("Refund error", error);
       toast.error(
         error?.data?.error ||
+          error?.error ||
           "Something went wrong while generating Customer refund!"
       );
     }
@@ -649,18 +646,13 @@ const SelectCustomer = () => {
             <div>
               <div className=" pb-4 flex justify-between">
                 <span className="text-xl font-medium text-gray-800">
-                  Total Advance Amount {selectedProducts?.length > 0 && ":₹"}
-                  {selectedProducts?.length > 0
-                    ? formatINR(
-                        advanceItems
-                          ?.filter((item) => selectedProducts.includes(item.Id))
-                          .reduce(
-                            (sum, item) =>
-                              sum + parseFloat(item.AdvanceAmount || 0),
-                            0
-                          )
-                      )
-                    : ""}
+                  Total Advance Amount: ₹{" "}
+                  {formatINR(
+                    advanceItems.reduce(
+                      (sum, item) => sum + parseFloat(item.AdvanceAmount || 0),
+                      0
+                    )
+                  )}
                 </span>
                 <Button
                   variant="outline"

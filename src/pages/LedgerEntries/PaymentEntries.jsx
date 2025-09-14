@@ -27,6 +27,7 @@ import { useGetAdvanceDataForInvoiceQuery } from "../../api/customerRefund";
 import { useLazyValidateGiftVoucherQuery } from "../../api/giftVoucher";
 import { formatINR } from "../../utils/formatINR";
 import { useSaveCustomerPaymentMutation } from "../../api/customerPayment";
+import Textarea from "../../components/Form/Textarea";
 
 const methods = [
   { value: 1, type: "Cash" },
@@ -43,7 +44,7 @@ const PaymentEntries = ({
   amountToPay,
   selectedPatient,
   companyId,
-  items
+  items,
 }) => {
   const navigate = useNavigate();
   const {
@@ -78,6 +79,7 @@ const PaymentEntries = ({
     GVMasterID: null,
   });
   const [errors, setErrors] = useState({});
+  const [remarks, setRemarks] = useState("");
 
   const updatedDetails = useMemo(() => {
     const total = totalValue || 0;
@@ -246,6 +248,7 @@ const PaymentEntries = ({
       customerId: selectedPatient?.Id,
       totalAmount: totalValue,
       totalAmountToPay: amountToPay,
+      remark:"Advance collected from Customer payment",
       payments: preparePaymentsStructure(),
       entries: items.map((item) => {
         return {
@@ -262,6 +265,7 @@ const PaymentEntries = ({
         payload: finalStructure,
       }).unwrap();
       toast.success("Payments created Successfully");
+      navigate("/customer-payment");
 
       // navigate("/order-list");
     } catch (error) {
@@ -307,9 +311,9 @@ const PaymentEntries = ({
           const minDate = subDays(today, 90);
           const selectedDate = startOfDay(new Date(newPayment.ChequeDate));
 
-          if (isBefore(selectedDate, minDate) || isAfter(selectedDate, today)) {
+          if (isBefore(selectedDate, minDate)) {
             validationErrors.chequeDate =
-              "Cheque date must be within the past 90 days";
+              "Cheque date must be within the last 90 days or in the future";
           }
         }
         break;
@@ -566,6 +570,15 @@ const PaymentEntries = ({
                   </div>
                 )}
             </div>
+            {fullPaymentDetails?.length > 0 && (
+              <div className="mt-5">
+                <Textarea
+                  label="Remarks"
+                  value={remarks || ""}
+                  onChange={(e) => setRemarks(e.target.value)}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -845,14 +858,13 @@ const MethodForm = ({
                 label="Cheque Date *"
                 value={newPayment.ChequeDate}
                 onChange={(date) => {
-                  const today = startOfDay(new Date());
-                  const minDate = subDays(today, 90);
+                  const minDate = subDays(startOfDay(new Date()), 90);
 
                   if (date && isBefore(date, minDate)) {
                     setErrors((prev) => ({
                       ...prev,
                       chequeDate:
-                        "Cheque date must be within the last 90 days or in the future",
+                        "Cheque date must be within the last 90 days or future",
                     }));
                   } else {
                     setErrors((prev) => ({ ...prev, chequeDate: "" }));

@@ -197,12 +197,12 @@ const CustomerPayment = () => {
     return sum;
   }, 0);
 
-  useEffect(() => {
-    if (collectPayment) {
-      setItems([]);
-      setNextClicked(true);
-    }
-  }, [collectPayment]);
+  // useEffect(() => {
+  //   if (collectPayment) {
+  //     setItems([]);
+  //     setNextClicked(true);
+  //   }
+  // }, [collectPayment]);
 
   return (
     <div>
@@ -265,7 +265,7 @@ const CustomerPayment = () => {
           </div>
         )}
 
-        {items.length > 0 && (
+        {(items.length > 0 && !collectPayment) && (
           <Table
             className="mt-5"
             columns={[
@@ -378,7 +378,7 @@ const CustomerPayment = () => {
           />
         )}
 
-        {items.length > 0 && (
+        {(items.length > 0 && !collectPayment) && (
           <div className="flex gap-10 justify-end mt-5 p-6 border-t border-gray-200 bg-gray-50">
             <div className="flex gap-6">
               <span className="text-lg font-semibold">
@@ -412,12 +412,8 @@ const CustomerPayment = () => {
             />
           </div>
         </Modal>
-        <Modal
-          isOpen={nextClicked && collectPayment}
-          onClose={() => setNextClicked(false)}
-          width="max-w-5xl"
-        >
-          <div>
+        {collectPayment && (
+          <div className="mt-5">
             <CollectAdvance
               totalValue={totalReceivable || 0}
               amountToPay={totalSelectedValue || 0}
@@ -427,7 +423,7 @@ const CustomerPayment = () => {
               collectPayment={collectPayment}
             />
           </div>
-        </Modal>
+         )}
       </div>
     </div>
   );
