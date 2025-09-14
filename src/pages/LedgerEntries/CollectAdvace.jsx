@@ -190,11 +190,11 @@ const CollectAdvance = ({
     return payments;
   };
   const handleSave = async () => {
-    if (!advanceRefceNo || advanceRefceNo.trim() === "") {
+    if (selectedPatient?.CreditBilling === 0 && (!advanceRefceNo || advanceRefceNo.trim() === "")) {
       toast.error("Please enter advance reference no!");
       return;
     }
-    if (!remarks || remarks.trim() === "") {
+    if (selectedPatient?.CreditBilling === 0 && (!remarks || remarks.trim() === "")) {
       toast.error("Please enter advance remarks!");
       return;
     }
