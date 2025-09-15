@@ -73,7 +73,7 @@ const CustomerPaymentView = () => {
                       : ""}
                   </TableCell>
 
-                  <TableCell>₹{formatINR(c.amount)}</TableCell>
+                  <TableCell>₹{formatINR(c.amount.substring(1))}</TableCell>
                 </TableRow>
               )}
               emptyMessage={isLoading ? "Loading..." : "No data available"}
@@ -92,7 +92,7 @@ const CustomerPaymentView = () => {
                       details?.data?.payments?.reduce(
                         (sum, item) => sum + parseFloat(item.amount),
                         0
-                      )
+                      ).substring(1)
                     ) || "0"}
                   </span>
                 </div>

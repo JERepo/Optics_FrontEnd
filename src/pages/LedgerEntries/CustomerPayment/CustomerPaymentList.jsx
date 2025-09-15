@@ -229,7 +229,7 @@ const CustomerPaymentList = () => {
                 <TableCell>{startIndex + index + 1}</TableCell>
                 <TableCell>{item.customerName}</TableCell>
                 <TableCell>{item.mobile}</TableCell>
-                <TableCell>₹{item.amount}</TableCell>
+                <TableCell>₹{item.amount.substring(1)}</TableCell>
                 <TableCell>
                   <button
                     onClick={() => handleViewinvoice(item.id)}
