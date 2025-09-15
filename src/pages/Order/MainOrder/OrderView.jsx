@@ -1,28 +1,36 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import {
   useCancelOrderMutation,
+  useGenerateInvoiceFromOrderMutation,
   useGetOrderViewByIdQuery,
   useGetSavedOrderDetailsQuery,
   useItemCancelMutation,
+  useLazyGetAdvanceAmtQuery,
 } from "../../../api/orderApi";
 import { useOrder } from "../../../features/OrderContext";
 import { Table, TableCell, TableRow } from "../../../components/Table";
-import { FiTrash2 } from "react-icons/fi";
+import { FiFileText, FiTrash2 } from "react-icons/fi";
 import { format } from "date-fns";
 import Button from "../../../components/ui/Button";
 import Loader from "../../../components/ui/Loader";
 import { formatINR } from "../../../utils/formatINR";
 import { useSelector } from "react-redux";
 import toast from "react-hot-toast";
+import { ErrorDisplayModal } from "../../../components/ErrorsDisplay";
+import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 
 const OrderView = () => {
   const navigate = useNavigate();
   const { search } = useLocation();
   const { calculateGST } = useOrder();
-  const { user } = useSelector((state) => state.auth);
+  const { user, hasMultipleLocations } = useSelector((state) => state.auth);
   const params = new URLSearchParams(search);
   const orderId = params.get("orderId");
+  const [errors, setErrors] = useState(null);
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const [isLimitOpen,setisLimitOpen] = useState(false)
+  const [warningMessage,setWarningMessage] = useState(null)
 
   const { data: orderDetails, isLoading } = useGetSavedOrderDetailsQuery(
     { orderId },
@@ -33,6 +41,10 @@ const OrderView = () => {
   const [cancelItem, { isLoading: isItemCancelling }] = useItemCancelMutation();
   const [cancelOrder, { isLoading: isOrderCancelling }] =
     useCancelOrderMutation();
+  const [generateInvoice, { isLoading: isInvoiceGenerating }] =
+    useGenerateInvoiceFromOrderMutation();
+  const [getAdvanceAmt, { isFetching: isAdvanceFetching }] =
+    useLazyGetAdvanceAmtQuery();
 
   const getTypeName = (id) => {
     const types = { 1: "F/S", 2: "ACC", 3: "CL" };
@@ -231,6 +243,70 @@ const OrderView = () => {
     }
   };
 
+  const handleGenerateInvoice = async (order) => {
+    const advance = await getAdvanceAmt({
+      orderId: order.OrderDetailId,
+    }).unwrap();
+    const payload = {
+      invoiceItems: [
+        {
+          orderDetailId: order.OrderDetailId,
+          batchCode: null,
+          toBillQty: order.OrderQty, //incorrect
+          srp: 0,
+          discountedSellingPrice: order.DiscountedSellingPrice,
+          invoicePrice: order.DiscountedSellingPrice,
+          AdvanceAmountused: order.AdvanceAmount || 0,
+        },
+      ],
+      locationId: parseInt(hasMultipleLocations[0]),
+      customerId: customerDataById?.data.data?.CustomerMaster?.Id,
+      patientId: customerDataById?.data.data?.PatientID,
+
+      invoiceByMethod: 1,
+      invoiceName: 0,
+      invoiceRemarks: null,
+      totalQty: order.OrderQty,
+      totalGSTValue: parseFloat(
+        calculateGST(
+          parseFloat(order.DiscountedSellingPrice),
+          parseFloat(order.TaxPercentage)
+        ).gstAmount
+      ),
+      totalValue:
+        order?.DiscountedSellingPrice * order.OrderQty +
+        parseFloat(order.FittingPrice || 0) *
+          (parseFloat(order.FittingGSTPercentage || 0) / 100) +
+        parseFloat(order.FittingPrice || 0) -
+        (order.AdvanceAmount || 0),
+      roundOff: 0.0,
+
+      applicationUserId: user.Id,
+      balanceAmount: 0,
+      // bypassCreditCheck: false,
+      creditBilling:
+        customerDataById?.data.data?.CustomerMaster?.CreditBilling === 0, // true or false
+    };
+
+    console.log(payload);
+    try {
+      const res = await generateInvoice({ payload }).unwrap();
+    } catch (error) {
+      console.log(error);
+
+      setErrors(
+        Array.isArray(error?.data?.validationErrors)
+          ? error?.data?.validationErrors
+          : typeof errors === "string"
+          ? [error?.data?.validationErrors]
+          : []
+      );
+      setErrorModalOpen(true);
+
+      return;
+    }
+  };
+
   const getOrderStatus = (status) => {
     const types = {
       1: "Confirmed",
@@ -282,6 +358,7 @@ const OrderView = () => {
             >
               Cancel Order
             </Button>
+
             <Button variant="outline" onClick={() => navigate("/order-list")}>
               Back
             </Button>
@@ -417,14 +494,22 @@ const OrderView = () => {
                   )}
                 </TableCell>
                 <TableCell>
-                  <Button
-                    variant="danger"
-                    onClick={() => handleCancelItem(order.OrderDetailId)}
-                    className=""
-                    size="sm"
-                  >
-                    Cancel Item
-                  </Button>
+                  <div className="flex gap-2 items-center">
+                    <Button
+                      size="sm"
+                      icon={FiFileText}
+                      onClick={() => handleGenerateInvoice(order)}
+                    ></Button>
+
+                    <Button
+                      variant="danger"
+                      onClick={() => handleCancelItem(order.OrderDetailId)}
+                      className=""
+                      size="sm"
+                    >
+                      Cancel Item
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             )}
@@ -498,6 +583,25 @@ const OrderView = () => {
           </div>
         )}
       </div>
+      <ErrorDisplayModal
+        title="Error Generating Invoice"
+        errors={errors}
+        open={errorModalOpen}
+        onClose={() => setErrorModalOpen(false)}
+      />
+      {/* <ConfirmationModal
+              isOpen={isLimitOpen}
+              onClose={() => setisLimitOpen(false)}
+              onConfirm={handleConfirmDiaDiff}
+              title="CreditLimit warning!"
+              message={
+                warningMessage 
+              }
+              confirmText="Yes, Proceed"
+              cancelText="Cancel"
+              danger={false}
+              isLoading={isPriceLoading}
+            /> */}
     </div>
   );
 };

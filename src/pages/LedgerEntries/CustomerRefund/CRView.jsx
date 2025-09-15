@@ -78,7 +78,7 @@ const CRView = () => {
                       : ""}
                   </TableCell> */}
 
-                  <TableCell>₹{formatINR(c.Amount)}</TableCell>
+                  <TableCell>₹{formatINR(c.Amount.substring(1))}</TableCell>
                 </TableRow>
               )}
               emptyMessage={isLoading ? "Loading..." : "No data available"}
@@ -98,7 +98,7 @@ const CRView = () => {
                       details?.data?.refund?.reduce(
                         (sum, item) => sum + parseFloat(item.Amount),
                         0
-                      )
+                      ).substring(1)
                     ) || "0"}
                   </span>
                 </div>

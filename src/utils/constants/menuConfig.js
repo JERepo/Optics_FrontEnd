@@ -294,7 +294,7 @@ export const menuItems = [
         name: "Customer Refund",
         icon: IoConstructOutline,
         module: "Customer-Refund",
-        path: "/customer-refund/create",
+        path: "/customer-refund",
       },
     ],
   },

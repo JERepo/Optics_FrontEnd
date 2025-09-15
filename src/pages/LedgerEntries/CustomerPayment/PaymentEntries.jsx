@@ -268,12 +268,12 @@ const PaymentEntries = ({
     };
     console.log("payload", finalStructure);
     try {
-      // await saveFinalPayment({
-      //   payload: finalStructure,
-      // }).unwrap();
-      // toast.success("Payments created Successfully");
-      // navigate("/customer-payment");
-      // navigate("/order-list");
+      await saveFinalPayment({
+        payload: finalStructure,
+      }).unwrap();
+      toast.success("Payments created Successfully");
+      navigate("/customer-payment");
+      navigate("/order-list");
     } catch (error) {
       console.log("error");
       toast.error("Please try again!");

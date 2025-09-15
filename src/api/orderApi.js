@@ -416,6 +416,18 @@ export const orderApi = createApi({
         body: payload,
       }),
     }),
+    generateInvoiceFromOrder: builder.mutation({
+      query: ({ payload }) => ({
+        url: `/api/v1/invoice/generateinvoicefromorder`,
+        method: "POST",
+        body: payload,
+      }),
+    }),
+    getAdvanceAmt: builder.query({
+      query: ({ orderId }) => ({
+        url: `/api/v1/order/getAdvanceAmount/${orderId}`,
+      }),
+    }),
   }),
 });
 
@@ -425,6 +437,8 @@ export const {
   useGetOrderViewByIdQuery,
   useItemCancelMutation,
   useCancelOrderMutation,
+  useGenerateInvoiceFromOrderMutation,
+  useLazyGetAdvanceAmtQuery,
 
   // OPTICAL LENS
   useGetAllVisualAcuityQuery,

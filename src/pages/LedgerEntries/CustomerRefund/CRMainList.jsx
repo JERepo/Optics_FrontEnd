@@ -103,7 +103,7 @@ const CRMainList = () => {
         {/* Header */}
         <div className="px-6 py-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Customer Payment</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Customer Refund</h1>
             {/* <p className="text-sm text-gray-500 mt-1">
               Manage and track all your invoices
             </p> */}
@@ -204,7 +204,7 @@ const CRMainList = () => {
                 className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
                 onClick={() => {
                   goToStep(1);
-                  navigate("/customer-payment/create");
+                  navigate("/customer-refund/create");
                 }}
               >
                 Add Customer Refund
@@ -227,7 +227,7 @@ const CRMainList = () => {
                 <TableCell>{startIndex + index + 1}</TableCell>
                 <TableCell>{item.customerName}</TableCell>
                 <TableCell>{item.mobile}</TableCell>
-                <TableCell>₹{item.amount}</TableCell>
+                <TableCell>₹{item.amount.substring(1)}</TableCell>
                 <TableCell>
                   <button
                     onClick={() => handleViewinvoice(item.id)}

@@ -328,15 +328,15 @@ const SelectCustomer = () => {
         if (!newPayment.ChequeDate) {
           validationErrors.chequeDate = "Cheque date is required";
         } else {
-          const today = startOfDay(new Date());
-          const minDate = subDays(today, 90);
-          const selectedDate = startOfDay(new Date(newPayment.ChequeDate));
-
-          if (isBefore(selectedDate, minDate) || isAfter(selectedDate, today)) {
-            validationErrors.chequeDate =
-              "Cheque date must be within the past 90 days";
-          }
-        }
+                  const today = startOfDay(new Date());
+                  const minDate = subDays(today, 90);
+                  const selectedDate = startOfDay(new Date(newPayment.ChequeDate));
+        
+                  if (isBefore(selectedDate, minDate)) {
+                    validationErrors.chequeDate =
+                      "Cheque date must be within the last 90 days or in the future";
+                  }
+                }
         break;
       case 3:
         if (!newPayment.BankAccountID)
@@ -396,7 +396,7 @@ const SelectCustomer = () => {
     const payments = {};
 
     const normalizeType = (type) => {
-      switch (type.toLowerCase().replace(/\s/g, "")) {
+      switch (type.toLowerCase()) {
         case "bank transfer":
           return "bank";
         case "cheque":
@@ -409,15 +409,15 @@ const SelectCustomer = () => {
           return "cash";
         case "advance":
           return "advance";
-        case "Gift Voucher":
-          return "gift voucher";
+        case "gift voucher":
+          return "giftVoucher";
         default:
           return type.toLowerCase();
       }
     };
 
     updatedPayments.forEach((payment) => {
-      console.log("payment", payment);
+      console.log("paymr",payment)
       const typeKey = normalizeType(payment.Type || "");
       const amount = parseFloat(payment.Amount);
       if (isNaN(amount)) return;
@@ -432,7 +432,6 @@ const SelectCustomer = () => {
       }
 
       payments[typeKey].amount += amount;
-      console.log("payme", payments[typeKey], typeKey);
 
       switch (typeKey) {
         case "card":
@@ -458,11 +457,7 @@ const SelectCustomer = () => {
           payments[typeKey].BankAccountID = payment.BankAccountID || null;
           payments[typeKey].ReferenceNo = payment.RefNo || "";
           break;
-        // case "advance":
-        //   payments[typeKey].CustomerAdvanceIDs =
-        //     payment.CustomerAdvanceIDs || [];
-        //   break;
-        case "gift voucher":
+        case "giftVoucher":
           payments[typeKey].GVMasterID = payment.GVMasterID ?? null;
           break;
       }
@@ -493,8 +488,7 @@ const SelectCustomer = () => {
             const res = await createGVForRefund({
               payload: { ...gv, customerId: selectedCustomer?.Id },
             }).unwrap();
-            console.log("current", gv.GVCode);
-            console.log("update payments", updatedPayments);
+           
             updatedPayments = updatedPayments.map((p) =>
               p.GVCode == gv.GVCode
                 ? { ...p, GVMasterID: res?.data?.ID ?? null }
@@ -503,7 +497,7 @@ const SelectCustomer = () => {
           } catch (error) {
             console.error("GV creation failed", error);
             toast.error(
-              error?.data?.message || "Failed to create Gift Voucher"
+              error?.data?.message || error?.data.error || "Failed to create Gift Voucher"
             );
             return;
           }
@@ -528,10 +522,10 @@ const SelectCustomer = () => {
           totalAmount: -advanceItems
             ?.filter((item) => selectedProducts.includes(item.Id))
             .reduce((sum, item) => sum + parseFloat(item.refundAmount || 0), 0),
-          payments: preparePaymentsStructure(updatedPayments), // Use updatedPayments directly
+          ...preparePaymentsStructure(updatedPayments), // Use updatedPayments directly
         },
       };
-
+      
       await createRefund({ payload }).unwrap();
       toast.success("Customer refund successfully generated!");
     } catch (error) {
@@ -551,6 +545,7 @@ const SelectCustomer = () => {
         hasMultipleLocations.includes(link.CompanyID)
       )
   );
+
   return (
     <div>
       <div className="max-w-8xl p-6 bg-white rounded-lg shadow-sm border border-gray-100">
@@ -644,8 +639,8 @@ const SelectCustomer = () => {
         {selectedCustomer && !amountsSelected && (
           <div>
             <div>
-              <div className=" pb-4 flex justify-between">
-                <span className="text-xl font-medium text-gray-800">
+              <div className=" pb-4 flex justify-end">
+                {/* <span className="text-xl font-medium text-gray-800">
                   Total Advance Amount: ₹{" "}
                   {formatINR(
                     advanceItems.reduce(
@@ -653,7 +648,7 @@ const SelectCustomer = () => {
                       0
                     )
                   )}
-                </span>
+                </span> */}
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -814,7 +809,7 @@ const SelectCustomer = () => {
               </span>
               <Button
                 variant="outline"
-                onClick={() => setAmountsSelected(false)}
+                onClick={() => {setAmountsSelected(false);setFullPaymentDetails([])}}
               >
                 Back
               </Button>
@@ -902,6 +897,11 @@ const SelectCustomer = () => {
                         }
                         onChange={(_, newValue) => {
                           if (newValue?.value === 4) {
+                            const g = fullPaymentDetails?.find((item) => item.GVData)
+                            if(g){
+                              toast.error("Gift Voucher can be added only once!")
+                              return;
+                            }
                             setCollectGiftAmount(true);
                           }
                           setSelectedPaymentMethod(newValue?.value || null);
