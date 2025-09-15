@@ -17,6 +17,28 @@ export default function GRNStep4() {
     const [formState, setFormState] = useState({
         remarks: ""
     });
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingIndex, setEditingIndex] = useState(null);
+    const [newQuantity, setNewQuantity] = useState('');
+
+    const openModal = (index, currentQuantity) => {
+        setEditingIndex(index);
+        setNewQuantity(currentQuantity);
+        setIsModalOpen(true);
+    };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setEditingIndex(null);
+        setNewQuantity('');
+    };
+
+    const handleQuantityUpdate = async () => {
+        if (editingIndex !== null) {
+            await updateScannedItemQuantity(editingIndex, newQuantity);
+            closeModal();
+        }
+    };
 
     // RTK mutation hooks --------------------------------------------------------------------------------
     const [getGRNDetails, {
@@ -37,7 +59,7 @@ export default function GRNStep4() {
 
         }
 
-        if(grnData?.step1?.GrnMainId){
+        if (grnData?.step1?.GrnMainId) {
             payload.grnMain = grnData?.step1?.GrnMainId;
         }
 
@@ -53,7 +75,7 @@ export default function GRNStep4() {
                 setGrnViewDetails(response?.data?.data || []);
 
                 //Update the context
-                if(response?.data?.data[0]?.GRNMainId) {
+                if (response?.data?.data[0]?.GRNMainId) {
                     updateStep1Data({
                         GrnMainId: response?.data?.data[0]?.GRNMainId,
                     });
@@ -165,7 +187,7 @@ export default function GRNStep4() {
                 <div className="flex justify-between items-center">
                     <h2 className="text-xl font-bold text-[#000060] mb-6">Step 4: Review Selected GRN</h2>
                     <button
-                        onClick={() => {setCurrentStep(2)}}
+                        onClick={() => { setCurrentStep(2) }}
                         className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
                     >
                         Add Product
@@ -203,54 +225,104 @@ export default function GRNStep4() {
 
                 <div className="mt-6">
                     <h3 className="text-lg font-semibold mb-4">GRN Items</h3>
-                    <Table
-                        columns={["Sl No.", "Order No.", "Supplier Order No.", "Type", "Barcode", "Product Name", "MRP", "GST", "QTY", "Buying Price", "Total Amount", "Action"]}
-                        data={grnViewDetails}
-                        renderRow={(item, index) => (
-                            <TableRow key={item.Barcode || index}>
-                                <TableCell>{index + 1}</TableCell>
-                                <TableCell>{item.OrderNo || null}</TableCell>
-                                <TableCell>{item.VendorOrderNo || null}</TableCell>
-                                <TableCell>{item?.ProductDetails?.ProductType == 0 && `OL` || item?.ProductDetails?.ProductType == 1 && `F` || item?.ProductDetails?.ProductType == 2 && `Acc` || item?.ProductDetails?.ProductType == 3 && `CL`}</TableCell>
-                                <TableCell>{item?.ProductDetails?.barcode}</TableCell>
-                                <TableCell>{item?.ProductDetails?.productName}<br />
-                                    Size: {item?.ProductDetails?.Size?.Size}<br />
-                                    Category: {item?.category === 0 ? `Sunglass` : `OpticalFrame`} <br />
-                                    HSN: {item?.ProductDetails?.HSN}
-                                </TableCell>
-                                <TableCell>{item.MRP || null}</TableCell>
-                                <TableCell>₹{" "} {parseFloat(parseInt(item?.GRNPrice) * (parseInt(item?.TaxPercent) / 100)).toFixed(2)}</TableCell>
-                                <TableCell>
-                                    <input
-                                        type="number"
-                                        value={item?.GRNQty || 1}
-                                        onChange={(e) => updateGRNItemQuantity(index, e.target.value)}
-                                        className="w-16 px-2 py-1 border rounded"
-                                        min="1"
-                                    />
-                                </TableCell>
-                                <TableCell>₹{" "}
-                                    <input
-                                        type="number"
-                                        value={grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (item.GRNPrice || 0)}
-                                        onChange={(e) => updateGRNItemPrice(index, e.target.value)}
-                                        className="w-20 px-2 py-1 border rounded"
-                                    />
-                                </TableCell>
-                                <TableCell>₹{" "}{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (parseFloat(parseInt(item?.GRNPrice * item?.GRNQty) * (parseInt(item?.TaxPercent) / 100)) + parseInt(item?.GRNPrice * item?.GRNQty)).toFixed(2)}
-                                </TableCell>
-                                <TableCell className="px-6 py-4 whitespace-nowrap">
-                                    <button
-                                        onClick={() => removeGRNItem(index)}
-                                        className="p-1 text-red-600 hover:text-red-800"
-                                        aria-label="Delete item"
-                                    >
-                                        <Trash2 className="h-5 w-5" />
-                                    </button>
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    />
+                    {grnData?.step1?.againstPO === 0 ? (
+                        <Table
+                            columns={["Sl No.", "Order No.", "Supplier Order No.", "Type", "Barcode", "Product Name", "MRP", "GST", "QTY", "Buying Price", "Total Amount", "Action"]}
+                            data={grnViewDetails}
+                            renderRow={(item, index) => (
+                                <TableRow key={item.Barcode || index}>
+                                    <TableCell>{index + 1}</TableCell>
+                                    <TableCell>{item.OrderNo || null}</TableCell>
+                                    <TableCell>{item.VendorOrderNo || null}</TableCell>
+                                    <TableCell>{item?.ProductDetails?.ProductType == 0 && `OL` || item?.ProductDetails?.ProductType == 1 && `F` || item?.ProductDetails?.ProductType == 2 && `Acc` || item?.ProductDetails?.ProductType == 3 && `CL`}</TableCell>
+                                    <TableCell>{item?.ProductDetails?.barcode}</TableCell>
+                                    <TableCell>{item?.ProductDetails?.productName}<br />
+                                        Size: {item?.ProductDetails?.Size?.Size}<br />
+                                        Category: {item?.category === 0 ? `Sunglass` : `OpticalFrame`} <br />
+                                        HSN: {item?.ProductDetails?.HSN}
+                                    </TableCell>
+                                    <TableCell>{item.MRP || null}</TableCell>
+                                    <TableCell>₹{" "} {parseFloat(parseInt(item?.GRNPrice) * (parseInt(item?.TaxPercent) / 100)).toFixed(2)}</TableCell>
+                                    <TableCell>
+                                        <input
+                                            type="number"
+                                            value={item?.GRNQty || 1}
+                                            onChange={(e) => updateGRNItemQuantity(index, e.target.value)}
+                                            className="w-16 px-2 py-1 border rounded"
+                                            min="1"
+                                        />
+                                    </TableCell>
+                                    <TableCell>₹{" "}
+                                        <input
+                                            type="number"
+                                            value={grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (item.GRNPrice || 0)}
+                                            onChange={(e) => updateGRNItemPrice(index, e.target.value)}
+                                            className="w-20 px-2 py-1 border rounded"
+                                        />
+                                    </TableCell>
+                                    <TableCell>₹{" "}{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (parseFloat(parseInt(item?.GRNPrice * item?.GRNQty) * (parseInt(item?.TaxPercent) / 100)) + parseInt(item?.GRNPrice * item?.GRNQty)).toFixed(2)}
+                                    </TableCell>
+                                    <TableCell className="px-6 py-4 whitespace-nowrap">
+                                        <button
+                                            onClick={() => removeGRNItem(index)}
+                                            className="p-1 text-red-600 hover:text-red-800"
+                                            aria-label="Delete item"
+                                        >
+                                            <Trash2 className="h-5 w-5" />
+                                        </button>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        />
+                    ) : (
+                        <Table
+                            columns={["PO No. (Order No.)", "Product Details", "S/O", "Others", "MRP", "PO QTY", "Pending Qty", "GRN Qty", "Buying Price", "Total", "Action"]}
+                            data={grnViewDetails}
+                            renderRow={(item, index) => (
+                                <TableRow key={index}>
+                                    <TableCell>{item.PONo} <br /> {`(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
+                                    <TableCell>{item?.ProductDetails?.productName}<br />
+                                        Size: {item?.ProductDetails?.Size?.Size}<br />
+                                        Category: {item?.category === 0 ? `Sunglass` : `OpticalFrame`} <br />
+                                        HSN: {item?.ProductDetails?.HSN}
+                                    </TableCell>
+                                    <TableCell>
+                                        {item.Category === 0 ? 'Sunglass' : 'Optical Frame'}
+                                    </TableCell>
+                                    <TableCell className="text-center flex">{item?.ProductDetails?.IsRxable ? "Rx: Yes" : "Rx: No"}<br />{item?.ProductDetails?.Ph ? "PH: Yes" : "PH: No"}<br />{item?.ProductDetails?.PO ? "PO: Yes" : "PO: No"}<br />{`CL - ${item?.ProductDetails?.Cl || ""}`}</TableCell>
+                                    <TableCell className="">₹ {item?.ProductDetails?.Stock?.MRP}</TableCell>
+                                    <TableCell className=" ">{item.POQty}</TableCell>
+                                    <TableCell>{item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty}</TableCell>
+                                    <TableCell>
+                                        <button
+                                            onClick={() => openModal(index, item.quantity || 1)}
+                                            className="w-16 px-2 py-1 border rounded bg-white hover:bg-gray-50 cursor-pointer text-left"
+                                        >
+                                            {item.quantity || 1}
+                                        </button>
+                                    </TableCell>
+                                    <TableCell>₹{" "}
+                                        <input
+                                            type="number"
+                                            value={grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (item.GRNPrice || 0)}
+                                            onChange={(e) => updateGRNItemPrice(index, e.target.value)}
+                                            className="w-20 px-2 py-1 border rounded"
+                                        />
+                                    </TableCell>
+                                    <TableCell>₹{" "}{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (parseFloat(parseInt(item?.GRNPrice * item?.GRNQty) * (parseInt(item?.TaxPercent) / 100)) + parseInt(item?.GRNPrice * item?.GRNQty)).toFixed(2)}</TableCell>
+                                    <TableCell className="px-6 py-4 whitespace-nowrap">
+                                        <button
+                                            onClick={() => removeScannedItem(index)}
+                                            className="p-1 text-red-600 hover:text-red-800"
+                                            aria-label="Delete item"
+                                        >
+                                            <Trash2 className="h-5 w-5" />
+                                        </button>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        />
+                    )}
                 </div>
 
 
