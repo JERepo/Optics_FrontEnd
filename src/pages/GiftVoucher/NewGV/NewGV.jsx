@@ -209,7 +209,7 @@ const NewGV = ({
       }
     } catch (error) {
       console.error(error);
-      toast.error("Something went wrong while creating the Gift Voucher.");
+      toast.error(error?.data.error || error?.data?.message ||"Something went wrong while creating the Gift Voucher.");
     }
   };
   return (

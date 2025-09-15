@@ -528,6 +528,7 @@ const SelectCustomer = () => {
       
       await createRefund({ payload }).unwrap();
       toast.success("Customer refund successfully generated!");
+      navigate("/customer-refund")
     } catch (error) {
       console.error("Refund error", error);
       toast.error(
