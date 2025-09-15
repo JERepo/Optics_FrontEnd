@@ -2058,7 +2058,7 @@ export default function GRNStep4AgainstPO() {
 
                 {/* Search By barcode results*/}
                 {(poDetailsItems && poDetailsItems.length > 0) && (
-                    grnData.step3.GRNAgainstPOorderType === "Auto Processing" && (
+                    grnData.step3.GRNAgainstPOorderType === "Auto Processing" ? (
                         <div className="space-y-6">
                             <GRNAgainstPOSearchTable
                                 searchResults={poDetailsItems}
@@ -2117,19 +2117,20 @@ export default function GRNStep4AgainstPO() {
                             </div>
                         </div>
                     )
-                    // : (
-                    //     <GRNAgainstPOSearchTable
-                    //         searchResults={poDetailsItems}
-                    //         selectedRows={selectedRows}
-                    //         handleGetPOdetailsByDetailId={handleGetPOdetailsByDetailId}
-                    //         handleCheckboxChange={handleCheckboxChange}
-                    //         handleAddPOdetailstoScannedTable={handleAddPOdetailstoScannedTable}
-                    //         isAddingItem={isAddingItem}
-                    //         poDetailsItem={2}
-                    //         GRNAgainstPOorderType={grnData.step3.GRNAgainstPOorderType}
-                    //         productType={grnData.step2.productType === "Frame/Sunglass" ? 1 : grnData.step2.productType === "Accessories" ? 2 : null}
-                    //     />
-                    // )
+                        : (
+                            (!showSearchInputs && grnData.step3.GRNAgainstPOorderType === "Specific Order") &&
+                            (<GRNAgainstPOSearchTable
+                                searchResults={poDetailsItems}
+                                selectedRows={selectedRows}
+                                handleGetPOdetailsByDetailId={handleGetPOdetailsByDetailId}
+                                handleCheckboxChange={handleCheckboxChange}
+                                handleAddPOdetailstoScannedTable={handleAddPOdetailstoScannedTable}
+                                isAddingItem={isAddingItem}
+                                poDetailsItem={2}
+                                GRNAgainstPOorderType={grnData.step3.GRNAgainstPOorderType}
+                                productType={grnData.step2.productType === "Frame/Sunglass" ? 1 : grnData.step2.productType === "Accessories" ? 2 : null}
+                            />)
+                        )
 
                 )}
 
