@@ -1,11 +1,11 @@
 import React from "react";
-import Button from "../../components/ui/Button";
+import Button from "../../../components/ui/Button";
 import { useLocation, useNavigate } from "react-router";
-import { useGetPaymentsByIdQuery } from "../../api/customerPayment";
-import Loader from "../../components/ui/Loader";
-import { Table, TableCell, TableRow } from "../../components/Table";
+import { useGetPaymentsByIdQuery } from "../../../api/customerPayment";
+import Loader from "../../../components/ui/Loader";
+import { Table, TableCell, TableRow } from "../../../components/Table";
 import { format } from "date-fns";
-import { formatINR } from "../../utils/formatINR";
+import { formatINR } from "../../../utils/formatINR";
 
 const CustomerPaymentView = () => {
   const navigate = useNavigate();
