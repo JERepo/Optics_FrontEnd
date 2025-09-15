@@ -227,7 +227,7 @@ const CRMainList = () => {
                 <TableCell>{startIndex + index + 1}</TableCell>
                 <TableCell>{item.customerName}</TableCell>
                 <TableCell>{item.mobile}</TableCell>
-                <TableCell>₹{item.amount.substring(1)}</TableCell>
+                <TableCell>₹{Math.abs(parseFloat(item.amount))}</TableCell>
                 <TableCell>
                   <button
                     onClick={() => handleViewinvoice(item.id)}

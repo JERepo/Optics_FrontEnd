@@ -254,7 +254,7 @@ const CustomerPayment = () => {
             />
           </div>
           <div>
-            <Button variant="outline" onClick={() => navigate("/invoice")}>
+            <Button variant="outline" onClick={() => navigate("/customer-payment")}>
               Back
             </Button>
           </div>

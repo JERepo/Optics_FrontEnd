@@ -6,13 +6,13 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
-import Button from "../../../components/ui/Button";
-import { useOrder } from "../../../features/OrderContext";
-import { Table, TableCell, TableRow } from "../../../components/Table";
+import Button from "../../components/ui/Button";
+import { useOrder } from "../../features/OrderContext";
+import { Table, TableCell, TableRow } from "../../components/Table";
 import { enGB } from "date-fns/locale";
-import Loader from "../../../components/ui/Loader";
+import Loader from "../../components/ui/Loader";
 import { useSelector } from "react-redux";
-import { useGetAllCPQuery } from "../../../api/customerPayment";
+import { useGetAllCPQuery } from "../../api/customerPayment";
 
 const CustomerPaymentList = () => {
   const navigate = useNavigate();
@@ -229,7 +229,7 @@ const CustomerPaymentList = () => {
                 <TableCell>{startIndex + index + 1}</TableCell>
                 <TableCell>{item.customerName}</TableCell>
                 <TableCell>{item.mobile}</TableCell>
-                <TableCell>₹{item.amount.substring(1)}</TableCell>
+                <TableCell>₹{Math.abs(parseFloat(item.amount))}</TableCell>
                 <TableCell>
                   <button
                     onClick={() => handleViewinvoice(item.id)}

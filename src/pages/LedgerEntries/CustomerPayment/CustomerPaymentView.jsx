@@ -1,11 +1,11 @@
 import React from "react";
-import Button from "../../../components/ui/Button";
+import Button from "../../components/ui/Button";
 import { useLocation, useNavigate } from "react-router";
-import { useGetPaymentsByIdQuery } from "../../../api/customerPayment";
-import Loader from "../../../components/ui/Loader";
-import { Table, TableCell, TableRow } from "../../../components/Table";
+import { useGetPaymentsByIdQuery } from "../../api/customerPayment";
+import Loader from "../../components/ui/Loader";
+import { Table, TableCell, TableRow } from "../../components/Table";
 import { format } from "date-fns";
-import { formatINR } from "../../../utils/formatINR";
+import { formatINR } from "../../utils/formatINR";
 
 const CustomerPaymentView = () => {
   const navigate = useNavigate();
@@ -73,7 +73,7 @@ const CustomerPaymentView = () => {
                       : ""}
                   </TableCell>
 
-                  <TableCell>₹{formatINR(c.amount.substring(1))}</TableCell>
+                  <TableCell>₹{formatINR(Math.abs(c.amount))}</TableCell>
                 </TableRow>
               )}
               emptyMessage={isLoading ? "Loading..." : "No data available"}
@@ -88,11 +88,11 @@ const CustomerPaymentView = () => {
                     Total Amount
                   </span>
                   <span className="text-neutral-600 text-xl font-medium">
-                    ₹{formatINR(
+                    ₹{formatINR(Math.abs(
                       details?.data?.payments?.reduce(
                         (sum, item) => sum + parseFloat(item.amount),
                         0
-                      ).substring(1)
+                      ))
                     ) || "0"}
                   </span>
                 </div>
