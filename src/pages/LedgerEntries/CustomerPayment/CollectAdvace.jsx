@@ -1,14 +1,14 @@
 import React, { useState, useMemo } from "react";
-import { useOrder } from "../../features/OrderContext";
+import { useOrder } from "../../../features/OrderContext";
 import { FiArrowLeft, FiTrash2, FiPlus, FiInfo, FiSave } from "react-icons/fi";
-import Button from "../../components/ui/Button";
+import Button from "../../../components/ui/Button";
 import { Autocomplete, TextField } from "@mui/material";
-import Input from "../../components/Form/Input";
-import { Table, TableCell, TableRow } from "../../components/Table";
-import { useGetAllPaymentMachinesQuery } from "../../api/paymentMachineApi";
+import Input from "../../../components/Form/Input";
+import { Table, TableCell, TableRow } from "../../../components/Table";
+import { useGetAllPaymentMachinesQuery } from "../../../api/paymentMachineApi";
 import { useSelector } from "react-redux";
-import { useGetAllBankMastersQuery } from "../../api/bankMasterApi";
-import { useGetAllBankAccountsQuery } from "../../api/BankAccountDetailsApi";
+import { useGetAllBankMastersQuery } from "../../../api/bankMasterApi";
+import { useGetAllBankAccountsQuery } from "../../../api/BankAccountDetailsApi";
 import { toast } from "react-hot-toast";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -17,10 +17,10 @@ import { isBefore, isAfter, subDays, startOfDay, format } from "date-fns";
 import {
   useSaveAdvanceAmountMutation,
   useSaveCustomerPaymentMutation,
-} from "../../api/customerPayment";
+} from "../../../api/customerPayment";
 import { useNavigate } from "react-router";
-import { formatINR } from "../../utils/formatINR";
-import Textarea from "../../components/Form/Textarea";
+import { formatINR } from "../../../utils/formatINR";
+import Textarea from "../../../components/Form/Textarea";
 
 const methods = [
   { value: 1, type: "Cash" },
@@ -466,18 +466,7 @@ const CollectAdvance = ({
                 </Button>
               </div>
 
-              {fullPaymentDetails.length > 0 && (
-                <div className="mt-4 flex justify-end">
-                  <Button
-                    isLoading={isFinalSaving}
-                    disabled={isFinalSaving}
-                    onClick={handleSave}
-                    className="flex items-center gap-2"
-                  >
-                    Complete Order
-                  </Button>
-                </div>
-              )}
+             
 
               {!collectPayment &&
                 updatedDetails.RemainingToPay > 0 &&
@@ -512,6 +501,18 @@ const CollectAdvance = ({
                 onChange={(e) => setRemarks(e.target.value)}
               />
             </div>}
+             {fullPaymentDetails.length > 0 && (
+                <div className="mt-4 flex justify-end">
+                  <Button
+                    isLoading={isFinalSaving}
+                    disabled={isFinalSaving}
+                    onClick={handleSave}
+                    className="flex items-center gap-2"
+                  >
+                    Complete Customer Payment
+                  </Button>
+                </div>
+              )}
           </div>
         </div>
       </div>

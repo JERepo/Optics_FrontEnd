@@ -1,8 +1,10 @@
 import React, { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router";
 import {
+  useCancelOrderMutation,
   useGetOrderViewByIdQuery,
   useGetSavedOrderDetailsQuery,
+  useItemCancelMutation,
 } from "../../../api/orderApi";
 import { useOrder } from "../../../features/OrderContext";
 import { Table, TableCell, TableRow } from "../../../components/Table";
@@ -11,11 +13,14 @@ import { format } from "date-fns";
 import Button from "../../../components/ui/Button";
 import Loader from "../../../components/ui/Loader";
 import { formatINR } from "../../../utils/formatINR";
+import { useSelector } from "react-redux";
+import toast from "react-hot-toast";
 
 const OrderView = () => {
   const navigate = useNavigate();
   const { search } = useLocation();
   const { calculateGST } = useOrder();
+  const { user } = useSelector((state) => state.auth);
   const params = new URLSearchParams(search);
   const orderId = params.get("orderId");
 
@@ -25,6 +30,9 @@ const OrderView = () => {
   );
   const { data: customerDataById, isLoading: isViewLoading } =
     useGetOrderViewByIdQuery({ id: orderId });
+  const [cancelItem, { isLoading: isItemCancelling }] = useItemCancelMutation();
+  const [cancelOrder, { isLoading: isOrderCancelling }] =
+    useCancelOrderMutation();
 
   const getTypeName = (id) => {
     const types = { 1: "F/S", 2: "ACC", 3: "CL" };
@@ -193,6 +201,36 @@ const OrderView = () => {
   );
   const balanceAmount = grandTotal - advanceAmount;
 
+  const handleCancelItem = async (id) => {
+    try {
+      const payload = {
+        proceedAfterWarnings: false,
+        applicationUserId: user.Id,
+      };
+
+      const res = await cancelItem({ id, payload }).unwrap();
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const handleCancelOrder = async () => {
+    try {
+      const payload = {
+        proceedAfterWarnings: false,
+        applicationUserId: user.Id,
+      };
+
+      const res = await cancelOrder({
+        id: parseInt(orderId),
+        payload,
+      }).unwrap();
+      toast.success("Order cancelled successfully");
+    } catch (error) {
+      console.log(error);
+      toast.error(error?.data?.message || "Order already cancelled");
+    }
+  };
+
   const getOrderStatus = (status) => {
     const types = {
       1: "Confirmed",
@@ -219,7 +257,7 @@ const OrderView = () => {
     columns.push("Advance Amount", "Balance Amount");
   }
 
-  columns.push("Total");
+  columns.push("Total", "Action");
   if (isViewLoading || isLoading) {
     return (
       <div>
@@ -231,11 +269,19 @@ const OrderView = () => {
   return (
     <div className="max-w-8xl">
       <div className="bg-white rounded-sm shadow-sm overflow-hidden p-6">
-        <div className="flex justify-between items-center mb-3">
+        <div className="flex justify-between items-center mb-5">
           <div className="text-neutral-800 text-2xl font-semibold">
             Order Details
           </div>
-          <div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="danger"
+              onClick={handleCancelOrder}
+              className=""
+              size="md"
+            >
+              Cancel Order
+            </Button>
             <Button variant="outline" onClick={() => navigate("/order-list")}>
               Back
             </Button>
@@ -369,6 +415,16 @@ const OrderView = () => {
                         (parseFloat(order.FittingGSTPercentage || 0) / 100) +
                       parseFloat(order.FittingPrice || 0)
                   )}
+                </TableCell>
+                <TableCell>
+                  <Button
+                    variant="danger"
+                    onClick={() => handleCancelItem(order.OrderDetailId)}
+                    className=""
+                    size="sm"
+                  >
+                    Cancel Item
+                  </Button>
                 </TableCell>
               </TableRow>
             )}

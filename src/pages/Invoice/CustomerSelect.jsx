@@ -893,9 +893,28 @@ const CustomerSelect = () => {
         payments.cash = (payments.cash || 0) + amount;
         return;
       }
+       if (typeKey === "advance") {
+        if (!payments.advance) payments.advance = [];
+        payments.advance.push({
+          advanceId: payment.advanceId,
+          amount: amount,
+        });
+        return;
+      }
+
+      if (typeKey === "giftVoucher") {
+        if (!payments.giftVoucher) payments.giftVoucher = [];
+        payments.giftVoucher.push({
+          GVCode: payment.GVCode || null,
+          amount: amount,
+        });
+        return;
+      }
+
       if (!payments[typeKey]) {
         payments[typeKey] = { amount: 0 };
       }
+
       payments[typeKey].amount += amount;
       switch (typeKey) {
         case "card":
@@ -921,16 +940,16 @@ const CustomerSelect = () => {
           payments[typeKey].BankAccountID = payment.BankAccountID || null;
           payments[typeKey].ReferenceNo = payment.RefNo || "";
           break;
-        case "giftVoucher":
-          payments[typeKey].GVCode = payment.GVCode || null;
-          break;
+        // case "giftVoucher":
+        //   payments[typeKey].GVCode = payment.GVCode || null;
+        //   break;
         // case "advance":
         //   payments[typeKey].CustomerAdvanceIDs =
         //     payment.CustomerAdvanceIDs || [];
         //   break;
-        case "advance":
-          payments[typeKey].advanceId = payment.advanceId;
-          break;
+        // case "advance":
+        //   payments[typeKey].advanceId = payment.advanceId;
+        //   break;
       }
     });
     return payments;

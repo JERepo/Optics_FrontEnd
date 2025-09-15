@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useOrder } from "../../features/OrderContext";
+import { useOrder } from "../../../features/OrderContext";
 import {
   FiArrowLeft,
   FiTrash2,
@@ -8,26 +8,26 @@ import {
   FiSave,
   FiSearch,
 } from "react-icons/fi";
-import Button from "../../components/ui/Button";
+import Button from "../../../components/ui/Button";
 import { Autocomplete, TextField } from "@mui/material";
-import Input from "../../components/Form/Input";
-import { Table, TableCell, TableRow } from "../../components/Table";
-import { useGetAllPaymentMachinesQuery } from "../../api/paymentMachineApi";
+import Input from "../../../components/Form/Input";
+import { Table, TableCell, TableRow } from "../../../components/Table";
+import { useGetAllPaymentMachinesQuery } from "../../../api/paymentMachineApi";
 import { useSelector } from "react-redux";
-import { useGetAllBankMastersQuery } from "../../api/bankMasterApi";
-import { useGetAllBankAccountsQuery } from "../../api/BankAccountDetailsApi";
+import { useGetAllBankMastersQuery } from "../../../api/bankMasterApi";
+import { useGetAllBankAccountsQuery } from "../../../api/BankAccountDetailsApi";
 import { toast } from "react-hot-toast";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { isBefore, isAfter, subDays, startOfDay, format } from "date-fns";
-import { useSaveFinalPaymentMutation } from "../../api/orderApi";
+import { useSaveFinalPaymentMutation } from "../../../api/orderApi";
 import { useNavigate } from "react-router";
-import { useGetAdvanceDataForInvoiceQuery } from "../../api/customerRefund";
-import { useLazyValidateGiftVoucherQuery } from "../../api/giftVoucher";
-import { formatINR } from "../../utils/formatINR";
-import { useSaveCustomerPaymentMutation } from "../../api/customerPayment";
-import Textarea from "../../components/Form/Textarea";
+import { useGetAdvanceDataForInvoiceQuery } from "../../../api/customerRefund";
+import { useLazyValidateGiftVoucherQuery } from "../../../api/giftVoucher";
+import { formatINR } from "../../../utils/formatINR";
+import { useSaveCustomerPaymentMutation } from "../../../api/customerPayment";
+import Textarea from "../../../components/Form/Textarea";
 
 const methods = [
   { value: 1, type: "Cash" },
@@ -183,10 +183,26 @@ const PaymentEntries = ({
       }
 
       // Initialize only if not cash
+      if (typeKey === "advance") {
+        if (!payments.advance) payments.advance = [];
+        payments.advance.push({
+          advanceId: payment.advanceId,
+          amount: amount,
+        });
+        return;
+      }
+      if (typeKey === "giftVoucher") {
+        if (!payments.giftVoucher) payments.giftVoucher = [];
+        payments.giftVoucher.push({
+          GVMasterID: payment.GVMasterID || null,
+          amount: amount,
+        });
+        return;
+      }
+
       if (!payments[typeKey]) {
         payments[typeKey] = { amount: 0 };
       }
-
       payments[typeKey].amount += amount;
 
       switch (typeKey) {
@@ -213,18 +229,9 @@ const PaymentEntries = ({
           payments[typeKey].BankAccountID = payment.BankAccountID || null;
           payments[typeKey].ReferenceNo = payment.RefNo || "";
           break;
-        // case "advance":
-        //   payments[typeKey].CustomerAdvanceIDs =
-        //     payment.CustomerAdvanceIDs || [];
-        //   break;
-        case "advance":
-          payments[typeKey].advanceId = payment.advanceId;
-          break;
         // case "giftVoucher":
-        //   payments[typeKey].GVCode = payment.GVCode || null;
+        //   payments[typeKey].GVMasterID = payment.GVMasterID || null;
         //   break;
-        case "giftVoucher":
-          payments[typeKey].GVMasterID = payment.GVMasterID || null;
       }
     });
 
@@ -248,7 +255,7 @@ const PaymentEntries = ({
       customerId: selectedPatient?.Id,
       totalAmount: totalValue,
       totalAmountToPay: amountToPay,
-      remark:"Advance collected from Customer payment",
+      remark: "Advance collected from Customer payment",
       payments: preparePaymentsStructure(),
       entries: items.map((item) => {
         return {
@@ -261,12 +268,11 @@ const PaymentEntries = ({
     };
     console.log("payload", finalStructure);
     try {
-      await saveFinalPayment({
-        payload: finalStructure,
-      }).unwrap();
-      toast.success("Payments created Successfully");
-      navigate("/customer-payment");
-
+      // await saveFinalPayment({
+      //   payload: finalStructure,
+      // }).unwrap();
+      // toast.success("Payments created Successfully");
+      // navigate("/customer-payment");
       // navigate("/order-list");
     } catch (error) {
       console.log("error");
@@ -537,20 +543,6 @@ const PaymentEntries = ({
                 </div>
               )}
 
-              {updatedDetails.RemainingToPay <= 0 &&
-                fullPaymentDetails.length > 0 && (
-                  <div className="mt-4 flex justify-end">
-                    <Button
-                      isLoading={isFinalSaving}
-                      disabled={isFinalSaving}
-                      onClick={handleSave}
-                      className="flex items-center gap-2"
-                    >
-                      Complete Order
-                    </Button>
-                  </div>
-                )}
-
               {updatedDetails.RemainingToPay > 0 &&
                 fullPaymentDetails.length > 0 && (
                   <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3">
@@ -579,6 +571,19 @@ const PaymentEntries = ({
                 />
               </div>
             )}
+            {updatedDetails.RemainingToPay <= 0 &&
+              fullPaymentDetails.length > 0 && (
+                <div className="mt-4 flex justify-end">
+                  <Button
+                    isLoading={isFinalSaving}
+                    disabled={isFinalSaving}
+                    onClick={handleSave}
+                    className="flex items-center gap-2"
+                  >
+                    Complete Customer Payment
+                  </Button>
+                </div>
+              )}
           </div>
         </div>
       </div>
@@ -1016,7 +1021,7 @@ const MethodForm = ({
                 htmlFor="barcode"
                 className="text-sm font-medium text-gray-700"
               >
-                Enter Barcode
+                Enter Gift Voucher Code
               </label>
               <div className="flex gap-2">
                 <div className="relative flex items-center">

@@ -257,7 +257,7 @@ export const orderApi = createApi({
       query: (payload) => ({
         url: `/api/v1/order/getorderdetails-byproduct/`,
         method: "POST",
-        body: payload
+        body: payload,
       }),
       providesTags: ["OrderDetails"],
     }),
@@ -266,7 +266,7 @@ export const orderApi = createApi({
       query: (payload) => ({
         url: `/api/v1/order/productdetails`,
         method: "POST",
-        body: payload
+        body: payload,
       }),
       providesTags: ["OrderDetails"],
     }),
@@ -367,7 +367,6 @@ export const orderApi = createApi({
         method: "PUT",
         body: payload,
       }),
-
     }),
 
     // MAIN PAGE AND VIEW PAGE
@@ -395,13 +394,26 @@ export const orderApi = createApi({
       }),
     }),
 
-
     // Get order for GRN OL dd (companyId and status 0, 2, 6)
     getOrderdd: builder.mutation({
       query: (payload) => ({
         url: `/api/v1/order/productdetails-dd/`,
-        method: 'POST',
-        body: payload
+        method: "POST",
+        body: payload,
+      }),
+    }),
+    itemCancel: builder.mutation({
+      query: ({ id, payload }) => ({
+        url: `/api/v1/order/cancelitem/${id}`,
+        method: "PUT",
+        body: payload,
+      }),
+    }),
+    cancelOrder: builder.mutation({
+      query: ({ id, payload }) => ({
+        url: `/api/v1/order/cancelorder/${id}`,
+        method: "PUT",
+        body: payload,
       }),
     }),
   }),
@@ -411,6 +423,8 @@ export const {
   // MAIN PAGE AND VIEW PAGE
   useGetAllOrdersQuery,
   useGetOrderViewByIdQuery,
+  useItemCancelMutation,
+  useCancelOrderMutation,
 
   // OPTICAL LENS
   useGetAllVisualAcuityQuery,
@@ -470,5 +484,5 @@ export const {
   useCompleteOrderFinalMutation,
   useGetOrderDetailsByIdMutation,
   useGetOrderDetailsAllMutation,
-  useGetOrderddMutation
+  useGetOrderddMutation,
 } = orderApi;

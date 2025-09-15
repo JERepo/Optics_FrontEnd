@@ -4,6 +4,7 @@ import { customBaseQuery } from "./customBaseQuery";
 export const cusomerPaymentApi = createApi({
   reducerPath: "cusomerPaymentApi",
   baseQuery: customBaseQuery,
+  tagTypes : ["CustomerPayment"],
   endpoints: (builder) => ({
     getCustomerPayment: builder.query({
       query: ({ companyId, customerId }) => ({
@@ -16,6 +17,7 @@ export const cusomerPaymentApi = createApi({
         method: "POST",
         body: payload,
       }),
+      invalidatesTags : ["CustomerPayment"]
     }),
     saveAdvanceAmount: builder.mutation({
       query: ({ payload }) => ({
@@ -23,11 +25,13 @@ export const cusomerPaymentApi = createApi({
         method: "POST",
         body: payload,
       }),
+      invalidatesTags : ["CustomerPayment"]
     }),
     getAllCP: builder.query({
       query: () => ({
         url: `/api/v1/customer-payment/getallcp`,
       }),
+      providesTags : ["CustomerPayment"]
     }),
     getPaymentsById:builder.query({
       query :(id) => ({
