@@ -195,12 +195,28 @@ const PaymentFlow = ({
       if (isNaN(amount)) return;
 
       if (typeKey === "cash") {
-        // Cash should be a single numeric value
         payments.cash = (payments.cash || 0) + amount;
         return;
       }
 
-      // Initialize only if not cash
+      if (typeKey === "advance") {
+        if (!payments.advance) payments.advance = [];
+        payments.advance.push({
+          advanceId: payment.advanceId,
+          amount: amount,
+        });
+        return;
+      }
+
+      if (typeKey === "giftVoucher") {
+        if (!payments.giftVoucher) payments.giftVoucher = [];
+        payments.giftVoucher.push({
+          GVCode: payment.GVCode || null,
+          amount: amount,
+        });
+        return;
+      }
+
       if (!payments[typeKey]) {
         payments[typeKey] = { amount: 0 };
       }
@@ -231,20 +247,12 @@ const PaymentFlow = ({
           payments[typeKey].BankAccountID = payment.BankAccountID || null;
           payments[typeKey].ReferenceNo = payment.RefNo || "";
           break;
-        case "advance":
-          payments[typeKey].CustomerAdvanceIDs =
-            payment.CustomerAdvanceIDs || [];
-          break;
-        //  case "advance":
-        //   payments[typeKey].advanceId = payment.advanceId;
-        //   break;
-        // case "giftVoucher":
-        //   payments[typeKey].GVMasterID = payment.GVMasterID || null;
       }
     });
 
     return payments;
   };
+
   const handleSave = async () => {
     if (updatedDetails.RemainingToPay > 0) {
       toast.error("Please cover the remaining balance before saving.");
@@ -272,7 +280,7 @@ const PaymentFlow = ({
       detailidwithoutadvance: paymentDetails?.withOutAdvance,
       payments: preparePaymentsStructure(),
     };
-
+    console.log("fins", finalStructure);
     try {
       await saveFinalPayment({
         orderId: customerId.orderId,
@@ -283,7 +291,6 @@ const PaymentFlow = ({
       updatePaymentDetails([]);
       setFullPaymentDetails([]);
       updateFullPayments([]);
-
       navigate("/order-list");
     } catch (error) {
       console.log("error");
@@ -328,9 +335,9 @@ const PaymentFlow = ({
           const minDate = subDays(today, 90);
           const selectedDate = startOfDay(new Date(newPayment.ChequeDate));
 
-          if (isBefore(selectedDate, minDate) || isAfter(selectedDate, today)) {
+          if (isBefore(selectedDate, minDate)) {
             validationErrors.chequeDate =
-              "Cheque date must be within the past 90 days";
+              "Cheque date must be within the last 90 days or in the future";
           }
         }
         break;
@@ -383,7 +390,6 @@ const PaymentFlow = ({
       goToStep(currentStep - 1);
     }
   };
-
   return (
     <div className="">
       <div className="max-w-8xl">
@@ -524,6 +530,15 @@ const PaymentFlow = ({
                           ) || null
                         }
                         onChange={(_, newValue) => {
+                          if (
+                            newValue.value === 6 &&
+                            !advanceData?.data?.advances
+                          ) {
+                            toast.error(
+                              "No Advance Receipt data exists for this customer"
+                            );
+                            return;
+                          }
                           setSelectedPaymentMethod(newValue?.value || null);
                           setNewPayment((prev) => ({
                             ...prev,
@@ -681,7 +696,6 @@ const MethodForm = ({
   //     toast.error("Entered GVCode Not Valid!");
   //   }
   // };
-  console.log("new payment",newPayment)
   const handleGIftVoucher = async (e) => {
     e.preventDefault();
     try {
@@ -693,6 +707,11 @@ const MethodForm = ({
 
       // Calculate the amount to set
       const balanceAmount = parseFloat(res?.data?.GVBalanceAmount) || 0;
+      if (balanceAmount <= 0) {
+        toast.error("No Balance Amount in the entered Gift Voucher Code");
+        return;
+      }
+
       const amountToSet =
         parseFloat(balanceAmount) <= parseFloat(remainingToPay)
           ? balanceAmount
@@ -880,14 +899,13 @@ const MethodForm = ({
                 label="Cheque Date *"
                 value={newPayment.ChequeDate}
                 onChange={(date) => {
-                  const today = startOfDay(new Date());
-                  const minDate = subDays(today, 90);
+                  const minDate = subDays(startOfDay(new Date()), 90);
 
                   if (date && isBefore(date, minDate)) {
                     setErrors((prev) => ({
                       ...prev,
                       chequeDate:
-                        "Cheque date must be within the last 90 days or in the future",
+                        "Cheque date must be within the last 90 days or future",
                     }));
                   } else {
                     setErrors((prev) => ({ ...prev, chequeDate: "" }));

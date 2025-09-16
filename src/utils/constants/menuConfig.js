@@ -197,7 +197,7 @@ export const menuItems = [
     name: "Purchase Order",
     icon: FiPackage,
     module: "Purchase Order",
-    path: "/purchase-order/"
+    path: "/purchase-order/",
     // subItems: [
     //   {
     //     name: "Add PO",
@@ -237,7 +237,7 @@ export const menuItems = [
     name: "GRN",
     icon: FiArrowRightCircle,
     module: "GRN",
-    path: "/grn/"
+    path: "/grn/",
     // subItems: [
     //   {
     //     name: "Add GRN",
@@ -269,22 +269,17 @@ export const menuItems = [
         path: "activate-gv",
         module: "Gift-Voucher",
         icon: IoConstructOutline, // Suggests building/setup
-      }
+      },
     ],
   },
-    {
-    name: "Customer Refund",
-    icon: FiRotateCcw,
-    module: "Customer-Refund",
-    path: "/customer-refund/create",
-  },
-   {
+
+  {
     name: "Offer",
     icon: FiTag,
     module: "Offer",
     path: "/offer/create",
   },
-   {
+  {
     name: "Ledger Entries",
     icon: FiBook,
     module: "Customer-Payment",
@@ -295,7 +290,12 @@ export const menuItems = [
         module: "Customer-Payment",
         icon: IoConstructOutline, // Suggests building/setup
       },
-     
+      {
+        name: "Customer Refund",
+        icon: IoConstructOutline,
+        module: "Customer-Refund",
+        path: "/customer-refund",
+      },
     ],
   },
 ];

@@ -4,18 +4,18 @@ import { useNavigate } from "react-router";
 import {
   useGetAllCustomersQuery,
   useGetCompanyIdQuery,
-} from "../../api/customerApi";
-import Button from "../../components/ui/Button";
+} from "../../../api/customerApi";
+import Button from "../../../components/ui/Button";
 import { Autocomplete, TextField } from "@mui/material";
-import { useGetLocationByIdQuery } from "../../api/roleManagementApi";
-import { Table, TableCell, TableRow } from "../../components/Table";
-import { useLazyGetCustomerPaymentQuery } from "../../api/customerPayment";
+import { useGetLocationByIdQuery } from "../../../api/roleManagementApi";
+import { Table, TableCell, TableRow } from "../../../components/Table";
+import { useLazyGetCustomerPaymentQuery } from "../../../api/customerPayment";
 import { toast } from "react-hot-toast";
 import { format } from "date-fns";
-import { formatINR } from "../../utils/formatINR";
+import { formatINR } from "../../../utils/formatINR";
 import { FiCheck, FiEdit2, FiX } from "react-icons/fi";
-import Modal from "../../components/ui/Modal";
-import Checkbox from "../../components/Form/Checkbox";
+import Modal from "../../../components/ui/Modal";
+import Checkbox from "../../../components/Form/Checkbox";
 import PaymentEntries from "./PaymentEntries";
 import CollectAdvance from "./CollectAdvace";
 
@@ -55,11 +55,10 @@ const CustomerPayment = () => {
     setEditMode((prev) => {
       const newEditMode = { ...prev };
       items.forEach((item, index) => {
-        const key = index;
-        if (!newEditMode[key]) {
-          newEditMode[key] = {
+        if (!newEditMode[index]) {
+          newEditMode[index] = {
             BuyingPrice: false,
-            originalAmountToPay: item.AmountToPay || item.Amount, // Use AmountToPay or Amount
+            originalAmountToPay: item.AmountToPay, // Always take Amount
           };
         }
       });
@@ -81,8 +80,13 @@ const CustomerPayment = () => {
           AmountToPay: item.Invoice
             ? item.AmountToPay ?? item.Amount
             : -(item.AmountToPay ?? item.Amount),
+          Amount: item.Invoice
+            ? item.AmountToPay ?? item.Amount
+            : -(item.AmountToPay ?? item.Amount),
         }));
         setItems(updatedItems);
+        setCollectPayment(false)
+
         toast.success("Payment Details Fetched Successfully!");
       } else {
         toast.error("No payment details found!");
@@ -138,19 +142,33 @@ const CustomerPayment = () => {
     const newPrice = Number(price);
     const item = items[index];
 
-    // Validate that AmountToPay does not exceed Amount Due
-    if (newPrice > item.Amount) {
-      toast.error("Amount to Pay cannot exceed Amount Due!");
-      return;
+    if (isNaN(newPrice)) return;
+
+    // Case 1: Positive due (receivable)
+    if (item.Amount > 0) {
+      if (newPrice > item.Amount) {
+        toast.error("Amount to Pay cannot exceed Amount Due!");
+        return;
+      }
+      if (newPrice < 0) {
+        toast.error("Amount to Pay cannot be negative!");
+        return;
+      }
     }
 
-    // Validate that AmountToPay is not negative
-    if (newPrice < 0) {
-      toast.error("Amount to Pay cannot be negative!");
-      return;
+    // Case 2: Negative due (refund/credit)
+    if (item.Amount < 0) {
+      if (newPrice > 0) {
+        toast.error("Refund amount cannot be greater than 0!");
+        return;
+      }
+      if (newPrice < item.Amount) {
+        toast.error(`Refund amount cannot be less than ${item.Amount}`);
+        return;
+      }
     }
 
-    // Update AmountToPay for the item
+    // ✅ Update if valid
     setItems((prev) =>
       prev.map((i, idx) =>
         idx === index ? { ...i, AmountToPay: newPrice } : i
@@ -179,6 +197,10 @@ const CustomerPayment = () => {
   const handleCollectPayment = () => {
     setNextClicked(true);
   };
+  const handleCollectAdvance = (e) =>{
+    setCollectPayment(e.target.checked)
+    setItems([])
+  }
   const totalReceivable = items.reduce((sum, item) => {
     if (selectedProducts.includes(item.Id)) {
       const amount = item.Invoice
@@ -196,13 +218,6 @@ const CustomerPayment = () => {
     }
     return sum;
   }, 0);
-
-  // useEffect(() => {
-  //   if (collectPayment) {
-  //     setItems([]);
-  //     setNextClicked(true);
-  //   }
-  // }, [collectPayment]);
 
   return (
     <div>
@@ -239,7 +254,7 @@ const CustomerPayment = () => {
             />
           </div>
           <div>
-            <Button variant="outline" onClick={() => navigate("/invoice")}>
+            <Button variant="outline" onClick={() => navigate("/customer-payment")}>
               Back
             </Button>
           </div>
@@ -249,7 +264,7 @@ const CustomerPayment = () => {
             <div className="text-lg text-neutral-900">
               <Checkbox
                 checked={collectPayment}
-                onChange={(e) => setCollectPayment(e.target.checked)}
+                onChange={handleCollectAdvance}
                 label="Collect Advance"
               />
             </div>
@@ -407,7 +422,7 @@ const CustomerPayment = () => {
               amountToPay={totalSelectedValue || 0}
               selectedPatient={selectedCustomer || 0}
               companyId={parseInt(hasMultipleLocations[0])}
-              items={items}
+              items={items.filter((i) => selectedProducts.includes(i.Id))}
             />
           </div>
         </Modal>

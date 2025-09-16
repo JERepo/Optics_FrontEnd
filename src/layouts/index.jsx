@@ -82,12 +82,14 @@ import NewGV from "../pages/GiftVoucher/NewGV/NewGV";
 import ActiveteGV from "../pages/GiftVoucher/ActivateGV/ActiveteGV";
 import StockTransferIn from "../pages/StockTransferIn/MainStockTransferIn/StockTransferIn";
 import StockTransferInView from "../pages/StockTransferIn/MainStockTransferIn/StockTransferInView";
-import SelectCustomer from "../pages/CustomerRefund/SelectCustomer";
+import SelectCustomer from "../pages/LedgerEntries/CustomerRefund/SelectCustomer";
 import OfferModule from "../pages/Offer";
 import SearchFrameStock from "../pages/SearchStock/SearchFrameStock";
-import CustomerPayment from "../pages/LedgerEntries/CustomerPayment";
-import CustomerPaymentList from "../pages/LedgerEntries/CustomerPaymentList";
-import CustomerPaymentView from "../pages/LedgerEntries/CustomerPaymentView";
+import CustomerPayment from "../pages/LedgerEntries/CustomerPayment/CustomerPayment";
+import CustomerPaymentList from "../pages/LedgerEntries/CustomerPayment/CustomerPaymentList";
+import CustomerPaymentView from "../pages/LedgerEntries/CustomerPayment/CustomerPaymentView";
+import CRMainList from "../pages/LedgerEntries/CustomerRefund/CRMainList";
+import CRView from "../pages/LedgerEntries/CustomerRefund/CRView";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -774,15 +776,14 @@ export const router = createBrowserRouter([
         element: <PurchaseReturnView />,
       },
       {
-        path : "stock-transferin",
-        element : <StockTransferIn />
+        path: "stock-transferin",
+        element: <StockTransferIn />,
       },
       {
-        path : "stock-transferin/view",
-        element :<StockTransferInView />
+        path: "stock-transferin/view",
+        element: <StockTransferInView />,
       },
-      { path: "stock-transferin/create", 
-        element: <TotalStockTransferIn /> },
+      { path: "stock-transferin/create", element: <TotalStockTransferIn /> },
       {
         path: "grn/create",
         element: (
@@ -809,29 +810,37 @@ export const router = createBrowserRouter([
         element: <ActiveteGV />,
       },
       {
-        path :"customer-refund/create",
-        element : <SelectCustomer />
+        path: "customer-refund/create",
+        element: <SelectCustomer />,
       },
       {
-        path :"offer/create",
-        element : <OfferModule />
+        path: "customer-refund",
+        element: <CRMainList />,
       },
       {
-        path:"search-stock/frame",
-        element : <SearchFrameStock />
+        path :"customer-refund/view",
+        element : <CRView />
       },
       {
-        path : "customer-payment/create",
-        element : <CustomerPayment />
+        path: "offer/create",
+        element: <OfferModule />,
       },
       {
-        path : "customer-payment",
-        element : <CustomerPaymentList />
+        path: "search-stock/frame",
+        element: <SearchFrameStock />,
       },
       {
-        path :"customer-payment/view",
-        element : <CustomerPaymentView />
-      }
+        path: "customer-payment/create",
+        element: <CustomerPayment />,
+      },
+      {
+        path: "customer-payment",
+        element: <CustomerPaymentList />,
+      },
+      {
+        path: "customer-payment/view",
+        element: <CustomerPaymentView />,
+      },
     ],
   },
   {

@@ -447,7 +447,7 @@ const FrameSunglass = () => {
                   <TableCell>{item.Name}</TableCell>
                   <TableCell>{item.Size}</TableCell>
                   <TableCell>
-                    {item.Category == "O" ? "Optical Frame" : "Sunglass"}
+                    {item.Category == 0 ? "Optical Frame" : "Sunglass"}
                   </TableCell>
                   <TableCell className="w-[80px]">
                                          <div className="grid grid-cols-2 gap-2 w-auto">

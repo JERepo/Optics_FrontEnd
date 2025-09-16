@@ -6,18 +6,16 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
-import Button from "../../components/ui/Button";
-import { useOrder } from "../../features/OrderContext";
-import { Table, TableCell, TableRow } from "../../components/Table";
+import Button from "../../../components/ui/Button";
+import { useOrder } from "../../../features/OrderContext";
+import { Table, TableCell, TableRow } from "../../../components/Table";
 import { enGB } from "date-fns/locale";
-import Loader from "../../components/ui/Loader";
-import { useSelector } from "react-redux";
-import { useGetAllCPQuery } from "../../api/customerPayment";
+import Loader from "../../../components/ui/Loader";
+import { useGetAllCRQuery } from "../../../api/customerRefund";
 
-const CustomerPaymentList = () => {
+const CRMainList = () => {
   const navigate = useNavigate();
-  const { hasMultipleLocations } = useSelector((state) => state.auth);
-  const { goToStep, updateSelectedOrderDetails } = useOrder();
+  const { goToStep,  } = useOrder();
 
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
@@ -26,16 +24,16 @@ const CustomerPaymentList = () => {
   const [pageSize, setPageSize] = useState(10);
 
   const { data: allCp, isLoading: isAllOrdersLoading } =
-    useGetAllCPQuery();
+    useGetAllCRQuery();
 
   useEffect(() => {
     setCurrentPage(1);
   }, [fromDate, toDate, searchQuery]);
 
   const customerPayments = useMemo(() => {
-    if (!allCp?.data) return [];
+    if (!allCp?.data?.data) return [];
 
-    let filtered = allCp?.data;
+    let filtered = allCp?.data?.data;
 
     if (fromDate) {
       filtered = filtered.filter(
@@ -88,7 +86,7 @@ const CustomerPaymentList = () => {
 
   const handleViewinvoice = (id) => {
     // updateSelectedOrderDetails(invoice);
-    navigate(`/customer-payment/view?cpId=${id}`);
+    navigate(`/customer-refund/view?crId=${id}`);
   };
 
 
@@ -105,7 +103,7 @@ const CustomerPaymentList = () => {
         {/* Header */}
         <div className="px-6 py-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Customer Payment</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Customer Refund</h1>
             {/* <p className="text-sm text-gray-500 mt-1">
               Manage and track all your invoices
             </p> */}
@@ -186,7 +184,7 @@ const CustomerPaymentList = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
             <div className="flex items-center gap-5">
               <h2 className="text-lg font-medium text-gray-900">
-                Customer Payment
+                Customer Refund
               </h2>
 
               <div className="relative flex items-center w-full sm:w-64">
@@ -206,10 +204,10 @@ const CustomerPaymentList = () => {
                 className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
                 onClick={() => {
                   goToStep(1);
-                  navigate("/customer-payment/create");
+                  navigate("/customer-refund/create");
                 }}
               >
-                Add Customer payment
+                Add Customer Refund
               </Button>
              
             </div>
@@ -229,7 +227,7 @@ const CustomerPaymentList = () => {
                 <TableCell>{startIndex + index + 1}</TableCell>
                 <TableCell>{item.customerName}</TableCell>
                 <TableCell>{item.mobile}</TableCell>
-                <TableCell>₹{item.amount}</TableCell>
+                <TableCell>₹{Math.abs(parseFloat(item.amount))}</TableCell>
                 <TableCell>
                   <button
                     onClick={() => handleViewinvoice(item.id)}
@@ -260,4 +258,4 @@ const CustomerPaymentList = () => {
   );
 };
 
-export default CustomerPaymentList;
+export default CRMainList;
