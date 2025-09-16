@@ -14,6 +14,7 @@ import Input from "../../../components/Form/Input";
 import Radio from "../../../components/Form/Radio";
 import { Table, TableRow } from "../../../components/Table";
 import { useSaveOfferProductMutation } from "../../../api/offerApi";
+import { useNavigate } from "react-router";
 
 const ContactLens = () => {
   const {
@@ -23,6 +24,8 @@ const ContactLens = () => {
     customerOffer,
     goToOfferStep,
   } = useOrder();
+    const navigate = useNavigate();
+  
   const [brandId, setBrandId] = useState(null);
   const [showProduct, setShowProduct] = useState(false);
   const [modalityId, setModalityId] = useState(null);
@@ -114,11 +117,11 @@ const ContactLens = () => {
           item.discountType === 1 ? parseFloat(item.discountValue) : null,
       })),
     };
-    console.log(payload);
 
     try {
       await saveCL(payload).unwrap();
-      toast.success("Contact lens successfully saved")
+      toast.success("Contact lens successfully saved");
+      navigate("/offer")
     } catch (error) {
       console.log(error);
     }
@@ -340,7 +343,13 @@ const ContactLens = () => {
             <Button icon={FiPlus} onClick={handleAddProduct}>
               Add
             </Button>
-            <Button onClick={handleSave} isLoading={isClSaving} disabled={isClSaving}>Save & Next</Button>
+            <Button
+              onClick={handleSave}
+              isLoading={isClSaving}
+              disabled={isClSaving}
+            >
+              Save & Next
+            </Button>
           </div>
         </div>
       </div>

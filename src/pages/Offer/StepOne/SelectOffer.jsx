@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Button from "../../../components/ui/Button";
 import Radio from "../../../components/Form/Radio";
 import Input from "../../../components/Form/Input";
@@ -8,6 +8,7 @@ import { useGetAllBrandsQuery } from "../../../api/brandsApi";
 import {
   useCreateOfferMutation,
   useGetCustomerGroupQuery,
+  useGetOfferAvlQuery,
 } from "../../../api/offerApi";
 import { useOrder } from "../../../features/OrderContext";
 import { useSelector } from "react-redux";
@@ -15,6 +16,7 @@ import { useGetAllLocationsQuery } from "../../../api/roleManagementApi";
 import Loader from "../../../components/ui/Loader";
 import { FiMapPin } from "react-icons/fi";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router";
 
 const Offers = [
   { value: 3, label: "Product Discount (% OR VALUE)" },
@@ -23,10 +25,12 @@ const Offers = [
 
 const SelectOffer = () => {
   // local state
+  const navigate = useNavigate();
   const { customerOffer, setCusomerOffer, goToOfferStep } = useOrder();
-  const { user } = useSelector((state) => state.auth);
+  const { user, hasMultipleLocations } = useSelector((state) => state.auth);
   const [selectedOffer, setSelectedOffer] = useState(null);
   const [selectedLocation, setSelectedLocations] = useState([]);
+  const [offerDisabled, setOfferDisabled] = useState(false);
 
   const [offer, setOffer] = useState({
     offerCode: null,
@@ -49,8 +53,38 @@ const SelectOffer = () => {
     useGetAllLocationsQuery();
   const [createOffer, { isLoading: isOfferCreating }] =
     useCreateOfferMutation();
+  const { data: offerAvl, isLoading: isOfferChecking } = useGetOfferAvlQuery({
+    userId: parseInt(parseInt(user.Id)),
+  });
+
   // data manipulation
-  console.log(offer);
+  // prefill offer if available
+  useEffect(() => {
+    if (offerAvl?.data?.data) {
+      const o = offerAvl.data.data;
+      setSelectedOffer(o.OfferType);
+      setOffer({
+        offerCode: o.OfferCode || "",
+        offerDetails: o.OfferName || "",
+        isBrandOffer: o.IsBrandOffer ?? null,
+        offerOnGRN: o.OfferOnGRN ?? null,
+        othersDiscountApplicable: o.OtherOffer ?? null,
+        customerGroup: !!o.CustomerGroupId,
+        selectedCustomerGroup: o.CustomerGroupId || null,
+      });
+       setCusomerOffer((prev) => ({
+          ...prev,
+          offerMainId: o.Id,
+          selectedProduct: selectedOffer,
+        }));
+      setSelectedLocations((prev) => [
+        ...prev,
+        ...(o.locations?.map((ite) => ite.Id) || []),
+      ]);
+      setOfferDisabled(true);
+    }
+  }, [offerAvl]);
+
   const handleLocationChange = (event) => {
     const { value, checked } = event.target;
     const numericValue = parseInt(value);
@@ -64,6 +98,14 @@ const SelectOffer = () => {
     }
   };
   const handleNext = async () => {
+    if (selectedOffer === 3 && offerDisabled) {
+      goToOfferStep(2);
+      return;
+    } else if (selectedOffer === 4 && offerDisabled) {
+      goToOfferStep(4);
+      return;
+    }
+
     // basic validations
     if (!selectedOffer) {
       toast.error("Please select an offer type");
@@ -133,6 +175,13 @@ const SelectOffer = () => {
     }
   };
 
+  if (isOfferChecking) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader color="black" width="w-10" height="h-10" />
+      </div>
+    );
+  }
   return (
     <div>
       <div className="max-w-8xl">
@@ -142,7 +191,9 @@ const SelectOffer = () => {
               Step 1: Select Offer
             </span>
             <div>
-              <Button variant="outline">Back</Button>
+              <Button variant="outline" onClick={() => navigate("/offer")}>
+                Back
+              </Button>
             </div>
           </div>
           <div className="mt-5">
@@ -155,6 +206,7 @@ const SelectOffer = () => {
                     onChange={() => setSelectedOffer(item.value)}
                     checked={selectedOffer === item.value}
                     label={item.label}
+                    disabled={offerDisabled}
                   />
                 </div>
               ))}
@@ -174,6 +226,7 @@ const SelectOffer = () => {
                         offerCode: e.target.value,
                       }));
                     }}
+                    disabled={offerDisabled}
                   />
                   <Input
                     className="w-1/2"
@@ -185,6 +238,7 @@ const SelectOffer = () => {
                         offerDetails: e.target.value,
                       }));
                     }}
+                    disabled={offerDisabled}
                   />
                 </div>
                 <div className="flex items-center gap-5">
@@ -203,6 +257,7 @@ const SelectOffer = () => {
                       }}
                       checked={offer.isBrandOffer === 1}
                       label="Yes"
+                      disabled={offerDisabled}
                     />
                     <Radio
                       name="OfferB"
@@ -215,6 +270,7 @@ const SelectOffer = () => {
                       }}
                       checked={offer.isBrandOffer === 0}
                       label="No"
+                      disabled={offerDisabled}
                     />
                   </div>
                 </div>
@@ -234,6 +290,7 @@ const SelectOffer = () => {
                       }}
                       checked={offer.offerOnGRN === 1}
                       label="Yes"
+                      disabled={offerDisabled}
                     />
                     <Radio
                       name="GRN"
@@ -246,6 +303,7 @@ const SelectOffer = () => {
                       }}
                       checked={offer.offerOnGRN === 0}
                       label="No"
+                      disabled={offerDisabled}
                     />
                   </div>
                 </div>
@@ -265,6 +323,7 @@ const SelectOffer = () => {
                       }}
                       checked={offer.othersDiscountApplicable === 1}
                       label="Yes"
+                      disabled={offerDisabled}
                     />
                     <Radio
                       name="othersDiscountApplicable"
@@ -277,6 +336,7 @@ const SelectOffer = () => {
                       }}
                       checked={offer.othersDiscountApplicable === 0}
                       label="No"
+                      disabled={offerDisabled}
                     />
                   </div>
                 </div>
@@ -291,6 +351,7 @@ const SelectOffer = () => {
                         selectedCustomerGroup: null,
                       }));
                     }}
+                    disabled={offerDisabled}
                   />
                   {offer.customerGroup && (
                     <div className="space-y-1 w-1/3">
@@ -317,6 +378,7 @@ const SelectOffer = () => {
                         )}
                         loading={isCustomerGroupsLoading}
                         fullWidth
+                        disabled={offerDisabled}
                       />
                     </div>
                   )}
@@ -341,6 +403,7 @@ const SelectOffer = () => {
                             checked={selectedLocation.includes(loc.Id)}
                             onChange={handleLocationChange}
                             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            disabled={offerDisabled}
                           />
                           <label
                             htmlFor={`location-${loc.Id}`}

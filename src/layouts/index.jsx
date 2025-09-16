@@ -90,6 +90,9 @@ import CustomerPaymentList from "../pages/LedgerEntries/CustomerPayment/Customer
 import CustomerPaymentView from "../pages/LedgerEntries/CustomerPayment/CustomerPaymentView";
 import CRMainList from "../pages/LedgerEntries/CustomerRefund/CRMainList";
 import CRView from "../pages/LedgerEntries/CustomerRefund/CRView";
+import SearchAccessory from "../pages/SearchStock/SearchAccessory";
+import OpticalLensStock from "../pages/SearchStock/OpticalLensStock";
+import OfferMainPage from "../pages/Offer/MainPage/OfferMainPage";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -818,16 +821,28 @@ export const router = createBrowserRouter([
         element: <CRMainList />,
       },
       {
-        path :"customer-refund/view",
-        element : <CRView />
+        path: "customer-refund/view",
+        element: <CRView />,
       },
       {
         path: "offer/create",
         element: <OfferModule />,
       },
       {
+        path: "offer",
+        element: <OfferMainPage />,
+      },
+      {
         path: "search-stock/frame",
         element: <SearchFrameStock />,
+      },
+      {
+        path: "search-stock/accessory",
+        element: <SearchAccessory />,
+      },
+      {
+        path: "search-stock/optical-lens",
+        element: <OpticalLensStock />,
       },
       {
         path: "customer-payment/create",

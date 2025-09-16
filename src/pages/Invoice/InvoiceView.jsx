@@ -243,7 +243,6 @@ const InvoiceView = () => {
   });
   const [cancelInvoice, { isLoading: isCancelling }] =
     useCancelInvoiceMutation();
-  console.log("pp", paymentDetails?.data?.receiptDetails);
 
   const getTypeName = (id) => {
     const types = { 1: "F/S", 2: "ACC", 3: "CL" };
@@ -678,9 +677,7 @@ const InvoiceView = () => {
                     <span className="text-sm font-medium text-gray-900">
                       Refund
                     </span>
-                    <span className="text-xs text-gray-500">
-                      Amount will be refunded to original payment method
-                    </span>
+                   
                   </div>
                 </div>
 
@@ -706,10 +703,7 @@ const InvoiceView = () => {
                     <span className="text-sm font-medium text-gray-900">
                       Carry Forward
                     </span>
-                    <span className="text-xs text-gray-500">
-                      Amount will be credited to your account for future
-                      purchases
-                    </span>
+                  
                   </div>
                 </div>
               </div>

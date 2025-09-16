@@ -17,6 +17,7 @@ import {
 import { Autocomplete, TextField } from "@mui/material";
 import { Table, TableCell, TableRow } from "../../../components/Table";
 import { useSaveOfferProductMutation } from "../../../api/offerApi";
+import { useNavigate } from "react-router";
 
 const brandsLevelItemsFirstRow = [
   { value: 1, label: "Both" },
@@ -36,6 +37,8 @@ const FrameSunglass = () => {
     customerOffer,
     goToOfferStep,
   } = useOrder();
+  const navigate = useNavigate();
+
   const [quantity, setQuantity] = useState(0);
   const [level, setLevel] = useState(0);
 
@@ -189,21 +192,12 @@ const FrameSunglass = () => {
     });
     return groups;
   }, [frameBrands]);
-
-  // Handle group selection
-  const toggleGroup = (groupId) => {
-    const brandsInGroup = groupedBrands[groupId].map((b) => b.Id);
-    const allSelected = brandsInGroup.every((id) => selectedBrands[id]);
-
-    const newSelectedBrands = { ...selectedBrands };
-    brandsInGroup.forEach((id) => {
-      if (allSelected) {
-        delete newSelectedBrands[id];
-      } else {
-        newSelectedBrands[id] = true;
-      }
-    });
-    setSelectedBrands(newSelectedBrands);
+  const handleRefresh = () => {
+    setQuantity("");
+    setDiscountPV(1);
+    setDiscountValue("");
+    setItems([]);
+    setLevel(0);
   };
 
   const toggleBrand = (brandId) => {
@@ -218,7 +212,6 @@ const FrameSunglass = () => {
       b.IsActive === 1 &&
       b.BrandName.toLowerCase().includes(brandInput.toLowerCase())
   );
-  console.log("selected brands", selectedBrands);
   const handleSave = async () => {
     if (!quantity) {
       toast.error("Please Enter qty");
@@ -246,14 +239,13 @@ const FrameSunglass = () => {
       OtherProductDetailID:
         items.length > 0 ? items.map((item) => item.Id) : null,
     };
-    console.log(payload);
     const finalPayload = {
       entries: [payload],
     };
-    console.log(finalPayload);
     try {
-      await saveAcc(payload).unwrap();
+      await saveAcc(finalPayload).unwrap();
       toast.success("Offer Accessory product successfully created");
+      navigate("/offer");
     } catch (error) {
       console.log(error);
     }
@@ -275,7 +267,7 @@ const FrameSunglass = () => {
             >
               Back
             </Button>
-            <Button>Refresh</Button>
+            <Button onClick={handleRefresh}>Refresh</Button>
           </div>
         </div>
 
@@ -284,6 +276,7 @@ const FrameSunglass = () => {
             <Input
               type="number"
               className="w-1/2"
+              value={quantity}
               label="Minimum Qty to Order"
               onChange={(e) => {
                 const val = e.target.value;
@@ -603,7 +596,7 @@ const FrameSunglass = () => {
               isLoading={isAccSaving}
               disabled={isAccSaving}
             >
-              Save & Next
+              Create Offer
             </Button>
           </div>
         </div>
