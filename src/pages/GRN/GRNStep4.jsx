@@ -295,10 +295,10 @@ export default function GRNStep4() {
                                     <TableCell>{item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty}</TableCell>
                                     <TableCell>
                                         <button
-                                            onClick={() => openModal(index, item.quantity || 1)}
+                                            onClick={() => openModal(index, item.GRNQty || item.quantity || 1)}
                                             className="w-16 px-2 py-1 border rounded bg-white hover:bg-gray-50 cursor-pointer text-left"
                                         >
-                                            {item.quantity || 1}
+                                            {item.GRNQty || item.quantity || 1}
                                         </button>
                                     </TableCell>
                                     <TableCell>₹{" "}
@@ -309,7 +309,7 @@ export default function GRNStep4() {
                                             className="w-20 px-2 py-1 border rounded"
                                         />
                                     </TableCell>
-                                    <TableCell>₹{" "}{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (parseFloat(parseInt(item?.GRNPrice * item?.GRNQty) * (parseInt(item?.TaxPercent) / 100)) + parseInt(item?.GRNPrice * item?.GRNQty)).toFixed(2)}</TableCell>
+                                    <TableCell>₹{" "}{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty)).toFixed(2)}</TableCell>
                                     <TableCell className="px-6 py-4 whitespace-nowrap">
                                         <button
                                             onClick={() => removeScannedItem(index)}

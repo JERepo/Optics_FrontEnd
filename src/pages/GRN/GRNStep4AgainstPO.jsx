@@ -20,7 +20,7 @@ import {
 import { Table, TableRow, TableCell } from "../../components/Table";
 import toast from "react-hot-toast";
 import { useGetAllBrandsQuery } from "../../api/brandsApi";
-import { useCheckSupplierOrderNoQuery, useGetGRNPOdetailsByIdMutation, useGetOrderDetailsByorderDetasilIdMutation, useLazyCheckGRNQtyValidationQuery, useLazyGetAccessoryByBarcodeQuery, useLazyGetAccessoryByBrandProductNameQuery, useLazyGetFrameByBarcodeQuery, useLazyGetFrameByBrandModelQuery, useSaveGRNDetailsMutation } from "../../api/grnApi";
+import { useCheckSupplierOrderNoQuery, useGetGRNPOdetailsByIdMutation, useGetOrderDetailsByorderDetasilIdMutation, useLazyCheckGRNQtyValidationQuery, useLazyGetAccessoryByBarcodeQuery, useLazyGetAccessoryByDetailIdQuery, useLazyGetCLByBarcodeQuery, useLazyGetFrameByBarcodeQuery, useSaveGRNDetailsMutation } from "../../api/grnApi";
 import { GRNCLSearchTable, GRNSearchTable } from "./GRNSearchTables";
 import { GRNScannedTable } from "./GRNScannedTables";
 import { useGetContactLensDetailsMutation } from "../../api/clBatchDetailsApi";
@@ -243,10 +243,12 @@ export default function GRNStep4AgainstPO() {
         error: brandandModelError
     }] = useLazyGetByBrandAndModalQuery();
 
-    const [triggerSearchByBrandProduct, {
-        isLoading: isBrandModelLoading,
-        isFetching: isBrandAndModalFetching
-    }] = useLazyGetAccessoryByBrandProductNameQuery();
+    // const [triggerSearchByBrandProduct, {
+    //     isLoading: isBrandModelLoading,
+    //     isFetching: isBrandAndModalFetching
+    // }] = useLazyGetAccessoryByBrandProductNameQuery();
+
+    const [triggerSearchAccByBrandProduct] = useLazyGetByBrandAndProductNameQuery();
 
     const [triggerSearchAccessoryByBarcode, {
         data: AccessoriesData,
@@ -258,9 +260,10 @@ export default function GRNStep4AgainstPO() {
         data: CLData,
         isFetching: isCLFetching,
         isLoading: isCLLoading
-    }] = useGetContactLensDetailsMutation();
+    }] = useLazyGetCLByBarcodeQuery();
 
     const [triggerGetGRNPODetailById] = useGetGRNPOdetailsByIdMutation();
+    const [triggerGetAccessoryPOByDetailId] = useLazyGetAccessoryByDetailIdQuery();
 
     // Handler functions
     const handleBack = () => {
@@ -295,11 +298,18 @@ export default function GRNStep4AgainstPO() {
 
         try {
             const payload = {
-                frameDetailIds: [detailId],
-                locationId: formState.companyId || 2,
+                locationId: formState.companyId || null,
             };
+            let query = null;
+            if (grnData?.step2?.productType === "Frame/Sunglass") {
+                payload.frameDetailIds = [detailId];
+                query = triggerGetGRNPODetailById;
+            } else if (grnData?.step2?.productType === "Accessories") {
+                payload.accessoryDetailId = [detailId];
+                query = triggerGetAccessoryPOByDetailId;
+            }
 
-            const result = await triggerGetGRNPODetailById(payload).unwrap();
+            const result = await query(payload).unwrap();
 
             if (result.data && result.data.length > 0) {
                 setPODetailsItems(prevItems => {
@@ -491,7 +501,8 @@ export default function GRNStep4AgainstPO() {
                 }
 
                 // Sort by timestamp in descending order (latest first)
-                updatedItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                // updatedItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
                 return updatedItems;
             });
 
@@ -524,6 +535,10 @@ export default function GRNStep4AgainstPO() {
             toast.error("No items available to add");
             return;
         }
+
+        console.log("scannedItems ---------- in adding", scannedItems);
+        console.log("poDetailsItems ---------- in adding", poDetailsItems);
+
 
         try {
             setIsLoading(true);
@@ -636,7 +651,8 @@ export default function GRNStep4AgainstPO() {
                     }
 
                     // Sort by timestamp in descending order (latest first)
-                    updatedItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                    // updatedItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
                     return updatedItems;
                 });
             }
@@ -864,6 +880,7 @@ export default function GRNStep4AgainstPO() {
             if (result.data) {
                 // Handle both array and single object responses
                 const items = Array.isArray(result.data) ? result.data : [result.data];
+                console.log("hdkajbdkahkdhkn", items);
 
                 if (items.length === 0) {
                     toast.error("No items found for this barcode");
@@ -873,9 +890,9 @@ export default function GRNStep4AgainstPO() {
                 if (formState.productType === "Contact Lens") {
                     // Handle Contact Lens items
                     const clItems = items.map(item => ({
-                        ...item,
+                        ...item, // Access nested data object
                         quantity: 1,
-                        price: item?.BuyingPrice,
+                        price: item?.BuyingPrice, // Use BuyingPrice from nested data
                         cLDetailId: item?.CLDetailId,
                         timestamp: Date.now()
                     }));
@@ -888,21 +905,38 @@ export default function GRNStep4AgainstPO() {
                         setClSearchItems(batchItems);
                         // Get batches for the first batch item (assuming they all have same detailId)
                         await getCLBatches({
-                            detailId: batchItems[0]?.CLDetailId,
+                            detailId: batchItems[0]?.cLDetailId,
                             locationId: grnData?.step1?.selectedLocation,
                         }).unwrap();
                     }
 
+                    console.log("nonBatchItems --------- ", nonBatchItems);
+
                     if (nonBatchItems.length > 0) {
-                        setScannedItems(prevItems => {
-                            let updatedItems = [...prevItems];
+                        setPODetailsItems(prevItems => {
+                            let updatedItems = []; // Create a copy of previous items
 
                             nonBatchItems.forEach(newItem => {
+                                // const existingItemIndex = formState.EntryType === "combined"
+                                //     ? updatedItems.findIndex(
+                                //         item => item.Barcode === newItem.Barcode &&
+                                //             item.CLBatchCode === newItem.CLBatchCode
+                                //     )
+                                //     : -1;
+
+                                // if (existingItemIndex >= 0) {
+                                //     updatedItems[existingItemIndex] = {
+                                //         ...updatedItems[existingItemIndex],
+                                //         quantity: updatedItems[existingItemIndex].quantity + 1
+                                //     };
+                                // } else {
+                                //     updatedItems.push({
+                                //         ...newItem,
+                                //         Id: Date.now() + Math.random() // More unique ID
+                                //     });
+                                // }
                                 const existingItemIndex = formState.EntryType === "combined"
-                                    ? updatedItems.findIndex(
-                                        item => item.Barcode === newItem.Barcode &&
-                                            item.CLBatchCode === newItem.CLBatchCode
-                                    )
+                                    ? updatedItems.findIndex(item => item.uniqueId === newItem.uniqueId)
                                     : -1;
 
                                 if (existingItemIndex >= 0) {
@@ -911,17 +945,17 @@ export default function GRNStep4AgainstPO() {
                                         quantity: updatedItems[existingItemIndex].quantity + 1
                                     };
                                 } else {
-                                    updatedItems.push({
-                                        ...newItem,
-                                        Id: Date.now() + Math.random() // More unique ID
-                                    });
+                                    updatedItems.push(newItem);
                                 }
                             });
 
                             // Sort by timestamp in descending order (latest first)
-                            updatedItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                            // updatedItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
                             return updatedItems;
                         });
+
+                        console.log("poDetailsItems for CL --------=-=--=--=", poDetailsItems);
 
                         toast.success("CL items added successfully");
                         setFormState(prev => ({
@@ -929,6 +963,7 @@ export default function GRNStep4AgainstPO() {
                             barcode: ""
                         }));
                     }
+
                 } else {
                     // Handle non-Contact Lens items
                     const newItems = items.map(item => ({
@@ -941,7 +976,7 @@ export default function GRNStep4AgainstPO() {
                     }));
 
                     setPODetailsItems(prevItems => {
-                        let updatedItems = [...prevItems];
+                        let updatedItems = [];
 
                         newItems.forEach(newItem => {
                             const existingItemIndex = formState.EntryType === "combined"
@@ -960,6 +995,7 @@ export default function GRNStep4AgainstPO() {
 
                         // Sort by timestamp in descending order (latest first)
                         updatedItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
                         return updatedItems;
                     });
 
@@ -1003,7 +1039,7 @@ export default function GRNStep4AgainstPO() {
             functionType = triggerbrandandModelQuery;
             requestData.modal = modelNo;
         } else if (type === 2) {
-            functionType = triggerSearchByBrandProduct;
+            functionType = triggerSearchAccByBrandProduct;
             requestData.product = productName;
         }
 
@@ -1019,6 +1055,8 @@ export default function GRNStep4AgainstPO() {
 
         try {
             const response = await functionType(requestData);
+
+            console.log("Detail search response", response);
 
             if (response.status === "fulfilled") {
                 const newItems = response?.data?.data || [];
@@ -1660,6 +1698,7 @@ export default function GRNStep4AgainstPO() {
                                 setModelNo("");
                                 setBrandId(null);
                                 setBrandInput("");
+                                setProductName("");
                             }}
                             className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors whitespace-nowrap flex items-center"
                         >
@@ -2015,6 +2054,7 @@ export default function GRNStep4AgainstPO() {
                     />
                 )}
 
+                {/* For product search */}
                 {(showSearchInputs && searchResults.length > 0) && (
                     <div className="mt-6">
                         <div className="flex justify-between items-center mb-4">
@@ -2041,7 +2081,7 @@ export default function GRNStep4AgainstPO() {
                                     isAddingItem={isAddingItem}
                                     poDetailsItem={2}
                                     GRNAgainstPOorderType={grnData.step3.GRNAgainstPOorderType}
-                                    productType={grnData.step2.productType === "Frame/Sunglass" ? 1 : grnData.step2.productType === "Accessories" ? 2 : null}
+                                    productType={grnData.step2.productType === "Frame/Sunglass" ? 1 : grnData.step2.productType === "Accessories" ? 2 : grnData.step2.productType === "Contact Lens" ? 3 : null}
                                 />)
                         ) : (
                             <GRNAgainstPOSearchTable
@@ -2050,7 +2090,7 @@ export default function GRNStep4AgainstPO() {
                                 handleGetPOdetailsByDetailId={handleGetPOdetailsByDetailId}
                                 poDetailsItem={1}
                                 GRNAgainstPOorderType={grnData.step3.GRNAgainstPOorderType}
-                                productType={grnData.step2.productType === "Frame/Sunglass" ? 1 : grnData.step2.productType === "Accessories" ? 2 : null}
+                                productType={grnData.step2.productType === "Frame/Sunglass" ? 1 : grnData.step2.productType === "Accessories" ? 2 : grnData.step2.productType === "Contact Lens" ? 3 : null}
                             />
                         )}
                     </div>
@@ -2069,7 +2109,7 @@ export default function GRNStep4AgainstPO() {
                                 isAddingItem={isAddingItem}
                                 poDetailsItem={2}
                                 GRNAgainstPOorderType={grnData.step3.GRNAgainstPOorderType}
-                                productType={grnData.step2.productType === "Frame/Sunglass" ? 1 : grnData.step2.productType === "Accessories" ? 2 : null}
+                                productType={grnData.step2.productType === "Frame/Sunglass" ? 1 : grnData.step2.productType === "Accessories" ? 2 : grnData.step2.productType === "Contact Lens" ? 3 : null}
                             />
                             <div className="flex items-center gap-5">
                                 <label htmlFor="grnQtyAgainstPOForBarcode" className="block text-sm font-medium text-gray-700 whitespace-nowrap">
@@ -2118,6 +2158,7 @@ export default function GRNStep4AgainstPO() {
                         </div>
                     )
                         : (
+                            // console.log("poDetailsItems for CL --------=-=--=--=", poDetailsItems)
                             (!showSearchInputs && grnData.step3.GRNAgainstPOorderType === "Specific Order") &&
                             (<GRNAgainstPOSearchTable
                                 searchResults={poDetailsItems}
@@ -2128,7 +2169,7 @@ export default function GRNStep4AgainstPO() {
                                 isAddingItem={isAddingItem}
                                 poDetailsItem={2}
                                 GRNAgainstPOorderType={grnData.step3.GRNAgainstPOorderType}
-                                productType={grnData.step2.productType === "Frame/Sunglass" ? 1 : grnData.step2.productType === "Accessories" ? 2 : null}
+                                productType={grnData.step2.productType === "Frame/Sunglass" ? 1 : grnData.step2.productType === "Accessories" ? 2 : grnData.step2.productType === "Contact Lens" ? 3 : null}
                             />)
                         )
 

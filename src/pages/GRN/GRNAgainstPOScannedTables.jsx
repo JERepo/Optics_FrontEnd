@@ -39,12 +39,25 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                         data={scannedItems}
                         renderRow={(item, index) => (
                             <TableRow key={index}>
-                                <TableCell>{item.PONo} <br /> {`(${item.OrderNo}/${item.OrderDetailSlNo ?? ""})`}</TableCell>
-                                <TableCell>{item.Name}{item.Size && <br />}{`Size: ${item.Size}`}</TableCell>
+                                <TableCell>{item.PONo} <br /> {`(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
+                                {/* <TableCell>{item.Name}{item.Size && <br />}{`Size: ${item.Size}`}</TableCell> */}
+                                <TableCell>{item.Name}
+                                    {item.Size && <br />}{item.Size ? `Size: ${item.Size}` : ""}
+                                    {item.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : ""}
+                                    {item.HSN && <br />}{item.HSN ? `HSN: ${item.HSN}` : ""}
+                                </TableCell>
                                 <TableCell>
                                     {item.Category === 0 ? 'Sunglass' : 'Optical Frame'}
                                 </TableCell>
-                                <TableCell className="text-center flex">{item.IsRxable ? "Rx: Yes" : "Rx: No"}<br />{item.Ph ? "PH: Yes" : "PH: No"}<br />{item.PO ? "PO: Yes" : "PO: No"}<br />{`CL - ${item.Cl || ""}`}</TableCell>
+                                <TableCell className="text-left">
+                                    <div className="flex gap-2">
+                                        <div>{item.IsRxable ? "Rx" : ""}</div>
+                                        <div>{item.Ph ? "PH" : ""}</div>
+                                        <div>{item.PO ? "PO" : ""}</div>
+                                        <div>{item.Cl ? `CL-${item.Cl}` : ""}</div>
+                                    </div>
+                                </TableCell>
+                                {/* <TableCell className="text-center flex">{item.IsRxable ? "Rx: Yes" : "Rx: No"}<br />{item.Ph ? "PH: Yes" : "PH: No"}<br />{item.PO ? "PO: Yes" : "PO: No"}<br />{`CL - ${item.Cl || ""}`}</TableCell> */}
                                 <TableCell className="">₹ {item.MRP}</TableCell>
                                 <TableCell>₹{" "}
                                     <input
@@ -137,8 +150,14 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                     data={scannedItems}
                     renderRow={(item, index) => (
                         <TableRow key={item.Id || index}>
-                            <TableCell className="text-center">{item.PONo} <br /> {`(${item.OrderNo})`}</TableCell>
-                            <TableCell>{item.Name}{item.Size && <br />}{item.Size}</TableCell>
+                            <TableCell className="">{item.PONo} <br /> {`(${item.OrderNo})`}</TableCell>
+                            {/* <TableCell>{item.Name}{item.Size && <br />}{item.Size}</TableCell> */}
+                            <TableCell>
+                                {item.Name}
+                                {item.Size && <br />}{item.Size}
+                                {item.Barcode && <br />}{`Barcode: ${item.Barcode}`}
+                                {item.HSN && <br />}{`HSN: ${item.HSN}`}
+                            </TableCell>
                             <TableCell>{item.Variation}</TableCell>
                             <TableCell>{item.SKU}</TableCell>
                             <TableCell>₹ {item.MRP}</TableCell>

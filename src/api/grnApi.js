@@ -92,9 +92,9 @@ export const grnApi = createApi({
                 method: 'GET'
             })
         }),
-        getAccessoryByBrandProductName: builder.query({
-            query: ({ brand, product, locationId, vendorId, productType }) => ({
-                url: `/api/v1/grn/get-accessory-bybrandProduct?brand=${brand}&product=${product}&locationId=${locationId}&vendorId=${vendorId ?? null}&createdCompanyId=${locationId ?? null}&productType=${productType ?? null}`,
+        getAccessoryByDetailId: builder.query({
+            query: ({ accessoryDetailId, locationId }) => ({
+                url: `/api/v1/grn/get-accessory-bydetailId?accessoryDetailId=${accessoryDetailId}&locationId=${locationId}`,
                 method: 'GET'
             })
         }),
@@ -110,7 +110,13 @@ export const grnApi = createApi({
                 url: `/api/v1/grn/update-grn-qty?PODetailsId=${PODetailsId}&GRNQty=${GRNQty}&grnMainId=${grnMainId}`,
                 method: 'GET'
             })
-        })
+        }),
+        getCLByBarcode: builder.query({
+            query: ({ barcode, locationId, vendorId, productType }) => ({
+                url: `/api/v1/grn/get-cl-bybarcode?barcode=${barcode}&locationId=${locationId}&vendorId=${vendorId ?? null}&createdCompanyId=${locationId ?? null}&productType=${productType ?? null}`,
+                method: 'GET'
+            })
+        }),
     })
 });
 
@@ -131,7 +137,8 @@ export const {
     useLazyGetFrameByBarcodeQuery,
     useLazyGetFrameByBrandModelQuery,
     useLazyGetAccessoryByBarcodeQuery,
-    useLazyGetAccessoryByBrandProductNameQuery,
+    useLazyGetAccessoryByDetailIdQuery,
     useGetGRNPOdetailsByIdMutation,
-    useLazyCheckGRNQtyValidationQuery
+    useLazyCheckGRNQtyValidationQuery,
+    useLazyGetCLByBarcodeQuery
 } = grnApi;
