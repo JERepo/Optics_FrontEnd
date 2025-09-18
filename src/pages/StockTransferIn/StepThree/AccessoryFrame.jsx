@@ -26,6 +26,7 @@ import Radio from "../../../components/Form/Radio";
 import {
   useGetStockOutDataForStockInQuery,
   useGetStockOutDetailsQuery,
+  useSaveSTIMutation,
   useSaveStockDetailsMutation,
 } from "../../../api/stockTransfer";
 import { formatINR } from "../../../utils/formatINR";
@@ -79,8 +80,10 @@ const AccessoryFrame = () => {
   ] = useLazyGetByBrandAndProductNameQuery();
   const [saveAccessory, { isLoading: isFrameSaving }] =
     useSaveAccessoryMutation();
-  const [saveStockTransfer, { isLoading: isStockTransferLoading }] =
-    useSaveStockDetailsMutation();
+  // const [saveStockTransfer, { isLoading: isStockTransferLoading }] =
+  //   useSaveStockDetailsMutation();
+    const [saveStockTransfer, { isLoading: isStockTransferLoading }] =
+      useSaveSTIMutation();
 
   useEffect(() => {
     setEditMode((prev) => {
@@ -113,7 +116,7 @@ const AccessoryFrame = () => {
       setItems((prev) => {
         // Check if product exists in StockTransferOut
         const STOProduct = stockOutData?.data?.details?.find(
-          (item) => item.FrameDetailId === data.Id
+          (item) => item.AccessoryDetailId === data.Id
         );
         if (!STOProduct) {
           toast.error("Product is not present in the selected Stock Transfer");
@@ -228,7 +231,7 @@ const AccessoryFrame = () => {
 
       selectedRows.forEach((selected) => {
         const STOProduct = stockOutData?.data?.details?.find(
-          (item) => item.FrameDetailId === selected.Id
+          (item) => item.AccessoryDetailId === selected.Id
         );
 
         if (!STOProduct) {

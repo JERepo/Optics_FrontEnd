@@ -197,6 +197,7 @@ const PaymentTypes = {
   7: "Gift Voucher",
 };
 
+
 const InvoiceView = () => {
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
   const navigate = useNavigate();
@@ -314,12 +315,11 @@ const InvoiceView = () => {
   }, 0);
 
   const getOrderStatus = (status) => {
-    const types = {
-      1: "Confirmed",
-      2: "Partially Invoiced",
-      3: "Invoiced",
-      4: "Cancelled",
-    };
+     const types = {
+    1: "Confirmed",
+    2: "Partially Cancelled",
+    3: "Cancelled",
+  };
     return types[status] || "Draft";
   };
 
@@ -366,8 +366,8 @@ const InvoiceView = () => {
       };
     }
   }
-  const isUPIBankAvl = !!paymentDetails?.data?.receiptDetails?.some(
-    (item) => PaymentTypes[item.Type] === 3 || PaymentTypes[item.Type] === 5
+  const isUPIBankAvl = paymentDetails?.data?.receiptDetails?.some(
+    (item) => item.Type === 3 || item.Type === 5
   );
 
   useEffect(() => {
@@ -513,7 +513,7 @@ const InvoiceView = () => {
               "invoice qty",
               "total amount",
             ]}
-            data={invoiceDetailsById}
+            data={invoiceDetailsById || []}
             renderRow={(invoice, index) => (
               <TableRow key={index}>
                 <TableCell>{index + 1}</TableCell>
@@ -528,9 +528,9 @@ const InvoiceView = () => {
                   ₹
                   {formatINR(
                     getPricing(
-                      Array.isArray(invoice?.productDetails)
+                      Array.isArray(invoice?.productDetails?.length > 0)
                         ? invoice?.productDetails[0]
-                        : invoice?.productDetails
+                        : (invoice?.productDetails || [])
                     )
                   )}
                 </TableCell>
@@ -617,7 +617,7 @@ const InvoiceView = () => {
                 <div>
                   <Table
                     columns={["S.No", "E-Invoice Date", "status"]}
-                    data={eInvoiceData?.data.data}
+                    data={eInvoiceData?.data.data || []}
                     renderRow={(ei, index) => (
                       <TableRow key={index}>
                         <TableCell>{index + 1}</TableCell>
@@ -677,7 +677,6 @@ const InvoiceView = () => {
                     <span className="text-sm font-medium text-gray-900">
                       Refund
                     </span>
-                   
                   </div>
                 </div>
 
@@ -703,7 +702,6 @@ const InvoiceView = () => {
                     <span className="text-sm font-medium text-gray-900">
                       Carry Forward
                     </span>
-                  
                   </div>
                 </div>
               </div>

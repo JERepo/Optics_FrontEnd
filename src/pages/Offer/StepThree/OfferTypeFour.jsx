@@ -13,7 +13,7 @@ import { useNavigate } from "react-router";
 const OfferTypeFour = () => {
   const navigate = useNavigate();
 
-  const { customerOffer, setCusomerOffer, goToOfferStep } = useOrder();
+  const { customerOffer, setCusomerOffer, goToOfferStep,updateCurrentOfferStep } = useOrder();
   const [discountPV, setDiscountPV] = useState(1);
   const [discountValue, setDiscountValue] = useState(null);
   const [quantity, setQuantity] = useState(1);
@@ -40,7 +40,12 @@ const OfferTypeFour = () => {
       return;
     }
 
-    if (!slabStart || !slabEnd) {
+    if (
+      slabStart === "" ||
+      slabEnd === "" ||
+      slabStart === null ||
+      slabEnd === null
+    ) {
       toast.error("Please enter slab entries");
       return;
     }
@@ -93,6 +98,7 @@ const OfferTypeFour = () => {
     try {
       await createOffer(payload).unwrap();
       toast.success("OfferType4 successfully created");
+      updateCurrentOfferStep(1)
       navigate("/offer");
     } catch (error) {
       console.log(error);
@@ -109,7 +115,9 @@ const OfferTypeFour = () => {
               Step 2: Slab Details
             </span>
             <div>
-              <Button variant="outline" onClick={() => navigate("/offer")}>Back</Button>
+              <Button variant="outline" onClick={() => navigate("/offer")}>
+                Back
+              </Button>
             </div>
           </div>
           {items.length > 0 && (

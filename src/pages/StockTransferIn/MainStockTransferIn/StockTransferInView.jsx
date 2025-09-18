@@ -208,7 +208,7 @@ const StockTransferInView = () => {
   const totals = (stockDetails?.data?.StockTransferInDetails || []).reduce(
     (acc, item) => {
       const qty = item.STQtyIn || 0;
-      const unitPrice = getStockOutPrice(item);
+      const unitPrice = parseFloat(item.TransferPrice) || 0;
       const gstRate = parseFloat(item.ProductTaxPercentage) / 100;
 
       const basicValue = unitPrice * qty;
@@ -296,14 +296,14 @@ const StockTransferInView = () => {
                 <TableCell className="whitespace-pre-wrap">
                   {getProductName(item)}
                 </TableCell>
-                <TableCell>₹{formatINR(getStockOutPrice(item))}</TableCell>
+                <TableCell>₹{formatINR(item.TransferPrice)}</TableCell>
                 <TableCell>{item.STQtyOut}</TableCell>
                 <TableCell>{item.STQtyIn}</TableCell>
 
                 <TableCell>
                   ₹
                   {formatINR(
-                    getStockOutPrice(item) *
+                   parseFloat(item.TransferPrice) *
                       (parseFloat(item.ProductTaxPercentage) / 100)
                   )}
                   ({parseFloat(item.ProductTaxPercentage)}%)
@@ -312,8 +312,8 @@ const StockTransferInView = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    getStockOutPrice(item) * item.STQtyIn +
-                      getStockOutPrice(item) *
+                    parseFloat(item.TransferPrice) * item.STQtyIn +
+                     parseFloat(item.TransferPrice) *
                         (parseFloat(item.ProductTaxPercentage) / 100) *
                         item.STQtyIn
                   )}

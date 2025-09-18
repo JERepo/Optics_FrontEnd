@@ -29,7 +29,6 @@ const PowerDetailsFetch = ({
   savedOrders,
 }) => {
   const { Identifiers } = useOrder();
-  console.log("Ident", Identifiers);
   const selectedFocality = focalityData?.find(
     (f) => f.OpticalLensFocality.Id === lensData.focality
   )?.OpticalLensFocality?.Add_Value;
@@ -404,7 +403,6 @@ const PowerDetailsFetch = ({
     }
     setShowDiaDiffModal(false);
   };
-  console.log("add", lensData);
   const handleSave = async () => {
     if (lensData.rimType == null) {
       toast.error("Please select Frame Rim Type!");
@@ -511,7 +509,7 @@ const PowerDetailsFetch = ({
     }
     return null;
   };
-  console.log("frame rim types", rimTypes);
+  
   return (
     <div className="bg-white shadow-sm p-4 mt-5 rounded-lg">
       <div className="flex justify-between items-center">

@@ -23,6 +23,7 @@ const ContactLens = () => {
     prevOfferStep,
     customerOffer,
     goToOfferStep,
+    updateCurrentOfferStep
   } = useOrder();
     const navigate = useNavigate();
   
@@ -121,6 +122,7 @@ const ContactLens = () => {
     try {
       await saveCL(payload).unwrap();
       toast.success("Contact lens successfully saved");
+      updateCurrentOfferStep(1)
       navigate("/offer")
     } catch (error) {
       console.log(error);

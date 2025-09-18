@@ -361,6 +361,23 @@ export const orderApi = createApi({
       }),
     }),
 
+    getPrescriptionPrint: builder.query({
+      query: ({ id, patientId, companyId }) => ({
+        url: `/api/v1/pdf/prescription-receipt?id=${id}&patientId=${patientId}&companyId=${companyId}`,
+        responseHandler: (response) => response.blob(),
+      }),
+
+      transformResponse: (response) => response,
+    }),
+
+    generateOpticalLensReceipt: builder.query({
+      query: ({ orderDetailid, companyId }) => ({
+        url: `/api/v1/pdf/optical-lens-receipt?orderDetailid=${orderDetailid}&companyId=${companyId}`,
+        responseHandler: (response) => response.blob(),
+      }),
+      transformResponse: (response) => response,
+    }),
+
     saveFinalPayment: builder.mutation({
       query: ({ orderId, payload }) => ({
         url: `/api/v1/order/withadvance/${orderId}`,
@@ -439,6 +456,7 @@ export const {
   useCancelOrderMutation,
   useGenerateInvoiceFromOrderMutation,
   useLazyGetAdvanceAmtQuery,
+  useLazyGenerateOpticalLensReceiptQuery,
 
   // OPTICAL LENS
   useGetAllVisualAcuityQuery,
@@ -468,6 +486,7 @@ export const {
   useUpdatePrescriptionMutation,
   useDeActivatePrescriptionMutation,
   useLazyGetAllPrescriptionByPatientQuery,
+  useLazyGetPrescriptionPrintQuery,
 
   useLazySearchCustomerQuery,
   useCreateNewCustomerMutation,

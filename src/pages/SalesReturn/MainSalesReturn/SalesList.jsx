@@ -15,6 +15,15 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { TextField } from "@mui/material";
 
+const getStatus = (status) => {
+  if (status == 0) {
+    return "Draft";
+  } else if (status == 1) {
+    return "Confirmed";
+  }
+  return "UNKNOWN"
+};
+
 const SalesList = () => {
   const navigate = useNavigate();
   const { hasMultipleLocations } = useSelector((state) => state.auth);
@@ -73,22 +82,27 @@ const SalesList = () => {
       });
     }
 
-    return filtered.map((s) => ({
-      id: s.Id,
-      saleRtnNo: `${s.CNPrefix}/${s.CNNo}`,
-      date: new Intl.DateTimeFormat("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }).format(new Date(s.CNDate)),
+    return filtered
+      .map((s) => ({
+        id: s.Id,
+        saleRtnNo: `${s.CNPrefix}/${s.CNNo}`,
+        date: new Intl.DateTimeFormat("en-GB", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }).format(new Date(s.CNDate)),
 
-      patientName: s.CustomerContactDetail?.CustomerName,
-      customerName: s.CustomerMaster.CustomerName,
-      patientMobile: s.CustomerContactDetail.MobNumber,
-      totalQty: s.CNQty,
-      totalPrice: s.CNTotal,
-    }));
-    // .filter((order) => order.CompanyId == hasMultipleLocations[0]);
+        patientName: s.CustomerContactDetail?.CustomerName,
+        customerName: s.CustomerMaster.CustomerName,
+        patientMobile: s.CustomerContactDetail.MobNumber,
+        totalQty: s.CNQty,
+        totalPrice: s.CNTotal,
+        CompanyID: s.CompanyID,
+        CNDate: s.CNDate,
+        status :getStatus(s.Status)
+      }))
+      .filter((order) => order.CompanyID == hasMultipleLocations[0])
+      .sort((a, b) => new Date(b.CNDate) - new Date(a.CNDate));
   }, [allSalesReturn, fromDate, toDate, searchQuery]);
 
   const startIndex = (currentPage - 1) * pageSize;
@@ -230,6 +244,7 @@ const SalesList = () => {
               "mobile no",
               "total return qty",
               "total return price",
+              "Status",
               "action",
             ]}
             data={paginatedOrders}
@@ -243,7 +258,7 @@ const SalesList = () => {
                 <TableCell>{s.patientMobile}</TableCell>
                 <TableCell>{s.totalQty}</TableCell>
                 <TableCell>₹{s.totalPrice}</TableCell>
-
+                <TableCell>{s.status}</TableCell>
                 <TableCell>
                   <button
                     onClick={() => handleViewSalesReturn(s.id)}

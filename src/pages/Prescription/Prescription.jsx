@@ -9,6 +9,7 @@ import {
   FiUser,
   FiX,
   FiTrash2,
+  FiPrinter,
 } from "react-icons/fi";
 import { useNavigate } from "react-router";
 import HasPermission from "../../components/HasPermission";
@@ -17,24 +18,27 @@ import { Table, TableCell, TableRow } from "../../components/Table";
 import Button from "../../components/ui/Button";
 import {
   useDeActivatePrescriptionMutation,
-  useGetAllPrescriptionQuery,
   useGetAllPrescriptionsQuery,
   useLazyGetAllPrescriptionByPatientQuery,
+  useLazyGetPrescriptionPrintQuery,
 } from "../../api/orderApi";
 import { useGetAllSalesPersonsQuery } from "../../api/salesPersonApi";
 import { useOrder } from "../../features/OrderContext";
 import toast from "react-hot-toast";
 import Modal from "../../components/ui/Modal";
 import Loader from "../../components/ui/Loader";
+import { useSelector } from "react-redux";
 
 const Prescription = () => {
   const navigate = useNavigate();
+  const { user, hasMultipleLocations } = useSelector((state) => state.auth);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [selectedPrescription, setSelectedPrescription] = useState(null);
   const [showMainData, setShowMainData] = useState(false);
   const [loadingPatientId, setLoadingPatientId] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
 
   const { data: allPrescriptions, isLoading } = useGetAllPrescriptionsQuery();
   const [
@@ -62,7 +66,7 @@ const Prescription = () => {
           id: pers.Id,
           item: pers,
           patientName,
-          mobile :pers.CustomerContactDetail?.MobNumber,
+          mobile: pers.CustomerContactDetail?.MobNumber,
           remarks: pers.Remarks,
           date: pers.PrescriptionDate,
         });
@@ -126,6 +130,7 @@ const Prescription = () => {
   };
 
   const handleView = (prescription) => {
+    setSelectedId(prescription?.Id);
     const parsedPrescription = {
       ...prescription,
       values: {
@@ -202,11 +207,11 @@ const Prescription = () => {
             <TableCell className="text-sm text-neutral-500">
               {pool.patientName}
             </TableCell>
-            
+
             <TableCell className="text-sm text-neutral-500">
               {pool.remarks}
             </TableCell>
-             <TableCell className="text-sm text-neutral-500">
+            <TableCell className="text-sm text-neutral-500">
               {pool.mobile}
             </TableCell>
             <TableCell className="text-sm text-neutral-500">
@@ -214,7 +219,7 @@ const Prescription = () => {
             </TableCell>
             <TableCell>
               <div className="flex items-center gap-3">
-                <HasPermission module="Customer" action="view">
+                <HasPermission module="Prescription" action="view">
                   {loadingPatientId === pool.item.PatientID ? (
                     <Loader className="w-4 h-4" color="black" />
                   ) : (
@@ -252,6 +257,9 @@ const Prescription = () => {
         selectedPrescription={selectedPrescription}
         setSelectedPrescription={setSelectedPrescription}
         handleView={handleView}
+        locationId={parseInt(hasMultipleLocations[0])}
+        selectedId={selectedId}
+        setSelectedId={setSelectedId}
       />
     </div>
   );
@@ -267,8 +275,15 @@ const DisplayMainData = ({
   selectedPrescription,
   setSelectedPrescription,
   handleView,
+  locationId,
+  selectedId,
+  setSelectedId,
 }) => {
-  const modalContentRef = useRef(null); // Add ref for modal content
+  const [getPrescriptionPrint, { isFetching: isPrintFetching }] =
+    useLazyGetPrescriptionPrintQuery();
+
+  const modalContentRef = useRef(null);
+  const [printingId, setPrintingId] = useState(null);
 
   const handleViewWithScroll = (prescription) => {
     handleView(prescription);
@@ -285,9 +300,39 @@ const DisplayMainData = ({
     startIndex,
     startIndex + pageSize
   );
-  const totalPages = Math.ceil(
-    allPrescriptionData?.length / pageSize
-  );
+  const totalPages = Math.ceil(allPrescriptionData?.length / pageSize);
+
+  const handlePrint = async (item) => {
+    const { Id, PatientID } = item;
+    setPrintingId(Id);
+
+    try {
+      const blob = await getPrescriptionPrint({
+        id: Id,
+        patientId: PatientID,
+        companyId: locationId,
+      }).unwrap();
+
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "application/pdf" })
+      );
+      const newWindow = window.open(url);
+      if (newWindow) {
+        newWindow.onload = () => {
+          newWindow.focus();
+          newWindow.print();
+        };
+      }
+    } catch (error) {
+      setSelectedId(null);
+      console.log(error);
+      toast.error(
+        "Unable to print the prescription please try again after some time!"
+      );
+    } finally {
+    setPrintingId(null);
+  }
+  };
   return (
     <Modal
       isOpen={isOpen}
@@ -305,6 +350,19 @@ const DisplayMainData = ({
                   <FiClipboard className="mr-2 text-blue-500" />
                   Prescription Details
                 </h2>
+                <button
+                  className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  onClick={() => handlePrint(selectedPrescription)}
+                >
+                  {printingId === selectedPrescription?.Id ? (
+                    <Loader color="black" />
+                  ) : (
+                    <div className="flex items-center">
+                      <FiPrinter className="mr-1.5" />
+                      Print
+                    </div>
+                  )}
+                </button>
               </div>
 
               <div className="p-6">
@@ -315,8 +373,9 @@ const DisplayMainData = ({
                     <div>
                       <p className="text-sm text-gray-500">Prescription Date</p>
                       <p className="font-medium">
-                        {selectedPrescription?.PrescriptionDate?.split("-").reverse().join("/")}
-
+                        {selectedPrescription?.PrescriptionDate?.split("-")
+                          .reverse()
+                          .join("/")}
                       </p>
                     </div>
                   </div>
@@ -456,6 +515,19 @@ const DisplayMainData = ({
                         >
                           <FiEye className="mr-1.5" />
                           View
+                        </button>
+                        <button
+                          className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                          onClick={() => handlePrint(p)}
+                        >
+                          {printingId === p.Id ? (
+                            <Loader color="black" />
+                          ) : (
+                            <div className="flex items-center">
+                              <FiPrinter className="mr-1.5" />
+                              Print
+                            </div>
+                          )}
                         </button>
                       </TableCell>
                     </TableRow>
