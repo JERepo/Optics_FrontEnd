@@ -46,6 +46,17 @@ export const offerApi = createApi({
         body: payload,
       }),
     }),
+
+    getAllOffers :builder.query({
+      query : () => ({
+        url : `/api/v1/offer/getalloffers`
+      })
+    }),
+    getOfferAvl :builder.query({
+      query : ({userId}) => ({
+        url :`/api/v1/offer/getOfferById/${userId}`
+      })
+    })
   }),
 });
 
@@ -56,5 +67,7 @@ export const {
   useGetAddOnByBrandIdQuery,
   useGetCoatingsByBrandQuery,
   useGetTreatmentsByBrandQuery,
-  useCreateOfferType4Mutation
+  useCreateOfferType4Mutation,
+  useGetAllOffersQuery,
+  useGetOfferAvlQuery
 } = offerApi;

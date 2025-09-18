@@ -8,8 +8,11 @@ import Radio from "../../../components/Form/Radio";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
 import { Table, TableCell, TableRow } from "../../../components/Table";
 import { useCreateOfferType4Mutation } from "../../../api/offerApi";
+import { useNavigate } from "react-router";
 
 const OfferTypeFour = () => {
+  const navigate = useNavigate();
+
   const { customerOffer, setCusomerOffer, goToOfferStep } = useOrder();
   const [discountPV, setDiscountPV] = useState(1);
   const [discountValue, setDiscountValue] = useState(null);
@@ -36,50 +39,66 @@ const OfferTypeFour = () => {
       toast.error("Quantity must be greater than 0");
       return;
     }
+
     if (!slabStart || !slabEnd) {
       toast.error("Please enter slab entries");
       return;
     }
+
+    if (parseFloat(slabStart) === parseFloat(slabEnd)) {
+      toast.error("Slab Start and Slab End cannot be the same");
+      return;
+    }
+
+    if (items.length > 0) {
+      const lastSlab = items[items.length - 1];
+      if (parseFloat(slabStart) <= parseFloat(lastSlab.slabEnd)) {
+        toast.error("Slab Start must be greater than the previous Slab End");
+        return;
+      }
+    }
+
     const newItem = {
-      quantity,
+      quantity: parseFloat(quantity),
       discountPV,
-      discountValue,
-      slabStart,
-      slabEnd,
+      discountValue: parseFloat(discountValue),
+      slabStart: parseFloat(slabStart),
+      slabEnd: parseFloat(slabEnd),
     };
+
     setItems((prev) => [...prev, newItem]);
     toast.success("Item added successfully!");
     handleRefresh();
   };
 
   const handleSave = async () => {
-  if (items.length <= 0) {
-    toast.error("Please add at least one offer");
-    return;
-  }
+    if (items.length <= 0) {
+      toast.error("Please add at least one offer");
+      return;
+    }
 
-  const payload = {
-    OfferMainId: customerOffer.offerMainId ?? null,
-    slabs: items.map((item) => ({
-      SlabStart: parseFloat(item.slabStart),
-      SlabEnd: parseFloat(item.slabEnd),
-      DiscountType: item.discountPV,
-      DiscountPerct: item.discountPV === 0 ? parseFloat(item.discountValue) : null,
-      DiscountValue: item.discountPV === 1 ? parseFloat(item.discountValue) : null,
-    })),
+    const payload = {
+      OfferMainId: customerOffer.offerMainId ?? null,
+      slabs: items.map((item) => ({
+        SlabStart: parseFloat(item.slabStart),
+        SlabEnd: parseFloat(item.slabEnd),
+        DiscountType: item.discountPV,
+        DiscountPerct:
+          item.discountPV === 0 ? parseFloat(item.discountValue) : null,
+        DiscountValue:
+          item.discountPV === 1 ? parseFloat(item.discountValue) : null,
+      })),
+    };
+
+    try {
+      await createOffer(payload).unwrap();
+      toast.success("OfferType4 successfully created");
+      navigate("/offer");
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to create OfferType4");
+    }
   };
-
-  console.log(payload);
-
-  try {
-    await createOffer(payload).unwrap();
-    toast.success("OfferType4 successfully created");
-  } catch (error) {
-    console.log(error);
-    toast.error("Failed to create OfferType4");
-  }
-};
-
 
   return (
     <div>
@@ -90,7 +109,7 @@ const OfferTypeFour = () => {
               Step 2: Slab Details
             </span>
             <div>
-              <Button variant="outline">Back</Button>
+              <Button variant="outline" onClick={() => navigate("/offer")}>Back</Button>
             </div>
           </div>
           {items.length > 0 && (
@@ -217,7 +236,13 @@ const OfferTypeFour = () => {
             <Button icon={FiPlus} onClick={handleAdd}>
               Add
             </Button>
-            <Button onClick={handleSave} isLoading={isOfferCreating} disabled={isOfferCreating} >Save</Button>
+            <Button
+              onClick={handleSave}
+              isLoading={isOfferCreating}
+              disabled={isOfferCreating}
+            >
+              Create Offer
+            </Button>
           </div>
         </div>
       </div>

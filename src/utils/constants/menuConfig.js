@@ -277,7 +277,7 @@ export const menuItems = [
     name: "Offer",
     icon: FiTag,
     module: "Offer",
-    path: "/offer/create",
+    path: "/offer",
   },
   {
     name: "Ledger Entries",

@@ -29,8 +29,8 @@ const OrderView = () => {
   const orderId = params.get("orderId");
   const [errors, setErrors] = useState(null);
   const [errorModalOpen, setErrorModalOpen] = useState(false);
-  const [isLimitOpen,setisLimitOpen] = useState(false)
-  const [warningMessage,setWarningMessage] = useState(null)
+  const [isLimitOpen, setisLimitOpen] = useState(false);
+  const [warningMessage, setWarningMessage] = useState(null);
 
   const { data: orderDetails, isLoading } = useGetSavedOrderDetailsQuery(
     { orderId },
@@ -221,6 +221,7 @@ const OrderView = () => {
       };
 
       const res = await cancelItem({ id, payload }).unwrap();
+      toast.success("Item cancelled successfully");
     } catch (error) {
       console.log(error);
     }

@@ -27,6 +27,7 @@ import {
 } from "../../../api/offerApi";
 import { Table, TableCell, TableRow } from "../../../components/Table";
 import { ErrorDisplayModal } from "../../../components/ErrorsDisplay";
+import { useNavigate } from "react-router";
 
 const options = [
   { value: 1, label: "All Brands" },
@@ -53,6 +54,7 @@ const OpticalLens = () => {
     customerOffer,
     goToOfferStep,
   } = useOrder();
+  const navigate = useNavigate();
 
   const [discountPV, setDiscountPV] = useState(1);
   const [discountValue, setDiscountValue] = useState(null);
@@ -77,6 +79,7 @@ const OpticalLens = () => {
     coatingId: null,
     treatmentId: null,
     coatingComboId: null,
+    addOnCheck: false,
   });
 
   //   api quiries
@@ -391,28 +394,8 @@ const OpticalLens = () => {
         ProductType: 0,
         BrandId: item.brandId,
         OLDetailID: null,
-        OLMasterID: item.type === 2 ? item.masterId : null,
+        OLMasterID: item.type === 2 && !item.showProduct ? item.masterId : null,
         OLCoatingComboID: item.type === 2 ? item.coatingComboId : null,
-        // OLTreatmentID:
-        //   item.type === 1
-        //     ? null
-        //     : item.type === 4
-        //     ? item.treatmentId
-        //     : item.type === 3
-        //     ? null
-        //     : item.showProduct
-        //     ? item.treatmentId
-        //     : null,
-        // OLCoatingID:
-        //   item.type === 1
-        //     ? null
-        //     : item.type === 4
-        //     ? null
-        //     : item.type === 3
-        //     ? item.coatingId
-        //     : item.showProduct
-        //     ? item.coatingId
-        //     : null,
         OLTreatmentID:
           item.type === 1
             ? null
@@ -443,12 +426,13 @@ const OpticalLens = () => {
     try {
       await saveOL(payload).unwrap();
       toast.success("Optical lens successfully saved");
+      navigate("/offer")
     } catch (error) {
       console.log(error);
     }
     console.log(payload);
   };
-  console.log(lensData);
+
   return (
     <div>
       <div className="max-w-8xl h-auto">
@@ -692,7 +676,7 @@ const OpticalLens = () => {
                         setLensData((prev) => ({
                           ...prev,
                           type: item.value,
-                          focalityId: null,
+                          // focalityId: null,
                           family: null,
                           design: null,
                           indexValues: null,
@@ -943,56 +927,69 @@ const OpticalLens = () => {
                       <span className="text-sm font-medium text-gray-700">
                         Tint
                       </span>
-                      {tints.map((type) => (
-                        <Radio
-                          name="tint"
-                          key={type.value}
-                          label={type.label}
-                          value={type.value} 
-                          checked={lensData.tintvalue === type.value} 
-                          onChange={(e) =>
-                            setLensData((prev) => ({
-                              ...prev,
-                              tintvalue: parseInt(e.target.value), 
-                            }))
-                          }
-                        />
-                      ))}
+                      <div className="flex whitespace-nowrap gap-3">
+                        {tints.map((type) => (
+                          <Radio
+                            name="tint"
+                            key={type.value}
+                            label={type.label}
+                            value={type.value}
+                            checked={lensData.tintvalue === type.value}
+                            onChange={(e) =>
+                              setLensData((prev) => ({
+                                ...prev,
+                                tintvalue: parseInt(e.target.value),
+                              }))
+                            }
+                          />
+                        ))}
+                      </div>
                     </div>
-
-                    <div className="w-1/3">
-                      {addOnData?.data && (
-                        <Autocomplete
-                          options={
-                            addOnData?.data?.data.filter(
-                              (b) => b.IsActive === 1
-                            ) || []
-                          }
-                          getOptionLabel={(option) => option.AddOnName}
-                          onChange={(event, newValue) => {
-                            setLensData((prev) => ({
-                              ...prev,
-                              AddOnId: newValue?.Id,
-                            }));
-                          }}
-                          value={
-                            addOnData?.data?.data?.find(
-                              (b) => b.Id === lensData.AddOnId
-                            ) || null
-                          }
-                          isOptionEqualToValue={(option, value) =>
-                            option.Id === value.Id
-                          }
-                          renderInput={(params) => (
-                            <TextField
-                              {...params}
-                              label="Select Add on"
-                              variant="outlined"
-                              fullWidth
-                              size="small"
-                            />
-                          )}
-                        />
+                    <div className=" flex w-full gap-3">
+                      <Checkbox
+                        label="Add On"
+                        checked={lensData.addOnCheck}
+                        onChange={(e) =>
+                          setLensData((prev) => ({
+                            ...prev,
+                            addOnCheck: e.target.checked,
+                          }))
+                        }
+                      />
+                      {addOnData?.data && lensData.addOnCheck && (
+                        <div className="w-1/3">
+                          <Autocomplete
+                            options={
+                              addOnData?.data?.data.filter(
+                                (b) => b.IsActive === 1
+                              ) || []
+                            }
+                            getOptionLabel={(option) => option.AddOnName}
+                            onChange={(event, newValue) => {
+                              setLensData((prev) => ({
+                                ...prev,
+                                AddOnId: newValue?.Id,
+                              }));
+                            }}
+                            value={
+                              addOnData?.data?.data?.find(
+                                (b) => b.Id === lensData.AddOnId
+                              ) || null
+                            }
+                            isOptionEqualToValue={(option, value) =>
+                              option.Id === value.Id
+                            }
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label="Select Add on"
+                                variant="outlined"
+                                fullWidth
+                                size="small"
+                              />
+                            )}
+                          />
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1006,7 +1003,7 @@ const OpticalLens = () => {
                       isLoading={isOLSaving}
                       disabled={isOLSaving}
                     >
-                      Save & Next
+                      Create Offer
                     </Button>
                   </div>
                 </div>

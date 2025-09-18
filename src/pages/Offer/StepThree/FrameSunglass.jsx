@@ -16,6 +16,7 @@ import { Autocomplete, TextField } from "@mui/material";
 import { Table, TableCell, TableRow } from "../../../components/Table";
 import { useSaveOfferProductMutation } from "../../../api/offerApi";
 import { useGetAllBrandGroupsQuery } from "../../../api/brandGroup";
+import { useNavigate } from "react-router";
 
 const brandsLevelItemsFirstRow = [
   { value: 1, label: "Both" },
@@ -35,6 +36,8 @@ const FrameSunglass = () => {
     customerOffer,
     goToOfferStep,
   } = useOrder();
+  const navigate = useNavigate();
+
   const [quantity, setQuantity] = useState(0);
   const [level, setLevel] = useState(0);
 
@@ -70,7 +73,6 @@ const FrameSunglass = () => {
   const [saveFrame, { isLoading: isFrameSaving }] =
     useSaveOfferProductMutation();
   const { data: allBrandGroups } = useGetAllBrandGroupsQuery();
-  console.log("groups", allBrandGroups?.data);
   useEffect(() => {
     setDiscountValue("");
   }, [discountPV]);
@@ -203,6 +205,13 @@ const FrameSunglass = () => {
     });
     setSelectedBrands(newSelectedBrands);
   };
+  const handleRefresh = () => {
+    setQuantity("");
+    setDiscountPV(1);
+    setDiscountValue("");
+    setItems([]);
+    setLevel(0);
+  };
 
   const toggleBrand = (brandId) => {
     setSelectedBrands((prev) => ({
@@ -220,6 +229,10 @@ const FrameSunglass = () => {
   const handleSave = async () => {
     if (!quantity) {
       toast.error("Please Enter qty");
+      return;
+    }
+    if (!discountValue) {
+      toast.error("Please Enter discount");
       return;
     }
     const frameCategoryMap = {
@@ -246,14 +259,15 @@ const FrameSunglass = () => {
       FrameCategory:
         frameCategoryMap[Number(selectedSubLevelBrandFirstRow)] ?? null,
     };
-    console.log(payload);
 
     const finalPayload = {
       entries: [payload],
     };
+
     try {
       await saveFrame(finalPayload).unwrap();
       toast.success("Offer Frame product successfully created");
+      navigate("/offer");
     } catch (error) {
       console.log(error);
     }
@@ -275,7 +289,7 @@ const FrameSunglass = () => {
             >
               Back
             </Button>
-            <Button>Refresh</Button>
+            <Button onClick={handleRefresh}>Refresh</Button>
           </div>
         </div>
 
@@ -284,6 +298,7 @@ const FrameSunglass = () => {
             <Input
               type="number"
               className="w-1/2"
+              value={quantity}
               label="Minimum Qty to Order"
               onChange={(e) => {
                 const val = e.target.value;
@@ -631,7 +646,7 @@ const FrameSunglass = () => {
                   >
                     {/* Group Checkbox */}
                     <Checkbox
-                      label={`Brand Group ${
+                      label={`${
                         allBrandGroups?.data?.find((item) => item.Id == groupId)
                           ?.BrandGroupName || ""
                       }`}
@@ -662,7 +677,7 @@ const FrameSunglass = () => {
               isLoading={isFrameSaving}
               disabled={isFrameSaving}
             >
-              Save & Next
+              Create Offer
             </Button>
           </div>
         </div>

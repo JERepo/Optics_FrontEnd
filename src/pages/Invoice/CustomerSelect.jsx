@@ -1057,7 +1057,7 @@ const CustomerSelect = () => {
       totalGSTValue: totalGst,
       totalValue: totalAmount,
       roundOff: 0.0,
-      balanceAmount: totalBalance,
+      balanceAmount: totalAmount - totalAdvance,
       applicationUserId: user.Id,
       // bypassCreditCheck :
       creditBilling: selectedPatient?.CustomerMaster?.CreditBilling,
