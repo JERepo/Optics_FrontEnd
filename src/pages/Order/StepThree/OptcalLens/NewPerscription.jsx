@@ -28,6 +28,7 @@ import { Table, TableCell, TableRow } from "../../../../components/Table";
 import toast from "react-hot-toast";
 import { useOrder } from "../../../../features/OrderContext";
 import { useGetAllSalesPersonsQuery } from "../../../../api/salesPersonApi";
+import HasPermission from "../../../../components/HasPermission";
 
 const inputTableColumns = [
   "SPH",
@@ -177,8 +178,6 @@ const NewPrescription = ({
     const remarksError = validateDataField("remarks", prescriptionData.remarks);
     if (remarksError) errors.add(remarksError);
 
-   
-
     return Array.from(errors);
   };
 
@@ -214,16 +213,11 @@ const NewPrescription = ({
     setPrescriptionData(updatedData);
 
     const errors = new Set(
-      liveErrors.filter(
-        (e) =>
-          !e.includes("Remarks") &&
-          !e.includes("Brand") 
-      )
+      liveErrors.filter((e) => !e.includes("Remarks") && !e.includes("Brand"))
     );
 
     const err = validateDataField(field, value);
     if (err) errors.add(err);
-
 
     setLiveErrors([...errors]);
   };
@@ -400,15 +394,16 @@ const NewPrescription = ({
   };
   return (
     <div className="mt-5 space-y-4">
-      {isPrescription && 
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-3 text-lg font-medium text-neutral-600">
+      {isPrescription && (
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 text-lg font-medium text-neutral-600">
             Patient Name : {customerId.patientName}
-        </div> 
-         <div className="flex items-center gap-3 text-lg font-medium text-neutral-600">
+          </div>
+          <div className="flex items-center gap-3 text-lg font-medium text-neutral-600">
             Patient Mobile : {customerId.mobileNo}
+          </div>
         </div>
-        </div>}
+      )}
       <div></div>
       {/* Brand Selection */}
       <div className="flex justify-between w-full items-center">
@@ -571,19 +566,39 @@ const NewPrescription = ({
 
       {/* Save Button */}
       <div className="flex justify-end mt-4">
-        <Button
-          onClick={handleSubmit}
-          disabled={isSaving || isUpdating}
-          isLoading={isSaving || isUpdating}
-        >
-          {isSubmitting
-            ? isEditMode
-              ? "Updating..."
-              : "Saving..."
-            : isEditMode
-            ? "Update Prescription"
-            : "Save Prescription"}
-        </Button>
+        {isPrescription ? (
+          <HasPermission module="Prescription" action={["edit"]}>
+            <Button
+              onClick={handleSubmit}
+              disabled={isSaving || isUpdating}
+              isLoading={isSaving || isUpdating}
+            >
+              {isSubmitting
+                ? isEditMode
+                  ? "Updating..."
+                  : "Saving..."
+                : isEditMode
+                ? "Update Prescription"
+                : "Save Prescription"}
+            </Button>
+          </HasPermission>
+        ) : (
+          <HasPermission>
+            <Button
+              onClick={handleSubmit}
+              disabled={isSaving || isUpdating}
+              isLoading={isSaving || isUpdating}
+            >
+              {isSubmitting
+                ? isEditMode
+                  ? "Updating..."
+                  : "Saving..."
+                : isEditMode
+                ? "Update Prescription"
+                : "Save Prescription"}
+            </Button>
+          </HasPermission>
+        )}
       </div>
 
       {/* Showing the power details */}

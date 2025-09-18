@@ -70,22 +70,28 @@ const StockTransferIn = () => {
         return fromCompany.includes(query);
       });
     }
-    return filtered.map((s) => ({
-      id: s.ID,
-      ton: `${s.STInPrefix}/${s.STInNo}`,
-      date: new Intl.DateTimeFormat("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }).format(new Date(s.STInCreateDate)),
+    return filtered
+      .map((s) => ({
+        id: s.ID,
+        ton: `${s.STInPrefix}/${s.STInNo}`,
+        date: new Intl.DateTimeFormat("en-GB", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }).format(new Date(s.STInCreateDate)),
 
-      fromCompany: allLocations?.data?.data.find(
-        (item) => item.Id === s.CompanyId
-      ).DisplayName,
-      totalQty: s.TotalQtyIn,
-      totalValue: s.TotalValueIn,
-    }));
-    // .filter((order) => order.CompanyId == hasMultipleLocations[0]);
+        fromCompany: allLocations?.data?.data.find(
+          (item) => item.Id === s.CompanyId
+        ).DisplayName,
+        totalQty: s.TotalQtyIn,
+        totalValue: s.TotalValueIn,
+        CompanyId: s.CompanyId,
+        STInCreateDate :s.STInCreateDate
+      }))
+      .filter((order) => order.CompanyId == hasMultipleLocations[0])
+      .sort(
+        (a, b) => new Date(b.STInCreateDate) - new Date(a.STInCreateDate)
+      );
   }, [allStockIn, fromDate, toDate, searchQuery, allLocations]);
 
   const startIndex = (currentPage - 1) * pageSize;

@@ -139,24 +139,6 @@ const getStockOutPrice = (item) => {
 
   return 0;
 };
-const getPurchaseValue = (item) => {
-  if (item.ProductType === 3) {
-    if (item.ProductDetails.CLBatchCode === 0) {
-      return parseFloat(item.ProductDetails.price?.BuyingPrice || 0);
-    }
-
-    const stockCheck = Array.isArray(item.ProductDetails.Stock)
-      ? item.ProductDetails.Stock[0].BuyingPrice
-      : item.ProductDetails.Stock.BuyingPrice;
-    return stockCheck;
-  } else if (item.ProductType === 1) {
-    return parseFloat(item.ProductDetails.Stock.BuyingPrice);
-  } else if (item.ProductType === 2) {
-    return parseFloat(item.ProductDetails.Stock.BuyingPrice);
-  }
-
-  return 0;
-};
 const PurchaseReturnView = () => {
   const navigate = useNavigate();
   const { search } = useLocation();
@@ -202,7 +184,7 @@ const PurchaseReturnView = () => {
   const totals = (PRMainDetails?.details || []).reduce(
     (acc, item) => {
       const qty = item.DNQty || 0;
-      const unitPrice = getPurchaseValue(item);
+      const unitPrice = parseFloat(item.DNPrice) || 0;
       const gstRate = parseFloat(item.ProductTaxPercentage) / 100;
 
       const basicValue = unitPrice * qty;
@@ -324,7 +306,7 @@ const PurchaseReturnView = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    getPurchaseValue(item) *
+                    parseFloat(item.DNPrice) *
                       (parseFloat(item.ProductTaxPercentage) / 100)
                   )}
                   ({parseFloat(item.ProductTaxPercentage)}%)
@@ -333,8 +315,8 @@ const PurchaseReturnView = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    parseFloat(getPurchaseValue(item) * item.DNQty) +
-                      getPurchaseValue(item) *
+                    parseFloat (parseFloat(item.DNPrice) * item.DNQty) +
+                      parseFloat(item.DNPrice) *
                         ((parseFloat(item.ProductTaxPercentage) / 100) *
                           item.DNQty)
                   )}

@@ -53,6 +53,7 @@ const OpticalLens = () => {
     prevOfferStep,
     customerOffer,
     goToOfferStep,
+    updateCurrentOfferStep
   } = useOrder();
   const navigate = useNavigate();
 
@@ -426,6 +427,7 @@ const OpticalLens = () => {
     try {
       await saveOL(payload).unwrap();
       toast.success("Optical lens successfully saved");
+      updateCurrentOfferStep(1)
       navigate("/offer")
     } catch (error) {
       console.log(error);

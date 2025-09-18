@@ -1061,7 +1061,7 @@ const ContactLens = () => {
   if (newItem.CLDetailId && !searchFethed && referenceApplicable === 0) {
     inputTableColumns.push("Avl.Qty", "Order Qty", "Action");
   }
-
+console.log(mainClDetails)
   return (
     <div className="max-w-8xl h-auto">
       <div className="bg-white rounded-xl shadow-sm p-2">
@@ -1392,7 +1392,7 @@ const ContactLens = () => {
                     {item.ReturnQty || 0}
                   </TableCell>
                   <TableCell className="">
-                    ₹{formatINR(parseFloat(item.TotalAmount || 0))}
+                    ₹{formatINR((parseFloat(item.returnPrice || 0) * parseInt(item.ReturnQty)))}
                   </TableCell>
                   <TableCell>
                     <Button
@@ -1438,7 +1438,7 @@ const ContactLens = () => {
                     "pending return qty",
                     "Action",
                   ]}
-                  data={InvoiceDetails?.data}
+                  data={InvoiceDetails?.data?.filter((item) => item["InvoiceMain.Company.Id"] === parseInt(hasMultipleLocations[0]))}
                   renderRow={(item, index) => (
                     <TableRow key={index}>
                       <TableCell>{index + 1}</TableCell>

@@ -115,7 +115,9 @@ const getProductNameYes = (item) => {
     tintName ? `Tint: ${tintName}` : "",
     addOns?.length > 0 ? `AddOn: ${addOns}` : "",
     clean(hSN) && `HSN: ${hSN}`,
-    clean(item.FittingPriceEdit) ? `Fitting Price: ₹${item.FittingPriceEdit}` : "",
+    clean(item.FittingPriceEdit)
+      ? `Fitting Price: ₹${item.FittingPriceEdit}`
+      : "",
   ];
 
   return lines.filter(Boolean).join("\n");
@@ -148,7 +150,7 @@ const getProductName = (order, allBrandsData, lensData) => {
     }
     return String(val).trim();
   };
-   const cleanPower = (val) => {
+  const cleanPower = (val) => {
     const cleaned = clean(val);
     if (!cleaned) return "";
     const num = parseFloat(cleaned);
@@ -204,7 +206,7 @@ const OpticalLens = () => {
     calculateGST,
   } = useOrder();
 
-  const { user } = useSelector((state) => state.auth);
+  const { user, hasMultipleLocations } = useSelector((state) => state.auth);
   const [mainOLDetails, setMainOLDetails] = useState([]);
   const [editMode, setEditMode] = useState({});
   const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -353,7 +355,6 @@ const OpticalLens = () => {
       id: customerSalesId.patientId,
       locationId: customerSalesId.locationId,
     });
-
 
   // Update productName based on dropdown selections
   useEffect(() => {
@@ -629,14 +630,14 @@ const OpticalLens = () => {
       returnQty: 1,
     });
   };
-const handleDeleteYes = (id, index) => {
-  setMainOLDetails((prev) => prev.filter((item, i) => i !== index));
-  setEditMode((prev) => {
-    const newEditMode = { ...prev };
-    delete newEditMode[index]; 
-    return newEditMode;
-  });
-};
+  const handleDeleteYes = (id, index) => {
+    setMainOLDetails((prev) => prev.filter((item, i) => i !== index));
+    setEditMode((prev) => {
+      const newEditMode = { ...prev };
+      delete newEditMode[index];
+      return newEditMode;
+    });
+  };
   const handleAddInvoice = () => {
     if (!selectedInvoice) {
       toast.error("Please select an invoice before adding.");
@@ -1315,61 +1316,65 @@ const handleDeleteYes = (id, index) => {
                       ₹{formatINR(parseFloat(item.SRP || 0))}
                     </TableCell>
                     <TableCell>
-                    {editMode[index]?.SellingPrice ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          value={item.returnPrice || ""}
-                          onChange={(e) =>
-                            handleSellingPriceChange(e.target.value, index)
-                          }
-                          className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                          placeholder="Enter price"
-                        />
-                        <button
-                          onClick={() =>
-                            toggleEditMode(
-                              item.Barcode,
-                              index,
-                              "SellingPrice",
-                              "save"
-                            )
-                          }
-                          className="text-neutral-400 transition"
-                          title="Save"
-                        >
-                          <FiCheck size={18} />
-                        </button>
-                        <button
-                          onClick={() =>
-                            toggleEditMode(
-                              item.Barcode,
-                              index,
-                              "SellingPrice",
-                              "cancel"
-                            )
-                          }
-                          className="text-neutral-400 transition"
-                          title="Cancel"
-                        >
-                          <FiX size={18} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        ₹{formatINR(item.returnPrice)}
-                        <button
-                          onClick={() =>
-                            toggleEditMode(item.Barcode, index, "SellingPrice")
-                          }
-                          className="text-neutral-400 transition"
-                          title="Edit Price"
-                        >
-                          <FiEdit2 size={14} />
-                        </button>
-                      </div>
-                    )}
-                  </TableCell>
+                      {editMode[index]?.SellingPrice ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            value={item.returnPrice || ""}
+                            onChange={(e) =>
+                              handleSellingPriceChange(e.target.value, index)
+                            }
+                            className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                            placeholder="Enter price"
+                          />
+                          <button
+                            onClick={() =>
+                              toggleEditMode(
+                                item.Barcode,
+                                index,
+                                "SellingPrice",
+                                "save"
+                              )
+                            }
+                            className="text-neutral-400 transition"
+                            title="Save"
+                          >
+                            <FiCheck size={18} />
+                          </button>
+                          <button
+                            onClick={() =>
+                              toggleEditMode(
+                                item.Barcode,
+                                index,
+                                "SellingPrice",
+                                "cancel"
+                              )
+                            }
+                            className="text-neutral-400 transition"
+                            title="Cancel"
+                          >
+                            <FiX size={18} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          ₹{formatINR(item.returnPrice)}
+                          <button
+                            onClick={() =>
+                              toggleEditMode(
+                                item.Barcode,
+                                index,
+                                "SellingPrice"
+                              )
+                            }
+                            className="text-neutral-400 transition"
+                            title="Edit Price"
+                          >
+                            <FiEdit2 size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell>
                       ₹
                       {formatINR(
@@ -1874,7 +1879,11 @@ const handleDeleteYes = (id, index) => {
                   Select Invoice No
                 </label>
                 <Autocomplete
-                  options={InvoiceDetailsDrop?.data || []}
+                  options={(InvoiceDetailsDrop?.data || []).filter(
+                    (item) =>
+                      item["InvoiceMain.Company.Id"] ===
+                      parseInt(hasMultipleLocations[0])
+                  )}
                   getOptionLabel={(option) => {
                     const prefix = option["InvoiceMain.InvoicePrefix"];
                     const InvoiceNo = option["InvoiceMain.InvoiceNo"];
@@ -1882,9 +1891,14 @@ const handleDeleteYes = (id, index) => {
                     return `${prefix}/${InvoiceNo}/${slNo}`;
                   }}
                   value={
-                    InvoiceDetailsDrop?.data?.find(
-                      (invoice) => invoice.Id === selectedInvoice?.Id
-                    ) || null
+                    (InvoiceDetailsDrop?.data || [])
+                      .filter(
+                        (item) =>
+                          item["InvoiceMain.Company.Id"] ===
+                          parseInt(hasMultipleLocations[0])
+                      )
+                      .find((invoice) => invoice.Id === selectedInvoice?.Id) ||
+                    null
                   }
                   onChange={(_, newValue) => setSelectedInvoice(newValue)}
                   renderInput={(params) => (

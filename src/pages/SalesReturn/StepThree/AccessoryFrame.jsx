@@ -104,7 +104,7 @@ const AccessoryFrame = () => {
     referenceApplicable,
     calculateGST,
   } = useOrder();
-  const { user } = useSelector((state) => state.auth);
+  const { user,hasMultipleLocations } = useSelector((state) => state.auth);
 
   const [barcode, setBarcode] = useState("");
   const [searchMode, setSearchMode] = useState(false);
@@ -798,67 +798,51 @@ const toggleEditMode = (id, index, field, action) => {
                       <TableCell>{item.SKU}</TableCell>
                       <TableCell>₹{item.MRP}</TableCell>
                       <TableCell>
-                        {editMode[`${item.Barcode}-${index}`]?.sellingPrice ? (
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              value={item.SellingPrice || ""}
-                              onChange={(e) =>
-                                handleSellingPriceChange(
-                                  item.Barcode,
-                                  e.target.value,
-                                  index
-                                )
-                              }
-                              className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                              placeholder="Enter price"
-                            />
-                            <button
-                              onClick={() =>
-                                toggleEditMode(
-                                  item.Barcode,
-                                  index,
-                                  "sellingPrice"
-                                )
-                              }
-                              className="text-neutral-400 transition"
-                              title="Save"
-                            >
-                              <FiCheck size={18} />
-                            </button>
-                            <button
-                              onClick={() =>
-                                toggleEditMode(
-                                  item.Barcode,
-                                  index,
-                                  "sellingPrice"
-                                )
-                              }
-                              className="text-neutral-400 transition"
-                              title="Cancel"
-                            >
-                              <FiX size={18} />
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            ₹{item.SellingPrice || "N/A"}
-                            <button
-                              onClick={() =>
-                                toggleEditMode(
-                                  item.Barcode,
-                                  index,
-                                  "sellingPrice"
-                                )
-                              }
-                              className="text-neutral-400"
-                              title="Edit Price"
-                            >
-                              <FiEdit2 size={14} />
-                            </button>
-                          </div>
-                        )}
-                      </TableCell>
+                       {editMode[`${item.Id}-${index}`]?.sellingPrice ? (
+                         <div className="flex items-center gap-2">
+                           <input
+                             type="number"
+                             value={item.SellingPrice || ""}
+                             onChange={(e) =>
+                               handleSellingPriceChange(item.Barcode, e.target.value, index)
+                             }
+                             className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                             placeholder="Enter price"
+                           />
+                           <button
+                             onClick={() =>
+                               toggleEditMode(item.Id, index, "sellingPrice", "save")
+                             }
+                             className="text-neutral-400 transition"
+                             title="Save"
+                           >
+                             <FiCheck size={18} />
+                           </button>
+                           <button
+                             onClick={() =>
+                               toggleEditMode(item.Id, index, "sellingPrice", "cancel")
+                             }
+                             className="text-neutral-400 transition"
+                             title="Cancel"
+                           >
+                             <FiX size={18} />
+                           </button>
+                         </div>
+                       ) : (
+                         <div className="flex items-center gap-2">
+                           ₹{item.SellingPrice || "N/A"}
+                           <button
+                             onClick={() =>
+                               toggleEditMode(item.Id, index, "sellingPrice")
+                             }
+                             className="text-neutral-400 transition"
+                             title="Edit Price"
+                           >
+                             <FiEdit2 size={14} />
+                           </button>
+                         </div>
+                       )}
+                     </TableCell>
                       <TableCell>
                         {editMode[`${item.Barcode}-${index}`]?.qty ? (
                           <div className="flex items-center gap-2">
@@ -1079,7 +1063,7 @@ const toggleEditMode = (id, index, field, action) => {
                     "pending qty",
                     "Action",
                   ]}
-                  data={InvoiceDetails?.data}
+                  data={InvoiceDetails?.data?.filter((item) => item["InvoiceMain.Company.Id"] === parseInt(hasMultipleLocations[0]))}
                   renderRow={(item, index) => (
                     <TableRow key={index}>
                       <TableCell>{index + 1}</TableCell>

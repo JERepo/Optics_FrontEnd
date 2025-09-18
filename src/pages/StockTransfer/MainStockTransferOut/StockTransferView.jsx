@@ -175,47 +175,7 @@ const getProductName = (data) => {
   return "";
 };
 
-const getStockOutPrice = (data) => {
-  const item = {...data,...data.ProductDetails}
-  if (!item) {
-    return 0;
-  }
 
-  if (item.ProductType === 3) {
-    if (item.CLBatchCode === 0) {
-      return parseFloat(item.price?.BuyingPrice || 0);
-    } else if (item.CLBatchCode === 1) {
-      if (Array.isArray(item.Stock)) {
-        return item.Stock[0].BuyingPrice || 0;
-      } else if (item.Stock && typeof item.Stock === "object") {
-        return parseFloat(item.Stock.BuyingPrice || 0);
-      }
-    }
-
-    return parseFloat(item.Stock?.BuyingPrice || 0);
-  }
-  if (item.ProductType === 1) {
-    return parseFloat(item.Stock?.BuyingPrice || 0);
-  }
-  if (item.ProductType === 2) {
-    return parseFloat(item.Stock?.BuyingPrice || 0);
-  }
-  if (item.ProductType === 0) {
-    if (item.CLBatchCode === 0) {
-      return parseFloat(item.price?.BuyingPrice || 0);
-    } else if (item.CLBatchCode === 1) {
-      if (Array.isArray(item.Stock)) {
-        return item.Stock[0].BuyingPrice || 0;
-      } else if (item.Stock && typeof item.Stock === "object") {
-        return parseFloat(item.Stock.BuyingPrice || 0);
-      }
-    }
-
-    return parseFloat(item.Stock?.BuyingPrice || 0);
-  }
-
-  return 0;
-};
 const getStockOutMRP = (data) => {
     const item = {...data,...data.ProductDetails}
 

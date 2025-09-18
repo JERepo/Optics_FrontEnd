@@ -19,6 +19,16 @@ import {
 } from "../../../api/stockTransfer";
 import { formatINR } from "../../../utils/formatINR";
 
+ const getStatus = (status) => {
+    const types = {
+      1: "Confirmed",
+      2: "Cancelled",
+      3: "Partial Stock",
+      4: "Stock Transfer In Complete",
+    };
+    return types[status] || "Draft";
+  };
+
 const StockTransferOut = () => {
   const navigate = useNavigate();
   const { hasMultipleLocations } = useSelector((state) => state.auth);
@@ -74,24 +84,34 @@ const StockTransferOut = () => {
       });
     }
 
-    return filtered.map((s) => ({
-      id: s.ID,
-      ton: `${s.STOutPrefix}/${s.STOutNo}`,
-      date: new Intl.DateTimeFormat("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }).format(new Date(s.STOutCreateDate)),
-      toCompany: allLocations?.data?.data.find(
-        (item) => item.Id === s.ToCompanyId
-      ).DisplayName,
-      fromCompany: allLocations?.data?.data.find(
-        (item) => item.Id === s.FromCompanyId
-      ).DisplayName,
-      totalQty: s.TotalQtyOut,
-      totalValue: s.TotalValueOut,
-    }));
-    // .filter((order) => order.CompanyId == hasMultipleLocations[0]);
+    return filtered
+      .map((s) => ({
+        id: s.ID,
+        ton: `${s.STOutPrefix}/${s.STOutNo}`,
+        date: new Intl.DateTimeFormat("en-GB", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }).format(new Date(s.STOutCreateDate)),
+        toCompany: allLocations?.data?.data.find(
+          (item) => item.Id === s.ToCompanyId
+        )?.DisplayName,
+        fromCompany: allLocations?.data?.data.find(
+          (item) => item.Id === s.FromCompanyId
+        )?.DisplayName,
+        totalQty: s.TotalQtyOut,
+        totalValue: s.TotalValueOut,
+        FromCompanyId: s.FromCompanyId,
+        ToCompanyId: s.ToCompanyId,
+        STOutCreateDate: s.STOutCreateDate, 
+        status:getStatus(s.Status)
+      }))
+      .filter(
+        (order) => order.FromCompanyId === parseInt(hasMultipleLocations[0])
+      )
+      .sort(
+        (a, b) => new Date(b.STOutCreateDate) - new Date(a.STOutCreateDate) 
+      );
   }, [allStockOut, fromDate, toDate, searchQuery, allLocations]);
 
   const startIndex = (currentPage - 1) * pageSize;
@@ -229,6 +249,7 @@ const StockTransferOut = () => {
               "to company",
               "total qty",
               "total value",
+              "status",
               "action",
             ]}
             data={paginatedOrders}
@@ -241,6 +262,7 @@ const StockTransferOut = () => {
                 <TableCell>{item.toCompany}</TableCell>
                 <TableCell>{item.totalQty}</TableCell>
                 <TableCell>₹{formatINR(item.totalValue)}</TableCell>
+                <TableCell>{item.status}</TableCell>
                 <TableCell>
                   <button
                     onClick={() => handleViewSalesReturn(item.id)}

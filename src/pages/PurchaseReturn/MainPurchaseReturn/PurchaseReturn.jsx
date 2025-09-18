@@ -18,6 +18,18 @@ import { useGetAllPRQuery } from "../../../api/purchaseReturn";
 import { formatINR } from "../../../utils/formatINR";
 import { format } from "date-fns";
 
+const getStatus = (status) => {
+  if (status == 0) {
+    return "Draft";
+  } else if (status == 1) {
+    return "Confirmed";
+  }else if(status === 3){
+    return "Cancelled"
+  }
+  return "UNKNOWN"
+};
+
+
 const PurchaseReturn = () => {
   const navigate = useNavigate();
   const { hasMultipleLocations } = useSelector((state) => state.auth);
@@ -79,6 +91,7 @@ const PurchaseReturn = () => {
       name: s.Vendor.VendorName,
       totalQty: s.TotalQty,
       totalPrice: s.TotalValue,
+      status :getStatus(s.Status)
     }));
     // .filter((order) => order.CompanyId == hasMultipleLocations[0]);
   }, [PRDetails, fromDate, toDate, searchQuery]);
@@ -219,6 +232,7 @@ const PurchaseReturn = () => {
               "vendor name",
               "total qty",
               "total price",
+              "status",
               "action",
             ]}
             data={paginatedOrders}
@@ -231,6 +245,7 @@ const PurchaseReturn = () => {
 
                 <TableCell>{item.totalQty}</TableCell>
                 <TableCell>₹{formatINR(item.totalPrice)}</TableCell>
+                <TableCell>{item.status}</TableCell>
                 <TableCell>
                   <button
                     onClick={() => handleViewSalesReturn(item.id)}

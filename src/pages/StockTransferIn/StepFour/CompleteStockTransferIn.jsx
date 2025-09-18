@@ -89,10 +89,10 @@ const getProductName = (data) => {
     const expiry = item?.Stock[0]?.Expiry ?? null;
     const specs = PowerSpecs
       ? [
-          PowerSpecs.Sph ? `Sph: ${clean(PowerSpecs.Sph)}` : "",
-          PowerSpecs.Cyl ? `Cyl: ${clean(PowerSpecs.Cyl)}` : "",
-          PowerSpecs.Axis ? `Axis: ${clean(PowerSpecs.Axis)}` : "",
-          PowerSpecs.Add ? `Add: ${clean(PowerSpecs.Add)}` : "",
+          PowerSpecs.Sph ? `Sph: ${formatPowerValue(PowerSpecs.Sph)}` : "",
+          PowerSpecs.Cyl ? `Cyl: ${formatPowerValue(PowerSpecs.Cyl)}` : "",
+          PowerSpecs.Axis ? `Axis: ${formatPowerValue(PowerSpecs.Axis)}` : "",
+          PowerSpecs.Add ? `Add: ${formatPowerValue(PowerSpecs.Add)}` : "",
         ]
           .filter(Boolean)
           .join(", ")

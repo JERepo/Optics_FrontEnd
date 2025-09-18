@@ -6,11 +6,12 @@ import {
   useGetOrderViewByIdQuery,
   useGetSavedOrderDetailsQuery,
   useItemCancelMutation,
+  useLazyGenerateOpticalLensReceiptQuery,
   useLazyGetAdvanceAmtQuery,
 } from "../../../api/orderApi";
 import { useOrder } from "../../../features/OrderContext";
 import { Table, TableCell, TableRow } from "../../../components/Table";
-import { FiFileText, FiTrash2 } from "react-icons/fi";
+import { FiFileText, FiPrinter, FiTrash2 } from "react-icons/fi";
 import { format } from "date-fns";
 import Button from "../../../components/ui/Button";
 import Loader from "../../../components/ui/Loader";
@@ -31,6 +32,7 @@ const OrderView = () => {
   const [errorModalOpen, setErrorModalOpen] = useState(false);
   const [isLimitOpen, setisLimitOpen] = useState(false);
   const [warningMessage, setWarningMessage] = useState(null);
+  const [printingId, setPrintingId] = useState(null);
 
   const { data: orderDetails, isLoading } = useGetSavedOrderDetailsQuery(
     { orderId },
@@ -45,6 +47,8 @@ const OrderView = () => {
     useGenerateInvoiceFromOrderMutation();
   const [getAdvanceAmt, { isFetching: isAdvanceFetching }] =
     useLazyGetAdvanceAmtQuery();
+  const [generateOLPrint, { isFetching: isPrinting }] =
+    useLazyGenerateOpticalLensReceiptQuery();
 
   const getTypeName = (id) => {
     const types = { 1: "F/S", 2: "ACC", 3: "CL" };
@@ -335,6 +339,35 @@ const OrderView = () => {
   }
 
   columns.push("Total", "Action");
+
+  const handlePrint = async (item) => {
+    setPrintingId(item.OrderDetailId);
+
+    try {
+      const blob = await generateOLPrint({
+        orderDetailid: item.OrderDetailId,
+        companyId: parseInt(hasMultipleLocations[0]),
+      }).unwrap();
+
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "application/pdf" })
+      );
+      const newWindow = window.open(url);
+      if (newWindow) {
+        newWindow.onload = () => {
+          newWindow.focus();
+          newWindow.print();
+        };
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(
+        "Unable to print the optical lens please try again after some time!"
+      );
+    } finally {
+      setPrintingId(null);
+    }
+  };
   if (isViewLoading || isLoading) {
     return (
       <div>
@@ -510,6 +543,20 @@ const OrderView = () => {
                     >
                       Cancel Item
                     </Button>
+                    {order.typeid === 0 && 
+                    <button
+                      className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                      onClick={() => handlePrint(order)}
+                    >
+                      {printingId === order?.OrderDetailId ? (
+                        <Loader color="black" />
+                      ) : (
+                        <div className="flex items-center">
+                          <FiPrinter className="mr-1.5" />
+                          Print
+                        </div>
+                      )}
+                    </button>}
                   </div>
                 </TableCell>
               </TableRow>

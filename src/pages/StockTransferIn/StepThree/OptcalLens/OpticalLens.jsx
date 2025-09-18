@@ -471,9 +471,11 @@ const OpticalLens = () => {
   };
   const handleQtyChange = (barcode, qty, index) => {
     const newQty = Number(qty);
-    const avlQty = Number(barcodeData[index].Quantity);
+    const avlQty = Number(barcodeData[index].STQtyOut);
     if (newQty > avlQty) {
-      toast.error("Stock quantity cannot exceed available quantity!");
+      toast.error(
+        "Stock Out Transfer Quantity cannot exceed the transfer Quantity!"
+      );
       return;
     }
     if (newQty < 0) {
@@ -482,10 +484,11 @@ const OpticalLens = () => {
     }
     setBarcodeData((prev) =>
       prev.map((i, idx) =>
-        i.Barcode === barcode && idx === index ? { ...i, tqty: newQty } : i
+         idx === index ? { ...i, tiq: newQty } : i
       )
     );
   };
+  console.log("bar", barcodeData);
   const toggleEditMode = (id, index, field, action = "toggle") => {
     setEditMode((prev) => {
       const key = `${id}-${index}`;
@@ -788,6 +791,18 @@ const OpticalLens = () => {
 
   const handleAddPowerData = async (eye) => {
     try {
+      // check if sto quantity
+
+      const STOQuantityCheck = stockOutData?.data?.details?.find(
+        (item) => item.OpticalLensDetailId === formValues["R"].detailId
+      );
+      if (parseInt(formValues["R"].transferQty) > STOQuantityCheck.STQtyOut) {
+        toast.error(
+          "Stock Out Transfer Quantity cannot exceed the transfer Quantity!"
+        );
+        return;
+      }
+
       const payload = {
         olDetailId: formValues[eye]?.detailId,
         locationId: parseInt(customerStockTransferIn.locationId),

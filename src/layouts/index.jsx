@@ -677,17 +677,21 @@ export const router = createBrowserRouter([
       {
         path: "prescription",
         element: (
-          <ErrorBoundary>
-            <Prescription />
-          </ErrorBoundary>
+          <PermissionRoute module="Prescription" action="view">
+            <ErrorBoundary>
+              <Prescription />
+            </ErrorBoundary>
+          </PermissionRoute>
         ),
       },
       {
         path: "prescription/create",
         element: (
-          <ErrorBoundary>
-            <EditPrescription />
-          </ErrorBoundary>
+          <PermissionRoute module="Prescription" action="create">
+            <ErrorBoundary>
+              <EditPrescription />
+            </ErrorBoundary>
+          </PermissionRoute>
         ),
       },
       {

@@ -36,6 +36,7 @@ const FrameSunglass = () => {
     prevOfferStep,
     customerOffer,
     goToOfferStep,
+    updateCurrentOfferStep
   } = useOrder();
   const navigate = useNavigate();
 
@@ -245,6 +246,7 @@ const FrameSunglass = () => {
     try {
       await saveAcc(finalPayload).unwrap();
       toast.success("Offer Accessory product successfully created");
+      updateCurrentOfferStep(1)
       navigate("/offer");
     } catch (error) {
       console.log(error);

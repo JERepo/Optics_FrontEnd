@@ -14,6 +14,15 @@ import Loader from "../../components/ui/Loader";
 import { useSelector } from "react-redux";
 import { useGetAllInvoiceQuery } from "../../api/InvoiceApi";
 
+  const getOrderStatus = (status) => {
+    const types = {
+      1: "Confirmed",
+      2: "Partially Cancelled",
+      3: "Cancelled",
+    };
+    return types[status] || "Draft";
+  };
+
 const InvoiceList = () => {
   const navigate = useNavigate();
   const { hasMultipleLocations } = useSelector((state) => state.auth);
@@ -84,7 +93,7 @@ const InvoiceList = () => {
       mobileNo: invoice.Patient.MobNumber,
       qty: invoice.TotalQty,
       amount: invoice.TotalValue,
-      status: invoice.Status === 1 ? "Confirmed" : "Draft",
+      status: getOrderStatus(invoice.Status),
     }));
     // .filter((order) => order.CompanyID === parseInt(hasMultipleLocations[0]));
   }, [allOrders, fromDate, toDate, searchQuery]);
@@ -102,15 +111,7 @@ const InvoiceList = () => {
     navigate(`/invoice/view?invoiceId=${invoice}`);
   };
 
-  const getOrderStatus = (status) => {
-    const types = {
-      1: "Confirmed",
-      2: "Partially Invoiced",
-      3: "Invoiced",
-      4: "Cancelled",
-    };
-    return types[status] || "Draft";
-  };
+
 
   if (isAllOrdersLoading) {
     return (
