@@ -14,9 +14,9 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                     renderRow={(item, index) => (
                         <TableRow key={item.Barcode || index}>
                             <TableCell>{item.Barcode}</TableCell>
-                            {/* <TableCell>{item.Name}{item.Size && <br />}{item.Size}</TableCell> */}
                             <TableCell>{item.Name}
                                 {item.Size && <br />}{item.Size ? `Size: ${item.Size}` : ""}
+                                {(item.Category !== null || item.Category !== undefined) && <br />}{item.Category === 0 ? 'Sunglass' : 'Optical Frame'}
                                 {item.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : ""}
                                 {item.HSN && <br />}{item.HSN ? `HSN: ${item.HSN}` : ""}
                             </TableCell>
@@ -47,19 +47,10 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                     data={searchResults}
                     renderRow={(item, index) => (
                         <TableRow key={item.Barcode || index}>
-                            {/* <TableCell>
-                                <input
-                                    type="checkbox"
-                                    checked={selectedRows.some(
-                                        (selectedItem) => selectedItem.uniqueId === item.uniqueId
-                                    )}
-                                    onChange={() => handleCheckboxChange(item)}
-                                />
-                            </TableCell> */}
-                            <TableCell>{item.PONo} <br /> {`(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
-                            {/* <TableCell>{item.Name}{item.Size && <br />}{item.Size}</TableCell> */}
+                            <TableCell>{item.PONo} <br /> {(item.OrderNo && item.OrderDetailSlNo && item.OrderDetailSlNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
                             <TableCell>{item.Name}
                                 {item.Size && <br />}{item.Size ? `Size: ${item.Size}` : ""}
+                                {(item.Category !== null || item.Category !== undefined) && <br />}{item.Category === 0 ? 'Sunglass' : 'Optical Frame'}
                                 {item.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : ""}
                                 {item.HSN && <br />}{item.HSN ? `HSN: ${item.HSN}` : ""}
                             </TableCell>
@@ -100,18 +91,10 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                     data={searchResults}
                     renderRow={(item, index) => (
                         <TableRow key={item.Barcode || index}>
-                            {/* <TableCell>
-                                <input
-                                    type="checkbox"
-                                    checked={selectedRows.some(
-                                        (selectedItem) => selectedItem.uniqueId === item.uniqueId
-                                    )}
-                                    onChange={() => handleCheckboxChange(item)}
-                                />
-                            </TableCell> */}
-                            <TableCell>{item.PONo} <br /> {`(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
+                            <TableCell>{item.PONo} <br /> {(item.OrderNo && item.OrderDetailSlNo && item.OrderDetailSlNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
                             <TableCell>{item.Name}
                                 {item.Size && <br />}{item.Size ? `Size: ${item.Size}` : ""}
+                                {(item.Category !== null || item.Category !== undefined) && <br />}{item.Category === 0 ? 'Sunglass' : 'Optical Frame'}
                                 {item.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : ""}
                                 {item.HSN && <br />}{item.HSN ? `HSN: ${item.HSN}` : ""}
                             </TableCell>

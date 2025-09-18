@@ -32,6 +32,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
 
     return (
         <>
+            {/* FRAME FINAL GRN DATA*/}
             {productType === 1 && (
                 <>
                     <Table
@@ -39,10 +40,10 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                         data={scannedItems}
                         renderRow={(item, index) => (
                             <TableRow key={index}>
-                                <TableCell>{item.PONo} <br /> {`(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
-                                {/* <TableCell>{item.Name}{item.Size && <br />}{`Size: ${item.Size}`}</TableCell> */}
+                                <TableCell>{item.PONo} <br /> {(item.OrderNo && item.OrderDetailSlNo && item.OrderDetailSlNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
                                 <TableCell>{item.Name}
                                     {item.Size && <br />}{item.Size ? `Size: ${item.Size}` : ""}
+                                    {(item.Category !== null || item.Category !== undefined) && <br />}{item.Category === 0 ? 'Sunglass' : 'Optical Frame'}
                                     {item.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : ""}
                                     {item.HSN && <br />}{item.HSN ? `HSN: ${item.HSN}` : ""}
                                 </TableCell>
@@ -57,7 +58,6 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                                         <div>{item.Cl ? `CL-${item.Cl}` : ""}</div>
                                     </div>
                                 </TableCell>
-                                {/* <TableCell className="text-center flex">{item.IsRxable ? "Rx: Yes" : "Rx: No"}<br />{item.Ph ? "PH: Yes" : "PH: No"}<br />{item.PO ? "PO: Yes" : "PO: No"}<br />{`CL - ${item.Cl || ""}`}</TableCell> */}
                                 <TableCell className="">₹ {item.MRP}</TableCell>
                                 <TableCell>₹{" "}
                                     <input
