@@ -117,6 +117,12 @@ export const grnApi = createApi({
                 method: 'GET'
             })
         }),
+        getCLByDetailId: builder.query({
+            query: ({ clDetailId, locationId, vendorId, productType }) => ({
+                url: `/api/v1/grn/get-cl-byClDetailId?clDetailId=${clDetailId}&locationId=${locationId}&vendorId=${vendorId}&createdCompanyId=${locationId}&productType=${productType}`,
+                method: 'GET'
+            })
+        }),
     })
 });
 
@@ -140,5 +146,6 @@ export const {
     useLazyGetAccessoryByDetailIdQuery,
     useGetGRNPOdetailsByIdMutation,
     useLazyCheckGRNQtyValidationQuery,
-    useLazyGetCLByBarcodeQuery
+    useLazyGetCLByBarcodeQuery,
+    useLazyGetCLByDetailIdQuery
 } = grnApi;

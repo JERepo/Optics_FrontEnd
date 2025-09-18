@@ -150,7 +150,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                     data={scannedItems}
                     renderRow={(item, index) => (
                         <TableRow key={item.Id || index}>
-                            <TableCell className="">{item.PONo} <br /> {`(${item.OrderNo})`}</TableCell>
+                            <TableCell>{item.PONo} <br /> {`(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
                             {/* <TableCell>{item.Name}{item.Size && <br />}{item.Size}</TableCell> */}
                             <TableCell>
                                 {item.Name}
@@ -196,23 +196,25 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
 
             {productType === 3 && (
                 <Table
-                    columns={["SL No.", "Order No.", "Supplier Order No.", "Barcode", "Product Name", "MRP", "Buying Price", "Qty", "Action"]}
+                    columns={["PO No. (Order No.)", "Product Details", "MRP", "Buying Price", "Order Qty", "PO Qty", "Pending Qty", "GRN Qty", "Action"]}
                     data={scannedItems}
                     renderRow={(item, index) => (
-                        <TableRow key={item.Barcode || index}>
-                            <TableCell>{index + 1}</TableCell>
-                            <TableCell>{ }</TableCell>
-                            <TableCell>{ }</TableCell>
-                            <TableCell>{item.Barcode}</TableCell>
-                            <TableCell>{item.ProductName}
-                                {item.Size && <br />}{item.Size}
+                        <TableRow key={item.index}>
+                            {/* <TableCell>{item.Barcode}</TableCell> */}
+                            <TableCell>{item.PONo} <br /> {`(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
+                            <TableCell>
+                                {item.Name}
                                 {item.SphericalPower && <br />}{item.SphericalPower ? `Sph: ${item.SphericalPower}` : `Sph: `}
                                 {item.CylindricalPower ? ` Cyl: ${item.CylindricalPower}` : ` Cyl: `}
                                 {item.Axis ? ` Axis: ${item.Axis}` : ` Axis: `}
                                 {item.Additional ? ` Add: ${item.Additional}` : ` Add: `}
-                                {item.Barcode && <br />}{item.Barcode && `Barcode: ${item.Barcode}`}
-
+                                {item.Size && <br />}{item.Size}
+                                {item?.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : null}
+                                {item?.BatchCode && <br />}{item.BatchCode ? `BatchCode: ${item.BatchCode} - ${item.Expiry}` : null}
+                                {/* {item?.Expiry && <br />}{item.Expiry ? `Expiry: ${item.Expiry}` : null} */}
+                                {item.HSN && <br />}{`HSN: ${item.HSN}`}
                             </TableCell>
+                            {/* <TableCell>{item.Expiry || 0}</TableCell> */}
                             <TableCell>₹{item.MRP || item.MRPMaster || 0}</TableCell>
                             <TableCell>₹{" "}
                                 <input
@@ -222,6 +224,9 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                                     className="w-20 px-2 py-1 border rounded"
                                 />
                             </TableCell>
+                            <TableCell>{item.OrderQty || 0}</TableCell>
+                            <TableCell>{item.POQty || 0}</TableCell>
+                            <TableCell>{item.POQty - (item.quantity || 1) - item.CancelledQty}</TableCell>
                             <TableCell>
                                 <input
                                     type="number"
