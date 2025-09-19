@@ -322,7 +322,7 @@ export default function GRNStep4AgainstPO() {
             }
 
             const result = await query(payload).unwrap();
-            
+
 
             if (result && result.data && result.data.length > 0) {
                 setPODetailsItems(prevItems => {
@@ -644,6 +644,8 @@ export default function GRNStep4AgainstPO() {
             return;
         }
 
+        console.log("poDetailsItems for scanned item", poDetailsItems);
+
         if (poDetailsItems.length === 0) {
             toast.error("No items available to add");
             return;
@@ -766,6 +768,7 @@ export default function GRNStep4AgainstPO() {
                 toast.warning(`Only ${grnQtyAgainstPOForBarcode - remainingQty} items could be added. ${remainingQty} items exceed available quantities.`);
             }
 
+
             // Add validated items to scannedItems
             setScannedItems(prevItems => {
                 let updatedItems = [...prevItems];
@@ -803,6 +806,8 @@ export default function GRNStep4AgainstPO() {
                 updatedItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
                 return updatedItems;
             });
+
+            console.log("itemsToAdd Items to add in detail table ------------- ", itemsToAdd);
 
             const totalAdded = itemsToAdd.reduce((total, item) => total + item.quantity, 0);
             toast.success(`Added ${totalAdded} item(s) to GRN`);
@@ -899,7 +904,7 @@ export default function GRNStep4AgainstPO() {
                         ...item, // Access nested data object
                         quantity: 1,
                         price: item?.BuyingPrice, // Use BuyingPrice from nested data
-                        cLDetailId: item?.CLDetailId,
+                        detailId: item?.Id || item?.CLDetailId,
                         timestamp: Date.now()
                     }));
 
@@ -1116,8 +1121,8 @@ export default function GRNStep4AgainstPO() {
                                 : formState.productType === 'Accessories' ? 2
                                     : formState.productType === 'Contact Lens' ? 3
                                         : null,
-                        detailId: formState.productType === 'Contact Lens' ? item.CLDetailId : item.detailId,
-                        BatchCode: item.CLBatchCode || null,
+                        detailId: item.detailId,
+                        BatchCode: item.BatchCode || null,
                         OrderDetailId: item.OrderDetailId,
                         VendorOrderNo: null,
                         PODetailsId: item.PODetailsId,
@@ -2192,105 +2197,119 @@ export default function GRNStep4AgainstPO() {
                             GRNAgainstPOorderType={grnData.step3.GRNAgainstPOorderType}
                             productType={grnData.step2.productType === "Frame/Sunglass" ? 1 : grnData.step2.productType === "Accessories" ? 2 : grnData.step2.productType === "Contact Lens" ? 3 : null}
                         />
-                        {grnData?.step3?.GRNAgainstPOorderType === "Auto Processing" && (
-                            <div className="space-y-6 mt-6">
-                                {/* Batch selection UI (shown only if CLBatchCode === 1) */}
-                                {(formState.productType === "Contact Lens" && poDetailsItems.some(item => item.CLBatchCode === 1)) && (
-                                    <>
-                                        <div className="flex items-center space-x-10">
-                                            <div className="flex space-x-4">
-                                                <label className="flex items-center space-x-2 cursor-pointer">
-                                                    <input
-                                                        type="radio"
-                                                        name="clBatchInputType"
-                                                        value="select"
-                                                        checked={formState.clBatchInputType === "select"}
-                                                        onChange={handleInputChange}
-                                                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                    />
-                                                    <span className="text-gray-700 font-medium">Select Batch Code</span>
-                                                </label>
-                                                <label className="flex items-center space-x-2 cursor-pointer">
-                                                    <input
-                                                        type="radio"
-                                                        name="clBatchInputType"
-                                                        value="enter"
-                                                        checked={formState.clBatchInputType === "enter"}
-                                                        onChange={handleInputChange}
-                                                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                    />
-                                                    <span className="text-gray-700 font-medium">Enter Batch Barcode</span>
-                                                </label>
-                                            </div>
-                                        </div>
-                                        {formState.clBatchInputType === "select" ? (
-                                            <div className="flex items-end gap-4">
-                                                <div className="space-y-2 w-1/3">
-                                                    <label className="block text-sm font-medium text-gray-700">
-                                                        Select Batch Code *
-                                                    </label>
-                                                    <Autocomplete
-                                                        options={CLBatches?.data || []}
-                                                        getOptionLabel={(option) => option.CLBatchCode || ""}
-                                                        value={
-                                                            CLBatches?.data?.find(
-                                                                (batch) => batch.CLBatchCode === selectedBatchCode?.CLBatchCode
-                                                            ) || null
-                                                        }
-                                                        onChange={(_, newValue) => {
-                                                            setSelectedBatchCode(newValue);
-                                                        }}
-                                                        renderInput={(params) => (
-                                                            <TextField
-                                                                {...params}
-                                                                placeholder="Select Batch Code"
-                                                                size="small"
-                                                                error={!selectedBatchCode && formState.productType === "Contact Lens"}
-                                                                helperText={!selectedBatchCode && formState.productType === "Contact Lens" ? "Batch code is required" : ""}
-                                                            />
-                                                        )}
-                                                        isOptionEqualToValue={(option, value) => option.id === value.id}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="w-1/2 flex items-end gap-4">
-                                                <div className="flex-1">
-                                                    <Input
-                                                        value={batchCodeInput}
-                                                        onChange={(e) => setbatchCodeInput(e.target.value)}
-                                                        label="Enter Batch Barcode *"
-                                                        error={batchCodeInput && !CLBatches?.data?.find(
-                                                            (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
-                                                        )}
+                        <div className="space-y-6 mt-6">
+                            {/* Batch selection UI (shown only if CLBatchCode === 1) */}
+                            {(formState.productType === "Contact Lens" && poDetailsItems.some(item => item.CLBatchCode === 1)) && (
+                                <div className="flex flex-col gap-6">
+                                    {/* Radio buttons for batch input type */}
+                                    <div className="flex items-center gap-6">
+                                        <label className="flex items-center space-x-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="clBatchInputType"
+                                                value="select"
+                                                checked={formState.clBatchInputType === "select"}
+                                                onChange={handleInputChange}
+                                                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                            />
+                                            <span className="text-gray-700 font-medium">Select Batch Code</span>
+                                        </label>
+                                        <label className="flex items-center space-x-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="clBatchInputType"
+                                                value="enter"
+                                                checked={formState.clBatchInputType === "enter"}
+                                                onChange={handleInputChange}
+                                                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                            />
+                                            <span className="text-gray-700 font-medium">Enter Batch Barcode</span>
+                                        </label>
+                                    </div>
+
+                                    {/* Batch input fields */}
+                                    {/* <div className="flex gap-4"> */}
+                                    {formState.clBatchInputType === "select" ? (
+                                        <div className="flex items-center gap-4">
+                                            <label className="text-sm font-medium text-gray-700 mb-5">
+                                                Select Batch Code *
+                                            </label>
+                                            <Autocomplete
+                                                options={CLBatches?.data || []}
+                                                getOptionLabel={(option) => option.CLBatchCode || ""}
+                                                value={
+                                                    CLBatches?.data?.find(
+                                                        (batch) => batch.CLBatchCode === selectedBatchCode?.CLBatchCode
+                                                    ) || null
+                                                }
+                                                onChange={(_, newValue) => {
+                                                    setSelectedBatchCode(newValue);
+                                                }}
+                                                renderInput={(params) => (
+                                                    <TextField
+                                                        {...params}
+                                                        placeholder="Select Batch Code"
+                                                        size="small"
+                                                        error={!selectedBatchCode && formState.productType === "Contact Lens"}
                                                         helperText={
-                                                            batchCodeInput && !CLBatches?.data?.find(
-                                                                (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
-                                                            ) ? "Invalid batch barcode" : "Required"
+                                                            !selectedBatchCode && formState.productType === "Contact Lens"
+                                                                ? "Batch code is required"
+                                                                : ""
                                                         }
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === "Enter" && batchCodeInput) {
-                                                                const isValidBatch = CLBatches?.data?.find(
-                                                                    (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
-                                                                );
-                                                                if (isValidBatch) {
-                                                                    handleAddBarcodeSearchItemsToScannedTable();
-                                                                } else {
-                                                                    toast.error("Invalid batch barcode");
-                                                                }
-                                                            }
-                                                        }}
+                                                        className="w-full max-w-ls"
                                                     />
-                                                </div>
-                                            </div>
-                                        )}
-                                    </>
-                                )}
-                                {/* GRN Quantity field (always shown in Auto Processing) */}
-                                <div className="flex items-center gap-5">
-                                    <label htmlFor="grnQtyAgainstPOForBarcode" className="block text-sm font-medium text-gray-700 whitespace-nowrap">
-                                        Enter GRN Qty *
-                                    </label>
+                                                )}
+                                                isOptionEqualToValue={(option, value) => option.id === value.id}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="w-full max-w-md">
+                                            <Input
+                                                value={batchCodeInput}
+                                                onChange={(e) => setbatchCodeInput(e.target.value)}
+                                                label="Enter Batch Barcode *"
+                                                error={
+                                                    batchCodeInput &&
+                                                    !CLBatches?.data?.find(
+                                                        (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
+                                                    )
+                                                }
+                                                helperText={
+                                                    batchCodeInput &&
+                                                        !CLBatches?.data?.find(
+                                                            (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
+                                                        )
+                                                        ? "Invalid batch barcode"
+                                                        : "Required"
+                                                }
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter" && batchCodeInput) {
+                                                        const isValidBatch = CLBatches?.data?.find(
+                                                            (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
+                                                        );
+                                                        if (isValidBatch) {
+                                                            handleAddBarcodeSearchItemsToScannedTable();
+                                                        } else {
+                                                            toast.error("Invalid batch barcode");
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+                                    {/* </div> */}
+                                </div>
+                            )}
+
+                            {/* GRN Quantity field */}
+                            <div className="flex items-start gap-4">
+                                <label
+                                    htmlFor="grnQtyAgainstPOForBarcode"
+                                    className="block text-sm font-medium text-gray-700 whitespace-nowrap pt-2"
+                                >
+                                    Enter GRN Qty *
+                                </label>
+                                <div className="flex-1 max-w-xs">
                                     <div className="relative">
                                         <input
                                             id="grnQtyAgainstPOForBarcode"
@@ -2299,62 +2318,96 @@ export default function GRNStep4AgainstPO() {
                                             min="1"
                                             value={grnQtyAgainstPOForBarcode || ""}
                                             onChange={(e) => setGrnQtyAgainstPOForBarcode(e.target.value)}
-                                            className={`w-32 px-3 py-2 border ${!grnQtyAgainstPOForBarcode || grnQtyAgainstPOForBarcode <= 0 ? "border-red-500" : "border-gray-300"} rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060] pr-10`}
-                                            placeholder="Enter Qty..."
+                                            className={`w-full px-3 py-2 border ${!grnQtyAgainstPOForBarcode || grnQtyAgainstPOForBarcode <= 0
+                                                ? "border-red-500"
+                                                : "border-gray-300"
+                                                } rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060]`}
+                                            placeholder="Please enter GRN quantity.... "
                                             aria-label="GRN Qty input"
                                             disabled={isLoading}
                                         />
-                                        {!grnQtyAgainstPOForBarcode && (
-                                            <p className="text-red-500 text-xs mt-1">GRN quantity is required</p>
-                                        )}
-                                        {grnQtyAgainstPOForBarcode && grnQtyAgainstPOForBarcode <= 0 && (
-                                            <p className="text-red-500 text-xs mt-1">Quantity must be greater than 0</p>
-                                        )}
                                         {isLoading && (
                                             <div className="absolute right-3 top-2.5">
-                                                <svg className="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                <svg
+                                                    className="animate-spin h-4 w-4 text-blue-500"
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <circle
+                                                        className="opacity-25"
+                                                        cx="12"
+                                                        cy="12"
+                                                        r="10"
+                                                        stroke="currentColor"
+                                                        strokeWidth="4"
+                                                    ></circle>
+                                                    <path
+                                                        className="opacity-75"
+                                                        fill="currentColor"
+                                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                                    ></path>
                                                 </svg>
                                             </div>
                                         )}
                                     </div>
-                                    <button
-                                        onClick={handleAddBarcodeSearchItemsToScannedTable}
-                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 whitespace-nowrap flex items-center"
-                                        disabled={
-                                            isLoading ||
-                                            !grnQtyAgainstPOForBarcode ||
-                                            grnQtyAgainstPOForBarcode <= 0 ||
-                                            (formState.productType === "Contact Lens" &&
-                                                poDetailsItems.some(item => item.CLBatchCode === 1) &&
-                                                formState.clBatchInputType === "select" &&
-                                                !selectedBatchCode) ||
-                                            (formState.productType === "Contact Lens" &&
-                                                poDetailsItems.some(item => item.CLBatchCode === 1) &&
-                                                formState.clBatchInputType === "enter" && (
-                                                    !batchCodeInput ||
-                                                    !CLBatches?.data?.find(
-                                                        (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
-                                                    )
-                                                ))
-                                        }
-                                    >
-                                        {isLoading ? (
-                                            <>
-                                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                                Adding...
-                                            </>
-                                        ) : (
-                                            "Add GRN Items"
-                                        )}
-                                    </button>
+                                    {!grnQtyAgainstPOForBarcode && (
+                                        <p className="text-red-500 text-xs mt-1">GRN quantity is required</p>
+                                    )}
+                                    {grnQtyAgainstPOForBarcode && grnQtyAgainstPOForBarcode <= 0 && (
+                                        <p className="text-red-500 text-xs mt-1">Quantity must be greater than 0</p>
+                                    )}
                                 </div>
+                                <button
+                                    onClick={handleAddBarcodeSearchItemsToScannedTable}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center"
+                                    disabled={
+                                        isLoading ||
+                                        !grnQtyAgainstPOForBarcode ||
+                                        grnQtyAgainstPOForBarcode <= 0 ||
+                                        (formState.productType === "Contact Lens" &&
+                                            poDetailsItems.some(item => item.CLBatchCode === 1) &&
+                                            formState.clBatchInputType === "select" &&
+                                            !selectedBatchCode) ||
+                                        (formState.productType === "Contact Lens" &&
+                                            poDetailsItems.some(item => item.CLBatchCode === 1) &&
+                                            formState.clBatchInputType === "enter" &&
+                                            (!batchCodeInput ||
+                                                !CLBatches?.data?.find(
+                                                    (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
+                                                )))
+                                    }
+                                >
+                                    {isLoading ? (
+                                        <>
+                                            <svg
+                                                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <circle
+                                                    className="opacity-25"
+                                                    cx="12"
+                                                    cy="12"
+                                                    r="10"
+                                                    stroke="currentColor"
+                                                    strokeWidth="4"
+                                                ></circle>
+                                                <path
+                                                    className="opacity-75"
+                                                    fill="currentColor"
+                                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                                ></path>
+                                            </svg>
+                                            Adding...
+                                        </>
+                                    ) : (
+                                        "Add GRN Items"
+                                    )}
+                                </button>
                             </div>
-                        )}
+                        </div>
                     </div>
                 )}
 

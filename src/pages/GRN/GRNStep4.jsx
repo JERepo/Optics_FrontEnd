@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useGRN } from "../../features/GRNContext";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useSelector } from "react-redux";
-import { useGetGRNDetailsMutation, useSaveCompleteGRNMutation } from "../../api/grnApi";
+import { useGetGRNDetailsMutation, useLazyDeleteGRNDetailQuery, useSaveCompleteGRNMutation } from "../../api/grnApi";
 import toast from "react-hot-toast";
 import { PenIcon, Trash2 } from "lucide-react";
 import { Table, TableRow, TableCell } from "../../components/Table";
 import { useNavigate } from "react-router-dom";
+
 
 export default function GRNStep4() {
     const { grnData, currentStep, setCurrentStep, updateStep1Data, nextStep, prevStep, resetGRN } = useGRN();
@@ -20,6 +21,41 @@ export default function GRNStep4() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingIndex, setEditingIndex] = useState(null);
     const [newQuantity, setNewQuantity] = useState('');
+    const [showRemoveModal, setShowRemoveModal] = useState(false);
+    const [orderToRemove, setOrderToRemove] = useState(null);
+
+
+    const [triggerDeleteGRNDetails] = useLazyDeleteGRNDetailQuery();
+
+    const handleRemoveOrder = async () => {
+        if (!orderToRemove) {
+            toast.error("Something went wrong, could not get the Id.");
+            return;
+        }
+
+        console.log("orderToRemove -----", orderToRemove);
+        try {
+            const payload = {
+                grnDetailId: orderToRemove
+            }
+
+            const response = await triggerDeleteGRNDetails(payload).unwrap();
+            if (response.success === true) {
+                console.log(response);
+
+                setGrnViewDetails(prev => prev.filter(item => item.GRNDetailId !== orderToRemove));
+                setShowRemoveModal(false);
+                setOrderToRemove(null);
+                toast.success("GRN deleted successfully");
+                return;
+            } else {
+                toast.error("Failed to delete GRN");
+            }
+
+        } catch (error) {
+            toast.error("Failed to remove GRN detail");
+        }
+    };
 
     const openModal = (index, currentQuantity) => {
         setEditingIndex(index);
@@ -133,7 +169,9 @@ export default function GRNStep4() {
                 GRNQty: item.GRNQty || 1,
                 GRNPrice: item.GRNPrice || 0,
                 ProductType: item?.ProductDetails?.ProductType,
-                detailId: item?.ProductDetails?.ProductDetailId
+                detailId: item?.ProductDetails?.ProductDetailId,
+                PODetailsId: item?.PODetailsId || null,
+                AgainstPO: item?.AgainstPO || 1
             }));
 
             // console.log("grnDetails in save --------------- ", grnDetails);
@@ -185,7 +223,7 @@ export default function GRNStep4() {
             >
 
                 <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-[#000060] mb-6">Step 4: Review Selected GRN</h2>
+                    <h2 className="text-xl font-bold text-[#000060] mb-6">Step {currentStep}: Review Selected GRN</h2>
                     <button
                         onClick={() => { setCurrentStep(2) }}
                         className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
@@ -276,43 +314,61 @@ export default function GRNStep4() {
                         />
                     ) : (
                         <Table
-                            columns={["PO No. (Order No.)", "Product Details", "S/O", "Others", "MRP", "PO QTY", "Pending Qty", "GRN Qty", "Buying Price", "Total", "Action"]}
+                            columns={["PO No. (Order No.)", "Product type", "Product Details", "MRP", "PO QTY", "Pending Qty", "GRN Qty", "Buying Price", "Total", "Action"]}
                             data={grnViewDetails}
                             renderRow={(item, index) => (
                                 <TableRow key={index}>
-                                    <TableCell>{item.PONo} <br /> {`(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
-                                    <TableCell>{item?.ProductDetails?.productName}<br />
-                                        Size: {item?.ProductDetails?.Size?.Size}<br />
-                                        Category: {item?.category === 0 ? `Sunglass` : `OpticalFrame`} <br />
-                                        HSN: {item?.ProductDetails?.HSN}
+                                    <TableCell>{item.PONo} <br /> {(item.OrderNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
+                                    <TableCell className="">
+                                        {item?.ProductDetails?.ProductType === 1 ? 'F' : item?.ProductDetails?.ProductType === 2 ? 'Acc' : item?.ProductDetails?.ProductType === 3 ? 'CL' : ''}
                                     </TableCell>
-                                    <TableCell>
-                                        {item.Category === 0 ? 'Sunglass' : 'Optical Frame'}
-                                    </TableCell>
-                                    <TableCell className="text-center flex">{item?.ProductDetails?.IsRxable ? "Rx: Yes" : "Rx: No"}<br />{item?.ProductDetails?.Ph ? "PH: Yes" : "PH: No"}<br />{item?.ProductDetails?.PO ? "PO: Yes" : "PO: No"}<br />{`CL - ${item?.ProductDetails?.Cl || ""}`}</TableCell>
-                                    <TableCell className="">₹ {item?.ProductDetails?.Stock?.MRP}</TableCell>
+                                    {item?.ProductDetails?.ProductType === 1 ?
+                                        <TableCell>{item?.ProductDetails?.productName}<br />
+                                            Size: {item?.ProductDetails?.Size?.Size}<br />
+                                            barcode: {item?.ProductDetails?.barcode}<br />
+                                            Category: {item?.category === 0 ? `Sunglass` : `OpticalFrame`} <br />
+                                            HSN: {item?.ProductDetails?.HSN}
+                                        </TableCell>
+                                        : item?.ProductDetails?.ProductType === 2 ?
+                                            <TableCell>{item?.ProductDetails?.productName}<br />
+                                                Variation: {item?.ProductDetails?.Variation?.Variation}<br />
+                                                barcode: {item?.ProductDetails?.barcode}<br />
+                                                HSN: {item?.ProductDetails?.HSN}
+                                            </TableCell>
+                                            : item?.ProductDetails?.ProductType === 3 ?
+                                                <TableCell>
+                                                    {item.ProductDetails?.productName}
+                                                    {item.ProductDetails?.PowerSpecs?.Sph && <br />}{item.ProductDetails?.PowerSpecs?.Sph ? `Sph: ${item.ProductDetails?.PowerSpecs?.Sph > 0 ? `+` : `-`}${item.ProductDetails?.PowerSpecs?.Sph}` : `Sph: `}
+                                                    {item.PowerSpecsCylindricalPower ? ` Cyl: ${item.CylindricalPower > 0 ? `+` : `-`}${item.CylindricalPower}` : ` Cyl: `}
+                                                    {item.PowerSpecsAxis ? ` Axis: ${item.Axis > 0 ? `+` : `-`}${item.Axis}` : ` Axis: `}
+                                                    {item.PowerSpecsAdditional ? ` Add: ${item.Additional > 0 ? `+` : `-`}${item.Additional}` : ` Add: `}
+                                                    {item.Size && <br />}{item.Size}
+                                                    {item?.ProductDetails?.barcode && <br />}{item?.ProductDetails?.barcode ? `Barcode: ${item?.ProductDetails?.barcode}` : null}
+                                                    {item?.BatchCode && <br />}{item.BatchCode ? `BatchCode: ${item.BatchCode}` : null}
+                                                    {item?.Expiry && <br />}{item.Expiry ? `Expiry: ${item.Expiry}` : null}
+                                                    {item?.ProductDetails?.HSN && <br />}{`HSN: ${item?.ProductDetails?.HSN}`}
+                                                </TableCell>
+                                                : null
+                                    }
+                                    {item?.ProductDetails?.ProductType === 1 ?
+                                        <TableCell className="">₹ {item?.ProductDetails?.Stock?.MRP}</TableCell>
+                                        : item?.ProductDetails?.ProductType === 2 ?
+                                            <TableCell className="">₹ {item?.ProductDetails?.Stock?.OPMRP}</TableCell>
+                                            : item?.ProductDetails?.ProductType === 3 ?
+                                                <TableCell className="">₹ {item?.ProductDetails?.price?.MRP}</TableCell>
+                                                : null
+                                    }
                                     <TableCell className=" ">{item.POQty}</TableCell>
                                     <TableCell>{item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty}</TableCell>
-                                    <TableCell>
-                                        <button
-                                            onClick={() => openModal(index, item.GRNQty || item.quantity || 1)}
-                                            className="w-16 px-2 py-1 border rounded bg-white hover:bg-gray-50 cursor-pointer text-left"
-                                        >
-                                            {item.GRNQty || item.quantity || 1}
-                                        </button>
-                                    </TableCell>
-                                    <TableCell>₹{" "}
-                                        <input
-                                            type="number"
-                                            value={grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (item.GRNPrice || 0)}
-                                            onChange={(e) => updateGRNItemPrice(index, e.target.value)}
-                                            className="w-20 px-2 py-1 border rounded"
-                                        />
-                                    </TableCell>
+                                    <TableCell>{item.GRNQty || item.quantity || 1}</TableCell>
+                                    <TableCell>{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (item.GRNPrice || 0)}</TableCell>
                                     <TableCell>₹{" "}{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty)).toFixed(2)}</TableCell>
                                     <TableCell className="px-6 py-4 whitespace-nowrap">
                                         <button
-                                            onClick={() => removeScannedItem(index)}
+                                            onClick={() => {
+                                                setOrderToRemove(item?.GRNDetailId);
+                                                setShowRemoveModal(true);
+                                            }}
                                             className="p-1 text-red-600 hover:text-red-800"
                                             aria-label="Delete item"
                                         >
@@ -428,6 +484,65 @@ export default function GRNStep4() {
                     </div>
                 </div>
             </motion.div >
+
+
+
+            {
+                showRemoveModal && (
+                    <AnimatePresence>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="fixed inset-0 bg-neutral-200/50 backdrop-blur-xs flex items-center justify-center z-50"
+                        >
+                            <motion.div
+                                initial={{ scale: 0.9, y: 20 }}
+                                animate={{ scale: 1, y: 0 }}
+                                exit={{ scale: 0.9, y: 20 }}
+                                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                                className="bg-white p-6 rounded-lg shadow-xl w-96"
+                            >
+                                <motion.h3
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.1 }}
+                                    className="text-lg font-bold mb-4"
+                                >
+                                    Are you sure you want to delete?
+                                </motion.h3>
+
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.3 }}
+                                    className="flex justify-end space-x-2"
+                                >
+                                    <button
+                                        onClick={() => {
+                                            setShowRemoveModal(false);
+                                        }}
+                                        className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleRemoveOrder}
+                                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                    >
+                                        Yes
+                                    </button>
+                                </motion.div>
+                            </motion.div>
+                        </motion.div>
+                    </AnimatePresence>
+                )
+            }
         </>
     )
 }

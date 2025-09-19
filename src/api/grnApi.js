@@ -123,6 +123,12 @@ export const grnApi = createApi({
                 method: 'GET'
             })
         }),
+        deleteGRNDetail: builder.query({
+            query: ({grnDetailId}) => ({
+                url: `/api/v1/grn/delete-grn-details?grnDetailId=${grnDetailId}`,
+                method: 'GET'
+            })
+        })
     })
 });
 
@@ -147,5 +153,6 @@ export const {
     useGetGRNPOdetailsByIdMutation,
     useLazyCheckGRNQtyValidationQuery,
     useLazyGetCLByBarcodeQuery,
-    useLazyGetCLByDetailIdQuery
+    useLazyGetCLByDetailIdQuery,
+    useLazyDeleteGRNDetailQuery
 } = grnApi;
