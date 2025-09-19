@@ -54,9 +54,9 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                 {item.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : ""}
                                 {item.HSN && <br />}{item.HSN ? `HSN: ${item.HSN}` : ""}
                             </TableCell>
-                            <TableCell>
+                            {/* <TableCell>
                                 {item.Category === 0 ? 'Sunglass' : 'Optical Frame'}
-                            </TableCell>
+                            </TableCell> */}
                             <TableCell className="text-left">
                                 <div className="flex gap-2">
                                     <div>{item.IsRxable ? "Rx" : ""}</div>
@@ -344,9 +344,9 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                 <TableCell>
                                     {item.Name}
                                     {item.SphericalPower && <br />}{item.SphericalPower ? `Sph: ${item.SphericalPower > 0 ? `+` : `-`}${item.SphericalPower}` : `Sph: `}
-                                    {item.CylindricalPower ? ` Cyl: ${item.CylindricalPower>0 ? `+` : `-`}${item.CylindricalPower}` : ` Cyl: `}
-                                    {item.Axis ? ` Axis: ${item.Axis>0 ? `+` : `-`}${item.Axis}` : ` Axis: `}
-                                    {item.Additional ? ` Add: ${item.Additional>0 ? `+` : `-`}${item.Additional}` : ` Add: `}
+                                    {item.CylindricalPower ? ` Cyl: ${item.CylindricalPower > 0 ? `+` : `-`}${item.CylindricalPower}` : ` Cyl: `}
+                                    {item.Axis ? ` Axis: ${item.Axis > 0 ? `+` : `-`}${item.Axis}` : ` Axis: `}
+                                    {item.Additional ? ` Add: ${item.Additional > 0 ? `+` : `-`}${item.Additional}` : ` Add: `}
                                     {item.Size && <br />}{item.Size}
                                     {item?.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : null}
                                     {item?.BatchCode && <br />}{item.BatchCode ? `BatchCode: ${item.BatchCode}` : null}
@@ -436,9 +436,9 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                 <TableCell>
                                     {item.Name}
                                     {item.SphericalPower && <br />}{item.SphericalPower ? `Sph: ${item.SphericalPower > 0 ? `+` : `-`}${item.SphericalPower}` : `Sph: `}
-                                    {item.CylindricalPower ? ` Cyl: ${item.CylindricalPower>0 ? `+` : `-`}${item.CylindricalPower}` : ` Cyl: `}
-                                    {item.Axis ? ` Axis: ${item.Axis>0 ? `+` : `-`}${item.Axis}` : ` Axis: `}
-                                    {item.Additional ? ` Add: ${item.Additional>0 ? `+` : `-`}${item.Additional}` : ` Add: `}
+                                    {item.CylindricalPower ? ` Cyl: ${item.CylindricalPower > 0 ? `+` : `-`}${item.CylindricalPower}` : ` Cyl: `}
+                                    {item.Axis ? ` Axis: ${item.Axis > 0 ? `+` : `-`}${item.Axis}` : ` Axis: `}
+                                    {item.Additional ? ` Add: ${item.Additional > 0 ? `+` : `-`}${item.Additional}` : ` Add: `}
                                     {item.Size && <br />}{item.Size}
                                     {item?.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : null}
                                     {item?.BatchCode && <br />}{item.BatchCode ? `BatchCode: ${item.BatchCode}` : null}
