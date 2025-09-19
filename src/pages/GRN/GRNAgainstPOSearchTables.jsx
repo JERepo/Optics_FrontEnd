@@ -193,7 +193,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                     // Accessory -> Auto processing -> Enter Product search -> Select detail table
                     poDetailsItem === 1 ? (
                         <Table
-                            columns={["Barcode", "Name", "SKU Code", "MRP", "Buying Price", "Action"]}
+                            columns={["Barcode", "Name", "Variation", "SKU Code", "MRP", "Buying Price", "Action"]}
                             data={searchResults}
                             renderRow={(item, index) => (
                                 <TableRow key={index}>
@@ -201,11 +201,11 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     <TableCell>{item.Barcode}</TableCell>
                                     <TableCell>
                                         {item.Name}
-                                        {item.Variation && <br />}{`Variation: ${item.Variation}`}
+                                        {/* {item.Variation && <br />}{`Variation: ${item.Variation}`} */}
                                         {/* {item.Barcode && <br />}{`Barcode: ${item.Barcode}`}
                                         {item.HSN && <br />}{`HSN: ${item.HSN}`} */}
                                     </TableCell>
-                                    {/* <TableCell>{item.Variation}</TableCell> */}
+                                    <TableCell>{item.Variation}</TableCell>
                                     <TableCell>{item.SKU}</TableCell>
                                     <TableCell>₹{item.MRP}</TableCell>
                                     <TableCell>₹{item.BuyingPrice}</TableCell>
