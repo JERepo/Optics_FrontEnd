@@ -235,7 +235,7 @@ const OpticalLens = () => {
       (data.AddOnId &&
         addOnData?.data?.data?.find((a) => a.Id === data.AddOnId)?.AddOnName) ||
       "";
-    const tint = data.tintvalue === 1 ? "Tint:Yes" : "";
+      const tint = data.tintvalue && tints?.find((t) => t.value === data.tintvalue).label;
 
     let nameParts = [];
     switch (data.type) {
@@ -265,7 +265,7 @@ const OpticalLens = () => {
 
     // Append optional tint and add-on
     if (addOn) nameParts.push(`Add On: ${addOn}`);
-    if (tint) nameParts.push(tint);
+    if (tint) nameParts.push(`Tint: ${tint}`);
 
     return nameParts.join(" - ") || "Unnamed Product";
   };
@@ -287,6 +287,7 @@ const OpticalLens = () => {
       tintvalue: null,
       AddOnId: null,
       productType: null,
+      addOnCheck :false
     }));
     setShowProduct(false);
     setQuantity(1);
@@ -415,7 +416,7 @@ const OpticalLens = () => {
             : null,
         OLAddOnId: item.AddOnId ?? null,
         OLFocalityID: item.focalityId,
-        OLTintID: item.tintvalue === 1 ? 1 : null,
+        OLTintID: item.tintvalue ?? null,
         Qty: parseInt(item.quantity) ?? 0,
         DiscountType: item.discountPV,
         DiscountPerct:
@@ -452,7 +453,7 @@ const OpticalLens = () => {
               >
                 Back
               </Button>
-              <Button>Refresh</Button>
+              <Button onClick={resetForm}>Refresh</Button>
             </div>
           </div>
 
@@ -996,7 +997,10 @@ const OpticalLens = () => {
                     </div>
                   </div>
 
-                  <div className="mt-5 flex gap-3 justify-between">
+                  
+                </div>
+              )}
+              <div className="mt-5 flex gap-3 justify-between">
                     <Button icon={FiPlus} onClick={handleAddItem}>
                       Add
                     </Button>
@@ -1008,8 +1012,6 @@ const OpticalLens = () => {
                       Create Offer
                     </Button>
                   </div>
-                </div>
-              )}
           </div>
           <ErrorDisplayModal
             title="Errors adding optical lens"

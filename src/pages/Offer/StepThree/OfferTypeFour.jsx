@@ -82,6 +82,15 @@ const OfferTypeFour = () => {
       return;
     }
 
+     if (!quantity) {
+      toast.error("Please Enter qty");
+      return;
+    }
+    if (!discountValue) {
+      toast.error("Please Enter discount");
+      return;
+    }
+
     const payload = {
       OfferMainId: customerOffer.offerMainId ?? null,
       slabs: items.map((item) => ({

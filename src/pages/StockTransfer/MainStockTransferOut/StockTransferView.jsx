@@ -14,9 +14,10 @@ import {
 import toast from "react-hot-toast";
 import { useGetLocationByIdQuery } from "../../../api/roleManagementApi";
 import { useGetCompanyIdQuery } from "../../../api/customerApi";
+import HasPermission from "../../../components/HasPermission";
 
 const getProductName = (data) => {
-  const item = {...data,...data.ProductDetails}
+  const item = { ...data, ...data.ProductDetails };
   const {
     typeid,
     ProductName,
@@ -175,9 +176,8 @@ const getProductName = (data) => {
   return "";
 };
 
-
 const getStockOutMRP = (data) => {
-    const item = {...data,...data.ProductDetails}
+  const item = { ...data, ...data.ProductDetails };
 
   if (!item) {
     return 0;
@@ -233,7 +233,7 @@ const StockTransferView = () => {
   const [createInvoice, { isLoading: isInvoiceCreating }] =
     useCreateEInvoiceMutation();
   const { data: eInvoiceData, isLoading: isEInvoiceLoading } =
-    useGetEInvoiceDataQuery({ id: parseInt(stockOut),type:"STOut" });
+    useGetEInvoiceDataQuery({ id: parseInt(stockOut), type: "STOut" });
 
   const { data: locationById } = useGetLocationByIdQuery(
     { id: parseInt(hasMultipleLocations[0]) },
@@ -270,7 +270,7 @@ const StockTransferView = () => {
     } catch (error) {
       setInvoiceEnabled(true);
       console.log(error);
-     toast.error(
+      toast.error(
         error?.data?.error?.message ||
           error?.data?.error?.createdRecord?.ErrorMessage ||
           "E-Invoice Not enabled for this customer"
@@ -353,7 +353,6 @@ const StockTransferView = () => {
                   ₹
                   {formatINR(
                     parseFloat(item.TransferPrice) *
-                     
                       (parseFloat(item.ProductTaxPercentage) / 100)
                   )}
                   ({item.ProductTaxPercentage}%)
@@ -444,21 +443,26 @@ const StockTransferView = () => {
                   E-Invoice Details
                 </div>
                 <div>
-                  <Button
-                    onClick={getEInvoiceData}
-                    isLoading={isInvoiceCreating}
-                    disabled={
-                      isInvoiceCreating ||
-                      (eInvoiceData?.data?.data?.length > 0 &&
-                        eInvoiceData.data.data[
-                          eInvoiceData.data.data.length - 1
-                        ]?.ErrorCode === "200") ||
-                      (eInvoiceData?.data?.data?.length > 0 &&
-                        eInvoiceData.data.data[0]?.ErrorCode === "200")
-                    }
+                  <HasPermission
+                    module="StockTransfer"
+                    action={["create", "edit"]}
                   >
-                    Generate E-Invoice
-                  </Button>
+                    <Button
+                      onClick={getEInvoiceData}
+                      isLoading={isInvoiceCreating}
+                      disabled={
+                        isInvoiceCreating ||
+                        (eInvoiceData?.data?.data?.length > 0 &&
+                          eInvoiceData.data.data[
+                            eInvoiceData.data.data.length - 1
+                          ]?.ErrorCode === "200") ||
+                        (eInvoiceData?.data?.data?.length > 0 &&
+                          eInvoiceData.data.data[0]?.ErrorCode === "200")
+                      }
+                    >
+                      Generate E-Invoice
+                    </Button>
+                  </HasPermission>
                 </div>
               </div>
               <div>

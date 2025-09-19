@@ -18,6 +18,7 @@ import {
   useGetStockLocationsQuery,
 } from "../../../api/stockTransfer";
 import { formatINR } from "../../../utils/formatINR";
+import HasPermission from "../../../components/HasPermission";
 
 const StockTransferIn = () => {
   const navigate = useNavigate();
@@ -208,6 +209,7 @@ const StockTransferIn = () => {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <HasPermission module="StockTranserIn" action="create">
               <Button
                 icon={FiPlus}
                 className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
@@ -218,6 +220,7 @@ const StockTransferIn = () => {
               >
                 Add
               </Button>
+              </HasPermission>
             </div>
           </div>
 

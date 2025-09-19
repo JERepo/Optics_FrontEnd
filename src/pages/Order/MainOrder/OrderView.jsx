@@ -20,6 +20,7 @@ import { useSelector } from "react-redux";
 import toast from "react-hot-toast";
 import { ErrorDisplayModal } from "../../../components/ErrorsDisplay";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
+import HasPermission from "../../../components/HasPermission";
 
 const OrderView = () => {
   const navigate = useNavigate();
@@ -27,6 +28,7 @@ const OrderView = () => {
   const { calculateGST } = useOrder();
   const { user, hasMultipleLocations } = useSelector((state) => state.auth);
   const params = new URLSearchParams(search);
+  const isViewPage = location.pathname.includes("/view");
   const orderId = params.get("orderId");
   const [errors, setErrors] = useState(null);
   const [errorModalOpen, setErrorModalOpen] = useState(false);
@@ -384,14 +386,16 @@ const OrderView = () => {
             Order Details
           </div>
           <div className="flex items-center gap-3">
-            <Button
-              variant="danger"
-              onClick={handleCancelOrder}
-              className=""
-              size="md"
-            >
-              Cancel Order
-            </Button>
+            <HasPermission module="Order" action={["delete"]}>
+              <Button
+                variant="danger"
+                onClick={handleCancelOrder}
+                className=""
+                size="md"
+              >
+                Cancel Order
+              </Button>
+            </HasPermission>
 
             <Button variant="outline" onClick={() => navigate("/order-list")}>
               Back
@@ -529,34 +533,38 @@ const OrderView = () => {
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2 items-center">
-                    <Button
-                      size="sm"
-                      icon={FiFileText}
-                      onClick={() => handleGenerateInvoice(order)}
-                    ></Button>
-
-                    <Button
-                      variant="danger"
-                      onClick={() => handleCancelItem(order.OrderDetailId)}
-                      className=""
-                      size="sm"
-                    >
-                      Cancel Item
-                    </Button>
-                    {order.typeid === 0 && 
-                    <button
-                      className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                      onClick={() => handlePrint(order)}
-                    >
-                      {printingId === order?.OrderDetailId ? (
-                        <Loader color="black" />
-                      ) : (
-                        <div className="flex items-center">
-                          <FiPrinter className="mr-1.5" />
-                          Print
-                        </div>
-                      )}
-                    </button>}
+                    <HasPermission module="Order" action={["view"]} >
+                      <Button
+                        size="sm"
+                        icon={FiFileText}
+                        onClick={() => handleGenerateInvoice(order)}
+                      ></Button>
+                    </HasPermission>
+                    <HasPermission module="Order" action="delete">
+                      <Button
+                        variant="danger"
+                        onClick={() => handleCancelItem(order.OrderDetailId)}
+                        className=""
+                        size="sm"
+                      >
+                        Cancel Item
+                      </Button>
+                    </HasPermission>
+                    {order.typeid === 0 && (
+                      <button
+                        className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                        onClick={() => handlePrint(order)}
+                      >
+                        {printingId === order?.OrderDetailId ? (
+                          <Loader color="black" />
+                        ) : (
+                          <div className="flex items-center">
+                            <FiPrinter className="mr-1.5" />
+                            Print
+                          </div>
+                        )}
+                      </button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

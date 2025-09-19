@@ -140,7 +140,7 @@ const getStockOutPrice = (item) => {
       : item.ProductDetails.Stock.MRP;
     return stockCheck;
   } else if (item.ProductType === 1) {
-    return parseFloat(item.ProductDetails.Stock.FrameSRP);
+    return parseFloat(item.ProductDetails.Stock.MRP);
   } else if (item.ProductType === 2) {
     return parseFloat(item.ProductDetails.Stock.OPMRP);
   }
@@ -227,7 +227,7 @@ const CompleteStockTransfer = () => {
   const totals = (purchaseDetails?.details || []).reduce(
     (acc, item) => {
       const qty = item.DNQty || 0;
-      const unitPrice = getPurchaseValue(item);
+      const unitPrice = parseFloat(item.DNPrice);
       const gstRate = parseFloat(item.ProductTaxPercentage) / 100;
 
       const basicValue = unitPrice * qty;
@@ -338,12 +338,12 @@ const CompleteStockTransfer = () => {
 
                 <TableCell>{item.DNQty}</TableCell>
 
-                <TableCell>₹{formatINR(getPurchaseValue(item))} </TableCell>
+                <TableCell>₹{formatINR(item.DNPrice)} </TableCell>
 
                 <TableCell>
                   ₹
                   {formatINR(
-                    getPurchaseValue(item) *
+                    parseFloat(item.DNPrice) *
                       (parseFloat(item.ProductTaxPercentage) / 100)
                   )}{" "}
                   ({parseFloat(item.ProductTaxPercentage)}%)
@@ -352,8 +352,8 @@ const CompleteStockTransfer = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    getPurchaseValue(item) * item.DNQty +
-                      getPurchaseValue(item) *
+                    parseFloat(item.DNPrice) * item.DNQty +
+                      parseFloat(item.DNPrice) *
                         item.DNQty *
                         (parseFloat(item.ProductTaxPercentage) / 100)
                   )}

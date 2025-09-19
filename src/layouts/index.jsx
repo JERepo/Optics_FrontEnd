@@ -653,25 +653,31 @@ export const router = createBrowserRouter([
       {
         path: "order-list",
         element: (
-          <ErrorBoundary>
-            <OrderList />
-          </ErrorBoundary>
+          <PermissionRoute module="Order" action="view">
+            <ErrorBoundary>
+              <OrderList />
+            </ErrorBoundary>
+          </PermissionRoute>
         ),
       },
       {
         path: "add-order",
         element: (
-          <ErrorBoundary>
-            <TotalOrder />
-          </ErrorBoundary>
+          <PermissionRoute module="Order" action="create">
+            <ErrorBoundary>
+              <TotalOrder />
+            </ErrorBoundary>
+          </PermissionRoute>
         ),
       },
       {
         path: "add-order/view-order",
         element: (
-          <ErrorBoundary>
-            <OrderView />
-          </ErrorBoundary>
+          <PermissionRoute module="Order" action="view">
+            <ErrorBoundary>
+              <OrderView />
+            </ErrorBoundary>
+          </PermissionRoute>
         ),
       },
       {
@@ -724,73 +730,130 @@ export const router = createBrowserRouter([
       },
       {
         path: "invoice",
-        element: <InvoiceList />,
+        element: (
+          <PermissionRoute module="Invoice" action="view">
+            <InvoiceList />
+          </PermissionRoute>
+        ),
       },
       {
         path: "invoice/view",
-        element: <InvoiceView />,
+        element: (
+          <PermissionRoute module="Invoice" action="view">
+            <InvoiceView />
+          </PermissionRoute>
+        ),
       },
       {
         path: "invoice/create",
-        element: <CustomerSelect />,
+        element: (
+          <PermissionRoute module="Invoice" action="create">
+            <CustomerSelect />
+          </PermissionRoute>
+        ),
       },
       {
         path: "sales-return",
-        element: <SalesList />,
+        element: (
+          <PermissionRoute module="SalesReturn" action="view">
+            <SalesList />
+          </PermissionRoute>
+        ),
       },
       {
         path: "sales-return/view",
-        element: <SalesView />,
+        element: (
+          <PermissionRoute module="SalesReturn" action="view">
+            <SalesView />
+          </PermissionRoute>
+        ),
       },
       {
         path: "sales-return/create",
-        element: <TotalSales />,
+        element: (
+          <PermissionRoute module="SalesReturn" action="create">
+            <TotalSales />
+          </PermissionRoute>
+        ),
       },
       {
         path: "stock-transfer",
         element: (
-          <ErrorBoundary>
-            <StockTransferOut />
-          </ErrorBoundary>
+          <PermissionRoute module="StockTransfer" action="view">
+            <ErrorBoundary>
+              <StockTransferOut />
+            </ErrorBoundary>
+          </PermissionRoute>
         ),
       },
       {
         path: "stock-transfer/view",
         element: (
-          <ErrorBoundary>
-            <StockTransferView />
-          </ErrorBoundary>
+          <PermissionRoute module="StockTransfer" action="view">
+            <ErrorBoundary>
+              <StockTransferView />
+            </ErrorBoundary>
+          </PermissionRoute>
         ),
       },
       {
         path: "stock-transfer/create",
         element: (
-          <ErrorBoundary>
-            <StockTransfer />
-          </ErrorBoundary>
+          <PermissionRoute module="StockTransfer" action="create">
+            <ErrorBoundary>
+              <StockTransfer />
+            </ErrorBoundary>
+          </PermissionRoute>
         ),
       },
       {
         path: "purchase-return/create",
-        element: <TotalPurchaseReturn />,
+        element: (
+          <PermissionRoute module="Purchase-Return" action="create">
+            <TotalPurchaseReturn />
+          </PermissionRoute>
+        ),
       },
       {
         path: "purchase-return",
-        element: <PurchaseReturn />,
+        element: (
+          <PermissionRoute module="Purchase-Return" action="view">
+            <PurchaseReturn />
+          </PermissionRoute>
+        ),
       },
       {
         path: "purchase-return/view",
-        element: <PurchaseReturnView />,
+        element: (
+          <PermissionRoute module="Purchase-Return" action="view">
+            <PurchaseReturnView />
+          </PermissionRoute>
+        ),
       },
       {
         path: "stock-transferin",
-        element: <StockTransferIn />,
+        element: (
+          <PermissionRoute module="StockTranserIn" action="view">
+            <StockTransferIn />
+          </PermissionRoute>
+        ),
       },
       {
         path: "stock-transferin/view",
-        element: <StockTransferInView />,
+        element: (
+          <PermissionRoute module="StockTranserIn" action="view">
+            <StockTransferInView />
+          </PermissionRoute>
+        ),
       },
-      { path: "stock-transferin/create", element: <TotalStockTransferIn /> },
+      {
+        path: "stock-transferin/create",
+        element: (
+          <PermissionRoute module="StockTranserIn" action="create">
+            <TotalStockTransferIn />
+          </PermissionRoute>
+        ),
+      },
       {
         path: "grn/create",
         element: (

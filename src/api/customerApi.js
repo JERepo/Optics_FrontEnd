@@ -79,7 +79,19 @@ export const customerApi = createApi({
         method: "PUT",
         body: payload,
       }),
-      invalidatesTags : ["Customer"]
+      invalidatesTags: ["Customer"],
+    }),
+    getInvoiceData: builder.query({
+      query: ({ id }) => ({
+        url: `/api/v1/customer/getInvoiceData/${id}`,
+      }),
+    }),
+    updateCustomer: builder.mutation({
+      query: ({ payload, userId, customerId }) => ({
+        url: `/api/v1/customer/update/${customerId}?ApplicationUserId=${userId}`,
+        method: "PUT",
+        body: payload,
+      }),
     }),
   }),
 });
@@ -97,5 +109,7 @@ export const {
   useGetIsdQuery,
   useGetAllCompanyLocationsQuery,
   useGetAllCustomerByIdQuery,
-  useUpdateCreditLimitMutation
+  useUpdateCreditLimitMutation,
+  useGetInvoiceDataQuery,
+  useUpdateCustomerMutation
 } = customerApi;

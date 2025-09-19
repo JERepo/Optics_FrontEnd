@@ -18,16 +18,17 @@ import {
   useGetStockLocationsQuery,
 } from "../../../api/stockTransfer";
 import { formatINR } from "../../../utils/formatINR";
+import HasPermission from "../../../components/HasPermission";
 
- const getStatus = (status) => {
-    const types = {
-      1: "Confirmed",
-      2: "Cancelled",
-      3: "Partial Stock",
-      4: "Stock Transfer In Complete",
-    };
-    return types[status] || "Draft";
+const getStatus = (status) => {
+  const types = {
+    1: "Confirmed",
+    2: "Cancelled",
+    3: "Partial Stock",
+    4: "Stock Transfer In Complete",
   };
+  return types[status] || "Draft";
+};
 
 const StockTransferOut = () => {
   const navigate = useNavigate();
@@ -103,14 +104,14 @@ const StockTransferOut = () => {
         totalValue: s.TotalValueOut,
         FromCompanyId: s.FromCompanyId,
         ToCompanyId: s.ToCompanyId,
-        STOutCreateDate: s.STOutCreateDate, 
-        status:getStatus(s.Status)
+        STOutCreateDate: s.STOutCreateDate,
+        status: getStatus(s.Status),
       }))
       .filter(
         (order) => order.FromCompanyId === parseInt(hasMultipleLocations[0])
       )
       .sort(
-        (a, b) => new Date(b.STOutCreateDate) - new Date(a.STOutCreateDate) 
+        (a, b) => new Date(b.STOutCreateDate) - new Date(a.STOutCreateDate)
       );
   }, [allStockOut, fromDate, toDate, searchQuery, allLocations]);
 
@@ -226,16 +227,18 @@ const StockTransferOut = () => {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              <Button
-                icon={FiPlus}
-                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
-                onClick={() => {
-                  goToStockStep(1);
-                  navigate("/stock-transfer/create");
-                }}
-              >
-                Add
-              </Button>
+              <HasPermission module="StockTransfer" action="create">
+                <Button
+                  icon={FiPlus}
+                  className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
+                  onClick={() => {
+                    goToStockStep(1);
+                    navigate("/stock-transfer/create");
+                  }}
+                >
+                  Add
+                </Button>
+              </HasPermission>
             </div>
           </div>
 

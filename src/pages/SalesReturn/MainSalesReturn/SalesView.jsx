@@ -19,6 +19,7 @@ import {
 import { toast } from "react-hot-toast";
 import { useGetLocationByIdQuery } from "../../../api/roleManagementApi";
 import { useGetCompanyIdQuery } from "../../../api/customerApi";
+import HasPermission from "../../../components/HasPermission";
 const formatNumber = (num) => {
   return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "0";
 };
@@ -654,6 +655,7 @@ const SalesView = () => {
                     E-Invoice Details
                   </div>
                   <div>
+                    <HasPermission module="SalesReturn" action="delete">
                     <Button
                       onClick={getEInvoiceData}
                       isLoading={isInvoiceCreating}
@@ -669,6 +671,7 @@ const SalesView = () => {
                     >
                       Generate E-Invoice
                     </Button>
+                    </HasPermission>
                   </div>
                 </div>
                 <div>
