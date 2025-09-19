@@ -256,7 +256,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                     // Accessory -> Specific Order -> barcode
                     poDetailsItem === 2 ? (
                         <Table
-                            columns={["PO No. (Order No.)", "Product Details", "Variation", "SKU Code", "MRP", "Buying Price", "PO QTY", "Pending Qty", "Action"]}
+                            columns={["PO No. (Order No.)", "Product Details", "SKU Code", "MRP", "Buying Price", "PO QTY", "Pending Qty", "Action"]}
                             data={searchResults}
                             renderRow={(item, index) => (
                                 <TableRow key={item.Barcode || index}>
@@ -267,9 +267,9 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                         {item.Barcode && <br />}{`Barcode: ${item.Barcode}`}
                                         {item.HSN && <br />}{`HSN: ${item.HSN}`}
                                     </TableCell>
-                                    <TableCell>
+                                    {/* <TableCell>
                                         {item.Variation}
-                                    </TableCell>
+                                    </TableCell> */}
                                     <TableCell>{item.SKU}</TableCell>
                                     <TableCell className="">₹ {item.MRP}</TableCell>
                                     <TableCell>₹{item.price || 0}</TableCell>

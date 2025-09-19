@@ -147,7 +147,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
             {/* ACCESSORY FINAL GRN DATA */}
             {productType === 2 && (
                 <Table
-                    columns={["PO No. (Order No.)", "Product Details", "Variation", "SKU Code", "MRP", "Buying Price", "PO QTY", "Pending Qty", "Received Qty", "Action"]}
+                    columns={["PO No. (Order No.)", "Product Details", "SKU Code", "MRP", "Buying Price", "PO QTY", "Pending Qty", "Received Qty", "Action"]}
                     data={scannedItems}
                     renderRow={(item, index) => (
                         <TableRow key={item.Id || index}>
@@ -158,7 +158,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                                 {item.Barcode && <br />}{`Barcode: ${item.Barcode}`}
                                 {item.HSN && <br />}{`HSN: ${item.HSN}`}
                             </TableCell>
-                            <TableCell>{item.Variation}</TableCell>
+                            {/* <TableCell>{item.Variation}</TableCell> */}
                             <TableCell>{item.SKU}</TableCell>
                             <TableCell>₹ {item.MRP}</TableCell>
                             <TableCell>₹{" "}
