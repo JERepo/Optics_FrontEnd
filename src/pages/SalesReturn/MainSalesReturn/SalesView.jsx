@@ -655,7 +655,7 @@ const SalesView = () => {
                     E-Invoice Details
                   </div>
                   <div>
-                    <HasPermission module="SalesReturn" action="delete">
+                    <HasPermission module="SalesReturn" action="deactivate">
                     <Button
                       onClick={getEInvoiceData}
                       isLoading={isInvoiceCreating}

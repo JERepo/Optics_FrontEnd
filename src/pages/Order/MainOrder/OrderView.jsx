@@ -540,7 +540,7 @@ const OrderView = () => {
                         onClick={() => handleGenerateInvoice(order)}
                       ></Button>
                     </HasPermission>
-                    <HasPermission module="Order" action="delete">
+                    <HasPermission module="Order" action="deactivate">
                       <Button
                         variant="danger"
                         onClick={() => handleCancelItem(order.OrderDetailId)}

@@ -368,7 +368,7 @@ const PurchaseReturnView = () => {
                     E-Invoice Details
                   </div>
                   <div>
-                    <HasPermission module="Purchase-Return" action="delete">
+                    <HasPermission module="Purchase-Return" action="deactivate">
                     <Button
                       onClick={getEInvoiceData}
                       isLoading={isInvoiceCreating}

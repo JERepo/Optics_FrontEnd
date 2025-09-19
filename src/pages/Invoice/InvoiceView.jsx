@@ -455,7 +455,7 @@ const InvoiceView = () => {
               Back
             </Button>
             {invoiceDetails?.InvoiceType === 0 && (
-              <HasPermission module="Invoice" action="delete">
+              <HasPermission module="Invoice" action="deactivate">
                 <Button
                   variant="danger"
                   onClick={handleCancelInvoice}
@@ -766,7 +766,7 @@ const InvoiceView = () => {
             </div>
 
             {/* Cancel Invoice Button */}
-            <HasPermission module="Invoice" action="delete">
+            <HasPermission module="Invoice" action="deactivate">
               <div className="flex justify-end">
                 <Button
                   variant="danger"
