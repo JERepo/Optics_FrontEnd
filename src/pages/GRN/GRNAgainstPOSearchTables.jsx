@@ -16,9 +16,9 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                             <TableCell>{item.Barcode}</TableCell>
                             <TableCell>{item.Name}
                                 {item.Size && <br />}{item.Size ? `Size: ${item.Size}` : ""}
-                                {(item.Category !== null || item.Category !== undefined) && <br />}{item.Category === 0 ? 'Sunglass' : 'Optical Frame'}
+                                {/* {(item.Category !== null || item.Category !== undefined) && <br />}{item.Category === 0 ? 'CaSunglass' : 'Optical Frame'}
                                 {item.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : ""}
-                                {item.HSN && <br />}{item.HSN ? `HSN: ${item.HSN}` : ""}
+                                {item.HSN && <br />}{item.HSN ? `HSN: ${item.HSN}` : ""} */}
                             </TableCell>
                             <TableCell>
                                 {item.Category === 0 ? 'Sunglass' : 'Optical Frame'}
@@ -47,10 +47,10 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                     data={searchResults}
                     renderRow={(item, index) => (
                         <TableRow key={item.Barcode || index}>
-                            <TableCell>{item.PONo} <br /> {(item.OrderNo && item.OrderDetailSlNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
+                            <TableCell>{item.PONo} <br /> {(item.OrderNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
                             <TableCell>{item.Name}
                                 {item.Size && <br />}{item.Size ? `Size: ${item.Size}` : ""}
-                                {(item.Category !== null || item.Category !== undefined) && <br />}{item.Category === 0 ? 'Sunglass' : 'Optical Frame'}
+                                {(item.Category !== null || item.Category !== undefined) && <br />}{item.Category === 0 ? 'Category: Optical Frame' : 'Category: Sunglass'}
                                 {item.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : ""}
                                 {item.HSN && <br />}{item.HSN ? `HSN: ${item.HSN}` : ""}
                             </TableCell>
@@ -91,16 +91,16 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                     data={searchResults}
                     renderRow={(item, index) => (
                         <TableRow key={item.Barcode || index}>
-                            <TableCell>{item.PONo} <br /> {(item.OrderNo && item.OrderDetailSlNo && item.OrderDetailSlNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
+                            <TableCell>{item.PONo} <br /> {(item.OrderNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
                             <TableCell>{item.Name}
                                 {item.Size && <br />}{item.Size ? `Size: ${item.Size}` : ""}
-                                {(item.Category !== null || item.Category !== undefined) && <br />}{item.Category === 0 ? 'Sunglass' : 'Optical Frame'}
+                                {(item.Category !== null || item.Category !== undefined) && <br />}{item.Category === 0 ? 'Category: Optical Frame' : 'Category: Sunglass'}
                                 {item.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : ""}
                                 {item.HSN && <br />}{item.HSN ? `HSN: ${item.HSN}` : ""}
                             </TableCell>
-                            <TableCell>
+                            {/* <TableCell>
                                 {item.Category === 0 ? 'Sunglass' : 'Optical Frame'}
-                            </TableCell>
+                            </TableCell> */}
                             <TableCell className="text-left">
                                 <div className="flex gap-2">
                                     <div>{item.IsRxable ? "Rx" : ""}</div>
