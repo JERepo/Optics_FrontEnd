@@ -9,7 +9,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
         <>
             {(productType === 1 && poDetailsItem === 1) && (
                 <Table
-                    columns={["Barcode", "Name", "Polarised", "Photochromatic", "Clip No", "MRP", "Buying Price", "Action"]}
+                    columns={["Barcode", "Name", "S/O", "Polarised", "Photochromatic", "Clip No", "MRP", "Buying Price", "Action"]}
                     data={searchResults}
                     renderRow={(item, index) => (
                         <TableRow key={item.Barcode || index}>
@@ -21,7 +21,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                 {item.HSN && <br />}{item.HSN ? `HSN: ${item.HSN}` : ""} */}
                             </TableCell>
                             <TableCell>
-                                {item.Category === 0 ? 'Sunglass' : 'Optical Frame'}
+                                {item.Category === 0 ? 'Optical Frame' : 'Sunglass'}
                             </TableCell>
                             <TableCell className="text-center">{item.PO ? "Yes" : "No"}</TableCell>
                             <TableCell className="text-center">{item.Ph ? "Yes" : "No"}</TableCell>
