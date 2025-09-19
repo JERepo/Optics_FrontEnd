@@ -2302,34 +2302,87 @@ export default function GRNStep4AgainstPO() {
                             )}
 
                             {/* GRN Quantity field */}
-                            <div className="flex items-start gap-4">
-                                <label
-                                    htmlFor="grnQtyAgainstPOForBarcode"
-                                    className="block text-sm font-medium text-gray-700 whitespace-nowrap pt-2"
-                                >
-                                    Enter GRN Qty *
-                                </label>
-                                <div className="flex-1 max-w-xs">
-                                    <div className="relative">
-                                        <input
-                                            id="grnQtyAgainstPOForBarcode"
-                                            name="grnQtyAgainstPOForBarcode"
-                                            type="number"
-                                            min="1"
-                                            value={grnQtyAgainstPOForBarcode || ""}
-                                            onChange={(e) => setGrnQtyAgainstPOForBarcode(e.target.value)}
-                                            className={`w-full px-3 py-2 border ${!grnQtyAgainstPOForBarcode || grnQtyAgainstPOForBarcode <= 0
-                                                ? "border-red-500"
-                                                : "border-gray-300"
-                                                } rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060]`}
-                                            placeholder="Please enter GRN quantity.... "
-                                            aria-label="GRN Qty input"
-                                            disabled={isLoading}
-                                        />
-                                        {isLoading && (
-                                            <div className="absolute right-3 top-2.5">
+                            {(grnData?.step3?.GRNAgainstPOorderType === "Auto Processing") && (
+                                <div className="flex items-start gap-4">
+                                    <label
+                                        htmlFor="grnQtyAgainstPOForBarcode"
+                                        className="block text-sm font-medium text-gray-700 whitespace-nowrap pt-2"
+                                    >
+                                        Enter GRN Qty *
+                                    </label>
+                                    <div className="flex-1 max-w-xs">
+                                        <div className="relative">
+                                            <input
+                                                id="grnQtyAgainstPOForBarcode"
+                                                name="grnQtyAgainstPOForBarcode"
+                                                type="number"
+                                                min="1"
+                                                value={grnQtyAgainstPOForBarcode || ""}
+                                                onChange={(e) => setGrnQtyAgainstPOForBarcode(e.target.value)}
+                                                className={`w-full px-3 py-2 border ${!grnQtyAgainstPOForBarcode || grnQtyAgainstPOForBarcode <= 0
+                                                    ? "border-red-500"
+                                                    : "border-gray-300"
+                                                    } rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060]`}
+                                                placeholder="Please enter GRN quantity.... "
+                                                aria-label="GRN Qty input"
+                                                disabled={isLoading}
+                                            />
+                                            {isLoading && (
+                                                <div className="absolute right-3 top-2.5">
+                                                    <svg
+                                                        className="animate-spin h-4 w-4 text-blue-500"
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <circle
+                                                            className="opacity-25"
+                                                            cx="12"
+                                                            cy="12"
+                                                            r="10"
+                                                            stroke="currentColor"
+                                                            strokeWidth="4"
+                                                        ></circle>
+                                                        <path
+                                                            className="opacity-75"
+                                                            fill="currentColor"
+                                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                                        ></path>
+                                                    </svg>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {!grnQtyAgainstPOForBarcode && (
+                                            <p className="text-red-500 text-xs mt-1">GRN quantity is required</p>
+                                        )}
+                                        {grnQtyAgainstPOForBarcode && grnQtyAgainstPOForBarcode <= 0 && (
+                                            <p className="text-red-500 text-xs mt-1">Quantity must be greater than 0</p>
+                                        )}
+                                    </div>
+                                    <button
+                                        onClick={handleAddBarcodeSearchItemsToScannedTable}
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center"
+                                        disabled={
+                                            isLoading ||
+                                            !grnQtyAgainstPOForBarcode ||
+                                            grnQtyAgainstPOForBarcode <= 0 ||
+                                            (formState.productType === "Contact Lens" &&
+                                                poDetailsItems.some(item => item.CLBatchCode === 1) &&
+                                                formState.clBatchInputType === "select" &&
+                                                !selectedBatchCode) ||
+                                            (formState.productType === "Contact Lens" &&
+                                                poDetailsItems.some(item => item.CLBatchCode === 1) &&
+                                                formState.clBatchInputType === "enter" &&
+                                                (!batchCodeInput ||
+                                                    !CLBatches?.data?.find(
+                                                        (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
+                                                    )))
+                                        }
+                                    >
+                                        {isLoading ? (
+                                            <>
                                                 <svg
-                                                    className="animate-spin h-4 w-4 text-blue-500"
+                                                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
                                                     xmlns="http://www.w3.org/2000/svg"
                                                     fill="none"
                                                     viewBox="0 0 24 24"
@@ -2348,65 +2401,14 @@ export default function GRNStep4AgainstPO() {
                                                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                                     ></path>
                                                 </svg>
-                                            </div>
+                                                Adding...
+                                            </>
+                                        ) : (
+                                            "Add GRN Items"
                                         )}
-                                    </div>
-                                    {!grnQtyAgainstPOForBarcode && (
-                                        <p className="text-red-500 text-xs mt-1">GRN quantity is required</p>
-                                    )}
-                                    {grnQtyAgainstPOForBarcode && grnQtyAgainstPOForBarcode <= 0 && (
-                                        <p className="text-red-500 text-xs mt-1">Quantity must be greater than 0</p>
-                                    )}
+                                    </button>
                                 </div>
-                                <button
-                                    onClick={handleAddBarcodeSearchItemsToScannedTable}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center"
-                                    disabled={
-                                        isLoading ||
-                                        !grnQtyAgainstPOForBarcode ||
-                                        grnQtyAgainstPOForBarcode <= 0 ||
-                                        (formState.productType === "Contact Lens" &&
-                                            poDetailsItems.some(item => item.CLBatchCode === 1) &&
-                                            formState.clBatchInputType === "select" &&
-                                            !selectedBatchCode) ||
-                                        (formState.productType === "Contact Lens" &&
-                                            poDetailsItems.some(item => item.CLBatchCode === 1) &&
-                                            formState.clBatchInputType === "enter" &&
-                                            (!batchCodeInput ||
-                                                !CLBatches?.data?.find(
-                                                    (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
-                                                )))
-                                    }
-                                >
-                                    {isLoading ? (
-                                        <>
-                                            <svg
-                                                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <circle
-                                                    className="opacity-25"
-                                                    cx="12"
-                                                    cy="12"
-                                                    r="10"
-                                                    stroke="currentColor"
-                                                    strokeWidth="4"
-                                                ></circle>
-                                                <path
-                                                    className="opacity-75"
-                                                    fill="currentColor"
-                                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                                ></path>
-                                            </svg>
-                                            Adding...
-                                        </>
-                                    ) : (
-                                        "Add GRN Items"
-                                    )}
-                                </button>
-                            </div>
+                            )}
                         </div>
                     </div>
                 )}
