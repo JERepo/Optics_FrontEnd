@@ -36,7 +36,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
             {productType === 1 && (
                 <>
                     <Table
-                        columns={["PO No. (Order No.)", "Product Details", "S/O", "Others", "MRP", "Buying Price", "PO QTY", "Pending Qty", "GRN Qty", "Action"]}
+                        columns={["PO No. (Order No.)", "Product Details", "Others", "MRP", "Buying Price", "PO QTY", "Pending Qty", "GRN Qty", "Action"]}
                         data={scannedItems}
                         renderRow={(item, index) => (
                             <TableRow key={index}>
@@ -47,9 +47,9 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                                     {item.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : ""}
                                     {item.HSN && <br />}{item.HSN ? `HSN: ${item.HSN}` : ""}
                                 </TableCell>
-                                <TableCell>
+                                {/* <TableCell>
                                     {item.Category === 0 ? 'Sunglass' : 'Optical Frame'}
-                                </TableCell>
+                                </TableCell> */}
                                 <TableCell className="text-left">
                                     <div className="flex gap-2">
                                         <div>{item.IsRxable ? "Rx" : ""}</div>
