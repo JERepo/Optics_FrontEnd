@@ -250,8 +250,8 @@ const CustomerForm = ({
                         <input
                           type="radio"
                           name="GSTINType"
-                          value="0"
-                          checked={formData.GSTINType == 0}
+                          value="1"
+                          checked={formData.GSTINType == 1}
                           onChange={handleInputChange}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                           disabled={invoice?.Status === 1}
@@ -262,8 +262,8 @@ const CustomerForm = ({
                         <input
                           type="radio"
                           name="GSTINType"
-                          value="1"
-                          checked={formData.GSTINType == 1}
+                          value="0"
+                          checked={formData.GSTINType == 0}
                           onChange={handleInputChange}
                            disabled={invoice?.Status === 1}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
@@ -274,7 +274,7 @@ const CustomerForm = ({
                       </label>
                     </div>
                   </div>
-                  {formData.GSTINType == 0 &&
+                  {formData.GSTINType == 1 &&
                     formData.customerType === "B2B" && (
                       <div className="col-span-1">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -289,6 +289,7 @@ const CustomerForm = ({
                              disabled={invoice?.Status === 1}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
+                          
                           <button
                             type="button"
                             className="whitespace-nowrap px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm font-medium disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"

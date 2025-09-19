@@ -386,7 +386,7 @@ const OrderView = () => {
             Order Details
           </div>
           <div className="flex items-center gap-3">
-            <HasPermission module="Order" action={["delete"]}>
+            <HasPermission module="Order" action={["deactivate"]}>
               <Button
                 variant="danger"
                 onClick={handleCancelOrder}
