@@ -18,6 +18,7 @@ import {
 import toast from "react-hot-toast";
 import { useGetLocationByIdQuery } from "../../../api/roleManagementApi";
 import { useGetCompanyIdQuery } from "../../../api/customerApi";
+import HasPermission from "../../../components/HasPermission";
 
 const getProductName = (item) => {
   const type = item.ProductType;
@@ -367,6 +368,7 @@ const PurchaseReturnView = () => {
                     E-Invoice Details
                   </div>
                   <div>
+                    <HasPermission module="Purchase-Return" action="deactivate">
                     <Button
                       onClick={getEInvoiceData}
                       isLoading={isInvoiceCreating}
@@ -382,6 +384,7 @@ const PurchaseReturnView = () => {
                     >
                       Generate E-Invoice
                     </Button>
+                    </HasPermission>
                   </div>
                 </div>
                 <div>

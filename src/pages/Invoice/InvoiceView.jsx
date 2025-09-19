@@ -19,6 +19,7 @@ import { useGetCompanyIdQuery } from "../../api/customerApi";
 import toast from "react-hot-toast";
 import Modal from "../../components/ui/Modal";
 import Radio from "../../components/Form/Radio";
+import HasPermission from "../../components/HasPermission";
 
 const getProductName = (order) => {
   const product = order?.productDetails?.[0];
@@ -197,7 +198,6 @@ const PaymentTypes = {
   7: "Gift Voucher",
 };
 
-
 const InvoiceView = () => {
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
   const navigate = useNavigate();
@@ -315,11 +315,11 @@ const InvoiceView = () => {
   }, 0);
 
   const getOrderStatus = (status) => {
-     const types = {
-    1: "Confirmed",
-    2: "Partially Cancelled",
-    3: "Cancelled",
-  };
+    const types = {
+      1: "Confirmed",
+      2: "Partially Cancelled",
+      3: "Cancelled",
+    };
     return types[status] || "Draft";
   };
 
@@ -455,14 +455,16 @@ const InvoiceView = () => {
               Back
             </Button>
             {invoiceDetails?.InvoiceType === 0 && (
-              <Button
-                variant="danger"
-                onClick={handleCancelInvoice}
-                disabled={cancelDisabled}
-                isLoading={!isCancelOpen ? isCancelling : false}
-              >
-                Cancel Invoice
-              </Button>
+              <HasPermission module="Invoice" action="deactivate">
+                <Button
+                  variant="danger"
+                  onClick={handleCancelInvoice}
+                  disabled={cancelDisabled}
+                  isLoading={!isCancelOpen ? isCancelling : false}
+                >
+                  Cancel Invoice
+                </Button>
+              </HasPermission>
             )}
           </div>
         </div>
@@ -530,7 +532,7 @@ const InvoiceView = () => {
                     getPricing(
                       Array.isArray(invoice?.productDetails?.length > 0)
                         ? invoice?.productDetails[0]
-                        : (invoice?.productDetails || [])
+                        : invoice?.productDetails || []
                     )
                   )}
                 </TableCell>
@@ -597,21 +599,23 @@ const InvoiceView = () => {
                     E-Invoice Details
                   </div>
                   <div>
-                    <Button
-                      onClick={getEInvoiceData}
-                      isLoading={isInvoiceCreating}
-                      disabled={
-                        isInvoiceCreating ||
-                        (eInvoiceData?.data?.data?.length > 0 &&
-                          eInvoiceData.data.data[
-                            eInvoiceData.data.data.length - 1
-                          ]?.ErrorCode === "200") ||
-                        (eInvoiceData?.data?.data?.length > 0 &&
-                          eInvoiceData.data.data[0]?.ErrorCode === "200")
-                      }
-                    >
-                      Generate E-Invoice
-                    </Button>
+                    <HasPermission module="Invoice" action={["create", "edit"]}>
+                      <Button
+                        onClick={getEInvoiceData}
+                        isLoading={isInvoiceCreating}
+                        disabled={
+                          isInvoiceCreating ||
+                          (eInvoiceData?.data?.data?.length > 0 &&
+                            eInvoiceData.data.data[
+                              eInvoiceData.data.data.length - 1
+                            ]?.ErrorCode === "200") ||
+                          (eInvoiceData?.data?.data?.length > 0 &&
+                            eInvoiceData.data.data[0]?.ErrorCode === "200")
+                        }
+                      >
+                        Generate E-Invoice
+                      </Button>
+                    </HasPermission>
                   </div>
                 </div>
                 <div>
@@ -762,16 +766,18 @@ const InvoiceView = () => {
             </div>
 
             {/* Cancel Invoice Button */}
-            <div className="flex justify-end">
-              <Button
-                variant="danger"
-                onClick={handleUpdateCanceInvoice}
-                isLoading={isCancelling}
-                disabled={isCancelling}
-              >
-                Cancel Invoice
-              </Button>
-            </div>
+            <HasPermission module="Invoice" action="deactivate">
+              <div className="flex justify-end">
+                <Button
+                  variant="danger"
+                  onClick={handleUpdateCanceInvoice}
+                  isLoading={isCancelling}
+                  disabled={isCancelling}
+                >
+                  Cancel Invoice
+                </Button>
+              </div>
+            </HasPermission>
           </div>
         </Modal>
       </div>

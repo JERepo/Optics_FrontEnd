@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { FiEye, FiEdit2, FiCopy, FiTrash2, FiX } from "react-icons/fi";
+import {
+  FiEye,
+  FiEdit2,
+  FiCopy,
+  FiTrash2,
+  FiX,
+  FiCreditCard,
+} from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { toast } from "react-hot-toast";
 import { useCustomerContext } from "../../features/customerContext";
@@ -11,6 +18,10 @@ import {
   useGetIsdQuery,
   useGetStatesQuery,
   useGetAllCompanyLocationsQuery,
+  useGetCustomerByIdQuery,
+  useGetInvoiceDataQuery,
+  useUpdateCreditLimitMutation,
+  useUpdateCustomerMutation,
 } from "../../api/customerApi";
 import { useGetAllCustomerGroupsQuery } from "../../api/customerGroup";
 import {
@@ -23,9 +34,11 @@ import PatientDetails from "./PatientDetails";
 import BillingAddress from "./BillingAddress";
 import { Table, TableCell, TableRow } from "../../components/Table";
 import Button from "../../components/ui/Button";
-import { useLocation, useNavigate } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { useVerifyGSTQuery } from "../../api/externalApi";
 import Modal from "../../components/ui/Modal";
+import ConfirmationModal from "../../components/ui/ConfirmationModal";
+import Input from "../../components/Form/Input";
 
 // Validation functions
 const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -41,7 +54,7 @@ const validatePincode = (pincode) => /^\d{6}$/.test(pincode);
 const Customer = ({ isPop, onSubmit }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  // State and context
+  const { id } = useParams();
   const isCreate = location.pathname.includes("/create");
   const { formData, setFormData, constructPayload, resetFormForCustomerType } =
     useCustomerContext();
@@ -62,6 +75,10 @@ const Customer = ({ isPop, onSubmit }) => {
   const [verifyGst, setVerifyGst] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [filteredCustomerGroups, setFilteredCustomerGroups] = useState([]);
+  const [isCreditLimitOpened, setIsCreditLimitOpened] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [creditLimit, setCreditLimit] = useState(null);
+  const [isGMOpen, setIsGMOpen] = useState(false);
 
   // Address states
   const [billingAddress, setBillingAddress] = useState({
@@ -100,20 +117,13 @@ const Customer = ({ isPop, onSubmit }) => {
   const { data: indexData } = useGetAllIndicesQuery();
   const [createCustomer, { isLoading: isCreating }] =
     useCreateCustomerMutation();
-
-  // Location data
+  const [updateCustomer, { isLoading: isUpdating }] =
+    useUpdateCustomerMutation();
   const { data: locationById } = useGetLocationByIdQuery(
     { id: formData?.location },
     { skip: !formData.location }
   );
   const companyType = locationById?.data?.data.CompanyType;
-
-  useEffect(() => {
-    setFormData((prev) => ({
-      ...prev,
-      customerType: companyType === 0 ? "B2B" : "B2C",
-    }));
-  }, [locationById, companyType]);
   const companyId = locationById?.data?.data.Id;
   const countrId = locationById?.data?.data.BillingCountryCode;
   const { data: countryIsd } = useGetIsdQuery(
@@ -127,30 +137,6 @@ const Customer = ({ isPop, onSubmit }) => {
   );
   const CustomerPoolID = companySettings?.data?.data.CustomerPoolID;
   const { data: allCustomerGroupIds } = useGetAllCompanyLocationsQuery();
-
-  useEffect(() => {
-    const allMatching = allCustomerGroupIds?.data?.data.filter(
-      (c) => c.CustomerPoolID === CustomerPoolID
-    );
-
-    // Get an array of matching CompanyIDs
-    const matchingCompanyIds = allMatching?.map((item) => item.CompanyId);
-
-    // Filter customer groups by matching CompanyID
-    const filteredGroups = customerGroups?.data?.data.filter((group) =>
-      matchingCompanyIds?.includes(group.CompanyID)
-    );
-
-    if (filteredGroups) {
-      setFilteredCustomerGroups(filteredGroups);
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      customerGroup: companySettings?.data?.data?.CustomerGroupDefault,
-    }));
-  }, [allCustomerGroupIds, CustomerPoolID]);
-
   const {
     data: GSTData,
     isLoading: isVerifyGSTLoading,
@@ -165,6 +151,14 @@ const Customer = ({ isPop, onSubmit }) => {
       skip: !(verifyGst && formData.GSTNumber.length === 15),
     }
   );
+
+  const { data: customerById, isLoading: isCustomerByIdLoading } =
+    useGetCustomerByIdQuery({ id: id }, { skip: !id });
+  const { data: invoiceData } = useGetInvoiceDataQuery(
+    { id: id },
+    { skip: !id }
+  );
+  const invoice = invoiceData?.data?.data;
   // Derived data
   const rimTypes = rimData?.data?.filter((r) => r.IsActive === 1) || [];
   const indices = indexData?.data?.data || [];
@@ -183,6 +177,149 @@ const Customer = ({ isPop, onSubmit }) => {
     return initialPrices;
   });
 
+  // Prefill form with customer data
+  useEffect(() => {
+    if (customerById && !isCustomerByIdLoading) {
+      const customer = customerById?.data?.data;
+      setFormData({
+        ...formData,
+        location: customer.CompanyID,
+        name: customer.CustomerName || null,
+        legalName: customer.CustomerName || null,
+        customerType: customer.CustomerType === 0 ? "B2C" : "B2B",
+        GSTINType: String(customer.TAXRegisteration) || 0,
+        GSTNumber: customer.TAXNo || null,
+        PANNumber: customer.PANNumber || null,
+        customerGroup: customer.CustomerGroupID || null,
+        countryCode: customer.MobileISDCode || "+91",
+        telPhone: customer.TelNumber || null,
+        phone: customer.MobNumber || null,
+        email: customer.Email || null,
+        sendAlert: false,
+        sendPhoneAlert: false,
+        customerUniqueId: customer.CustomerUID || null,
+        BrandName: customer.CustomerBrand || null,
+        whatsAppGroupId: customer.WAGroupID || null,
+        whatsappAlert: customer.WAGroupAlert || 0,
+      });
+
+      setBillingAddress({
+        line1: customer.BillAddress1 || null,
+        line2: customer.BillAddress2 || null,
+        landmark: customer.BillLandmark || null,
+        pincode: customer.BillPin || null,
+        city: customer.BillCity || "",
+        country: customer.BillCountryID || null,
+        state: customer.BillStateID || null,
+      });
+
+      setShippingAddress({
+        line1: customer.ShipAddress1 || null,
+        line2: customer.ShipAddress2 || null,
+        landmark: customer.ShipLandmark || null,
+        pincode: customer.ShipPin || null,
+        city: customer.ShipCity || "",
+        country: customer.ShipCountryID || null,
+        state: customer.ShipStateID || null,
+      });
+
+      setUseDifferentShipping(customer.SameShipTo === 0);
+      setFittingType(customer.FittingPrice || 0);
+      setEnableLoyalty(customer.LoyaltyEnrollment || 0);
+      setBillingMethod(customer.BillingMethod || 0);
+      setEnableCreditBilling(customer.CreditBilling || 0);
+      setCreditLimit(customer?.CreditLimit || 0);
+
+      setCreditDetails({
+        openingBalance: parseFloat(customer.OpeningBalance) || 0,
+        creditLimit: parseInt(customer.CreditLimit) || 0,
+        creditDays: customer.CreditDays || 0,
+        paymentTerms: customer.PaymentTerms || null,
+      });
+
+      setCreditBalanceType(customer.OBType === 0 ? "Dr" : "Cr");
+
+      setPatientDetailsData(
+        customer.CustomerContactDetails?.map((contact) => ({
+          name: contact.CustomerName || null,
+          email: contact.Email || null,
+          // emailAlert: contact.EmailAlert || 0,
+          mobile: contact.MobNumber || null,
+          MobAlert: contact.MobAlert || 0,
+          MobileISDCode: contact.MobileISDCode || "+91",
+          dob: contact.DOB || null,
+          engraving: contact.Engraving || null,
+          anniversary: contact.Anniversary || null,
+        })) || []
+      );
+
+      // Initialize fitting prices if available
+      if (customer.OpticalFittingChargesSales?.length > 0) {
+        const newFittingPrices = { singleVision: {}, others: {} };
+        rimTypes.forEach((rim) => {
+          newFittingPrices.singleVision[rim.Id] = {};
+          newFittingPrices.others[rim.Id] = {};
+
+          indices.forEach((index) => {
+            const fitting = customer.OpticalFittingChargesSales.find(
+              (f) => f.RimType === rim.Id && f.IndexID === index.Id
+            );
+
+            if (fitting) {
+              if (fitting.Focality === 0) {
+                // Single Vision
+                newFittingPrices.singleVision[rim.Id][index.Id] =
+                  parseFloat(fitting.Amount) || 0;
+              } else {
+                // Others (progressive, bifocal, etc.)
+                newFittingPrices.others[rim.Id][index.Id] =
+                  parseFloat(fitting.Amount) || 0;
+              }
+            } else {
+              // Default to 0 if no record found
+              newFittingPrices.singleVision[rim.Id][index.Id] = 0;
+              newFittingPrices.others[rim.Id][index.Id] = 0;
+            }
+          });
+        });
+
+        setFittingPrices(newFittingPrices);
+      }
+    }
+  }, [customerById]);
+
+  useEffect(() => {
+    const allMatching = allCustomerGroupIds?.data?.data.filter(
+      (c) => c.CustomerPoolID === CustomerPoolID
+    );
+
+    const matchingCompanyIds = allMatching?.map((item) => item.CompanyId);
+
+    const filteredGroups = customerGroups?.data?.data.filter((group) =>
+      matchingCompanyIds?.includes(group.CompanyID)
+    );
+
+    if (filteredGroups) {
+      setFilteredCustomerGroups(filteredGroups);
+    }
+
+    if (!customerById) {
+      setFormData((prev) => ({
+        ...prev,
+        customerGroup: companySettings?.data?.data?.CustomerGroupDefault,
+      }));
+    }
+  }, [allCustomerGroupIds, CustomerPoolID, customerById]);
+
+  useEffect(() => {
+    if (!customerById) {
+      setFormData((prev) => ({
+        ...prev,
+        customerType: companyType === 0 ? "B2B" : "B2C",
+      }));
+    }
+  }, [locationById, companyType, customerById]);
+
   // Set default location if only one exists
   useEffect(() => {
     const locations = Array.isArray(hasMultipleLocations)
@@ -191,31 +328,26 @@ const Customer = ({ isPop, onSubmit }) => {
       ? [hasMultipleLocations]
       : [];
 
-    if (locations.length === 1 && !formData.location) {
+    if (locations.length === 1 && !formData.location && !customerById) {
       setFormData((prev) => ({
         ...prev,
         location: locations[0],
       }));
     }
-  }, [hasMultipleLocations, formData.location, setFormData]);
+  }, [hasMultipleLocations, formData.location, setFormData, customerById]);
 
   // Handlers
-
   const handleVerifyGST = () => {
     if (companySettings?.data?.data?.GSTSerachEnable === 0) {
-      // setErrors((prev) => ({
-      //   ...prev,
-      //   GSTNumber:
-      //     "GST searching or verification is not enabled. Please contact the admin.",
-      // }));
       toast.error("GST verification is disabled. Please contact the admin.");
       return;
     }
     setVerifyGst(true);
   };
+
   useEffect(() => {
     if (GSTData?.data) {
-      setVerifyGst(false); // reset after fetch
+      setVerifyGst(false);
       setIsGstModalOpen(true);
       setSelectedIndex(null);
     } else if (error || isError) {
@@ -231,19 +363,15 @@ const Customer = ({ isPop, onSubmit }) => {
       setFormData((prev) => {
         const updatedFormData = { ...prev };
 
-        // Reset fields when customerType changes
         if (prev.customerType === "B2C") {
-          // Clear B2B-specific fields
           updatedFormData.legalName = null;
           updatedFormData.GSTNumber = null;
           updatedFormData.PANNumber = null;
           updatedFormData.GSTINType = 0;
         } else if (prev.customerType === "B2B") {
-          // Clear B2C-specific fields if needed
           updatedFormData.name = null;
         }
 
-        // Reset GSTNumber when GSTINType changes to unregistered (1)
         if (prev.GSTINType === 1) {
           updatedFormData.GSTNumber = null;
         }
@@ -251,7 +379,6 @@ const Customer = ({ isPop, onSubmit }) => {
         return updatedFormData;
       });
 
-      // Clear related errors
       setErrors((prevErrors) => {
         const newErrors = { ...prevErrors };
         if (formData.customerType === "B2C") {
@@ -267,7 +394,13 @@ const Customer = ({ isPop, onSubmit }) => {
         return newErrors;
       });
     }
-  }, [formData.customerType, formData.GSTINType, setFormData, setErrors]);
+  }, [
+    formData.customerType,
+    formData.GSTINType,
+    setFormData,
+    setErrors,
+    isCreate,
+  ]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -315,14 +448,11 @@ const Customer = ({ isPop, onSubmit }) => {
   };
 
   const handleAddDetail = (detail) => {
-    // Handle deletion case
     if (detail === null) {
       setPatientDetailsData((prev) =>
         prev.filter((_, i) => i !== editingIndex)
       );
-    }
-    // Handle update or add new
-    else {
+    } else {
       setPatientDetailsData((prev) =>
         editingIndex !== null
           ? prev.map((item, i) => (i === editingIndex ? detail : item))
@@ -330,7 +460,6 @@ const Customer = ({ isPop, onSubmit }) => {
       );
     }
 
-    // Clear patient details error if we have any entries now
     setErrors((prevErrors) => {
       const newErrors = { ...prevErrors };
       if (patientDetails.length > 0 || detail === null) {
@@ -356,13 +485,21 @@ const Customer = ({ isPop, onSubmit }) => {
       },
     }));
   };
-
+  const handleOpenCredit = () => {
+    setSelectedItem({
+      Id: id,
+      CreditLimit: creditLimit,
+      openingBalance: creditDetails.openingBalance,
+    });
+    setIsCreditLimitOpened(true);
+  };
   const handleCopyPrices = () => {
     setFittingPrices((prev) => ({
       ...prev,
       others: JSON.parse(JSON.stringify(prev.singleVision)),
     }));
   };
+
   const handleDeleteDetail = (index) => {
     if (
       window.confirm("Are you sure you want to delete this patient detail?")
@@ -370,6 +507,7 @@ const Customer = ({ isPop, onSubmit }) => {
       setPatientDetailsData((prev) => prev.filter((_, i) => i !== index));
     }
   };
+
   const validateAll = () => {
     const newErrors = {};
     if (formData.customerType === "B2C") {
@@ -435,8 +573,6 @@ const Customer = ({ isPop, onSubmit }) => {
       newErrors.customerGroup = "Customer group is required";
     }
 
-    // Billing address validations
-
     if (!billingAddress.line1) {
       newErrors.billingaddressLine1 = "Billing Address 1 is required";
     } else if (billingAddress.line1.length > 150) {
@@ -473,7 +609,6 @@ const Customer = ({ isPop, onSubmit }) => {
       newErrors.billingaddressState = "Billing state is required";
     }
 
-    // Shipping address validations
     if (useDifferentShipping) {
       if (!shippingAddress.line1) {
         newErrors.shippingaddressLine1 = "Shipping address line 1 is required";
@@ -516,7 +651,6 @@ const Customer = ({ isPop, onSubmit }) => {
       }
     }
 
-    // Credit details validations
     if (enableCreditBilling === 1) {
       if (
         creditDetails.openingBalance === undefined ||
@@ -569,7 +703,10 @@ const Customer = ({ isPop, onSubmit }) => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
+  const handleConfirmMobileOrGSTToggle = () => {
+    handleSave();
+    setIsGMOpen(false)
+  };
   const handleSave = async () => {
     if (!validateAll()) {
       toast.error("Please fix the validation errors before saving.");
@@ -596,20 +733,36 @@ const Customer = ({ isPop, onSubmit }) => {
     );
 
     try {
-      const response = await createCustomer({
-        id: user.Id,
-        payload: payload,
-      }).unwrap();
+      if (!id) {
+        const response = await createCustomer({
+          id: user.Id,
+          payload: payload,
+        }).unwrap();
 
-      if (isPop) {
-        onSubmit(null, response);
+        if (isPop) {
+          onSubmit(null, response);
+        }
+        toast.success("Customer data saved successfully!");
+        navigate(-1);
+      } else {
+        const res = await updateCustomer({
+          payload: payload,
+          userId: user.Id,
+          customerId: id,
+        }).unwrap();
+
+        toast.success("Customer data updated successfully!");
+        navigate(-1);
       }
-
-      toast.success("Customer data saved successfully!");
-      navigate(-1);
     } catch (error) {
       console.error(error);
-      toast.error("Customer creation failed");
+      if (error?.data?.error?.warning) {
+        setIsGMOpen(true);
+        return;
+      }
+      toast.error(
+        "Unable to update the customer please try again after some time!"
+      );
     }
   };
 
@@ -692,7 +845,7 @@ const Customer = ({ isPop, onSubmit }) => {
     <div className="max-w-6xl p-6 bg-white rounded-lg shadow-md">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">
-          Customer Information
+          {isCreate ? "Create Customer" : "Update Customer"}
         </h2>
         {!isPop && (
           <Button className="" variant="outline" onClick={() => navigate(-1)}>
@@ -740,9 +893,9 @@ const Customer = ({ isPop, onSubmit }) => {
             companyType={locationById?.data}
             handleVerifyGST={handleVerifyGST}
             isVerifyGSTLoading={isVerifyGSTLoading}
+            invoice={invoice}
           />
 
-          {/* Patient Details Section */}
           <div className="mt-8">
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-lg font-semibold">
@@ -782,10 +935,7 @@ const Customer = ({ isPop, onSubmit }) => {
 
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <FiEye
-                        className="text-xl cursor-pointer text-blue-500 hover:text-blue-700"
-                        // onClick={() => handleViewDetail(detail)}
-                      />
+                      <FiEye className="text-xl cursor-pointer text-blue-500 hover:text-blue-700" />
                       <button
                         className="text-neutral-600 hover:text-green-600"
                         aria-label="Edit"
@@ -831,7 +981,6 @@ const Customer = ({ isPop, onSubmit }) => {
           {errors.patientDetails && (
             <span className="error text-red-500">{errors.patientDetails}</span>
           )}
-          {/* Billing Address */}
           <BillingAddress
             billing={billingAddress}
             setBilling={setBillingAddress}
@@ -849,7 +998,6 @@ const Customer = ({ isPop, onSubmit }) => {
             locationData={locationById?.data}
           />
 
-          {/* Fitting Price Section */}
           <div className="mt-10">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-6">
@@ -893,7 +1041,6 @@ const Customer = ({ isPop, onSubmit }) => {
             </div>
           </div>
 
-          {/* Loyalty point */}
           <div className="flex gap-2 items-center mt-5">
             Enable Loyalty :
             <div className="flex items-center gap-3">
@@ -922,7 +1069,6 @@ const Customer = ({ isPop, onSubmit }) => {
             </div>
           </div>
 
-          {/* Billing method */}
           <div className="flex gap-2 items-center mt-5">
             Billing Method:
             <div className="flex items-center gap-3">
@@ -952,12 +1098,26 @@ const Customer = ({ isPop, onSubmit }) => {
             </div>
           </div>
 
-          {/* Credit Billing */}
           <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              Credit Billing
-            </h2>
-
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                Credit Billing
+              </h2>
+              {enableCreditBilling === 1 && (
+                <div onClick={handleOpenCredit}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="hover:shadow-xs transition-all"
+                    icon={FiCreditCard}
+                    iconPosition="left"
+                    aria-label="Credit Limit"
+                  >
+                    Credit Limit
+                  </Button>
+                </div>
+              )}
+            </div>
             <div className="flex gap-2 items-center mb-4">
               <span className="text-gray-700">Enable Credit Billing:</span>
               <div className="flex items-center gap-3 ml-4">
@@ -1001,6 +1161,7 @@ const Customer = ({ isPop, onSubmit }) => {
                       onChange={handleCreditDetailChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       min="0"
+                      disabled={customerById?.data?.data?.CreditBilling === 1}
                     />
                     {errors.openingBalance && (
                       <p className="text-red-500 text-sm mt-1">
@@ -1021,6 +1182,9 @@ const Customer = ({ isPop, onSubmit }) => {
                           checked={creditBalanceType === "Dr"}
                           onChange={() => setCreditBalanceType("Dr")}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          disabled={
+                            customerById?.data?.data?.CreditBilling === 1
+                          }
                         />
                         <span className="ml-2 text-gray-700">Debit (Dr)</span>
                       </label>
@@ -1032,6 +1196,9 @@ const Customer = ({ isPop, onSubmit }) => {
                           checked={creditBalanceType === "Cr"}
                           onChange={() => setCreditBalanceType("Cr")}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          disabled={
+                            customerById?.data?.data?.CreditBilling === 1
+                          }
                         />
                         <span className="ml-2 text-gray-700">Credit (Cr)</span>
                       </label>
@@ -1055,6 +1222,7 @@ const Customer = ({ isPop, onSubmit }) => {
                       onChange={handleCreditDetailChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       min="0"
+                      disabled={customerById?.data?.data?.CreditBilling === 1}
                     />
                     {errors.creditLimit && (
                       <p className="text-red-500 text-sm mt-1">
@@ -1106,15 +1274,27 @@ const Customer = ({ isPop, onSubmit }) => {
           <div className="mt-8 flex justify-end">
             <Button
               onClick={handleSave}
-              loadingText="Saving Customer.."
-              isLoading={isCreating}
+              loadingText={
+                isCreate ? "Saving Customer.." : "Updating Customer.."
+              }
+              isLoading={isCreating || isUpdating}
               className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm"
             >
-              Save Customer Information
+              {isCreate
+                ? "Save Customer Information"
+                : "Update Customer Information"}
             </Button>
           </div>
         </div>
       )}
+      <ApplyCreditLimit
+        isOpen={isCreditLimitOpened}
+        onClose={() => {
+          setIsCreditLimitOpened(false);
+          setSelectedItem(null);
+        }}
+        creditLimit={selectedItem}
+      />
       {isGstModalOpen && GSTData?.data?.data && (
         <GstAddressSelector
           gstData={GSTData.data.data}
@@ -1136,6 +1316,17 @@ const Customer = ({ isPop, onSubmit }) => {
           onCancel={() => setIsGstModalOpen(false)}
         />
       )}
+      <ConfirmationModal
+        isOpen={isGMOpen}
+        onClose={() => {
+          setIsGMOpen(false);
+        }}
+        onConfirm={handleConfirmMobileOrGSTToggle}
+        title="GST or Mobile Number warning!"
+        message="Are you sure you want to continue?"
+        confirmText="Continue"
+        danger={false}
+      />
     </div>
   );
 };
@@ -1145,7 +1336,6 @@ export default Customer;
 const GstAddressSelector = ({ gstData, onCopy, onCancel }) => {
   const [selectedIndex, setSelectedIndex] = useState(null);
 
-  // Combine primary and additional addresses
   const addresses = [
     {
       ...gstData.pradr.addr,
@@ -1164,7 +1354,6 @@ const GstAddressSelector = ({ gstData, onCopy, onCancel }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-opacity-80 bg-white/80">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-800">
             GST Verification Details
@@ -1173,8 +1362,6 @@ const GstAddressSelector = ({ gstData, onCopy, onCancel }) => {
             Select an address to copy to the form
           </p>
         </div>
-
-        {/* Address List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {addresses.map((addr, index) => (
             <div
@@ -1226,8 +1413,6 @@ const GstAddressSelector = ({ gstData, onCopy, onCancel }) => {
             </div>
           ))}
         </div>
-
-        {/* Footer with Actions */}
         <div className="px-6 py-4 border-t border-gray-200 flex justify-between items-center">
           <button
             onClick={onCancel}
@@ -1246,6 +1431,142 @@ const GstAddressSelector = ({ gstData, onCopy, onCancel }) => {
           </button>
         </div>
       </div>
+    </div>
+  );
+};
+
+const ApplyCreditLimit = ({ isOpen, onClose, creditLimit }) => {
+  const [newCreditLimit, setNewCreditLimit] = useState(0);
+  const [openingBalance, setOpeningBalance] = useState(
+    creditLimit?.openingBalance
+  );
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [creditBalanceType, setCreditBalanceType] = useState("Dr");
+  const [higher, setHigher] = useState(false);
+
+  const [updateCreditLimit, { isLoading: isCreditUpdating }] =
+    useUpdateCreditLimitMutation();
+
+  const handleNewCredit = (e) => {
+    const value = e.target.value;
+    if (isNaN(value) || parseFloat(value) < 0) return;
+    setNewCreditLimit(value);
+  };
+
+  const handleUpdateCredit = () => {
+    const currentLimit = parseFloat(creditLimit?.CreditLimit || 0);
+    const newLimit = parseFloat(newCreditLimit || 0);
+    if (newLimit < currentLimit) {
+      setIsModalOpen(true);
+    } else {
+      saveCreditLimit(newLimit);
+    }
+  };
+
+  const saveCreditLimit = async (limit) => {
+    try {
+      const payload = {
+        id: creditLimit.Id,
+        newCreditLimit: parseFloat(limit) || 0,
+        currentOpeningBalance: parseFloat(creditLimit?.openingBalance),
+        newOpeningBalance: parseFloat(openingBalance) || 0,
+        OBType: creditBalanceType === "Dr" ? 0 : 1,
+      };
+      const res = await updateCreditLimit({ payload }).unwrap();
+      toast.success(res?.data?.message || "creditLimit updated successfully!");
+      onClose();
+      setNewCreditLimit(0);
+    } catch (err) {
+      console.error("Failed to update credit limit", err);
+      toast.error(err?.data?.error || "Customer Not found");
+    }
+  };
+
+  const handleConfirmToggle = () => {
+    setHigher(true);
+    saveCreditLimit(parseFloat(newCreditLimit));
+    setIsModalOpen(false);
+  };
+
+  return (
+    <div>
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <h2 className="text-lg font-semibold mb-4">Update Credit Limit</h2>
+        <div className="flex flex-col gap-5 mt-5">
+          <div>
+            <Input
+              label="Opening Balance"
+              value={openingBalance}
+              onChange={(e) => setOpeningBalance(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Balance Type
+            </label>
+            <div className="flex gap-4">
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="creditBalanceType"
+                  value="Dr"
+                  checked={creditBalanceType === "Dr"}
+                  onChange={() => setCreditBalanceType("Dr")}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                />
+                <span className="ml-2 text-gray-700">Debit (Dr)</span>
+              </label>
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="creditBalanceType"
+                  value="Cr"
+                  checked={creditBalanceType === "Cr"}
+                  onChange={() => setCreditBalanceType("Cr")}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                />
+                <span className="ml-2 text-gray-700">Credit (Cr)</span>
+              </label>
+            </div>
+          </div>
+          <Input
+            label="Current Credit Limit"
+            value={creditLimit?.CreditLimit}
+            disabled
+          />
+          <Input
+            label="Credit Limit Available"
+            value={creditLimit?.CustomerCreditLimit?.CreditLimitAvl}
+            disabled
+          />
+          <Input
+            name="credit"
+            label="New Credit Limit"
+            value={newCreditLimit}
+            onChange={handleNewCredit}
+          />
+          <Button
+            disabled={isCreditUpdating}
+            isLoading={isCreditUpdating}
+            onClick={handleUpdateCredit}
+          >
+            Save
+          </Button>
+        </div>
+      </Modal>
+
+      <ConfirmationModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setHigher(false);
+        }}
+        onConfirm={handleConfirmToggle}
+        title="New Credit Limit value is less than the current limit"
+        message="Are you sure you want to continue?"
+        confirmText="Continue"
+        danger={false}
+      />
     </div>
   );
 };

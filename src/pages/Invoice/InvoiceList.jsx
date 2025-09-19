@@ -13,15 +13,16 @@ import { enGB } from "date-fns/locale";
 import Loader from "../../components/ui/Loader";
 import { useSelector } from "react-redux";
 import { useGetAllInvoiceQuery } from "../../api/InvoiceApi";
+import HasPermission from "../../components/HasPermission";
 
-  const getOrderStatus = (status) => {
-    const types = {
-      1: "Confirmed",
-      2: "Partially Cancelled",
-      3: "Cancelled",
-    };
-    return types[status] || "Draft";
+const getOrderStatus = (status) => {
+  const types = {
+    1: "Confirmed",
+    2: "Partially Cancelled",
+    3: "Cancelled",
   };
+  return types[status] || "Draft";
+};
 
 const InvoiceList = () => {
   const navigate = useNavigate();
@@ -110,8 +111,6 @@ const InvoiceList = () => {
     updateSelectedOrderDetails(invoice);
     navigate(`/invoice/view?invoiceId=${invoice}`);
   };
-
-
 
   if (isAllOrdersLoading) {
     return (
@@ -222,26 +221,30 @@ const InvoiceList = () => {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              <Button
-                icon={FiPlus}
-                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
-                onClick={() => {
-                  goToStep(1);
-                  navigate("/invoice/create");
-                }}
-              >
-                From Order
-              </Button>
-              <Button
-                icon={FiPlus}
-                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
-                onClick={() => {
-                  goToStep(1);
-                  navigate("/add-order");
-                }}
-              >
-                DC Invoice
-              </Button>
+              <HasPermission module="Invoice" action="create">
+                <Button
+                  icon={FiPlus}
+                  className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
+                  onClick={() => {
+                    goToStep(1);
+                    navigate("/invoice/create");
+                  }}
+                >
+                  From Order
+                </Button>
+              </HasPermission>
+              <HasPermission module="Invoice" action="create">
+                <Button
+                  icon={FiPlus}
+                  className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
+                  onClick={() => {
+                    goToStep(1);
+                    navigate("/add-order");
+                  }}
+                >
+                  DC Invoice
+                </Button>
+              </HasPermission>
             </div>
           </div>
 

@@ -17,6 +17,7 @@ import { useGetStockLocationsQuery } from "../../../api/stockTransfer";
 import { useGetAllPRQuery } from "../../../api/purchaseReturn";
 import { formatINR } from "../../../utils/formatINR";
 import { format } from "date-fns";
+import HasPermission from "../../../components/HasPermission";
 
 const getStatus = (status) => {
   if (status == 0) {
@@ -91,9 +92,12 @@ const PurchaseReturn = () => {
       name: s.Vendor.VendorName,
       totalQty: s.TotalQty,
       totalPrice: s.TotalValue,
-      status :getStatus(s.Status)
-    }));
-    // .filter((order) => order.CompanyId == hasMultipleLocations[0]);
+      status :getStatus(s.Status),
+      CompanyId:s.CompanyId,
+      PurchaseReturnDate:s.PurchaseReturnDate
+    }))
+    .filter((order) => order.CompanyId == hasMultipleLocations[0])
+    .sort((a, b) => new Date(b.PurchaseReturnDate) - new Date(a.PurchaseReturnDate));
   }, [PRDetails, fromDate, toDate, searchQuery]);
 
   const startIndex = (currentPage - 1) * pageSize;
@@ -210,6 +214,7 @@ const PurchaseReturn = () => {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <HasPermission module="Purchase-Return" action="create">
               <Button
                 icon={FiPlus}
                 className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
@@ -220,6 +225,7 @@ const PurchaseReturn = () => {
               >
                 Add
               </Button>
+              </HasPermission>
             </div>
           </div>
 

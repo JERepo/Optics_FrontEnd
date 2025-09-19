@@ -217,7 +217,7 @@ export const menuItems = [
   {
     name: "Stock Transfer",
     icon: FiRepeat,
-    module: "StockTransfer",
+    module: ["StockTranserIn","StockTransfer"],
     subItems: [
       {
         name: "Stock Transfer Out",
@@ -228,7 +228,7 @@ export const menuItems = [
       {
         name: "Stock Transfer In",
         path: "/stock-transferin",
-        module: "StockTransfer",
+        module: "StockTranserIn",
         icon: IoConstructOutline,
       },
     ],

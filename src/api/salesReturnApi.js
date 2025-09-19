@@ -66,6 +66,7 @@ export const salesReturnApi = createApi({
       query: () => ({
         url: `/api/v1/sales-Return/salesmasters`,
       }),
+      providesTags :["SalesReturn"]
     }),
     getSalesReturnById: builder.query({
       query: ({ id }) => ({

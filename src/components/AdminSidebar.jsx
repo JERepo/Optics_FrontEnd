@@ -14,51 +14,52 @@ const AdminSidebar = ({ isCollapsed, setIsCollapsed }) => {
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredMenuItems = menuItems
-    .map((item) => {
-      if (item.subItems) {
-        const permittedSubItems = item.subItems.filter((sub) =>
-          hasPermission(access, sub.module, "view")
-        );
+  .map((item) => {
+    if (item.subItems) {
+      const permittedSubItems = item.subItems.filter((sub) =>
+        hasPermission(access, sub.module, "view")
+      );
 
-        if (!permittedSubItems.length) return null;
+      if (!permittedSubItems.length) return null;
 
-        // Apply search filter
-        const filteredSubItems = permittedSubItems.filter((sub) =>
-          sub.name.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+      // Apply search filter on subItems
+      const filteredSubItems = permittedSubItems.filter((sub) =>
+        sub.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
 
-        // If searchQuery is empty, return all permitted subItems
-        if (searchQuery.trim() === "") {
-          return { ...item, subItems: permittedSubItems };
-        }
-
-        // Include this menu if its name or any subitem matches
-        if (
-          item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          filteredSubItems.length
-        ) {
-          return {
-            ...item,
-            subItems: filteredSubItems,
-          };
-        }
-
-        return null;
+      // If no search query, keep all permitted subItems
+      if (searchQuery.trim() === "") {
+        return { ...item, subItems: permittedSubItems };
       }
 
-      // For top-level items without subItems
-      if (!hasPermission(access, item.module, "view")) return null;
-
+      // Include parent if its name matches or any subitem matches
       if (
-        searchQuery.trim() === "" ||
-        item.name.toLowerCase().includes(searchQuery.toLowerCase())
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        filteredSubItems.length
       ) {
-        return item;
+        return {
+          ...item,
+          subItems: filteredSubItems,
+        };
       }
 
       return null;
-    })
-    .filter(Boolean);
+    }
+
+    // For top-level items without subItems
+    if (!hasPermission(access, item.module, "view")) return null;
+
+    if (
+      searchQuery.trim() === "" ||
+      item.name.toLowerCase().includes(searchQuery.toLowerCase())
+    ) {
+      return item;
+    }
+
+    return null;
+  })
+  .filter(Boolean);
+
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);

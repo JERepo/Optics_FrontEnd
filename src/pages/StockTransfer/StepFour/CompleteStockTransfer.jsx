@@ -504,8 +504,8 @@ const CompleteStockTransfer = () => {
               <Button
                 className="bg-blue-600 hover:bg-blue-700 text-white"
                 onClick={handleSaveStockTransferOut}
-                isLoading={isUpdating}
-                disabled={isUpdating}
+                isLoading={isUpdating ||isInvoiceCreating}
+                disabled={isUpdating || isInvoiceCreating}
               >
                 Complete Stock Out Transfter
               </Button>

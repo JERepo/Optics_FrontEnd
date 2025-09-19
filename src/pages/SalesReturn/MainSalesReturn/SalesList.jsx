@@ -14,6 +14,7 @@ import { enGB } from "date-fns/locale";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { TextField } from "@mui/material";
+import HasPermission from "../../../components/HasPermission";
 
 const getStatus = (status) => {
   if (status == 0) {
@@ -97,11 +98,11 @@ const SalesList = () => {
         patientMobile: s.CustomerContactDetail.MobNumber,
         totalQty: s.CNQty,
         totalPrice: s.CNTotal,
-        CompanyID: s.CompanyID,
+        CompanyID: parseInt(s.CompanyID),
         CNDate: s.CNDate,
         status :getStatus(s.Status)
       }))
-      .filter((order) => order.CompanyID == hasMultipleLocations[0])
+      .filter((order) => order.CompanyID === parseInt(hasMultipleLocations[0]))
       .sort((a, b) => new Date(b.CNDate) - new Date(a.CNDate));
   }, [allSalesReturn, fromDate, toDate, searchQuery]);
 
@@ -220,6 +221,7 @@ const SalesList = () => {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <HasPermission module="SalesReturn" action="create">
               <Button
                 icon={FiPlus}
                 className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
@@ -230,6 +232,7 @@ const SalesList = () => {
               >
                 Add
               </Button>
+              </HasPermission>
             </div>
           </div>
 

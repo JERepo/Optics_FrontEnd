@@ -5,7 +5,24 @@
 
 
 
+// export const hasPermission = (access, module, actions) => {
+//   if (!access?.[module]?.permissions) return false;
+
+//   // Handle array of actions
+//   if (Array.isArray(actions)) {
+//     return actions.some((action) => !!access[module].permissions[action]);
+//   }
+
+//   // Single action
+//   return !!access[module].permissions[actions];
+// };
+
 export const hasPermission = (access, module, actions) => {
+  // Handle multiple modules (array)
+  if (Array.isArray(module)) {
+    return module.some((m) => hasPermission(access, m, actions));
+  }
+
   if (!access?.[module]?.permissions) return false;
 
   // Handle array of actions
