@@ -202,8 +202,8 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     <TableCell>
                                         {item.Name}
                                         {item.Variation && <br />}{`Variation: ${item.Variation}`}
-                                        {item.Barcode && <br />}{`Barcode: ${item.Barcode}`}
-                                        {item.HSN && <br />}{`HSN: ${item.HSN}`}
+                                        {/* {item.Barcode && <br />}{`Barcode: ${item.Barcode}`}
+                                        {item.HSN && <br />}{`HSN: ${item.HSN}`} */}
                                     </TableCell>
                                     {/* <TableCell>{item.Variation}</TableCell> */}
                                     <TableCell>{item.SKU}</TableCell>
