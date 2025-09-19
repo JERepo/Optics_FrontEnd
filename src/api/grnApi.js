@@ -93,8 +93,8 @@ export const grnApi = createApi({
             })
         }),
         getAccessoryByDetailId: builder.query({
-            query: ({ accessoryDetailId, locationId }) => ({
-                url: `/api/v1/grn/get-accessory-bydetailId?accessoryDetailId=${accessoryDetailId}&locationId=${locationId}`,
+            query: ({ accessoryDetailId, locationId, vendorId, productType}) => ({
+                url: `/api/v1/grn/get-accessory-bydetailId?accessoryDetailId=${accessoryDetailId}&locationId=${locationId}&vendorId=${vendorId ?? null}&productType=${productType ?? null}`,
                 method: 'GET'
             })
         }),
