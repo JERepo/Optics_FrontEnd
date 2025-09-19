@@ -9,7 +9,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
         <>
             {(productType === 1 && poDetailsItem === 1) && (
                 <Table
-                    columns={["Barcode", "Name", "S/O", "Polarised", "Photochromatic", "Clip No", "MRP", "Buying Price", "Action"]}
+                    columns={["Barcode", "Name", "Polarised", "Photochromatic", "Clip No", "MRP", "Buying Price", "Action"]}
                     data={searchResults}
                     renderRow={(item, index) => (
                         <TableRow key={item.Barcode || index}>
@@ -43,11 +43,11 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
 
             {(productType === 1 && poDetailsItem === 2 && GRNAgainstPOorderType === "Specific Order") && (
                 <Table
-                    columns={["PO No. (Order No.)", "Product Details", "S/O", "Others", "MRP", "Buying Price", "PO QTY", "Pending Qty", "Action"]}
+                    columns={["PO No. (Order No.)", "Product Details", "Others", "MRP", "Buying Price", "PO QTY", "Pending Qty", "Action"]}
                     data={searchResults}
                     renderRow={(item, index) => (
                         <TableRow key={item.Barcode || index}>
-                            <TableCell>{item.PONo} <br /> {(item.OrderNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
+                            <TableCell>{item.PONo} <br /> {(item.OrderNo && item.OrderDetailSlNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
                             <TableCell>{item.Name}
                                 {item.Size && <br />}{item.Size ? `Size: ${item.Size}` : ""}
                                 {(item.Category !== null || item.Category !== undefined) && <br />}{item.Category === 0 ? 'Category: Optical Frame' : 'Category: Sunglass'}
@@ -87,11 +87,11 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
 
             {(productType === 1 && poDetailsItem === 2 && GRNAgainstPOorderType === "Auto Processing") && (
                 <Table
-                    columns={["PO No. (Order No.)", "Product Details", "S/O", "Others", "MRP", "Buying Price", "PO QTY"]}
+                    columns={["PO No. (Order No.)", "Product Details", "Others", "MRP", "Buying Price", "PO QTY"]}
                     data={searchResults}
                     renderRow={(item, index) => (
                         <TableRow key={item.Barcode || index}>
-                            <TableCell>{item.PONo} <br /> {(item.OrderNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
+                            <TableCell>{item.PONo} <br /> {(item.OrderNo && item.OrderDetailSlNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
                             <TableCell>{item.Name}
                                 {item.Size && <br />}{item.Size ? `Size: ${item.Size}` : ""}
                                 {(item.Category !== null || item.Category !== undefined) && <br />}{item.Category === 0 ? 'Category: Optical Frame' : 'Category: Sunglass'}
@@ -121,7 +121,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
 
             {(productType === 1 && poDetailsItem === 3) && (
                 <Table
-                    columns={["PO No. (Order No.)", "Product Details", "S/O", "Others", "MRP", "Buying Price", "PO QTY"]}
+                    columns={["PO No. (Order No.)", "Product Details", "Others", "MRP", "Buying Price", "PO QTY"]}
                     data={searchResults}
                     renderRow={(item, index) => (
                         <TableRow key={item.Barcode || index}>
@@ -141,9 +141,9 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                 {item.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : ""}
                                 {item.HSN && <br />}{item.HSN ? `HSN: ${item.HSN}` : ""}
                             </TableCell>
-                            <TableCell>
+                            {/* <TableCell>
                                 {item.Category === 0 ? 'Sunglass' : 'Optical Frame'}
-                            </TableCell>
+                            </TableCell> */}
                             <TableCell className="text-left">
                                 <div className="flex gap-2">
                                     <div>{item.IsRxable ? "Rx" : ""}</div>

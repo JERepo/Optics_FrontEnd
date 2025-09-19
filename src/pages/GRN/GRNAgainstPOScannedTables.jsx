@@ -40,10 +40,10 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                         data={scannedItems}
                         renderRow={(item, index) => (
                             <TableRow key={index}>
-                                <TableCell>{item.PONo} <br /> {(item.OrderNo && item.OrderDetailSlNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
+                                <TableCell>{item.PONo} <br /> {(item.OrderNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
                                 <TableCell>{item.Name}
                                     {item.Size && <br />}{item.Size ? `Size: ${item.Size}` : ""}
-                                    {(item.Category !== null || item.Category !== undefined) && <br />}{item.Category === 0 ? 'Sunglass' : 'Optical Frame'}
+                                    {(item.Category !== null || item.Category !== undefined) && <br />}{item.Category === 0 ? 'Category: Optical Frame' : 'Category: Sunglass'}
                                     {item.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : ""}
                                     {item.HSN && <br />}{item.HSN ? `HSN: ${item.HSN}` : ""}
                                 </TableCell>
