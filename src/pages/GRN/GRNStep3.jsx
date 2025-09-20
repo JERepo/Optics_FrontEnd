@@ -253,7 +253,7 @@ export default function GRNStep3() {
 
                 const totalRate = (parseFloat(baseRate) + parseFloat(tintBuying) + parseFloat(addOnBuying)).toFixed(2);
                 console.log("baseRate:", baseRate, "tintBuying:", tintBuying, "addOnBuying:", addOnBuying, "totalRate:", totalRate);
-                
+
                 setFormState(prev => ({
                     ...prev,
                     rate: totalRate,
@@ -319,11 +319,13 @@ export default function GRNStep3() {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        let newValue = value ? Number(value) : null;
+        let newValue = value ;
         let errors = { ...formState.errors };
 
         // Validate rate
         if (name === "rate") {
+            newValue = value ? Number(value) : null;
+
             if (newValue !== null && newValue < 0) {
                 errors.rate = "Rate cannot be negative";
             } else {
@@ -699,7 +701,7 @@ export default function GRNStep3() {
                 throw new Error("GRN main ID not found");
             }
 
-            if (!isUnique) {
+            if (formState.productType === "Lens" && !isUnique) {
                 toast.error("Supplier order number must be unique for this vendor");
                 return;
             }
