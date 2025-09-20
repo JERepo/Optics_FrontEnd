@@ -446,7 +446,7 @@ export default function GRNStep3() {
                     newItem = {
                         ...result.data.data,
                         quantity: 1,
-                        MRP: result?.data?.data?.MRP || result?.data?.data?.pMRP,
+                        MRP: result?.data?.data?.CLBatchCode === 1 ? result?.data?.data?.MRP : result?.data?.data?.pMRP,
                         price: result?.data?.data?.CLBatchCode === 1 ? result?.data?.data?.BuyingPrice : result?.data?.data?.pBuyingPrice,
                         cLDetailId: result?.data?.data?.CLDetailId,
                         timestamp: Date.now()
