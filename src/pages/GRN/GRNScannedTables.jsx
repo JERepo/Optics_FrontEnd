@@ -96,7 +96,7 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                     )}
                 />
             )}
-
+            {console.log("scannedItems--------------- dkahdkjah", scannedItems)}
             {productType === 3 && (
                 <Table
                     columns={["SL No.", "Order No.", "Supplier Order No.", "Barcode", "Product Name", "MRP", "Buying Price", "Qty", "Action"]}
@@ -113,9 +113,9 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                                 {item.CylindricalPower ? ` Cyl: ${item.CylindricalPower>0 && `+`}${item.CylindricalPower}` : ` Cyl: `}
                                 {item.Axis ? ` Axis: ${item.Axis}` : ` Axis: `}
                                 {item.Additional ? ` Add: ${item.Additional}` : ` Add: `}
-                                {item.Barcode && <br />}{item.Barcode && `Barcode: ${item.Barcode}`}
-                                {item?.CLBatchCode && <br/>}{item?.CLBatchCode && `BatchCode: ${item.CLBatchCode}`}
-                                {(item?.Expiry || item?.CLBatchExpiry) && ` Expiry: ${item.Expiry || item?.CLBatchExpiry}`}
+                                {item?.Barcode && <br />}{item?.Barcode ? `Barcode: ${item?.Barcode}`: ``}
+                                { (typeof item?.CLBatchCode) === 'string' && <br/>}{(typeof item?.CLBatchCode) === 'string' ? `BatchCode: ${item.CLBatchCode}` : ``}
+                                {(typeof item?.CLBatchCode) === 'string' && (item?.Expiry || item?.CLBatchExpiry) && ` Expiry: ${item.Expiry || item?.CLBatchExpiry}`}
                                 {item.HSN && <br />}{item.HSN && `HSN: `+item.HSN}
                             </TableCell>
                             <TableCell>₹{item.MRP || item.MRPMaster || 0}</TableCell>
