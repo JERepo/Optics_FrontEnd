@@ -244,10 +244,10 @@ const ContactLens = () => {
   const handleAdd = () => {
     if (!isFormValid()) return;
 
-    if (newItem.orderQty > newItem.avlQty) {
-      toast.error("Order Qty cannot exeed Avl Qty!");
-      return;
-    }
+    // if (newItem.orderQty > newItem.avlQty) {
+    //   toast.error("Order Qty cannot exeed Avl Qty!");
+    //   return;
+    // }
 
     const updatedItem = { ...newItem };
 
