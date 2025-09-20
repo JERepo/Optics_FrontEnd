@@ -14,7 +14,7 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                     renderRow={(item, index) => (
                         <TableRow key={item.Id || index}>
                             <TableCell>{item.Barcode}</TableCell>
-                            <TableCell>{item.Name}
+                            <TableCell>{item.BrandName ?? ''} {item.Name}
                                 {item.Size && <br />}{`Size: ${item.Size}`}
                             </TableCell>
                             <TableCell>
@@ -62,7 +62,7 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                     renderRow={(item, index) => (
                         <TableRow key={item.Barcode || index}>
                             <TableCell>{item.Barcode}</TableCell>
-                            <TableCell>{item.Name}{item.Size && <br />}{item.Size}</TableCell>
+                            <TableCell>{item.BrandName ?? ''} {item.Name}{item.Size && <br />}{item.Size}</TableCell>
                             <TableCell>{item.Variation}</TableCell>
                             <TableCell>{item.SKU}</TableCell>
                             <TableCell>₹{item.MRP}</TableCell>
@@ -107,7 +107,7 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                             <TableCell>{ }</TableCell>
                             <TableCell>{ }</TableCell>
                             <TableCell>{item.Barcode}</TableCell>
-                            <TableCell>{item.ProductName}
+                            <TableCell>{item.BrandName ?? ''} {item.ProductName}
                                 {item.Size && <br />}{item.Size}
                                 {item.SphericalPower && <br />}{item.SphericalPower ? `Sph: ${item.SphericalPower > 0 ? `+` : ``}${item.SphericalPower}` : `Sph: `}
                                 {item.CylindricalPower ? ` Cyl: ${item.CylindricalPower>0 && `+`}${item.CylindricalPower}` : ` Cyl: `}
