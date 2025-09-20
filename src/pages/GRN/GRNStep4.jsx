@@ -361,7 +361,10 @@ export default function GRNStep4() {
 
                                     <TableCell className="px-6 py-4 whitespace-nowrap">
                                         <button
-                                            onClick={() => removeGRNItem(index)}
+                                            onClick={() => {
+                                                setOrderToRemove(item?.GRNDetailId);
+                                                setShowRemoveModal(true);
+                                            }}
                                             className="p-1 text-red-600 hover:text-red-800"
                                             aria-label="Delete item"
                                         >
