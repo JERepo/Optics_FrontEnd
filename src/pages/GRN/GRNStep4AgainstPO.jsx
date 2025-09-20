@@ -1083,6 +1083,8 @@ export default function GRNStep4AgainstPO() {
                     return;
                 }
 
+                console.log("scannedItems ----- dbnajhdj", scannedItems);
+
                 grnDetails = scannedItems.map((item, index) => {
                     let taxPercent = 0;
 

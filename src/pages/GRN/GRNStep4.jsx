@@ -223,7 +223,7 @@ export default function GRNStep4() {
             >
 
                 <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-[#000060] mb-6">Step {currentStep}: Review Selected GRN</h2>
+                    <h2 className="text-xl font-bold text-[#000060] mb-6">Step {grnData?.step1?.againstPO === "1" ? currentStep : `4`}: Review Selected GRN</h2>
                     <button
                         onClick={() => { setCurrentStep(2) }}
                         className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
@@ -263,25 +263,81 @@ export default function GRNStep4() {
 
                 <div className="mt-6">
                     <h3 className="text-lg font-semibold mb-4">GRN Items</h3>
-                    {grnData?.step1?.againstPO === 0 ? (
+                    {grnData?.step1?.againstPO === "0" ? (
                         <Table
-                            columns={["Sl No.", "Order No.", "Supplier Order No.", "Type", "Barcode", "Product Name", "MRP", "GST", "QTY", "Buying Price", "Total Amount", "Action"]}
+                            columns={["Sl No.", "Order No.", "Supplier Order No.", "Type", "Barcode", "Product Details", "GST", "QTY", "Buying Price", "Total Amount", "Action"]}
                             data={grnViewDetails}
                             renderRow={(item, index) => (
                                 <TableRow key={item.Barcode || index}>
                                     <TableCell>{index + 1}</TableCell>
                                     <TableCell>{item.OrderNo || null}</TableCell>
                                     <TableCell>{item.VendorOrderNo || null}</TableCell>
-                                    <TableCell>{item?.ProductDetails?.ProductType == 0 && `OL` || item?.ProductDetails?.ProductType == 1 && `F` || item?.ProductDetails?.ProductType == 2 && `Acc` || item?.ProductDetails?.ProductType == 3 && `CL`}</TableCell>
+                                    <TableCell>{item?.ProductDetails?.ProductType == 0 && `OL` || item?.ProductDetails?.ProductType == 1 && `F/S` || item?.ProductDetails?.ProductType == 2 && `Acc` || item?.ProductDetails?.ProductType == 3 && `CL`}</TableCell>
                                     <TableCell>{item?.ProductDetails?.barcode}</TableCell>
-                                    <TableCell>{item?.ProductDetails?.productName}<br />
+                                    {/* <TableCell>{item?.ProductDetails?.productName}<br />
                                         Size: {item?.ProductDetails?.Size?.Size}<br />
                                         Category: {item?.category === 0 ? `Sunglass` : `OpticalFrame`} <br />
                                         HSN: {item?.ProductDetails?.HSN}
-                                    </TableCell>
-                                    <TableCell>{item.MRP || null}</TableCell>
-                                    <TableCell>₹{" "} {parseFloat(parseInt(item?.GRNPrice) * (parseInt(item?.TaxPercent) / 100)).toFixed(2)}</TableCell>
-                                    <TableCell>
+                                    </TableCell> */}
+                                    {item?.ProductDetails?.ProductType === 1 ?
+                                        <TableCell>{item?.ProductDetails?.productName}<br />
+                                            Size: {item?.ProductDetails?.Size?.Size}<br />
+                                            Barcode: {item?.ProductDetails?.barcode}<br />
+                                            Category: {item?.category === 0 ? `Sunglass` : `OpticalFrame`} <br />
+                                            HSN: {item?.ProductDetails?.HSN}
+                                        </TableCell>
+                                        : item?.ProductDetails?.ProductType === 2 ?
+                                            <TableCell>{item?.ProductDetails?.productName}<br />
+                                                Variation: {item?.ProductDetails?.Variation?.Variation}<br />
+                                                Barcode: {item?.ProductDetails?.barcode}<br />
+                                                HSN: {item?.ProductDetails?.HSN}
+                                            </TableCell>
+                                            : item?.ProductDetails?.ProductType === 3 ?
+                                                <TableCell>
+                                                    {item.ProductDetails?.productName}
+                                                    {item.ProductDetails?.PowerSpecs?.Sph && <br />}{item.ProductDetails?.PowerSpecs?.Sph ? `Sph: ${item.ProductDetails?.PowerSpecs?.Sph > 0 ? `+` : ``}${item.ProductDetails?.PowerSpecs?.Sph}` : `Sph: `}
+                                                    {item.PowerSpecsCylindricalPower ? ` Cyl: ${item.CylindricalPower > 0 ? `+` : ``}${item.CylindricalPower}` : ` Cyl: `}
+                                                    {item.PowerSpecsAxis ? ` Axis: ${item.Axis > 0 ? `+` : ``}${item.Axis}` : ` Axis: `}
+                                                    {item.PowerSpecsAdditional ? ` Add: ${item.Additional > 0 ? `+` : ``}${item.Additional}` : ` Add: `}
+                                                    {item.Size && <br />}{item.Size}
+                                                    {item?.ProductDetails?.barcode && <br />}{item?.ProductDetails?.barcode ? `Barcode: ${item?.ProductDetails?.barcode}` : null}
+                                                    {item?.BatchCode && <br />}{item.BatchCode ? `BatchCode: ${item.BatchCode}` : null}
+                                                    {item?.Expiry && <br />}{item.Expiry ? `Expiry: ${item.Expiry}` : null}
+                                                    {item?.ProductDetails?.HSN && <br />}{`HSN: ${item?.ProductDetails?.HSN}`}
+                                                </TableCell>
+                                                : item?.ProductDetails?.ProductType === 0 ?
+                                                    <TableCell>
+                                                        {item.ProductDetails?.productName}
+
+                                                        {(item.PowerDetails?.Right?.RightSphericalPower || item.PowerDetails?.Right?.RightCylinderPower || item.PowerDetails?.Right?.RightAxis || item.PowerDetails?.Right?.RightAddition)
+                                                            && <br />}
+                                                        {`R: `}
+                                                        {item.PowerDetails?.Right?.RightSphericalPower ? `Sph: ${item.PowerDetails?.Right?.RightSphericalPower > 0 ? `+` : ``}${item.PowerDetails?.Right?.RightSphericalPower}` : `Sph: `}
+                                                        {item.PowerDetails?.Right?.RightCylinderPower ? ` Cyl: ${item.PowerDetails?.Right?.RightCylinderPower > 0 ? `+` : ``}${item.PowerDetails?.Right?.RightCylinderPower}` : ` Cyl: `}
+                                                        {item.PowerDetails?.Right?.RightAxis ? ` Axis: ${item.PowerDetails?.Right?.RightAxis > 0 ? `+` : ``}${item.PowerDetails?.Right?.RightAxis}` : ` Axis: `}
+                                                        {item.PowerDetails?.Right?.RightAddition ? ` Add: ${item.PowerDetails?.Right?.RightAddition > 0 ? `+` : ``}${item.PowerDetails?.Right?.RightAddition}` : ` Add: `}
+
+                                                        {(item.PowerDetails?.Left?.LeftSphericalPower || item.PowerDetails?.Left?.LeftCylinderPower || item.PowerDetails?.Left?.LeftAxis || item.PowerDetails?.Left?.LeftAddition)
+                                                            && <br />}
+                                                        {`L: `}
+                                                        {item.PowerDetails?.Left?.LeftSphericalPower ? `Sph: ${item.PowerDetails?.Left?.LeftSphericalPower > 0 ? `+` : ``}${item.PowerDetails?.Left?.LeftSphericalPower}` : `Sph: `}
+                                                        {item.PowerDetails?.Left?.LeftCylinderPower ? ` Cyl: ${item.PowerDetails?.Left?.LeftCylinderPower > 0 ? `+` : ``}${item.PowerDetails?.Left?.LeftCylinderPower}` : ` Cyl: `}
+                                                        {item.PowerDetails?.Left?.LeftAxis ? ` Axis: ${item.PowerDetails?.Left?.LeftAxis > 0 ? `+` : ``}${item.PowerDetails?.Left?.LeftAxis}` : ` Axis: `}
+                                                        {item.PowerDetails?.Left?.LeftAddition ? ` Add: ${item.PowerDetails?.Left?.LeftAddition > 0 ? `+` : ``}${item.PowerDetails?.Left?.LeftAddition}` : ` Add: `}
+
+
+                                                        {item.Size && <br />}{item.Size}
+                                                        {item?.ProductDetails?.barcode && <br />}{item?.ProductDetails?.barcode ? `Barcode: ${item?.ProductDetails?.barcode}` : null}
+                                                        {item?.BatchCode && <br />}{item.BatchCode ? `BatchCode: ${item.BatchCode}` : null}
+                                                        {item?.Expiry && <br />}{item.Expiry ? `Expiry: ${item.Expiry}` : null}
+                                                        {item?.ProductDetails?.HSN && <br />}{`HSN: ${item?.ProductDetails?.HSN}`}
+                                                        {item?.FittingPrice && <br />} {`FittingCharge: ₹${item?.FittingPrice}`}
+                                                    </TableCell>
+                                                    : null
+                                    }
+                                    {/* <TableCell>{item.MRP || null}</TableCell> */}
+                                    <TableCell>₹{" "} {parseFloat(parseInt(item?.GRNPrice) * ((parseInt(item?.TaxPercent) / 100) || 0)).toFixed(2)}{`(` + item?.TaxPercent + `%)`}</TableCell>
+                                    {/* <TableCell>
                                         <input
                                             type="number"
                                             value={item?.GRNQty || 1}
@@ -297,9 +353,12 @@ export default function GRNStep4() {
                                             onChange={(e) => updateGRNItemPrice(index, e.target.value)}
                                             className="w-20 px-2 py-1 border rounded"
                                         />
-                                    </TableCell>
-                                    <TableCell>₹{" "}{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (parseFloat(parseInt(item?.GRNPrice * item?.GRNQty) * (parseInt(item?.TaxPercent) / 100)) + parseInt(item?.GRNPrice * item?.GRNQty)).toFixed(2)}
-                                    </TableCell>
+                                    </TableCell> */}
+
+                                    <TableCell>{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (item.GRNQty || 0)}</TableCell>
+                                    <TableCell>{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (item.GRNPrice || 0)}</TableCell>
+                                    <TableCell>₹{" "}{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty) + parseFloat(item?.FittingPrice || 0) + ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0)).toFixed(2)}</TableCell>
+
                                     <TableCell className="px-6 py-4 whitespace-nowrap">
                                         <button
                                             onClick={() => removeGRNItem(index)}
@@ -320,19 +379,19 @@ export default function GRNStep4() {
                                 <TableRow key={index}>
                                     <TableCell>{item.PONo} <br /> {(item.OrderNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
                                     <TableCell className="">
-                                        {item?.ProductDetails?.ProductType === 1 ? 'F' : item?.ProductDetails?.ProductType === 2 ? 'Acc' : item?.ProductDetails?.ProductType === 3 ? 'CL' : ''}
+                                        {item?.ProductDetails?.ProductType === 1 ? 'F/S' : item?.ProductDetails?.ProductType === 2 ? 'Acc' : item?.ProductDetails?.ProductType === 3 ? 'CL' : ''}
                                     </TableCell>
                                     {item?.ProductDetails?.ProductType === 1 ?
                                         <TableCell>{item?.ProductDetails?.productName}<br />
                                             Size: {item?.ProductDetails?.Size?.Size}<br />
-                                            barcode: {item?.ProductDetails?.barcode}<br />
+                                            Barcode: {item?.ProductDetails?.barcode}<br />
                                             Category: {item?.category === 0 ? `Sunglass` : `OpticalFrame`} <br />
                                             HSN: {item?.ProductDetails?.HSN}
                                         </TableCell>
                                         : item?.ProductDetails?.ProductType === 2 ?
                                             <TableCell>{item?.ProductDetails?.productName}<br />
                                                 Variation: {item?.ProductDetails?.Variation?.Variation}<br />
-                                                barcode: {item?.ProductDetails?.barcode}<br />
+                                                Barcode: {item?.ProductDetails?.barcode}<br />
                                                 HSN: {item?.ProductDetails?.HSN}
                                             </TableCell>
                                             : item?.ProductDetails?.ProductType === 3 ?
@@ -405,7 +464,7 @@ export default function GRNStep4() {
 
                                             // Ensure both price and quantity are valid numbers
                                             if (price && !isNaN(price) && !isNaN(quantity)) {
-                                                return total + (price * quantity);
+                                                return total + (price * quantity) + Number(order?.FittingPrice || 0);
                                             }
                                             return total;
                                         }, 0)
@@ -420,10 +479,10 @@ export default function GRNStep4() {
                                 ₹{grnViewDetails
                                     .reduce((total, order) => {
                                         const quantity = order.GRNQty;
-                                        const price = parseFloat(order.GRNPrice) || 0;
-                                        const taxPercentage = parseFloat(order?.ProductDetails?.GSTPercentage / 100) || 0;
+                                        const price = parseFloat(order.GRNPrice + order.FittingPrice) || 0;
+                                        const taxPercentage = parseFloat((order?.TaxPercent || order?.ProductDetails?.GSTPercentage) / 100) || 0;
                                         if (price && !isNaN(price) && !isNaN(quantity)) {
-                                            return total + (price * quantity * taxPercentage);
+                                            return total + (price * quantity * taxPercentage) + Number(order?.FittingGSTPercentage || 0);
                                         }
                                         return total;
                                     }, 0)
@@ -437,13 +496,13 @@ export default function GRNStep4() {
                                 ₹{grnViewDetails
                                     .reduce((total, item) => {
                                         const quantity = item.GRNQty || 0;
-                                        const price = item.GRNPrice || 0;
-                                        const gstPercentage = parseInt(item?.ProductDetails?.GSTPercentage) || 0;
+                                        const price = (item.GRNPrice) || 0;
+                                        const gstPercentage = parseInt(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) || 0;
 
                                         if (price && !isNaN(price) && !isNaN(quantity)) {
                                             const subtotal = price * quantity;
                                             const gstAmount = subtotal * (gstPercentage / 100);
-                                            return total + subtotal + gstAmount;
+                                            return total + subtotal + gstAmount + Number(item?.FittingPrice) + ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0);
                                         }
                                         return total;
                                     }, 0)

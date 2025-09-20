@@ -2,7 +2,7 @@ import { useGRN } from "../../features/GRNContext";
 import { motion } from "framer-motion";
 import { ArrowLeft, Plus, SearchIcon, Trash2 } from "lucide-react";
 import { Autocomplete, TextField } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import {
     useLazyGetByBarCodeQuery,
@@ -188,45 +188,105 @@ export default function GRNStep3() {
     useEffect(() => {
         const getDD = async () => {
             const payload = {
-                productType: (grnData?.step2?.productType === "Lens" ? 0
+                productType: (grnData?.step2?.productType === "Lens" ? "0"
                     : grnData?.step2?.productType === "Frame/Sunglass" ? 1
                         : grnData?.step2?.productType === "Accessories" ? 2
                             : grnData?.step2?.productType === "Contact Lens" ? 3
                                 : null) ?? null,
                 locationId: grnData?.step1?.selectedLocation,
                 masterId: []
-            }
-            const responsea = await getOrderDD(payload).unwrap();
-            setLensDD(responsea);
+            };
 
-            console.log("DD reponse ----------", responsea);
-        }
-        if (formState.productType === "Lens" && grnData.step1.selectedLocation) {
+            try {
+                let responsea = await getOrderDD(payload).unwrap();
+
+                // Validate that responsea is an array
+                if (!Array.isArray(responsea)) {
+                    throw new Error('Expected responsea to be an array');
+                }
+
+                // Create a mutable copy and sort by orderDetailId in descending order
+                const sortedResponse = [...responsea].sort((a, b) => {
+                    const aId = a.orderDetailId ?? 0;
+                    const bId = b.orderDetailId ?? 0;
+                    return bId - aId;
+                });
+
+                setLensDD(sortedResponse);
+
+                console.log("DD response ----------", sortedResponse);
+            } catch (error) {
+                console.error("Error fetching dropdown data:", error);
+            }
+        };
+
+        if (formState.productType === "Lens" && grnData?.step1?.selectedLocation) {
             getDD();
         }
-    }, [formState.productType]);
+    }, [formState.productType, grnData]);
 
     useEffect(() => {
         const GRNOrderDetails = async () => {
+            if (!selectedLensDD?.orderDetailId) return;
+
             const payload = {
-                orderDetailId: selectedLensDD?.orderDetailId,
+                orderDetailId: selectedLensDD.orderDetailId,
                 vendorId: grnData?.step1?.selectedVendor,
                 companyId: grnData?.step1?.selectedLocation
-            }
+            };
 
-            const response = await getGRNOrderDetails(payload).unwrap();
-            console.log("Order Detail GRN ------------ ", response);
-            setGRNOrderPowerDetails(response.data);
-            setFormState(prev => ({
-                ...prev,
-                rate: response?.data?.ProductDetails?.Stock?.BuyingPrice,
-                fittingCharge: response?.data?.FittingChargeDetails?.FittingPrice
-            }));
-        }
-        if (formState.productType === "Lens" && grnData.step1.selectedLocation && grnData.step1.selectedVendor) {
+            try {
+                const response = await getGRNOrderDetails(payload).unwrap();
+                console.log("Order Detail GRN ------------ ", response);
+                setGRNOrderPowerDetails(response.data);
+                const baseRate = response?.data?.ProductDetails?.Stock?.BuyingPrice || 0;
+                const tintBuying = response?.data?.Tint?.TintBuying
+                    ? (response.data.OrderQuantity < 2
+                        ? (Number(response.data.Tint.TintBuying) / 2 || 0)
+                        : Number(response.data.Tint.TintBuying) || 0)
+                    : 0;
+                const addOnBuying = response?.data?.AddOd?.AddOnBuying
+                    ? (response.data.OrderQuantity < 2
+                        ? (Number(response.data.AddOd.AddOnBuying) / 2 || 0)
+                        : Number(response.data.AddOd.AddOnBuying) || 0)
+                    : 0;
+
+                const totalRate = (parseFloat(baseRate) + parseFloat(tintBuying) + parseFloat(addOnBuying)).toFixed(2);
+                console.log("baseRate:", baseRate, "tintBuying:", tintBuying, "addOnBuying:", addOnBuying, "totalRate:", totalRate);
+                
+                setFormState(prev => ({
+                    ...prev,
+                    rate: totalRate,
+                    fittingCharge: response?.data?.FittingChargeDetails?.FittingPrice,
+                    errors: { ...prev.errors }
+                }));
+            } catch (error) {
+                console.error("Error fetching GRN order details:", error);
+                toast.error("Failed to fetch order details");
+            }
+        };
+
+        if (formState.productType === "Lens" && grnData.step1.selectedLocation && grnData.step1.selectedVendor && selectedLensDD) {
             GRNOrderDetails();
         }
-    }, [formState.productType, selectedLensDD, grnData])
+    }, [formState.productType, selectedLensDD, grnData]);
+
+
+    // Calculate rate using useMemo
+    const calculatedRate = useMemo(() => {
+        const baseRate = Number(formState.rate) || 0;
+        const tintBuying = GRNOrderPowerDetails?.Tint?.TintBuying
+            ? (GRNOrderPowerDetails.OrderQuantity < 2
+                ? (Number(GRNOrderPowerDetails.Tint.TintBuying) / 2 || 0)
+                : Number(GRNOrderPowerDetails.Tint.TintBuying) || 0)
+            : 0;
+        const addOnBuying = GRNOrderPowerDetails?.AddOd?.AddOnBuying
+            ? (GRNOrderPowerDetails.OrderQuantity < 2
+                ? (Number(GRNOrderPowerDetails.AddOd.AddOnBuying) / 2 || 0)
+                : Number(GRNOrderPowerDetails.AddOd.AddOnBuying) || 0)
+            : 0;
+        return baseRate + tintBuying + addOnBuying;
+    }, [formState.rate, GRNOrderPowerDetails]);
 
     const [triggerbrandandModelQuery, {
         data: frameDatabrandandModel,
@@ -259,9 +319,22 @@ export default function GRNStep3() {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+        let newValue = value ? Number(value) : null;
+        let errors = { ...formState.errors };
+
+        // Validate rate
+        if (name === "rate") {
+            if (newValue !== null && newValue < 0) {
+                errors.rate = "Rate cannot be negative";
+            } else {
+                delete errors.rate;
+            }
+        }
+
         setFormState(prev => ({
             ...prev,
-            [name]: value
+            [name]: newValue,
+            errors
         }));
     };
 
@@ -287,12 +360,15 @@ export default function GRNStep3() {
         setScannedItems(prevItems => {
             let updatedItems = [...prevItems];
 
+            console.log("newItem ---------- mhabdkab", newItem);
+
             selectedRows.forEach(newItem => {
                 const itemToAdd = {
                     ...newItem,
                     quantity: 1,
                     price: newItem.BuyingPrice || 0,
                     Id: newItem.Id || Date.now(),
+                    detailId: newItem.Id,
                     timestamp: Date.now()
                 };
 
@@ -414,7 +490,8 @@ export default function GRNStep3() {
                         ...result.data,
                         quantity: 1,
                         price: result?.data?.BuyingPrice,
-                        Id: result?.data?.Id || Date.now(),
+                        Id: Date.now(),
+                        detailId: result?.data?.Id,
                         timestamp: Date.now()
                     };
 
@@ -483,6 +560,14 @@ export default function GRNStep3() {
 
             if (response.status === "fulfilled") {
                 const newItems = response?.data?.data || [];
+                // const newItems = {
+                //     ...response.data.data,
+                //     quantity: 1,
+                //     price: response?.data?.data?.BuyingPrice,
+                //     Id: Date.now(),
+                //     detailId: response?.data?.data?.Id,
+                //     timestamp: Date.now()
+                // };
                 setSearchResults(newItems);
 
                 if (newItems.length === 0) {
@@ -556,16 +641,21 @@ export default function GRNStep3() {
             return;
         }
 
+        console.log("selectedBatchCode -------------", selectedBatchCode);
+
         const newItem = {
             ...clSearchItems[0],
             ...selectedBatchCode,
             quantity: 1,
             price: clSearchItems[0]?.BuyingPrice,
             MRP: selectedBatchCode.CLMRP,
-            Id: Date.now()
+            Id: Date.now(),
+            timestamp: Date.now()
         };
 
         console.log("newItem ------------- ", newItem);
+        console.log("setScannedItems ------ ", scannedItems);
+
         setScannedItems(prevItems => {
             let updatedItems = [...prevItems];
             const existingItemIndex = formState.EntryType === "combined"
@@ -583,14 +673,20 @@ export default function GRNStep3() {
             } else {
                 updatedItems.push(newItem);
             }
+
+            // Sort by timestamp in descending order (latest first)
+            updatedItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
             return updatedItems;
+            // return updatedItems;
         });
+
 
 
         toast.success("Batch added successfully");
         setClSearchItems([]);
         setSelectedBatchCode(null);
         setbatchCodeInput("");
+        handleRefresh();
         setFormState(prev => ({
             ...prev,
             barcode: ""
@@ -598,10 +694,19 @@ export default function GRNStep3() {
     };
 
     const handleSubmitGRNDetails = async () => {
-        console.log("GRN data", grnData);
         try {
             if (!formState.grnMainId || !grnData?.step1?.GrnMainId) {
                 throw new Error("GRN main ID not found");
+            }
+
+            if (!isUnique) {
+                toast.error("Supplier order number must be unique for this vendor");
+                return;
+            }
+
+            if (formState.productType === "Lens" && (formState.rate === null || formState.rate < 0)) {
+                toast.error("Please enter a valid rate");
+                return;
             }
 
             let grnDetails = [];
@@ -640,8 +745,31 @@ export default function GRNStep3() {
                                 taxPercent = parseFloat(taxDetails[0].PurTaxPerct) || 0;
                             }
                         }
+                    } else if (item?.TaxDetails && item?.TaxDetails?.length > 0) {
+                        const taxDetails = item?.TaxDetails;
+                        if (taxDetails.length === 1) {
+                            taxPercent = parseFloat(taxDetails[0]?.PurTaxPerct) || 0;
+                        } else {
+                            const transferPrice = item.price || item?.BuyingPrice;
+
+                            for (const taxDetail of taxDetails) {
+                                if (taxDetail.SlabEnd && taxDetail.SalesTaxPerct) {
+                                    const salesTaxDecimal = parseFloat(taxDetail.SalesTaxPerct) / 100;
+                                    const newSlabEnd = parseFloat(taxDetail.SlabEnd) / (1 + salesTaxDecimal);
+
+                                    if (transferPrice <= newSlabEnd) {
+                                        taxPercent = parseFloat(taxDetail.PurTaxPerct) || 0;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (taxPercent === 0) {
+                                taxPercent = parseFloat(taxDetails[0].PurTaxPerct) || 0;
+                            }
+                        }
                     }
-                    console.log("jhsgdjabd ------ ", formState.grnMainId);
+
                     return {
                         GRNMainID: formState.grnMainId || grnData.step1.GrnMainId,
                         GRNSlNo: index + 1,
@@ -650,7 +778,7 @@ export default function GRNStep3() {
                                 : formState.productType === 'Accessories' ? 2
                                     : formState.productType === 'Contact Lens' ? 3
                                         : null,
-                        detailId: formState.productType === 'Contact Lens' ? item.CLDetailId : item.Id,
+                        detailId: formState.productType === 'Contact Lens' ? item.CLDetailId : item.detailId,
                         BatchCode: item.CLBatchCode || null,
                         OrderDetailId: null,
                         VendorOrderNo: null,
@@ -665,30 +793,12 @@ export default function GRNStep3() {
                 });
             }
 
-            // if (formState.productType === "Contact Lens") {
-
-            //     grnDetails = [{
-            //         GRNMainID: formState.grnMainId,
-            //         GRNSlNo: 1,
-            //         ProductType: 0,
-            //         detailId: selectedLensDD.olDetailId,
-            //         BatchCode: selectedLensDD.cLBatchCode || null,
-            //         OrderDetailId: selectedLensDD.orderDetailId || null,
-            //         VendorOrderNo: formState.lensSupplierOrderNo || null,
-            //         PODetailsId: null,
-            //         GRNQty: GRNOrderPowerDetails?.OrderQuantity || 1,
-            //         GRNPrice: formState?.rate,
-            //         TaxPercent: GRNOrderPowerDetails?.TaxPercentage,
-            //         FittingPrice: formState?.fittingCharge,
-            //         FittingGSTPercentage: GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST || null,
-            //         ApplicationUserId: user.Id
-            //     }];
-
-            //     // return grnDetails;
-            // }
-
             if (formState.productType === "Lens") {
-                console.log("GRNOrderPowerDetails ------------- ", GRNOrderPowerDetails);
+                if (!selectedLensDD || !formState.lensSupplierOrderNo) {
+                    toast.error("Please select an order and enter a supplier order number");
+                    return;
+                }
+
                 grnDetails = [{
                     GRNMainID: formState.grnMainId,
                     GRNSlNo: 1,
@@ -699,15 +809,14 @@ export default function GRNStep3() {
                     VendorOrderNo: formState.lensSupplierOrderNo || null,
                     PODetailsId: null,
                     GRNQty: GRNOrderPowerDetails?.OrderQuantity || 1,
-                    GRNPrice: formState?.rate,
+                    GRNPrice: formState.rate, // Use user-entered rate
                     TaxPercent: GRNOrderPowerDetails?.TaxPercentage,
-                    FittingPrice: formState?.fittingCharge,
+                    FittingPrice: formState.fittingCharge,
                     FittingGSTPercentage: GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST || null,
                     ApplicationUserId: user.Id
                 }];
-
-                // return grnDetails;
             }
+
             console.log("grnDetails ---------- ", grnDetails);
 
             const response = await SaveGRN(grnDetails).unwrap();
@@ -715,11 +824,11 @@ export default function GRNStep3() {
                 toast.success("GRN details saved successfully");
                 updateStep1Data({
                     GrnMainId: response?.data?.data[0]?.GRNMainID || null,
-                })
+                });
                 nextStep();
             }
         } catch (error) {
-            console.error("Error saving purchase order details:", error);
+            console.error("Error saving GRN details:", error);
             toast.error("Failed to save GRN details. Please try again.");
         } finally {
             setIsLoading(false);
@@ -843,6 +952,7 @@ export default function GRNStep3() {
                 CLBatchCode: data.CLBatchCode,
                 ProductName: data?.ProductName,
                 HSN: data?.HSN,
+                TaxDetails: data?.TaxDetails,
                 // Add truly unique ID for separate entries
                 Id: formState.EntryType === "seperate"
                     ? `cl-${data.CLDetailId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -859,28 +969,48 @@ export default function GRNStep3() {
             } else {
                 // Add directly to scanned items
                 setScannedItems(prevItems => {
-                    if (formState.EntryType === "seperate") {
-                        // SEPARATE ENTRY: Always add as new individual entry
-                        return [...prevItems, updatedItem];
-                    } else {
-                        // COMBINED ENTRY: Find existing item with same barcode in the current state
-                        const existingItemIndex = prevItems.findIndex(
-                            item => item.Barcode === updatedItem.Barcode &&
-                                item.CLBatchCode === updatedItem.CLBatchCode
-                        );
+                    // if (formState.EntryType === "seperate") {
+                    //     // SEPARATE ENTRY: Always add as new individual entry
+                    //     return [...prevItems, updatedItem];
+                    // } else {
+                    //     // COMBINED ENTRY: Find existing item with same barcode in the current state
+                    //     const existingItemIndex = prevItems.findIndex(
+                    //         item => item.Barcode === updatedItem.Barcode &&
+                    //             item.CLBatchCode === updatedItem.CLBatchCode
+                    //     );
 
-                        if (existingItemIndex >= 0) {
-                            // Increment quantity for existing item
-                            return prevItems.map((item, index) =>
-                                index === existingItemIndex
-                                    ? { ...item, quantity: item.quantity + 1 }
-                                    : item
-                            );
-                        } else {
-                            // Add new item
-                            return [...prevItems, updatedItem];
-                        }
+                    //     if (existingItemIndex >= 0) {
+                    //         // Increment quantity for existing item
+                    //         return prevItems.map((item, index) =>
+                    //             index === existingItemIndex
+                    //                 ? { ...item, quantity: item.quantity + 1 }
+                    //                 : item
+                    //         );
+                    //     } else {
+                    //         // Add new item
+                    //         return [...prevItems, updatedItem];
+                    //     }
+                    // }
+                    let updatedItems = [...prevItems];
+                    const existingItemIndex = formState.EntryType === "combined"
+                        ? updatedItems.findIndex(
+                            item => item.Barcode === newItem.Barcode &&
+                                item.CLBatchCode === newItem.CLBatchCode
+                        )
+                        : -1;
+
+                    if (existingItemIndex >= 0) {
+                        updatedItems[existingItemIndex] = {
+                            ...updatedItems[existingItemIndex],
+                            quantity: updatedItems[existingItemIndex].quantity + 1
+                        };
+                    } else {
+                        updatedItems.push(newItem);
                     }
+
+                    // Sort by timestamp in descending order (latest first)
+                    updatedItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                    return updatedItems;
                 });
                 toast.success(`Added as ${formState.EntryType} entry`);
             }
@@ -997,7 +1127,6 @@ export default function GRNStep3() {
                                 id="barcode"
                                 name="barcode"
                                 type="text"
-                                autoComplete="off"
                                 autoFocus
                                 value={formState.barcode || ''}
                                 onChange={handleInputChange}
@@ -1166,7 +1295,7 @@ export default function GRNStep3() {
                                     </div>
                                 )}
 
-                                {productData && (
+                                {modalityId && productData && (
                                     <div className="flex-1 min-w-[300px]">
                                         <Autocomplete
                                             options={productData?.data?.data || []}
@@ -1214,7 +1343,16 @@ export default function GRNStep3() {
                         </button>
 
                         <button
-                            onClick={() => setShowSearchInputs(false)}
+                            onClick={() => {
+                                setShowSearchInputs(false);
+                                setBrandId(null);
+                                setBrandInput("");
+                                setModalityId(null);
+                                setModalityInput("");
+                                setProductId(null);
+                                setProductInput("");
+                                setProductName("");
+                            }}
                             className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors whitespace-nowrap flex items-center justify-center w-full md:w-auto"
                         >
                             Back to Barcode
@@ -1337,11 +1475,12 @@ export default function GRNStep3() {
                                     </div>
                                     <div className="flex flex-col flex-1">
                                         <label htmlFor="rate" className="text-sm font-medium text-gray-700 mb-1">Rate *</label>
+                                        {/* {} */}
                                         <input
                                             id="rate"
                                             name="rate"
-                                            type="text"
-                                            value={`${formState.rate}`}
+                                            type="number"
+                                            value={formState.rate ?? ''}
                                             onChange={handleInputChange}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                         // disabled={true}
@@ -1354,8 +1493,8 @@ export default function GRNStep3() {
                                             name="gst"
                                             type="text"
                                             value={`₹ ${(
-                                                Number(formState.rate || 0) *
-                                                (Number(GRNOrderPowerDetails?.TaxPercentage || 0) / 100)
+                                                (parseFloat(formState.rate))
+                                                * (GRNOrderPowerDetails?.TaxPercentage / 100)
                                             ).toFixed(2)} (${Number(GRNOrderPowerDetails?.TaxPercentage || 0)}%)`}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                             disabled={true}
@@ -1370,7 +1509,7 @@ export default function GRNStep3() {
                                             <input
                                                 id="fittingCharge"
                                                 name="fittingCharge"
-                                                type="text"
+                                                type="number"
                                                 value={`${formState.fittingCharge}`}
                                                 onChange={handleInputChange}
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -1393,6 +1532,82 @@ export default function GRNStep3() {
                                         </div>
                                     </div>
                                 )}
+
+                                {/* <div className="flex items-center justify-between gap-4 w-full mb-4">
+                                    <div className="flex flex-col flex-1">
+                                        <label htmlFor="rQty" className="text-sm font-medium text-gray-700 mb-1">Total Basic Amt</label>
+                                        {`₹ ${(
+                                            ((parseFloat(formState.rate)
+                                                + parseFloat(GRNOrderPowerDetails.Tint.TintBuying ? (GRNOrderPowerDetails?.OrderQuantity < 2 ? (GRNOrderPowerDetails.Tint.TintBuying / 2 || 0) : GRNOrderPowerDetails.Tint.TintBuying || 0) : 0)
+                                                + parseFloat(GRNOrderPowerDetails.AddOd.AddOnBuying ? (GRNOrderPowerDetails?.OrderQuantity < 2 ? (GRNOrderPowerDetails.AddOd.AddOnBuying / 2 || 0) : GRNOrderPowerDetails.AddOd.AddOnBuying || 0) : 0))
+                                                * GRNOrderPowerDetails?.OrderQuantity)
+                                            + parseFloat(formState.fittingCharge || 0)
+                                        ).toFixed(2)}`}
+                                    </div>
+                                    <div className="flex flex-col flex-1">
+                                        <label htmlFor="rate" className="text-sm font-medium text-gray-700 mb-1">Total GST *</label>
+                                        {`${((parseFloat(formState.rate)
+                                            + parseFloat(GRNOrderPowerDetails.Tint.TintBuying ? (GRNOrderPowerDetails?.OrderQuantity < 2 ? (GRNOrderPowerDetails.Tint.TintBuying / 2 || 0) : GRNOrderPowerDetails.Tint.TintBuying || 0) : 0)
+                                            + parseFloat(GRNOrderPowerDetails.AddOd.AddOnBuying ? (GRNOrderPowerDetails?.OrderQuantity < 2 ? (GRNOrderPowerDetails.AddOd.AddOnBuying / 2 || 0) : GRNOrderPowerDetails.AddOd.AddOnBuying || 0) : 0))
+                                            * (GRNOrderPowerDetails?.TaxPercentage / 100) * GRNOrderPowerDetails?.OrderQuantity)
+                                            + ((Number(formState.fittingCharge || 0) *
+                                                (Number(GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST || 0) / 100)))
+                                            }`}
+                                    </div>
+                                    <div className="flex flex-col flex-1">
+                                        <label htmlFor="gst" className="text-sm font-medium text-gray-700 mb-1">Total Qty *</label>
+                                        {GRNOrderPowerDetails?.OrderQuantity}
+
+                                    </div>
+                                    <div className="flex flex-col flex-1">
+                                        <label htmlFor="gst" className="text-sm font-medium text-gray-700 mb-1">Total Amt *</label>
+                                        {((parseFloat(formState.rate)
+                                            + parseFloat(GRNOrderPowerDetails.Tint.TintBuying ? (GRNOrderPowerDetails?.OrderQuantity < 2 ? (GRNOrderPowerDetails.Tint.TintBuying / 2 || 0) : GRNOrderPowerDetails.Tint.TintBuying || 0) : 0)
+                                            + parseFloat(GRNOrderPowerDetails.AddOd.AddOnBuying ? (GRNOrderPowerDetails?.OrderQuantity < 2 ? (GRNOrderPowerDetails.AddOd.AddOnBuying / 2 || 0) : GRNOrderPowerDetails.AddOd.AddOnBuying || 0) : 0))
+                                            * GRNOrderPowerDetails?.OrderQuantity)
+                                            + parseFloat(formState.fittingCharge || 0)
+                                            +
+                                            ((parseFloat(formState.rate)
+                                                + parseFloat(GRNOrderPowerDetails.Tint.TintBuying ? (GRNOrderPowerDetails?.OrderQuantity < 2 ? (GRNOrderPowerDetails.Tint.TintBuying / 2 || 0) : GRNOrderPowerDetails.Tint.TintBuying || 0) : 0)
+                                                + parseFloat(GRNOrderPowerDetails.AddOd.AddOnBuying ? (GRNOrderPowerDetails?.OrderQuantity < 2 ? (GRNOrderPowerDetails.AddOd.AddOnBuying / 2 || 0) : GRNOrderPowerDetails.AddOd.AddOnBuying || 0) : 0))
+                                                * (GRNOrderPowerDetails?.TaxPercentage / 100) * GRNOrderPowerDetails?.OrderQuantity)
+                                            + ((Number(formState.fittingCharge || 0) *
+                                                (Number(GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST || 0) / 100)))
+                                        }
+                                    </div>
+                                </div> */}
+
+                                <div className="flex items-center justify-between gap-4 w-full mb-4">
+                                    <div className="flex flex-col flex-1">
+                                        <label htmlFor="totalBasicAmt" className="text-sm font-medium text-gray-700 mb-1">Total Basic Amt</label>
+                                        <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-sm">
+                                            {`₹ ${(((formState.rate || 0) * GRNOrderPowerDetails?.OrderQuantity) + Number(formState.fittingCharge || 0)).toFixed(2)}`}
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col flex-1">
+                                        <label htmlFor="totalGst" className="text-sm font-medium text-gray-700 mb-1">Total GST *</label>
+                                        <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-sm">
+                                            {`₹ ${(((formState.rate || 0) * (GRNOrderPowerDetails?.TaxPercentage / 100) * GRNOrderPowerDetails?.OrderQuantity) + (Number(formState.fittingCharge || 0) * (Number(GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST || 0) / 100))).toFixed(2)}`}
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col flex-1">
+                                        <label htmlFor="totalQty" className="text-sm font-medium text-gray-700 mb-1">Total Qty *</label>
+                                        <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-sm">
+                                            {GRNOrderPowerDetails?.OrderQuantity}
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col flex-1">
+                                        <label htmlFor="totalAmt" className="text-sm font-medium text-gray-700 mb-1">Total Amt *</label>
+                                        <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-sm">
+                                            {`₹ ${(
+                                                ((formState.rate || 0) * GRNOrderPowerDetails?.OrderQuantity) +
+                                                Number(formState.fittingCharge || 0) +
+                                                ((formState.rate || 0) * (GRNOrderPowerDetails?.TaxPercentage / 100) * GRNOrderPowerDetails?.OrderQuantity) +
+                                                (Number(formState.fittingCharge || 0) * (Number(GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST || 0) / 100))
+                                            ).toFixed(2)}`}
+                                        </div>
+                                    </div>
+                                </div>
                             </>
                         )}
                     </>

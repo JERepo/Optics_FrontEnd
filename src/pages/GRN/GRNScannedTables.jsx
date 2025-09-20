@@ -14,9 +14,11 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                     renderRow={(item, index) => (
                         <TableRow key={item.Id || index}>
                             <TableCell>{item.Barcode}</TableCell>
-                            <TableCell>{item.Name}{item.Size && <br />}{item.Size}</TableCell>
+                            <TableCell>{item.Name}
+                                {item.Size && <br />}{`Size: ${item.Size}`}
+                            </TableCell>
                             <TableCell>
-                                {item.Category === 0 ? 'Sunglass' : 'Optical Frame'}
+                                {item.Category === 0 ? 'Optical Frame' : 'Sunglass'}
                             </TableCell>
                             <TableCell className="text-center">{item.PO ? "Yes" : "No"}</TableCell>
                             <TableCell className="text-center">{item.Ph ? "Yes" : "No"}</TableCell>
@@ -68,7 +70,7 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                                 <input
                                     type="number"
                                     value={item.price || 0}
-                                    onChange={(e) => updateScannedItemPrice(item.Id, e.target.value)}
+                                    onChange={(e) => updateScannedItemPrice(index, e.target.value)}
                                     className="w-20 px-2 py-1 border rounded"
                                 />
                             </TableCell>
@@ -76,7 +78,7 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                                 <input
                                     type="number"
                                     value={item.quantity || 1}
-                                    onChange={(e) => updateScannedItemQuantity(item.Id, e.target.value)}
+                                    onChange={(e) => updateScannedItemQuantity(index, e.target.value)}
                                     className="w-16 px-2 py-1 border rounded"
                                     min="1"
                                 />
@@ -107,12 +109,14 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                             <TableCell>{item.Barcode}</TableCell>
                             <TableCell>{item.ProductName}
                                 {item.Size && <br />}{item.Size}
-                                {item.SphericalPower && <br />}{item.SphericalPower ? `Sph: ${item.SphericalPower}` : `Sph: `}
-                                {item.CylindricalPower ? ` Cyl: ${item.CylindricalPower}` : ` Cyl: `}
+                                {item.SphericalPower && <br />}{item.SphericalPower ? `Sph: ${item.SphericalPower > 0 ? `+` : ``}${item.SphericalPower}` : `Sph: `}
+                                {item.CylindricalPower ? ` Cyl: ${item.CylindricalPower>0 && `+`}${item.CylindricalPower}` : ` Cyl: `}
                                 {item.Axis ? ` Axis: ${item.Axis}` : ` Axis: `}
                                 {item.Additional ? ` Add: ${item.Additional}` : ` Add: `}
                                 {item.Barcode && <br />}{item.Barcode && `Barcode: ${item.Barcode}`}
-
+                                {item?.CLBatchCode && <br/>}{item?.CLBatchCode && `BatchCode: ${item.CLBatchCode}`}
+                                {(item?.Expiry || item?.CLBatchExpiry) && ` Expiry: ${item.Expiry || item?.CLBatchExpiry}`}
+                                {item.HSN && <br />}{item.HSN && `HSN: `+item.HSN}
                             </TableCell>
                             <TableCell>₹{item.MRP || item.MRPMaster || 0}</TableCell>
                             <TableCell>₹{" "}

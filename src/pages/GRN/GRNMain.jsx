@@ -19,9 +19,9 @@ export default function GRNMain() {
             case 2:
                 return <GRNStep2 />;
             case 3:
-                return (grnData?.step1?.againstPO ? <GRNStep3AgainstPO /> : <GRNStep3 />);
+                return (grnData?.step1?.againstPO === "1" ? <GRNStep3AgainstPO /> : <GRNStep3 />);
             case 4:
-                return (grnData?.step1?.againstPO ? <GRNStep4AgainstPO /> : <GRNStep4 />);
+                return (grnData?.step1?.againstPO === "1" ? <GRNStep4AgainstPO /> : <GRNStep4 />);
             case 5:
                 return <GRNStep4 />;
             default:

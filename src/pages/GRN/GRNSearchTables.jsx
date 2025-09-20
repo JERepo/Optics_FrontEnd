@@ -19,9 +19,11 @@ export function GRNSearchTable({ searchResults, selectedRows, handleCheckboxChan
                                 />
                             </TableCell>
                             <TableCell>{item.Barcode}</TableCell>
-                            <TableCell>{item.Name}{item.Size && <br />}{item.Size}</TableCell>
+                            <TableCell>{item.Name}
+                                {item.Size && <br />}{`Size: ${item.Size}`}
+                            </TableCell>
                             <TableCell>
-                                {item.Category === 0 ? 'Sunglass' : 'Optical Frame'}
+                                {item.Category === 0 ? 'Optical Frame' : 'Sunglass'}
                             </TableCell>
                             <TableCell className="text-center">{item.PO ? "Yes" : "No"}</TableCell>
                             <TableCell className="text-center">{item.Ph ? "Yes" : "No"}</TableCell>
