@@ -1422,7 +1422,7 @@ export default function GRNStep3() {
                         <div key={selectedLensDD.Id} className="mb-4 space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <p className="text-gray-700 ">
-                                    <span className="font-bold flex">Customer Name </span>
+                                    <span className="font-bold flex">Patient Name </span>
                                     <span>{selectedLensDD.customerName}</span>
                                 </p>
                                 <p className="text-gray-700">
@@ -1444,21 +1444,7 @@ export default function GRNStep3() {
                             </p>
                         </div>
 
-                        <input
-                            id="lensSupplierOrderNo"
-                            name="lensSupplierOrderNo"
-                            type="text"
-                            autoComplete="off"
-                            autoFocus
-                            value={formState.lensSupplierOrderNo || ''}
-                            onChange={handleInputChange}
-                            className=" px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060] pr-10"
-                            placeholder="Supplier Order No."
-                            aria-label="Supplier Order no input"
-                            error={isUnique === false ? "Supplier order number must be unique for this vendor" : error.lensSupplierOrderNo || ""}
-                            helperText={error.lensSupplierOrderNo || "Must be unique for this vendor"}
-                            disabled={isLoading}
-                        />
+
 
                         {GRNOrderPowerDetails && (
                             <>
@@ -1467,19 +1453,45 @@ export default function GRNStep3() {
                                         GRNOrderPowerDetails?.PowerDetails?.RightCylindricalPower ||
                                         GRNOrderPowerDetails?.PowerDetails?.RightAxis ||
                                         GRNOrderPowerDetails?.PowerDetails?.RightAddPower) && (
-                                            `R: Sph: ${GRNOrderPowerDetails?.PowerDetails?.RightSphericalPower || ''} Cyl: ${GRNOrderPowerDetails?.PowerDetails?.RightCylindricalPower || ''} Axis: ${GRNOrderPowerDetails?.PowerDetails?.RightAxis || ''} Add: ${GRNOrderPowerDetails?.PowerDetails?.RightAddPower || ''}`
+                                            `R: Sph: ${GRNOrderPowerDetails?.PowerDetails?.RightSphericalPower > 0 ? `+` : ``}${GRNOrderPowerDetails?.PowerDetails?.RightSphericalPower || ''} 
+                                            Cyl: ${GRNOrderPowerDetails?.PowerDetails?.RightCylindricalPower > 0 ? `+` : ``}${GRNOrderPowerDetails?.PowerDetails?.RightCylindricalPower || ''} 
+                                            Axis: ${GRNOrderPowerDetails?.PowerDetails?.RightAxis > 0 ? `+` : ``}${GRNOrderPowerDetails?.PowerDetails?.RightAxis || ''} 
+                                            Add: ${GRNOrderPowerDetails?.PowerDetails?.RightAddPower > 0 ? `+` : ``}${GRNOrderPowerDetails?.PowerDetails?.RightAddPower || ''}`
                                         )}
                                     <br />
                                     {(GRNOrderPowerDetails?.PowerDetails?.LeftSphericalPower ||
                                         GRNOrderPowerDetails?.PowerDetails?.LeftCylindricalPower ||
                                         GRNOrderPowerDetails?.PowerDetails?.LeftAxis ||
                                         GRNOrderPowerDetails?.PowerDetails?.LeftAddPower) && (
-                                            `L: Sph: ${GRNOrderPowerDetails?.PowerDetails?.LeftSphericalPower || ''} Cyl: ${GRNOrderPowerDetails?.PowerDetails?.LeftCylindricalPower || ''} Axis: ${GRNOrderPowerDetails?.PowerDetails?.LeftAxis || ''} Add: ${GRNOrderPowerDetails?.PowerDetails?.LeftAddPower || ''}`
+                                            `L: Sph: ${GRNOrderPowerDetails?.PowerDetails?.LeftSphericalPower > 0 ? `+` : ``}${GRNOrderPowerDetails?.PowerDetails?.LeftSphericalPower || ''} 
+                                            Cyl: ${GRNOrderPowerDetails?.PowerDetails?.LeftCylindricalPower > 0 ? `+` : ``}${GRNOrderPowerDetails?.PowerDetails?.LeftCylindricalPower || ''} 
+                                            Axis: ${GRNOrderPowerDetails?.PowerDetails?.LeftAxis > 0 ? `+` : ``}${GRNOrderPowerDetails?.PowerDetails?.LeftAxis || ''} 
+                                            Add: ${GRNOrderPowerDetails?.PowerDetails?.LeftAddPower > 0 ? `+` : ``}${GRNOrderPowerDetails?.PowerDetails?.LeftAddPower || ''}`
                                         )}
                                 </div>
 
                             </>
                         )}
+
+                        <div className="flex items-center gap-4">
+                            <label>Supplier Order No.</label>
+                            <input
+                                id="lensSupplierOrderNo"
+                                name="lensSupplierOrderNo"
+                                type="text"
+                                autoComplete="off"
+                                autoFocus
+                                value={formState.lensSupplierOrderNo || ''}
+                                onChange={handleInputChange}
+                                className=" px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060] pr-10"
+                                placeholder="Supplier Order No."
+                                aria-label="Supplier Order no input"
+                                error={isUnique === false ? "Supplier order number must be unique for this vendor" : error.lensSupplierOrderNo || ""}
+                                helperText={error.lensSupplierOrderNo || "Must be unique for this vendor"}
+                                disabled={isLoading}
+                            />
+
+                        </div>
 
                         {GRNOrderPowerDetails && (
                             <>
@@ -1602,25 +1614,25 @@ export default function GRNStep3() {
                                 <div className="flex items-center justify-between gap-4 w-full mb-4">
                                     <div className="flex flex-col flex-1">
                                         <label htmlFor="totalBasicAmt" className="text-sm font-medium text-gray-700 mb-1">Total Basic Amt</label>
-                                        <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-sm">
+                                        <div className="w-full px-3 py-2 text-sm">
                                             {`₹ ${(((formState.rate || 0) * GRNOrderPowerDetails?.OrderQuantity) + Number(formState.fittingCharge || 0)).toFixed(2)}`}
                                         </div>
                                     </div>
                                     <div className="flex flex-col flex-1">
                                         <label htmlFor="totalGst" className="text-sm font-medium text-gray-700 mb-1">Total GST *</label>
-                                        <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-sm">
+                                        <div className="w-full px-3 py-2 text-sm">
                                             {`₹ ${(((formState.rate || 0) * (GRNOrderPowerDetails?.TaxPercentage / 100) * GRNOrderPowerDetails?.OrderQuantity) + (Number(formState.fittingCharge || 0) * (Number(GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST || 0) / 100))).toFixed(2)}`}
                                         </div>
                                     </div>
                                     <div className="flex flex-col flex-1">
                                         <label htmlFor="totalQty" className="text-sm font-medium text-gray-700 mb-1">Total Qty *</label>
-                                        <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-sm">
+                                        <div className="w-full px-3 py-2 text-sm">
                                             {GRNOrderPowerDetails?.OrderQuantity}
                                         </div>
                                     </div>
                                     <div className="flex flex-col flex-1">
                                         <label htmlFor="totalAmt" className="text-sm font-medium text-gray-700 mb-1">Total Amt *</label>
-                                        <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-sm">
+                                        <div className="w-full px-3 py-2 text-sm">
                                             {`₹ ${(
                                                 ((formState.rate || 0) * GRNOrderPowerDetails?.OrderQuantity) +
                                                 Number(formState.fittingCharge || 0) +

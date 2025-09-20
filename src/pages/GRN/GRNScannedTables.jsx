@@ -9,7 +9,7 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
         <>
             {productType === 1 && (
                 <Table
-                    columns={["Barcode", "Name", "S/O", "Polarised", "Photochromatic", "Clip No", "MRP", "Buying Price", "PO QTY", "Action"]}
+                    columns={["Barcode", "Name", "S/O", "Polarised", "Photochromatic", "Clip No", "MRP", "Buying Price", "GRN QTY", "Action"]}
                     data={scannedItems}
                     renderRow={(item, index) => (
                         <TableRow key={item.Id || index}>
@@ -57,7 +57,7 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
 
             {productType === 2 && (
                 <Table
-                    columns={["Barcode", "Name", "Variation", "SKU Code", "MRP", "Buying Price", "QTY", "Action"]}
+                    columns={["Barcode", "Name", "Variation", "SKU Code", "MRP", "Buying Price", "GRN QTY", "Action"]}
                     data={scannedItems}
                     renderRow={(item, index) => (
                         <TableRow key={item.Barcode || index}>
@@ -99,7 +99,7 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
             {console.log("scannedItems--------------- dkahdkjah", scannedItems)}
             {productType === 3 && (
                 <Table
-                    columns={["SL No.", "Order No.", "Supplier Order No.", "Barcode", "Product Name", "MRP", "Buying Price", "Qty", "Action"]}
+                    columns={["SL No.", "Order No.", "Supplier Order No.", "Barcode", "Product Name", "MRP", "Buying Price", "GRN QTY", "Action"]}
                     data={scannedItems}
                     renderRow={(item, index) => (
                         <TableRow key={item.Barcode || index}>
@@ -114,7 +114,7 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                                 {item.Axis ? ` Axis: ${item.Axis}` : ` Axis: `}
                                 {item.Additional ? ` Add: ${item.Additional}` : ` Add: `}
                                 {item?.Barcode && <br />}{item?.Barcode ? `Barcode: ${item?.Barcode}`: ``}
-                                { (typeof item?.CLBatchCode) === 'string' && <br/>}{(typeof item?.CLBatchCode) === 'string' ? `BatchCode: ${item.CLBatchCode}` : ``}
+                                {(typeof item?.CLBatchCode) === 'string' && <br/>}{(typeof item?.CLBatchCode) === 'string' ? `BatchCode: ${item.CLBatchCode}` : ``}
                                 {(typeof item?.CLBatchCode) === 'string' && (item?.Expiry || item?.CLBatchExpiry) && ` Expiry: ${item.Expiry || item?.CLBatchExpiry}`}
                                 {item.HSN && <br />}{item.HSN && `HSN: `+item.HSN}
                             </TableCell>

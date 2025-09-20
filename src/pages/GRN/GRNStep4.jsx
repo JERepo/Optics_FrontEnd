@@ -171,7 +171,7 @@ export default function GRNStep4() {
                 ProductType: item?.ProductDetails?.ProductType,
                 detailId: item?.ProductDetails?.ProductDetailId,
                 PODetailsId: item?.PODetailsId || null,
-                AgainstPO: item?.AgainstPO || 1
+                AgainstPO: item?.AgainstPO ?? 0
             }));
 
             // console.log("grnDetails in save --------------- ", grnDetails);
@@ -265,15 +265,15 @@ export default function GRNStep4() {
                     <h3 className="text-lg font-semibold mb-4">GRN Items</h3>
                     {grnData?.step1?.againstPO === "0" ? (
                         <Table
-                            columns={["Sl No.", "Order No.", "Supplier Order No.", "Type", "Barcode", "Product Details", "GST", "QTY", "Buying Price", "Total Amount", "Action"]}
+                            columns={["Sl No.", "Order No.", "Supplier Order No.", "Type", "Product Details", "GST", "QTY", "Buying Price", "Total Amount", "Action"]}
                             data={grnViewDetails}
                             renderRow={(item, index) => (
                                 <TableRow key={item.Barcode || index}>
                                     <TableCell>{index + 1}</TableCell>
                                     <TableCell>{item.OrderNo || null}</TableCell>
                                     <TableCell>{item.VendorOrderNo || null}</TableCell>
-                                    <TableCell>{item?.ProductDetails?.ProductType == 0 && `OL` || item?.ProductDetails?.ProductType == 1 && `F/S` || item?.ProductDetails?.ProductType == 2 && `Acc` || item?.ProductDetails?.ProductType == 3 && `CL`}</TableCell>
-                                    <TableCell>{item?.ProductDetails?.barcode}</TableCell>
+                                    <TableCell>{item?.ProductDetails?.ProductType == 0 && `OL` || item?.ProductDetails?.ProductType == 1 && `F/S` || item?.ProductDetails?.ProductType == 2 && `ACC` || item?.ProductDetails?.ProductType == 3 && `CL`}</TableCell>
+                                    {/* <TableCell>{item?.ProductDetails?.barcode}</TableCell> */}
                                     {/* <TableCell>{item?.ProductDetails?.productName}<br />
                                         Size: {item?.ProductDetails?.Size?.Size}<br />
                                         Category: {item?.category === 0 ? `Sunglass` : `OpticalFrame`} <br />
@@ -327,9 +327,11 @@ export default function GRNStep4() {
 
 
                                                         {item.Size && <br />}{item.Size}
-                                                        {item?.ProductDetails?.barcode && <br />}{item?.ProductDetails?.barcode ? `Barcode: ${item?.ProductDetails?.barcode}` : null}
-                                                        {item?.BatchCode && <br />}{item.BatchCode ? `BatchCode: ${item.BatchCode}` : null}
-                                                        {item?.Expiry && <br />}{item.Expiry ? `Expiry: ${item.Expiry}` : null}
+                                                        {/* {item?.ProductDetails?.barcode && <br />}{item?.ProductDetails?.barcode ? `Barcode: ${item?.ProductDetails?.barcode}` : null} */}
+                                                        {/* {item?.BatchCode && <br />}{item.BatchCode ? `BatchCode: ${item.BatchCode}` : null}
+                                                        {item?.Expiry && <br />}{item.Expiry ? `Expiry: ${item.Expiry}` : null} */}
+                                                        {(typeof item?.BatchCode) === 'string' && <br />}{(typeof item?.BatchCode) === 'string' ? `BatchCode: ${item.BatchCode}` : ``}
+                                                        {(typeof item?.BatchCode) === 'string' && (item?.Expiry || item?.CLBatchExpiry) && ` Expiry: ${item.Expiry || item?.CLBatchExpiry}`}
                                                         {item?.ProductDetails?.HSN && <br />}{`HSN: ${item?.ProductDetails?.HSN}`}
                                                         {item?.FittingPrice && <br />} {`FittingCharge: ₹${item?.FittingPrice}`}
                                                     </TableCell>
@@ -382,7 +384,7 @@ export default function GRNStep4() {
                                 <TableRow key={index}>
                                     <TableCell>{item.PONo} <br /> {(item.OrderNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
                                     <TableCell className="">
-                                        {item?.ProductDetails?.ProductType === 1 ? 'F/S' : item?.ProductDetails?.ProductType === 2 ? 'Acc' : item?.ProductDetails?.ProductType === 3 ? 'CL' : ''}
+                                        {item?.ProductDetails?.ProductType === 1 ? 'F/S' : item?.ProductDetails?.ProductType === 2 ? 'ACC' : item?.ProductDetails?.ProductType === 3 ? 'CL' : ''}
                                     </TableCell>
                                     {item?.ProductDetails?.ProductType === 1 ?
                                         <TableCell>{item?.ProductDetails?.productName}<br />
