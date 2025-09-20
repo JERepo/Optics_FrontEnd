@@ -319,7 +319,7 @@ export default function GRNStep3() {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        let newValue = value ;
+        let newValue = value;
         let errors = { ...formState.errors };
 
         // Validate rate
@@ -588,6 +588,7 @@ export default function GRNStep3() {
     };
 
     const handleGetBatchBarCodeDetails = async () => {
+
         const batches = CLBatches;
         const isAvailable = batches?.find(
             (b) => b.CLBatchCode.toLowerCase() === batchCodeInput.toLowerCase()
@@ -598,11 +599,13 @@ export default function GRNStep3() {
             return;
         }
 
+        console.log("isAvailable -------------- ", isAvailable);
+
         const newItem = {
             ...clSearchItems[0],
             ...isAvailable,
             quantity: 1,
-            price: isAvailable.CLMRP || clSearchItems[0]?.BuyingPrice,
+            price: isAvailable ? isAvailable?.BuyingPrice : clSearchItems[0]?.BuyingPrice || 0,
             MRP: isAvailable.CLMRP,
             Id: Date.now()
         };
@@ -642,6 +645,20 @@ export default function GRNStep3() {
             toast.error("Please select a batch code");
             return;
         }
+        const batches = CLBatches?.data;
+        console.log("CLBatches ----------- ", CLBatches);
+        console.log("selectedBatchCode --------------- ", selectedBatchCode);
+
+        const isAvailable = batches?.find(
+            (b) => b.CLBatchCode.toLowerCase() === selectedBatchCode?.CLBatchCode.toLowerCase()
+        );
+
+        if (!isAvailable) {
+            toast.error("Batch barcode not found");
+            return;
+        }
+
+        console.log("isAvailable -------------- ", isAvailable);
 
         console.log("selectedBatchCode -------------", selectedBatchCode);
 
@@ -649,7 +666,7 @@ export default function GRNStep3() {
             ...clSearchItems[0],
             ...selectedBatchCode,
             quantity: 1,
-            price: clSearchItems[0]?.BuyingPrice,
+            price: isAvailable ? isAvailable?.BuyingPrice : clSearchItems[0]?.BuyingPrice || 0,
             MRP: selectedBatchCode.CLMRP,
             Id: Date.now(),
             timestamp: Date.now()
