@@ -438,13 +438,16 @@ export default function GRNStep3() {
                 locationId: formState.companyId
             }).unwrap();
 
+            console.log("pBuyingPriceadbakndkjand", result);
+
             if (result.data) {
                 let newItem = {};
                 if (formState.productType === "Contact Lens") {
                     newItem = {
                         ...result.data.data,
                         quantity: 1,
-                        price: result?.data?.data?.BuyingPrice,
+                        MRP: result?.data?.data?.MRP || result?.data?.data?.pMRP,
+                        price: result?.data?.data?.BuyingPrice || result?.data?.data?.pBuyingPrice,
                         cLDetailId: result?.data?.data?.CLDetailId,
                         timestamp: Date.now()
                     };
