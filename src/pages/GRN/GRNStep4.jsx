@@ -307,7 +307,15 @@ export default function GRNStep4() {
                                                     {item.Size && <br />}{item.Size}
                                                     {item?.ProductDetails?.barcode && <br />}{item?.ProductDetails?.barcode ? `Barcode: ${item?.ProductDetails?.barcode}` : null}
                                                     {item?.BatchCode && <br />}{item.BatchCode ? `BatchCode: ${item.BatchCode}` : null}
-                                                    {item?.Expiry && <br />}{item.Expiry ? `Expiry: ${item.Expiry}` : null}
+                                                    {/* {item?.Expiry && <br />}{item.Expiry ? `Expiry: ${item.Expiry}` : null} */}
+                                                    {(() => {
+                                                        console.log("Iteme ajnd", item);
+                                                        const stock = item?.ProductDetails?.Stock?.find(stock => stock.BatchCode === item.BatchCode);
+                                                        console.log("item.BatchCode:", item.BatchCode);
+                                                        console.log("Stock array:", item?.ProductDetails?.Stock);
+                                                        console.log("Found stock:", stock);
+                                                        return stock?.Expiry ? <> Expiry: {stock.Expiry}</> : null;
+                                                    })()}
                                                     {item?.ProductDetails?.HSN && <br />}{`HSN: ${item?.ProductDetails?.HSN}`}
                                                 </TableCell>
                                                 : item?.ProductDetails?.ProductType === 0 ?
@@ -406,16 +414,24 @@ export default function GRNStep4() {
                                             </TableCell>
                                             : item?.ProductDetails?.ProductType === 3 ?
                                                 <TableCell>
-                                                    {item.ProductDetails?.productName}
-                                                    {item.ProductDetails?.PowerSpecs?.Sph && <br />}{item.ProductDetails?.PowerSpecs?.Sph ? `Sph: ${item.ProductDetails?.PowerSpecs?.Sph > 0 ? `+` : `-`}${item.ProductDetails?.PowerSpecs?.Sph}` : `Sph: `}
-                                                    {item.PowerSpecsCylindricalPower ? ` Cyl: ${item.CylindricalPower > 0 ? `+` : `-`}${item.CylindricalPower}` : ` Cyl: `}
-                                                    {item.PowerSpecsAxis ? ` Axis: ${item.Axis > 0 ? `+` : `-`}${item.Axis}` : ` Axis: `}
-                                                    {item.PowerSpecsAdditional ? ` Add: ${item.Additional > 0 ? `+` : `-`}${item.Additional}` : ` Add: `}
-                                                    {item.Size && <br />}{item.Size}
-                                                    {item?.ProductDetails?.barcode && <br />}{item?.ProductDetails?.barcode ? `Barcode: ${item?.ProductDetails?.barcode}` : null}
-                                                    {item?.BatchCode && <br />}{item.BatchCode ? `BatchCode: ${item.BatchCode}` : null}
-                                                    {item?.Expiry && <br />}{item.Expiry ? `Expiry: ${item.Expiry}` : null}
-                                                    {item?.ProductDetails?.HSN && <br />}{`HSN: ${item?.ProductDetails?.HSN}`}
+                                                    {item?.ProductDetails?.productName}
+                                                    {item?.ProductDetails?.PowerSpecs?.Sph && <><br />Sph: {item.ProductDetails.PowerSpecs.Sph > 0 ? '+' : '-'}{item.ProductDetails.PowerSpecs.Sph}</>}
+                                                    {item?.PowerSpecsCylindricalPower ? ` Cyl: ${item.CylindricalPower > 0 ? '+' : '-'}${item.CylindricalPower}` : ` Cyl: `}
+                                                    {item?.PowerSpecsAxis ? ` Axis: ${item.PowerSpecsAxis > 0 ? '+' : '-'}${item.PowerSpecsAxis}` : ` Axis: `}
+                                                    {item?.PowerSpecsAdditional ? ` Add: ${item.PowerSpecsAdditional > 0 ? '+' : '-'}${item.PowerSpecsAdditional}` : ` Add: `}
+                                                    {item?.Size && <><br />{item.Size}</>}
+                                                    {item?.ProductDetails?.barcode && <><br />Barcode: {item.ProductDetails.barcode}</>}
+                                                    {item?.BatchCode && <><br />BatchCode: {item.BatchCode}</>}
+                                                    {/* {(() => {
+                                                        console.log("Iteme ajnd", item);
+                                                        const stock = item?.ProductDetails?.Stock?.find(stock => stock.BatchCode === item.BatchCode);
+                                                        console.log("item.BatchCode:", item.BatchCode);
+                                                        console.log("Stock array:", item?.ProductDetails?.Stock);
+                                                        console.log("Found stock:", stock);
+                                                        return stock?.Expiry ? <><br />Expiry: {stock.Expiry}</> : null;
+                                                    })()} */}
+                                                    {item?.Expiry && <br />}{item.Expiry ? ` Expiry: ${item.Expiry}` : null}
+                                                    {item?.ProductDetails?.HSN && <><br />HSN: {item.ProductDetails.HSN}</>}
                                                 </TableCell>
                                                 : null
                                     }
