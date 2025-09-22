@@ -106,8 +106,8 @@ export const grnApi = createApi({
             })
         }),
         checkGRNQtyValidation: builder.query({
-            query: ({ PODetailsId, GRNQty, grnMainId }) => ({
-                url: `/api/v1/grn/update-grn-qty?PODetailsId=${PODetailsId}&GRNQty=${GRNQty}&grnMainId=${grnMainId}`,
+            query: ({ PODetailsId, GRNQty, grnMainId, batchCode }) => ({
+                url: `/api/v1/grn/update-grn-qty?PODetailsId=${PODetailsId}&GRNQty=${GRNQty}&grnMainId=${grnMainId}&batchCode=${batchCode}`,
                 method: 'GET'
             })
         }),

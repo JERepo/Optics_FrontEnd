@@ -25,7 +25,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
 
     const handleQuantityUpdate = async () => {
         if (editingIndex !== null) {
-            await updateScannedItemQuantity(editingIndex, newQuantity);
+            await updateScannedItemQuantity(editingIndex, newQuantity, batchCode);
             closeModal();
         }
     };
@@ -205,6 +205,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                 />
             )}
 
+            {/* {console.log("jahdbakjhbd", scannedItems)} */}
             {productType === 3 && (
                 <Table
                     columns={["PO No. (Order No.)", "Product Details", "MRP", "Buying Price", "Order Qty", "PO Qty", "Pending Qty", "GRN Qty", "Action"]}
@@ -245,7 +246,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                                 <input
                                     type="number"
                                     value={item.quantity || 1}
-                                    onChange={(e) => updateScannedItemQuantity(index, e.target.value)}
+                                    onChange={(e) => updateScannedItemQuantity(index, e.target.value, item.BatchCode)}
                                     className="w-16 px-2 py-1 border rounded"
                                     min="1"
                                 />

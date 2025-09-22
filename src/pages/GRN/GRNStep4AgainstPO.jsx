@@ -553,15 +553,116 @@ export default function GRNStep4AgainstPO() {
     };
 
 
+    // const handleBatchSelection = async (batch, item) => {
+    //     console.log("batch ----------- res --------- ", batch);
+    //     console.log("item ----------- res --------- ", item);
+
+    //     try {
+    //         // Calculate total GRNQty for this PODetailId from existing scanned items
+    //         const existingGRNQtyForPO = scannedItems
+    //             .filter(scannedItem => scannedItem.PODetailsId === item.PODetailsId)
+    //             .reduce((total, scannedItem) => total + (scannedItem.quantity || 0), 0);
+
+    //         const newTotalGRNQty = existingGRNQtyForPO + 1; // Adding 1 for the new item
+    //         const pendingQty = item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty;
+
+    //         // Client-side validation
+    //         if (newTotalGRNQty > pendingQty) {
+    //             toast.error(`Total GRN quantity (${newTotalGRNQty}) cannot exceed pending quantity (${pendingQty}) for this PO`);
+    //             return;
+    //         }
+
+    //         // API validation
+    //         const payload = {
+    //             PODetailsId: item.PODetailsId,
+    //             GRNQty: newTotalGRNQty,
+    //             grnMainId: grnData?.step1?.GrnMainId
+    //         };
+
+    //         const validationResult = await triggerGRNQtyValidationCheck(payload).unwrap();
+
+    //         if (!validationResult.isValid) {
+    //             toast.error(validationResult.message || "Quantity validation failed");
+    //             return;
+    //         }
+
+    //         // Add item with selected batch to scanned items
+    //         const itemToAdd = {
+    //             ...item,
+    //             BatchCode: formState.productType === "Contact Lens" && item.CLBatchCode === 1 ? batch.CLBatchCode : undefined,
+    //             CLBatchBarCode: formState.productType === "Contact Lens" && item.CLBatchCode === 1 ? batch.CLBatchBarCode : undefined,
+    //             Expiry: formState.productType === "Contact Lens" && item.CLBatchCode === 1 ? batch.CLBatchExpiry : undefined,
+    //             price: (formState.productType === "Contact Lens" && item.CLBatchCode === 1 ? batch.BuyingPrice : item.BuyingPrice) || 0,
+    //             quantity: 1,
+    //             uniqueId: Date.now() + Math.random(),
+    //             detailId: item.Id,
+    //             timestamp: Date.now()
+    //         };
+
+    //         console.log("itemToAdd -------------- ", itemToAdd);
+
+    //         setScannedItems(prevItems => {
+    //             let updatedItems = [...prevItems];
+
+    //             console.log("updatedItems 0---------- ", updatedItems);
+    //             console.log("item 0---------- ", item);
+
+
+    //             if (formState.EntryType === "combined") {
+    //                 const existingItemIndex = updatedItems.findIndex(
+    //                     existingItem =>
+    //                         existingItem.uniqueId === item.uniqueId &&
+    //                         (formState.productType !== "Contact Lens" ||
+    //                             item.CLBatchCode !== 1 ||
+    //                             existingItem.CLBatchCode === batch.CLBatchCode)
+    //                 );
+
+    //                 if (existingItemIndex >= 0) {
+    //                     updatedItems[existingItemIndex] = {
+    //                         ...updatedItems[existingItemIndex],
+    //                         quantity: updatedItems[existingItemIndex].quantity + 1
+    //                     };
+    //                 } else {
+    //                     updatedItems.push(itemToAdd);
+    //                 }
+    //             } else {
+    //                 updatedItems.push(itemToAdd);
+    //             }
+
+    //             // Sort by timestamp in descending order (latest first)
+    //             updatedItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    //             return updatedItems;
+    //         });
+
+    //         toast.success("Item with batch code added to GRN successfully");
+    //         setPODetailsItems([]);
+    //         setSearchResults([]);
+    //         setSelectedBatchCode(null);
+    //         setbatchCodeInput("");
+    //     } catch (error) {
+    //         console.error("Failed to add item with batch:", error);
+    //         toast.error("Failed to add item with batch code. Please try again.");
+    //     }
+    // };
+
+
     const handleBatchSelection = async (batch, item) => {
         console.log("batch ----------- res --------- ", batch);
         console.log("item ----------- res --------- ", item);
 
         try {
-            // Calculate total GRNQty for this PODetailId from existing scanned items
-            const existingGRNQtyForPO = scannedItems
-                .filter(scannedItem => scannedItem.PODetailsId === item.PODetailsId)
-                .reduce((total, scannedItem) => total + (scannedItem.quantity || 0), 0);
+            // Calculate total GRNQty for this PODetailId and BatchCode (if applicable) from existing scanned items
+            const existingGRNQtyForPO = scannedItems.reduce((sum, scannedItem) => {
+                if (
+                    scannedItem.PODetailsId === item.PODetailsId &&
+                    (formState.productType !== "Contact Lens" ||
+                        item.CLBatchCode !== 1 ||
+                        scannedItem.BatchCode === batch.CLBatchCode)
+                ) {
+                    return sum + (scannedItem.quantity || 0);
+                }
+                return sum;
+            }, 0);
 
             const newTotalGRNQty = existingGRNQtyForPO + 1; // Adding 1 for the new item
             const pendingQty = item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty;
@@ -594,9 +695,10 @@ export default function GRNStep4AgainstPO() {
                 Expiry: formState.productType === "Contact Lens" && item.CLBatchCode === 1 ? batch.CLBatchExpiry : undefined,
                 price: (formState.productType === "Contact Lens" && item.CLBatchCode === 1 ? batch.BuyingPrice : item.BuyingPrice) || 0,
                 quantity: 1,
-                uniqueId: Date.now() + Math.random(),
+                Id: Date.now() + Math.random(), // Changed from uniqueId to Id for consistency
                 detailId: item.Id,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                existingGRNQty: validationResult.existingGRNQty // Include for consistency with handleAddBarcodeSearchItemsToScannedTable
             };
 
             console.log("itemToAdd -------------- ", itemToAdd);
@@ -604,17 +706,16 @@ export default function GRNStep4AgainstPO() {
             setScannedItems(prevItems => {
                 let updatedItems = [...prevItems];
 
-                console.log("updatedItems 0---------- ", updatedItems);
-                console.log("item 0---------- ", item);
-
+                console.log("updatedItems ---------- ", updatedItems);
+                console.log("item ---------- ", item);
 
                 if (formState.EntryType === "combined") {
                     const existingItemIndex = updatedItems.findIndex(
                         existingItem =>
-                            existingItem.uniqueId === item.uniqueId &&
+                            existingItem.PODetailsId === itemToAdd.PODetailsId &&
                             (formState.productType !== "Contact Lens" ||
-                                item.CLBatchCode !== 1 ||
-                                existingItem.CLBatchCode === batch.CLBatchCode)
+                                itemToAdd.CLBatchCode !== 1 ||
+                                existingItem.BatchCode === itemToAdd.BatchCode)
                     );
 
                     if (existingItemIndex >= 0) {
@@ -644,7 +745,6 @@ export default function GRNStep4AgainstPO() {
             toast.error("Failed to add item with batch code. Please try again.");
         }
     };
-
 
     const handleAddBarcodeSearchItemsToScannedTable = async () => {
         if (!grnQtyAgainstPOForBarcode || grnQtyAgainstPOForBarcode <= 0) {
@@ -1224,7 +1324,7 @@ export default function GRNStep4AgainstPO() {
     // };
 
 
-    const updateScannedItemQuantity = async (index, newQuantity) => {
+    const updateScannedItemQuantity = async (index, newQuantity, batchCode) => {
         const quantity = parseInt(newQuantity);
 
         if (isNaN(quantity) || quantity < 1) {
@@ -1249,9 +1349,11 @@ export default function GRNStep4AgainstPO() {
         const newTotalGRNQty = totalGRNQtyForOtherItems + quantity;
 
         // Check if new total exceeds pending quantity
-        if (newTotalGRNQty > pendingQty) {
-            toast.error(`Total GRN quantity (${newTotalGRNQty}) cannot exceed pending quantity (${pendingQty}) for this PO`);
-            return false;
+        if (grnData?.step2?.productType !== "Contact Lens") {
+            if (newTotalGRNQty > pendingQty) {
+                toast.error(`Total GRN quantity (${newTotalGRNQty}) cannot exceed pending quantity (${pendingQty}) for this PO`);
+                return false;
+            }
         }
 
         console.log("newTotalGRNQty", newTotalGRNQty);
@@ -1262,7 +1364,8 @@ export default function GRNStep4AgainstPO() {
             const payload = {
                 PODetailsId: currentItem.PODetailsId,
                 GRNQty: newTotalGRNQty,
-                grnMainId: grnData?.step1?.GrnMainId
+                grnMainId: grnData?.step1?.GrnMainId,
+                batchCode: batchCode ? batchCode : null
                 // CurrentGRNQty: totalGRNQtyForOtherItems,
                 // NewItemGRNQty: quantity,
                 // PendingQty: pendingQty
