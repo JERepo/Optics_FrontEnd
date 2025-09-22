@@ -107,7 +107,7 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                             <TableCell>{ }</TableCell>
                             <TableCell>{ }</TableCell>
                             <TableCell>{item.Barcode}</TableCell>
-                            <TableCell>{item.BrandName ?? ''} {item.ProductName}
+                            <TableCell>{item?.BrandName ?? ''} {item?.ProductName}
                                 {item.Size && <br />}{item.Size}
                                 {item.SphericalPower && <br />}{item.SphericalPower ? `Sph: ${item.SphericalPower > 0 ? `+` : ``}${item.SphericalPower}` : `Sph: `}
                                 {item.CylindricalPower ? ` Cyl: ${item.CylindricalPower>0 && `+`}${item.CylindricalPower}` : ` Cyl: `}

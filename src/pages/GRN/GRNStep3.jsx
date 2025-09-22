@@ -960,6 +960,7 @@ export default function GRNStep3() {
             const updatedItem = {
                 ...newItem,
                 Barcode: data.Barcode,
+                BrandName: data?.BrandName,
                 CLDetailId: data?.CLDetailId,
                 SphericalPower: data.SphericalPower ?? data.Spherical,
                 CylindricalPower: data.CylindricalPower ?? data.Cylindrical,
@@ -991,33 +992,11 @@ export default function GRNStep3() {
             } else {
                 // Add directly to scanned items
                 setScannedItems(prevItems => {
-                    // if (formState.EntryType === "seperate") {
-                    //     // SEPARATE ENTRY: Always add as new individual entry
-                    //     return [...prevItems, updatedItem];
-                    // } else {
-                    //     // COMBINED ENTRY: Find existing item with same barcode in the current state
-                    //     const existingItemIndex = prevItems.findIndex(
-                    //         item => item.Barcode === updatedItem.Barcode &&
-                    //             item.CLBatchCode === updatedItem.CLBatchCode
-                    //     );
-
-                    //     if (existingItemIndex >= 0) {
-                    //         // Increment quantity for existing item
-                    //         return prevItems.map((item, index) =>
-                    //             index === existingItemIndex
-                    //                 ? { ...item, quantity: item.quantity + 1 }
-                    //                 : item
-                    //         );
-                    //     } else {
-                    //         // Add new item
-                    //         return [...prevItems, updatedItem];
-                    //     }
-                    // }
                     let updatedItems = [...prevItems];
                     const existingItemIndex = formState.EntryType === "combined"
                         ? updatedItems.findIndex(
-                            item => item.Barcode === newItem.Barcode &&
-                                item.CLBatchCode === newItem.CLBatchCode
+                            item => item.Barcode === updatedItem.Barcode && // Use updatedItem instead of newItem
+                                item.CLBatchCode === updatedItem.CLBatchCode
                         )
                         : -1;
 
@@ -1027,7 +1006,7 @@ export default function GRNStep3() {
                             quantity: updatedItems[existingItemIndex].quantity + 1
                         };
                     } else {
-                        updatedItems.push(newItem);
+                        updatedItems.push(updatedItem); // Use updatedItem instead of newItem
                     }
 
                     // Sort by timestamp in descending order (latest first)
