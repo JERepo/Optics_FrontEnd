@@ -806,7 +806,7 @@ export default function GRNStep3() {
                         VendorOrderNo: null,
                         PODetailsId: null,
                         GRNQty: item.quantity || 1,
-                        GRNPrice: item.price || item.BuyingPrice,
+                        GRNPrice: item.price || item.BuyingPrice || item.BuyingPriceMaster,
                         TaxPercent: taxPercent,
                         FittingPrice: null,
                         FittingGSTPercentage: null,

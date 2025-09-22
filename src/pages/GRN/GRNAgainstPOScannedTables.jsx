@@ -70,12 +70,13 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                                 <TableCell className=" ">{item.POQty}</TableCell>
                                 <TableCell>{item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty}</TableCell>
                                 <TableCell>
-                                    <button
-                                        onClick={() => openModal(index, item.quantity || 1)}
-                                        className="w-16 px-2 py-1 border rounded bg-white hover:bg-gray-50 cursor-pointer text-left"
-                                    >
-                                        {item.quantity || 1}
-                                    </button>
+                                    <input
+                                        type="number"
+                                        value={item.quantity || 1}
+                                        onChange={(e) => updateScannedItemQuantity(index, e.target.value)}
+                                        className="w-16 px-2 py-1 border rounded"
+                                        min="1"
+                                    />
                                 </TableCell>
                                 <TableCell className="px-6 py-4 whitespace-nowrap">
                                     <button
