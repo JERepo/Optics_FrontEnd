@@ -257,7 +257,7 @@ export default function GRNStep3() {
                 setFormState(prev => ({
                     ...prev,
                     rate: totalRate,
-                    fittingCharge: (response?.FittingChargeDetails?.FittingCharges === 1 && response?.FittingChargeDetails?.FittingChargesPurchase === 1 && response?.FittingChargeDetails?.WithFitting === 1) ?  response?.data?.FittingChargeDetails?.FittingPrice : null,
+                    fittingCharge: response?.data?.FittingChargeDetails?.FittingPrice || null,
                     errors: { ...prev.errors }
                 }));
             } catch (error) {
@@ -833,7 +833,7 @@ export default function GRNStep3() {
                     GRNQty: GRNOrderPowerDetails?.OrderQuantity || 1,
                     GRNPrice: formState.rate, // Use user-entered rate
                     TaxPercent: GRNOrderPowerDetails?.TaxPercentage,
-                    FittingPrice: formState.fittingCharge,
+                    FittingPrice: (GRNOrderPowerDetails?.FittingChargeDetails?.FittingCharges === 1 && GRNOrderPowerDetails?.FittingChargeDetails?.FittingChargesPurchase === 1 && GRNOrderPowerDetails?.FittingChargeDetails?.WithFitting === 1) ? formState.fittingCharge : null,
                     FittingGSTPercentage: (GRNOrderPowerDetails?.FittingChargeDetails?.FittingCharges === 1 && GRNOrderPowerDetails?.FittingChargeDetails?.FittingChargesPurchase === 1 && GRNOrderPowerDetails?.FittingChargeDetails?.WithFitting === 1) ?  GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST : null,
                     ApplicationUserId: user.Id
                 }];
