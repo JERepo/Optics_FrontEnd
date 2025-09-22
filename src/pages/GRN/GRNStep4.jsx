@@ -171,16 +171,21 @@ export default function GRNStep4() {
                 ProductType: item?.ProductDetails?.ProductType,
                 detailId: item?.ProductDetails?.ProductDetailId,
                 PODetailsId: item?.PODetailsId || null,
-                AgainstPO: item?.AgainstPO ?? 0
+                AgainstPO: item?.AgainstPO ?? 0,
+                CLBatchCode: item?.ProductDetails?.CLBatchCode ?? 0,
+                BatchCode: item?.BatchCode || null,
+                OrderDetailsId: item?.OrderDetailId || null
             }));
 
-            // console.log("grnDetails in save --------------- ", grnDetails);
+            console.log("grnDetails in save --------------- ", grnDetails);
             // return;
 
             const payload = {
                 remarks: formState.remarks,
                 grnDetails: grnDetails
             };
+
+            // const response = null;
 
             const response = await saveCompleteGRN({
                 grnMainId: grnData?.step1?.GrnMainId,
