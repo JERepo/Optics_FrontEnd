@@ -338,7 +338,7 @@ export default function GRNStep4() {
                                                         {(typeof item?.BatchCode) === 'string' && <br />}{(typeof item?.BatchCode) === 'string' ? `BatchCode: ${item.BatchCode}` : ``}
                                                         {(typeof item?.BatchCode) === 'string' && (item?.Expiry || item?.CLBatchExpiry) && ` Expiry: ${item.Expiry || item?.CLBatchExpiry}`}
                                                         {item?.ProductDetails?.HSN && <br />}{`HSN: ${item?.ProductDetails?.HSN}`}
-                                                        {item?.FittingPrice && <br />} {`FittingCharge: ₹${item?.FittingPrice}`}
+                                                        {item?.FittingPrice && <br />} {item?.FittingPrice && `FittingCharge: ₹${item?.FittingPrice}`}
                                                     </TableCell>
                                                     : null
                                     }
