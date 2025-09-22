@@ -208,7 +208,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
             {/* {console.log("jahdbakjhbd", scannedItems)} */}
             {productType === 3 && (
                 <Table
-                    columns={["PO No. (Order No.)", "Product Details", "MRP", "Buying Price", "Order Qty", "PO Qty", "Pending Qty", "GRN Qty", "Action"]}
+                    columns={["PO No. (Order No.)", "Product Details", "MRP", "Buying Price", "PO Qty", "Pending Qty", "GRN Qty", "Action"]}
                     data={scannedItems}
                     renderRow={(item, index) => (
                         <TableRow key={item.index}>
@@ -237,7 +237,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                                     className="w-20 px-2 py-1 border rounded"
                                 />
                             </TableCell>
-                            <TableCell>{item.OrderQty || 0}</TableCell>
+                            {/* <TableCell>{item.OrderQty || 0}</TableCell> */}
                             <TableCell>{item.POQty || 0}</TableCell>
                             {/* <TableCell>{item.POQty - (item.quantity || 1) - item.CancelledQty}</TableCell> */}
                             <TableCell>{item.POQty - (item.quantity ?? 0) - item.CancelledQty - (item.ReceivedQty ?? 0)}</TableCell>

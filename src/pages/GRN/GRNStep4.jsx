@@ -564,7 +564,7 @@ export default function GRNStep4() {
                             className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50 whitespace-nowrap"
                         // disabled={!createdPOMainId || poreviewDetails.length === 0}
                         >
-                            Complete Purchase Order
+                            Complete Purchase
                         </button>
                     </div>
                 </div>
