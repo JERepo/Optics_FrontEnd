@@ -17,7 +17,7 @@ import { useGetAllOffersQuery } from "../../../api/offerApi";
 const OfferMainPage = () => {
   const navigate = useNavigate();
   const { hasMultipleLocations } = useSelector((state) => state.auth);
-  const { goToStep, updateSelectedOrderDetails } = useOrder();
+  const { goToOfferStep, updateSelectedOrderDetails } = useOrder();
 
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
@@ -205,7 +205,7 @@ const OfferMainPage = () => {
                 icon={FiPlus}
                 className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
                 onClick={() => {
-                  goToStep(1);
+                  goToOfferStep(1);
                   navigate("/offer/create");
                 }}
               >

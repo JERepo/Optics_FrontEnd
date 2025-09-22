@@ -435,59 +435,61 @@ const StockTransferView = () => {
             </div>
           </div>
         )}
-        {EInvoiceEnable === 1 && InvInvoiceEnable === 1 && (
-          <div className="mt-10">
-            <div className="bg-white rounded-sm shadow-sm p-4">
-              <div className="flex justify-between items-center mb-5">
-                <div className="text-neutral-700 text-xl font-semibold ">
-                  E-Invoice Details
+        {EInvoiceEnable === 1 &&
+          InvInvoiceEnable === 1 &&
+          stockDetails?.data?.result?.InState === 1 && (
+            <div className="mt-10">
+              <div className="bg-white rounded-sm shadow-sm p-4">
+                <div className="flex justify-between items-center mb-5">
+                  <div className="text-neutral-700 text-xl font-semibold ">
+                    E-Invoice Details
+                  </div>
+                  <div>
+                    <HasPermission
+                      module="StockTransfer"
+                      action={["create", "edit"]}
+                    >
+                      <Button
+                        onClick={getEInvoiceData}
+                        isLoading={isInvoiceCreating}
+                        disabled={
+                          isInvoiceCreating ||
+                          (eInvoiceData?.data?.data?.length > 0 &&
+                            eInvoiceData.data.data[
+                              eInvoiceData.data.data.length - 1
+                            ]?.ErrorCode === "200") ||
+                          (eInvoiceData?.data?.data?.length > 0 &&
+                            eInvoiceData.data.data[0]?.ErrorCode === "200")
+                        }
+                      >
+                        Generate E-Invoice
+                      </Button>
+                    </HasPermission>
+                  </div>
                 </div>
                 <div>
-                  <HasPermission
-                    module="StockTransfer"
-                    action={["create", "edit"]}
-                  >
-                    <Button
-                      onClick={getEInvoiceData}
-                      isLoading={isInvoiceCreating}
-                      disabled={
-                        isInvoiceCreating ||
-                        (eInvoiceData?.data?.data?.length > 0 &&
-                          eInvoiceData.data.data[
-                            eInvoiceData.data.data.length - 1
-                          ]?.ErrorCode === "200") ||
-                        (eInvoiceData?.data?.data?.length > 0 &&
-                          eInvoiceData.data.data[0]?.ErrorCode === "200")
-                      }
-                    >
-                      Generate E-Invoice
-                    </Button>
-                  </HasPermission>
+                  <Table
+                    columns={["S.No", "E-Invoice Date", "status"]}
+                    data={eInvoiceData?.data.data}
+                    renderRow={(ei, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>
+                          {ei?.CreatedOn
+                            ? format(new Date(ei.CreatedOn), "dd/MM/yyyy")
+                            : ""}
+                        </TableCell>
+                        <TableCell>{ei.ErrorMessage}</TableCell>
+                      </TableRow>
+                    )}
+                    emptyMessage={
+                      isEInvoiceLoading ? "Loading..." : "No data available"
+                    }
+                  />
                 </div>
               </div>
-              <div>
-                <Table
-                  columns={["S.No", "E-Invoice Date", "status"]}
-                  data={eInvoiceData?.data.data}
-                  renderRow={(ei, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell>
-                        {ei?.CreatedOn
-                          ? format(new Date(ei.CreatedOn), "dd/MM/yyyy")
-                          : ""}
-                      </TableCell>
-                      <TableCell>{ei.ErrorMessage}</TableCell>
-                    </TableRow>
-                  )}
-                  emptyMessage={
-                    isEInvoiceLoading ? "Loading..." : "No data available"
-                  }
-                />
-              </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
     </div>
   );

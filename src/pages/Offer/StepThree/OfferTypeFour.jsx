@@ -13,7 +13,12 @@ import { useNavigate } from "react-router";
 const OfferTypeFour = () => {
   const navigate = useNavigate();
 
-  const { customerOffer, setCusomerOffer, goToOfferStep,updateCurrentOfferStep } = useOrder();
+  const {
+    customerOffer,
+    setCusomerOffer,
+    goToOfferStep,
+    updateCurrentOfferStep,
+  } = useOrder();
   const [discountPV, setDiscountPV] = useState(1);
   const [discountValue, setDiscountValue] = useState(null);
   const [quantity, setQuantity] = useState(1);
@@ -37,6 +42,11 @@ const OfferTypeFour = () => {
   const handleAdd = () => {
     if (!quantity || quantity <= 0) {
       toast.error("Quantity must be greater than 0");
+      return;
+    }
+
+    if (!discountValue) {
+      toast.error("Please Enter discount");
       return;
     }
 
@@ -82,15 +92,6 @@ const OfferTypeFour = () => {
       return;
     }
 
-     if (!quantity) {
-      toast.error("Please Enter qty");
-      return;
-    }
-    if (!discountValue) {
-      toast.error("Please Enter discount");
-      return;
-    }
-
     const payload = {
       OfferMainId: customerOffer.offerMainId ?? null,
       slabs: items.map((item) => ({
@@ -107,7 +108,7 @@ const OfferTypeFour = () => {
     try {
       await createOffer(payload).unwrap();
       toast.success("OfferType4 successfully created");
-      updateCurrentOfferStep(1)
+      updateCurrentOfferStep(1);
       navigate("/offer");
     } catch (error) {
       console.log(error);
