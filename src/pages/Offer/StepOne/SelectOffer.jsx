@@ -40,6 +40,7 @@ const SelectOffer = () => {
     othersDiscountApplicable: null,
     customerGroup: false,
     selectedCustomerGroup: null,
+    approvalRequired:0
   });
 
   //   api quiries
@@ -71,6 +72,7 @@ const SelectOffer = () => {
         othersDiscountApplicable: o.OtherOffer ?? null,
         customerGroup: !!o.CustomerGroupId,
         selectedCustomerGroup: o.CustomerGroupId || null,
+        ApprvRequired :o.ApprvRequired || 0
       });
        setCusomerOffer((prev) => ({
           ...prev,
@@ -144,6 +146,7 @@ const SelectOffer = () => {
         OfferCode: offer.offerCode,
         OfferName: offer.offerDetails,
         OfferType: selectedOffer,
+        ApprvRequired : offer.approvalRequired,
         LowerValue: 0,
         SamePower: 0,
         IsBrandOffer: offer.isBrandOffer,
@@ -335,6 +338,39 @@ const SelectOffer = () => {
                         }));
                       }}
                       checked={offer.othersDiscountApplicable === 0}
+                      label="No"
+                      disabled={offerDisabled}
+                    />
+                  </div>
+                </div>
+                  <div className="flex items-center gap-5">
+                  <label className="text-sm font-medium text-gray-700">
+                    Approval Required
+                  </label>
+                  <div className="flex items-center gap-5">
+                    <Radio
+                      name="apprR"
+                      value="1"
+                      onChange={() => {
+                        setOffer((prev) => ({
+                          ...prev,
+                          approvalRequired: 1,
+                        }));
+                      }}
+                      checked={offer.approvalRequired === 1}
+                      label="Yes"
+                      disabled={offerDisabled}
+                    />
+                    <Radio
+                      name="apprR"
+                      value="0"
+                      onChange={() => {
+                        setOffer((prev) => ({
+                          ...prev,
+                          approvalRequired: 0,
+                        }));
+                      }}
+                      checked={offer.approvalRequired === 0}
                       label="No"
                       disabled={offerDisabled}
                     />

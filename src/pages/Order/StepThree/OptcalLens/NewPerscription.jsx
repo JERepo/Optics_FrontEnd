@@ -567,7 +567,7 @@ const NewPrescription = ({
       {/* Save Button */}
       <div className="flex justify-end mt-4">
         {isPrescription ? (
-          <HasPermission module="Prescription" action={["edit"]}>
+          <HasPermission module="Prescription" action={["edit","create"]}>
             <Button
               onClick={handleSubmit}
               disabled={isSaving || isUpdating}
@@ -583,7 +583,7 @@ const NewPrescription = ({
             </Button>
           </HasPermission>
         ) : (
-          <HasPermission>
+          // <HasPermission>
             <Button
               onClick={handleSubmit}
               disabled={isSaving || isUpdating}
@@ -597,7 +597,7 @@ const NewPrescription = ({
                 ? "Update Prescription"
                 : "Save Prescription"}
             </Button>
-          </HasPermission>
+          // </HasPermission>
         )}
       </div>
 
@@ -632,6 +632,7 @@ const NewPrescription = ({
                       <FiEye className="mr-1.5" />
                       View
                     </button>
+                    <HasPermission module="Prescription" action={["edit","create"]}>
                     <button
                       className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                       onClick={() => handleUpdate(p)}
@@ -639,6 +640,8 @@ const NewPrescription = ({
                       <FiEdit className="mr-1.5" />
                       Update
                     </button>
+                    </HasPermission>
+                    <HasPermission module="Prescription" action="deactivate">
                     <button
                       className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-red-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                       onClick={() => handleDelete(p)}
@@ -647,6 +650,7 @@ const NewPrescription = ({
                       <FiTrash2 className="mr-1.5" />
                       Delete
                     </button>
+                    </HasPermission>
                   </TableCell>
                 </TableRow>
               )}

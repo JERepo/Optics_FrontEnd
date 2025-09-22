@@ -706,7 +706,7 @@ const ContactLens = () => {
   const calculateStockGST = (item) => {
     if (!item) return { gstAmount: 0, slabNo: null, gstPercent: 0 };
 
-    if (customerStock.inState === 0) {
+    if (stockDraftData.InState === 0) {
       const detail = item.TaxDetails[0];
       return {
         gstAmount: 0,

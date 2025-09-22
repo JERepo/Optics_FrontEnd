@@ -348,7 +348,7 @@ const FrameSunglass = () => {
 
   const calculateStockGST = (item) => {
     if (!item) return 0;
-    if (customerStock.inState === 0) {
+    if (stockDraftData.InState === 0) {
       const detail = item.Tax.Details[0];
       return { gstAmount: 0, slabNo: detail.Id, gstPercent: 0 }; // no GST for out of state
     }
@@ -420,6 +420,7 @@ const FrameSunglass = () => {
       )
     );
   };
+  console.log("sto",stockDraftData)
   const handleSaveData = async () => {
     if (!Array.isArray(items) || items.length === 0) {
       console.warn("No details to save");

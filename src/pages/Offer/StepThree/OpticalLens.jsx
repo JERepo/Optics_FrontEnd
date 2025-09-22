@@ -287,7 +287,8 @@ const OpticalLens = () => {
       tintvalue: null,
       AddOnId: null,
       productType: null,
-      addOnCheck :false
+      addOnCheck :false,
+      brandId:null
     }));
     setShowProduct(false);
     setQuantity(1);
