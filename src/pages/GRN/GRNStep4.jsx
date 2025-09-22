@@ -444,7 +444,7 @@ export default function GRNStep4() {
                                                 : null
                                     }
                                     <TableCell className=" ">{item.POQty}</TableCell>
-                                    <TableCell>{item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty}</TableCell>
+                                    <TableCell>{item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty - (item.GRNQty || item.quantity || 1)}</TableCell>
                                     <TableCell>{item.GRNQty || item.quantity || 1}</TableCell>
                                     <TableCell>{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (item.GRNPrice || 0)}</TableCell>
                                     <TableCell>₹{" "}{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty)).toFixed(2)}</TableCell>
