@@ -555,6 +555,8 @@ export default function GRNStep4AgainstPO() {
 
     const handleBatchSelection = async (batch, item) => {
         console.log("batch ----------- res --------- ", batch);
+        console.log("item ----------- res --------- ", item);
+
         try {
             // Calculate total GRNQty for this PODetailId from existing scanned items
             const existingGRNQtyForPO = scannedItems
@@ -592,21 +594,27 @@ export default function GRNStep4AgainstPO() {
                 Expiry: formState.productType === "Contact Lens" && item.CLBatchCode === 1 ? batch.CLBatchExpiry : undefined,
                 price: (formState.productType === "Contact Lens" && item.CLBatchCode === 1 ? batch.BuyingPrice : item.BuyingPrice) || 0,
                 quantity: 1,
-                Id: Date.now() + Math.random(),
+                uniqueId: Date.now() + Math.random(),
                 detailId: item.Id,
                 timestamp: Date.now()
             };
 
+            console.log("itemToAdd -------------- ", itemToAdd);
+
             setScannedItems(prevItems => {
                 let updatedItems = [...prevItems];
+
+                console.log("updatedItems 0---------- ", updatedItems);
+                console.log("item 0---------- ", item);
+
 
                 if (formState.EntryType === "combined") {
                     const existingItemIndex = updatedItems.findIndex(
                         existingItem =>
-                            existingItem.PODetailsId === item.PODetailsId &&
+                            existingItem.uniqueId === item.uniqueId &&
                             (formState.productType !== "Contact Lens" ||
                                 item.CLBatchCode !== 1 ||
-                                existingItem.CLBatchBarCode === batch.CLBatchBarCode)
+                                existingItem.CLBatchCode === batch.CLBatchCode)
                     );
 
                     if (existingItemIndex >= 0) {
@@ -2199,9 +2207,9 @@ export default function GRNStep4AgainstPO() {
                             GRNAgainstPOorderType={grnData.step3.GRNAgainstPOorderType}
                             productType={grnData.step2.productType === "Frame/Sunglass" ? 1 : grnData.step2.productType === "Accessories" ? 2 : grnData.step2.productType === "Contact Lens" ? 3 : null}
                         />
-                        <div className="space-y-6 mt-6">
+                        <div className="flex space-y-6 mt-6 gap-25">
                             {/* Batch selection UI (shown only if CLBatchCode === 1) */}
-                            {(formState.productType === "Contact Lens" && poDetailsItems.some(item => item.CLBatchCode === 1)) && (
+                            {(formState.productType === "Contact Lens" && poDetailsItems.some(item => item.CLBatchCode === 1) && grnData?.step3?.GRNAgainstPOorderType === "Auto Processing") && (
                                 <div className="flex flex-col gap-6">
                                     {/* Radio buttons for batch input type */}
                                     <div className="flex items-center gap-6">
@@ -2232,7 +2240,7 @@ export default function GRNStep4AgainstPO() {
                                     {/* Batch input fields */}
                                     {/* <div className="flex gap-4"> */}
                                     {formState.clBatchInputType === "select" ? (
-                                        <div className="flex items-center gap-4">
+                                        <div className=" items-center gap-4">
                                             <label className="text-sm font-medium text-gray-700 mb-5">
                                                 Select Batch Code *
                                             </label>
@@ -2258,7 +2266,7 @@ export default function GRNStep4AgainstPO() {
                                                                 ? "Batch code is required"
                                                                 : ""
                                                         }
-                                                        className="w-full max-w-ls"
+                                                        className="max-w-ls w-fit"
                                                     />
                                                 )}
                                                 isOptionEqualToValue={(option, value) => option.id === value.id}
@@ -2305,34 +2313,87 @@ export default function GRNStep4AgainstPO() {
 
                             {/* GRN Quantity field */}
                             {(grnData?.step3?.GRNAgainstPOorderType === "Auto Processing") && (
-                                <div className="flex items-start gap-4">
+                                <div className=" items-start gap-4 mt-10 space-y-1.5">
                                     <label
                                         htmlFor="grnQtyAgainstPOForBarcode"
                                         className="block text-sm font-medium text-gray-700 whitespace-nowrap pt-2"
                                     >
                                         Enter GRN Qty *
                                     </label>
-                                    <div className="flex-1 max-w-xs">
-                                        <div className="relative">
-                                            <input
-                                                id="grnQtyAgainstPOForBarcode"
-                                                name="grnQtyAgainstPOForBarcode"
-                                                type="number"
-                                                min="1"
-                                                value={grnQtyAgainstPOForBarcode || ""}
-                                                onChange={(e) => setGrnQtyAgainstPOForBarcode(e.target.value)}
-                                                className={`w-full px-3 py-2 border ${!grnQtyAgainstPOForBarcode || grnQtyAgainstPOForBarcode <= 0
-                                                    ? "border-red-500"
-                                                    : "border-gray-300"
-                                                    } rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060]`}
-                                                placeholder="Please enter GRN quantity.... "
-                                                aria-label="GRN Qty input"
-                                                disabled={isLoading}
-                                            />
-                                            {isLoading && (
-                                                <div className="absolute right-3 top-2.5">
+                                    <div className="flex max-w-sm gap-4">
+                                        <div className="flex-1">
+                                            <div className="relative">
+                                                <input
+                                                    id="grnQtyAgainstPOForBarcode"
+                                                    name="grnQtyAgainstPOForBarcode"
+                                                    type="number"
+                                                    min="1"
+                                                    value={grnQtyAgainstPOForBarcode || ""}
+                                                    onChange={(e) => setGrnQtyAgainstPOForBarcode(e.target.value)}
+                                                    className={`w-full px-3 py-2 border ${!grnQtyAgainstPOForBarcode || grnQtyAgainstPOForBarcode <= 0
+                                                        ? "border-red-500"
+                                                        : "border-gray-300"
+                                                        } rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060]`}
+                                                    placeholder="Please enter GRN quantity.... "
+                                                    aria-label="GRN Qty input"
+                                                    disabled={isLoading}
+                                                />
+                                                {isLoading && (
+                                                    <div className="absolute right-3 top-2.5">
+                                                        <svg
+                                                            className="animate-spin h-4 w-4 text-blue-500"
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <circle
+                                                                className="opacity-25"
+                                                                cx="12"
+                                                                cy="12"
+                                                                r="10"
+                                                                stroke="currentColor"
+                                                                strokeWidth="4"
+                                                            ></circle>
+                                                            <path
+                                                                className="opacity-75"
+                                                                fill="currentColor"
+                                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                                            ></path>
+                                                        </svg>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {!grnQtyAgainstPOForBarcode ? (
+                                                <p className="text-red-500 text-xs mt-1">GRN quantity is required</p>) : <p></p>
+                                            }
+                                            {(grnQtyAgainstPOForBarcode && grnQtyAgainstPOForBarcode <= 0) ? (
+                                                <p className="text-red-500 text-xs mt-1">Quantity must be greater than 0</p>) : <p></p>
+                                            }
+                                        </div>
+                                        <button
+                                            onClick={handleAddBarcodeSearchItemsToScannedTable}
+                                            className="px-4 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex max-h-10"
+                                            disabled={
+                                                isLoading ||
+                                                !grnQtyAgainstPOForBarcode ||
+                                                grnQtyAgainstPOForBarcode <= 0 ||
+                                                (formState.productType === "Contact Lens" &&
+                                                    poDetailsItems.some(item => item.CLBatchCode === 1) &&
+                                                    formState.clBatchInputType === "select" &&
+                                                    !selectedBatchCode) ||
+                                                (formState.productType === "Contact Lens" &&
+                                                    poDetailsItems.some(item => item.CLBatchCode === 1) &&
+                                                    formState.clBatchInputType === "enter" &&
+                                                    (!batchCodeInput ||
+                                                        !CLBatches?.data?.find(
+                                                            (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
+                                                        )))
+                                            }
+                                        >
+                                            {isLoading ? (
+                                                <>
                                                     <svg
-                                                        className="animate-spin h-4 w-4 text-blue-500"
+                                                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
                                                         xmlns="http://www.w3.org/2000/svg"
                                                         fill="none"
                                                         viewBox="0 0 24 24"
@@ -2351,64 +2412,13 @@ export default function GRNStep4AgainstPO() {
                                                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                                         ></path>
                                                     </svg>
-                                                </div>
+                                                    Adding...
+                                                </>
+                                            ) : (
+                                                "Add GRN Items"
                                             )}
-                                        </div>
-                                        {!grnQtyAgainstPOForBarcode && (
-                                            <p className="text-red-500 text-xs mt-1">GRN quantity is required</p>
-                                        )}
-                                        {grnQtyAgainstPOForBarcode && grnQtyAgainstPOForBarcode <= 0 && (
-                                            <p className="text-red-500 text-xs mt-1">Quantity must be greater than 0</p>
-                                        )}
+                                        </button>
                                     </div>
-                                    <button
-                                        onClick={handleAddBarcodeSearchItemsToScannedTable}
-                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center"
-                                        disabled={
-                                            isLoading ||
-                                            !grnQtyAgainstPOForBarcode ||
-                                            grnQtyAgainstPOForBarcode <= 0 ||
-                                            (formState.productType === "Contact Lens" &&
-                                                poDetailsItems.some(item => item.CLBatchCode === 1) &&
-                                                formState.clBatchInputType === "select" &&
-                                                !selectedBatchCode) ||
-                                            (formState.productType === "Contact Lens" &&
-                                                poDetailsItems.some(item => item.CLBatchCode === 1) &&
-                                                formState.clBatchInputType === "enter" &&
-                                                (!batchCodeInput ||
-                                                    !CLBatches?.data?.find(
-                                                        (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
-                                                    )))
-                                        }
-                                    >
-                                        {isLoading ? (
-                                            <>
-                                                <svg
-                                                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                >
-                                                    <circle
-                                                        className="opacity-25"
-                                                        cx="12"
-                                                        cy="12"
-                                                        r="10"
-                                                        stroke="currentColor"
-                                                        strokeWidth="4"
-                                                    ></circle>
-                                                    <path
-                                                        className="opacity-75"
-                                                        fill="currentColor"
-                                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                                    ></path>
-                                                </svg>
-                                                Adding...
-                                            </>
-                                        ) : (
-                                            "Add GRN Items"
-                                        )}
-                                    </button>
                                 </div>
                             )}
                         </div>

@@ -179,7 +179,9 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                                 />
                             </TableCell>
                             <TableCell className=" ">{item.POQty}</TableCell>
-                            <TableCell>{item.POQty - (item.quantity || 1) - item.CancelledQty}</TableCell>
+                            {/* <TableCell>{item.POQty - (item.quantity || 1) - item.CancelledQty}</TableCell> */}
+                            <TableCell>{item.POQty - (item.quantity ?? 0) - item.CancelledQty - (item.ReceivedQty ?? 0)}</TableCell>
+
                             <TableCell>
                                 <input
                                     type="number"
@@ -220,7 +222,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                                 {item.Additional ? ` Add: ${item.Additional > 0 ? `+` : `-`}${item.Additional}` : ` Add: `}
                                 {item.Size && <br />}{item.Size}
                                 {item?.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : null}
-                                {item?.BatchCode && <br />}{item.BatchCode ? `BatchCode: ${item.BatchCode} - ${item.Expiry}` : null}
+                                {item?.BatchCode && <br />}{item.BatchCode ? `BatchCode: ${item.BatchCode} - ${item.Expiry ? `Expiry: ${item.Expiry}` : ``}` : null}
                                 {/* {item?.Expiry && <br />}{item.Expiry ? `Expiry: ${item.Expiry}` : null} */}
                                 {item.HSN && <br />}{`HSN: ${item.HSN}`}
                             </TableCell>
@@ -236,7 +238,9 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                             </TableCell>
                             <TableCell>{item.OrderQty || 0}</TableCell>
                             <TableCell>{item.POQty || 0}</TableCell>
-                            <TableCell>{item.POQty - (item.quantity || 1) - item.CancelledQty}</TableCell>
+                            {/* <TableCell>{item.POQty - (item.quantity || 1) - item.CancelledQty}</TableCell> */}
+                            <TableCell>{item.POQty - (item.quantity ?? 0) - item.CancelledQty - (item.ReceivedQty ?? 0)}</TableCell>
+
                             <TableCell>
                                 <input
                                     type="number"
