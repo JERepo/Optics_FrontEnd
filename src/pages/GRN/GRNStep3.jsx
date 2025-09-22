@@ -257,7 +257,7 @@ export default function GRNStep3() {
                 setFormState(prev => ({
                     ...prev,
                     rate: totalRate,
-                    fittingCharge: response?.data?.FittingChargeDetails?.FittingPrice,
+                    fittingCharge: (response?.FittingChargeDetails?.FittingCharges === 1 && response?.FittingChargeDetails?.FittingChargesPurchase === 1 && response?.FittingChargeDetails?.WithFitting === 1) ?  response?.data?.FittingChargeDetails?.FittingPrice : null,
                     errors: { ...prev.errors }
                 }));
             } catch (error) {
@@ -834,7 +834,7 @@ export default function GRNStep3() {
                     GRNPrice: formState.rate, // Use user-entered rate
                     TaxPercent: GRNOrderPowerDetails?.TaxPercentage,
                     FittingPrice: formState.fittingCharge,
-                    FittingGSTPercentage: GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST || null,
+                    FittingGSTPercentage: (GRNOrderPowerDetails?.FittingChargeDetails?.FittingCharges === 1 && GRNOrderPowerDetails?.FittingChargeDetails?.FittingChargesPurchase === 1 && GRNOrderPowerDetails?.FittingChargeDetails?.WithFitting === 1) ?  GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST : null,
                     ApplicationUserId: user.Id
                 }];
             }
@@ -1515,7 +1515,7 @@ export default function GRNStep3() {
                                     </div>
                                 </div>
 
-                                {GRNOrderPowerDetails?.FittingChargeDetails?.FittingCharges === 1 && (
+                                {(GRNOrderPowerDetails?.FittingChargeDetails?.FittingCharges === 1 && GRNOrderPowerDetails?.FittingChargeDetails?.FittingChargesPurchase === 1 && GRNOrderPowerDetails?.FittingChargeDetails?.WithFitting === 1) && (
                                     <div className="flex items-center justify-between gap-4 w-full">
                                         <div className="flex flex-col flex-1">
                                             <label htmlFor="fittingCharge" className="text-sm font-medium text-gray-700 mb-1">Fitting Charges *</label>
