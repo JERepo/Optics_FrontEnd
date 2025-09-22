@@ -68,7 +68,15 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                                     />
                                 </TableCell>
                                 <TableCell className=" ">{item.POQty}</TableCell>
-                                <TableCell>{item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty}</TableCell>
+                                <TableCell>{item.POQty - (item.quantity ?? 0) - item.CancelledQty - (item.ReceivedQty ?? 0)}</TableCell>
+                                {/* <TableCell>
+                                    <button
+                                        onClick={() => openModal(index, item.quantity || 1)}
+                                        className="w-16 px-2 py-1 border rounded bg-white hover:bg-gray-50 cursor-pointer text-left"
+                                    >
+                                        {item.quantity || 1}
+                                    </button>
+                                </TableCell> */}
                                 <TableCell>
                                     <input
                                         type="number"
