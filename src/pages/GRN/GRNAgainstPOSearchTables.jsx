@@ -347,7 +347,13 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     {item.Size && <br />}{item.Size}
                                     {item?.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : null}
                                     {item?.BatchCode && <br />}{item.BatchCode ? `BatchCode: ${item.BatchCode}` : null}
-                                    {item?.Expiry && <br />}{item.Expiry ? `Expiry: ${item.Expiry}` : null}
+                                    {/* {item?.Expiry && <br />}{item.Expiry ? `Expiry: ${item.Expiry}` : null} */}
+                                    {item?.Expiry && <br />}
+                                    {item.Expiry ? (() => {
+                                        const [year, month, day] = item.Expiry.split('-');
+                                        const formattedExpiry = `${day}-${month}-${year}`;
+                                        return ` Expiry: ${formattedExpiry}`;
+                                    })() : null}
                                     {item.HSN && <br />}{`HSN: ${item.HSN}`}
                                 </TableCell>
                                 <TableCell>₹{item.MRP}</TableCell>
@@ -439,7 +445,13 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     {item.Size && <br />}{item.Size}
                                     {item?.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : null}
                                     {item?.BatchCode && <br />}{item.BatchCode ? `BatchCode: ${item.BatchCode}` : null}
-                                    {item?.Expiry && <br />}{item.Expiry ? `Expiry: ${item.Expiry}` : null}
+                                    {/* {item?.Expiry && <br />}{item.Expiry ? `Expiry: ${item.Expiry}` : null} */}
+                                    {item?.Expiry && <br />}
+                                    {item.Expiry ? (() => {
+                                        const [year, month, day] = item.Expiry.split('-');
+                                        const formattedExpiry = `${day}-${month}-${year}`;
+                                        return ` Expiry: ${formattedExpiry}`;
+                                    })() : null}
                                     {item.HSN && <br />}{`HSN: ${item.HSN}`}
                                 </TableCell>
                                 <TableCell>₹{item.MRP}</TableCell>

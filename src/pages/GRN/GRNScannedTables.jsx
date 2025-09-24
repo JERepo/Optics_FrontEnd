@@ -6,7 +6,7 @@ import { Table, TableRow, TableCell } from "../../components/Table";
 import { useGRN } from "../../features/GRNContext";
 
 export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateScannedItemQuantity, removeScannedItem, productType }) {
-    const {grnData} = useGRN();
+    const { grnData } = useGRN();
     return (
         <>
             {productType === 1 && (
@@ -156,7 +156,13 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                                 {item.Additional ? ` Add: ${item.Additional}` : ` Add: `}
                                 {/* {item?.Barcode && <br />}{item?.Barcode ? `Barcode: ${item?.Barcode}`: ``} */}
                                 {(typeof item?.CLBatchCode) === 'string' && <br />}{(typeof item?.CLBatchCode) === 'string' ? `BatchCode: ${item.CLBatchCode}` : ``}
-                                {(typeof item?.CLBatchCode) === 'string' && (item?.Expiry || item?.CLBatchExpiry) && ` Expiry: ${item.Expiry || item?.CLBatchExpiry}`}
+                                {/* {(typeof item?.CLBatchCode) === 'string' && (item?.Expiry || item?.CLBatchExpiry) && ` Expiry: ${item.Expiry || item?.CLBatchExpiry}`} */}
+                                {(typeof item?.CLBatchCode) === 'string' && (item?.Expiry || item?.CLBatchExpiry) && (() => {
+                                    const expiryDate = item.Expiry || item?.CLBatchExpiry;
+                                    const [year, month, day] = expiryDate.split('-');
+                                    const formattedExpiry = `${day}-${month}-${year}`;
+                                    return ` Expiry: ${formattedExpiry}`;
+                                })()}
                                 {item.HSN && <br />}{item.HSN && `HSN: ` + item.HSN}
                             </TableCell>
                             <TableCell>₹{item.MRP || item.MRPMaster || 0}</TableCell>

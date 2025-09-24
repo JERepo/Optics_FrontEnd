@@ -174,7 +174,8 @@ export default function GRNStep4() {
                 AgainstPO: item?.AgainstPO ?? 0,
                 CLBatchCode: item?.ProductDetails?.CLBatchCode ?? 0,
                 BatchCode: item?.BatchCode || null,
-                OrderDetailsId: item?.OrderDetailId || null
+                OrderDetailsId: item?.OrderDetailId || null,
+                GRNType: item?.GRNType
             }));
 
             console.log("grnDetails in save --------------- ", grnDetails);
@@ -308,13 +309,28 @@ export default function GRNStep4() {
                                                     {item?.ProductDetails?.barcode && <br />}{item?.ProductDetails?.barcode ? `Barcode: ${item?.ProductDetails?.barcode}` : null}
                                                     {item?.BatchCode && <br />}{item.BatchCode ? `BatchCode: ${item.BatchCode}` : null}
                                                     {/* {item?.Expiry && <br />}{item.Expiry ? `Expiry: ${item.Expiry}` : null} */}
-                                                    {(() => {
+                                                    {/* {(() => {
                                                         console.log("Iteme ajnd", item);
                                                         const stock = item?.ProductDetails?.Stock?.find(stock => stock.BatchCode === item.BatchCode);
                                                         console.log("item.BatchCode:", item.BatchCode);
                                                         console.log("Stock array:", item?.ProductDetails?.Stock);
                                                         console.log("Found stock:", stock);
                                                         return stock?.Expiry ? <> Expiry: {stock.Expiry}</> : null;
+                                                    })()} */}
+                                                    {(() => {
+                                                        console.log("Iteme ajnd", item);
+                                                        const stock = item?.ProductDetails?.Stock?.find(stock => stock.BatchCode === item.BatchCode);
+                                                        console.log("item.BatchCode:", item.BatchCode);
+                                                        console.log("Stock array:", item?.ProductDetails?.Stock);
+                                                        console.log("Found stock:", stock);
+
+                                                        // Format expiry date from YYYY-MM-DD to DD-MM-YYYY
+                                                        if (stock?.Expiry) {
+                                                            const [year, month, day] = stock.Expiry.split('-');
+                                                            const formattedExpiry = `${day}-${month}-${year}`;
+                                                            return <> Expiry: {formattedExpiry}</>;
+                                                        }
+                                                        return null;
                                                     })()}
                                                     {item?.ProductDetails?.HSN && <br />}{`HSN: ${item?.ProductDetails?.HSN}`}
                                                 </TableCell>
@@ -430,7 +446,13 @@ export default function GRNStep4() {
                                                         console.log("Found stock:", stock);
                                                         return stock?.Expiry ? <><br />Expiry: {stock.Expiry}</> : null;
                                                     })()} */}
-                                                    {item?.Expiry && <br />}{item.Expiry ? ` Expiry: ${item.Expiry}` : null}
+                                                    {/* {item?.Expiry && <br />}{item.Expiry ? ` Expiry: ${item.Expiry}` : null} */}
+                                                    {item?.Expiry && <br />}
+                                                    {item.Expiry ? (() => {
+                                                        const [year, month, day] = item.Expiry.split('-');
+                                                        const formattedExpiry = `${day}-${month}-${year}`;
+                                                        return ` Expiry: ${formattedExpiry}`;
+                                                    })() : null}
                                                     {item?.ProductDetails?.HSN && <><br />HSN: {item.ProductDetails.HSN}</>}
                                                 </TableCell>
                                                 : null
