@@ -303,7 +303,8 @@ export default function GRNStep1() {
             documentNo: formState.documentNo,
             documentDate: formState.documentDate,
             billingMethod: formState.billingMethod,
-            againstPO: formState?.againstPO
+            againstPO: formState?.againstPO,
+            grnType: formState?.billingMethod
         });
 
         // 3. Save the GRN main entry in db

@@ -1,6 +1,8 @@
 import { Table, TableRow, TableCell } from "../../components/Table";
+import { useGRN } from "../../features/GRNContext";
 
 export function GRNSearchTable({ searchResults, selectedRows, handleCheckboxChange, productType }) {
+    const {grnData} = useGRN();
     return (
         <>
             {productType === 1 && (
@@ -94,7 +96,7 @@ export function GRNSearchTable({ searchResults, selectedRows, handleCheckboxChan
 }
 
 
-export function GRNCLSearchTable({ clSearchItems }) {
+export function GRNCLSearchTable({ clSearchItems, grnData }) {
     return (
         <>
             <Table

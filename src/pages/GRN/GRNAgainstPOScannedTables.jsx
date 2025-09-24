@@ -4,8 +4,11 @@
 import { Trash2 } from "lucide-react";
 import { Table, TableRow, TableCell } from "../../components/Table";
 import { useState } from "react";
+import { useGRN } from "../../features/GRNContext";
 
 export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice, updateScannedItemQuantity, removeScannedItem, productType }) {
+
+    const { grnData } = useGRN();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingIndex, setEditingIndex] = useState(null);
@@ -59,14 +62,17 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                                     </div>
                                 </TableCell>
                                 <TableCell className="">₹ {item.MRP}</TableCell>
-                                <TableCell>₹{" "}
-                                    <input
-                                        type="number"
-                                        value={item.price || 0}
-                                        onChange={(e) => updateScannedItemPrice(index, e.target.value)}
-                                        className="w-20 px-2 py-1 border rounded"
-                                    />
-                                </TableCell>
+                                {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+
+                                    <TableCell>₹{" "}
+                                        <input
+                                            type="number"
+                                            value={item.price || 0}
+                                            onChange={(e) => updateScannedItemPrice(index, e.target.value)}
+                                            className="w-20 px-2 py-1 border rounded"
+                                        />
+                                    </TableCell>
+                                }
                                 <TableCell className=" ">{item.POQty}</TableCell>
                                 <TableCell>{item.POQty - (item.quantity ?? 0) - item.CancelledQty - (item.ReceivedQty ?? 0)}</TableCell>
                                 {/* <TableCell>
@@ -170,14 +176,17 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                             {/* <TableCell>{item.Variation}</TableCell> */}
                             <TableCell>{item.SKU}</TableCell>
                             <TableCell>₹ {item.MRP}</TableCell>
-                            <TableCell>₹{" "}
-                                <input
-                                    type="number"
-                                    value={item.price || item.BuyingPrice || 0}
-                                    onChange={(e) => updateScannedItemPrice(index, e.target.value)}
-                                    className="w-20 px-2 py-1 border rounded"
-                                />
-                            </TableCell>
+                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+
+                                <TableCell>₹{" "}
+                                    <input
+                                        type="number"
+                                        value={item.price || item.BuyingPrice || 0}
+                                        onChange={(e) => updateScannedItemPrice(index, e.target.value)}
+                                        className="w-20 px-2 py-1 border rounded"
+                                    />
+                                </TableCell>
+                            }
                             <TableCell className=" ">{item.POQty}</TableCell>
                             {/* <TableCell>{item.POQty - (item.quantity || 1) - item.CancelledQty}</TableCell> */}
                             <TableCell>{item.POQty - (item.quantity ?? 0) - item.CancelledQty - (item.ReceivedQty ?? 0)}</TableCell>
@@ -229,14 +238,17 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                             </TableCell>
                             {/* <TableCell>{item.Expiry || 0}</TableCell> */}
                             <TableCell>₹{item.MRP || item.MRPMaster || 0}</TableCell>
-                            <TableCell>₹{" "}
-                                <input
-                                    type="number"
-                                    value={item.price || item.BuyingPriceMaster}
-                                    onChange={(e) => updateScannedItemPrice(index, e.target.value)}
-                                    className="w-20 px-2 py-1 border rounded"
-                                />
-                            </TableCell>
+                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+
+                                <TableCell>₹{" "}
+                                    <input
+                                        type="number"
+                                        value={item.price || item.BuyingPriceMaster}
+                                        onChange={(e) => updateScannedItemPrice(index, e.target.value)}
+                                        className="w-20 px-2 py-1 border rounded"
+                                    />
+                                </TableCell>
+                            }
                             {/* <TableCell>{item.OrderQty || 0}</TableCell> */}
                             <TableCell>{item.POQty || 0}</TableCell>
                             {/* <TableCell>{item.POQty - (item.quantity || 1) - item.CancelledQty}</TableCell> */}
