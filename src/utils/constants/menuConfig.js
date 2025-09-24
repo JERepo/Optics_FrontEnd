@@ -16,6 +16,7 @@ import {
   FiRotateCcw,
   FiTag,
   FiBook,
+  FiBarChart2,
 } from "react-icons/fi";
 import {
   IoPeopleOutline,
@@ -217,7 +218,7 @@ export const menuItems = [
   {
     name: "Stock Transfer",
     icon: FiRepeat,
-    module: ["StockTranserIn","StockTransfer"],
+    module: ["StockTranserIn", "StockTransfer"],
     subItems: [
       {
         name: "Stock Transfer Out",
@@ -268,6 +269,37 @@ export const menuItems = [
         name: "Activate GV",
         path: "activate-gv",
         module: "Gift-Voucher",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+    ],
+  },
+  {
+    name: "Reports",
+    icon: FiBarChart2,
+    module: ["order-report", "sales-report"],
+    subItems: [
+      {
+        name: "Order Report",
+        path: "order-report",
+        module: "Order-Report",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+      {
+        name: "Sales Report",
+        path: "sales-report",
+        module: "Sales-Report",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+      {
+        name: "Purchase Return Report",
+        path: "purchase-return-report",
+        module: "Purchase-Return-Report",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+      {
+        name: "Purchase Report",
+        path: "purchase-report",
+        module: "Purchase-Report",
         icon: IoConstructOutline, // Suggests building/setup
       },
     ],

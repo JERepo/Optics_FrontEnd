@@ -15,6 +15,7 @@ export const customerApi = createApi({
       query: ({ id }) => ({
         url: `/api/v1/location-settings/getbyid/${id}`,
       }),
+      providesTags: ["Customer"],
     }),
     createCustomer: builder.mutation({
       query: ({ id, payload }) => ({
@@ -34,11 +35,13 @@ export const customerApi = createApi({
       query: ({ id }) => ({
         url: `/api/v1/customer/bylocation/${id}`,
       }),
+      providesTags: ["Customer"],
     }),
     getCustomerById: builder.query({
       query: ({ id }) => ({
         url: `/api/v1/customer/byid/${id}`,
       }),
+      providesTags: ["Customer"],
     }),
     deActivate: builder.mutation({
       query: ({ id, payload }) => ({
@@ -92,6 +95,14 @@ export const customerApi = createApi({
         method: "PUT",
         body: payload,
       }),
+      invalidatesTags: ["Customer"],
+    }),
+    updatePatient: builder.mutation({
+      query: ({ customerId, payload }) => ({
+        url: `/api/v1/customer/updatePatientStatus/${customerId}`,
+        method: "PUT",
+        body: payload,
+      }),
     }),
   }),
 });
@@ -111,5 +122,6 @@ export const {
   useGetAllCustomerByIdQuery,
   useUpdateCreditLimitMutation,
   useGetInvoiceDataQuery,
-  useUpdateCustomerMutation
+  useUpdateCustomerMutation,
+  useUpdatePatientMutation
 } = customerApi;

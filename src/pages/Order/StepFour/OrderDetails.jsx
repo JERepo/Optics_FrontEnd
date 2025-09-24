@@ -14,17 +14,29 @@ import {
   FiDollarSign,
   FiX,
   FiShoppingCart,
+  FiTag,
+  FiSearch,
 } from "react-icons/fi";
 import { Table, TableCell, TableRow } from "../../../components/Table";
 import {
+  useApplyOfferType4Mutation,
+  useGetOfferByMainIdQuery,
+  useGetOfferCodeDetailsMutation,
+  useGetOfferDetailsQuery,
   useGetSavedOrderDetailsQuery,
   useMainApplyDiscountMutation,
   useMainApplyRemoveDiscountMutation,
+  useRemoveOfferType3Mutation,
+  useRemoveOfferType4Mutation,
   useRemoveOrderMutation,
 } from "../../../api/orderApi";
 import Loader from "../../../components/ui/Loader";
 import toast from "react-hot-toast";
 import { isValidNumericInput } from "../../../utils/isValidNumericInput";
+import Modal from "../../../components/ui/Modal";
+import Input from "../../../components/Form/Input";
+import { useSelector } from "react-redux";
+import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 
 // Format number with commas
 const formatNumber = (num) => {
@@ -40,8 +52,11 @@ const DiscountInput = ({
   onInputChange,
   onApply,
   onRemoveDiscount,
+  onRemoveOffer,
   isApplyingDiscount,
   isRemovingDiscount,
+  isRemovingOffer,
+  offerData,
 }) => {
   const fittingPrice = parseFloat(item.FittingPrice) || 0;
   const fittingGst = parseFloat(item.FittingGSTPercentage) || 0;
@@ -52,9 +67,11 @@ const DiscountInput = ({
     discountTypes[item.OrderDetailId] === 2 &&
     discountInputs[item.OrderDetailId] > 100;
 
+  console.log("type", discountTypes, discountResults);
+
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-3 flex-col">
         {!hasDiscount && (
           <div className="flex gap-2">
             <div className="flex gap-2">
@@ -87,107 +104,120 @@ const DiscountInput = ({
             </div>
           </div>
         )}
-        {!hasDiscount && (
-          <div className="flex-1 min-w-[60px]">
-            {discountTypes[item.OrderDetailId] === 1 && (
-              <div className="relative">
-                <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500">
-                  ₹
-                </span>
-                <input
-                  type="number"
-                  className="border pl-6 pr-2 py-1 rounded text-sm w-full"
-                  placeholder="0.00"
-                  value={discountInputs[item.OrderDetailId] || 0}
-                  onChange={(e) => {
-                    let value = parseFloat(e.target.value) || 0;
-                    if (!isValidNumericInput(value)) return;
-                    if (value > toalSum) {
-                      value = toalSum;
-                    }
-                    onInputChange(item.OrderDetailId, value);
-                  }}
-                  min={0}
-                  max={toalSum}
-                />
-              </div>
-            )}
-            {discountTypes[item.OrderDetailId] === 2 && (
-              <div className="relative">
-                <input
-                  type="number"
-                  className={`border px-2 py-1 rounded text-sm w-full pr-6 border-neutral-400 ${
-                    error ? "border-red-500" : ""
-                  }`}
-                  placeholder="0"
-                  value={discountInputs[item.OrderDetailId] || 0}
-                  onChange={(e) => {
-                    let value = parseFloat(e.target.value) || 0;
-                    if (!isValidNumericInput(value)) return;
-                    if (value > 100) {
-                      value = 100;
-                    }
-                    onInputChange(item.OrderDetailId, value);
-                  }}
-                  max="100"
-                  min="0"
-                />
-                <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500">
-                  %
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {discountTypes[item.OrderDetailId] && (
-          <div className="flex gap-3">
-            {hasDiscount && (
-              <div className="text-xs bg-green-50 px-2 py-1 rounded flex-nowrap text-green-700">
-                <div>
-                  Discount: ₹{formatNumber(item.DiscountValue || result.value)}{" "}
-                  ({formatNumber(item.DiscountPercentage || 0)}%)
+        <div className="flex gap-3">
+          {!hasDiscount && (
+            <div className="flex-1 min-w-[60px]">
+              {discountTypes[item.OrderDetailId] === 1 && (
+                <div className="relative">
+                  <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500">
+                    ₹
+                  </span>
+                  <input
+                    type="number"
+                    className="border pl-6 pr-2 py-1 rounded text-sm w-full"
+                    placeholder="0.00"
+                    value={discountInputs[item.OrderDetailId] || ""}
+                    onChange={(e) => {
+                      let value = parseFloat(e.target.value) || 0;
+                      if (!isValidNumericInput(value)) return;
+                      if (value > toalSum) {
+                        value = toalSum;
+                      }
+                      onInputChange(item.OrderDetailId, value);
+                    }}
+                    min={0}
+                    max={toalSum}
+                  />
                 </div>
-              </div>
-            )}
+              )}
+              {discountTypes[item.OrderDetailId] === 2 && (
+                <div className="relative">
+                  <input
+                    type="number"
+                    className={`border px-2 py-1 rounded text-sm w-full pr-6 border-neutral-400 ${
+                      error ? "border-red-500" : ""
+                    }`}
+                    placeholder="0"
+                    value={discountInputs[item.OrderDetailId] || ""}
+                    onChange={(e) => {
+                      let value = parseFloat(e.target.value) || 0;
+                      if (!isValidNumericInput(value)) return;
+                      if (value > 100) {
+                        value = 100;
+                      }
+                      onInputChange(item.OrderDetailId, value);
+                    }}
+                    max="100"
+                    min="0"
+                  />
+                  <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500">
+                    %
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+          {discountTypes[item.OrderDetailId] && (
+            <div className="flex gap-3 items-center">
+              {hasDiscount && (
+                <div className="text-xs bg-green-50 px-2 py-1 rounded flex-nowrap text-green-700 items-start flex flex-col gap-1">
+                  <div>
+                    Discount: ₹
+                    {formatNumber(item.DiscountValue || result.value)} (
+                    {formatNumber(item.DiscountPercentage || 0)}%)
+                  </div>
+                  {item.offer && <div>Offer Code: {item.offer.offerCode}</div>}
+                </div>
+              )}
 
-            {!hasDiscount ? (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onApply(item)}
-                disabled={
-                  !discountInputs[item.OrderDetailId] ||
-                  isApplyingDiscount ||
-                  error
-                }
-                className="shrink-0 relative"
-                title="Apply Discount"
-              >
-                {isApplyingDiscount ? (
-                  <div className="animate-spin h-4 w-4 border-2 border-t-transparent border-gray-500 rounded-full" />
-                ) : (
-                  <FiSend size={14} />
-                )}
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onRemoveDiscount(item.OrderDetailId)}
-                disabled={isRemovingDiscount}
-                className="shrink-0 relative"
-                title="Remove Discount"
-              >
-                {isRemovingDiscount ? (
-                  <div className="animate-spin h-4 w-4 border-2 border-t-transparent border-gray-500 rounded-full" />
-                ) : (
-                  <FiX size={14} />
-                )}
-              </Button>
-            )}
-          </div>
-        )}
+              {!hasDiscount ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onApply(item)}
+                  disabled={
+                    !discountInputs[item.OrderDetailId] ||
+                    isApplyingDiscount ||
+                    error
+                  }
+                  className="shrink-0 relative"
+                  title="Apply Discount"
+                >
+                  {isApplyingDiscount ? (
+                    <div className="animate-spin h-4 w-4 border-2 border-t-transparent border-gray-500 rounded-full" />
+                  ) : (
+                    <FiSend size={14} />
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    item.offer
+                      ? onRemoveOffer(item.OrderDetailId)
+                      : onRemoveDiscount(item.OrderDetailId)
+                  }
+                  disabled={item.offer ? isRemovingOffer : isRemovingDiscount}
+                  className="shrink-0 relative"
+                  title={item.offer ? "Remove Offer" : "Remove Discount"}
+                >
+                  {item.offer ? (
+                    isRemovingOffer ? (
+                      <div className="animate-spin h-4 w-4 border-2 border-t-transparent border-gray-500 rounded-full" />
+                    ) : (
+                      <FiX size={14} />
+                    )
+                  ) : isRemovingDiscount ? (
+                    <div className="animate-spin h-4 w-4 border-2 border-t-transparent border-gray-500 rounded-full" />
+                  ) : (
+                    <FiX size={14} />
+                  )}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -202,15 +232,23 @@ const OrderDetails = () => {
     customerId,
     setSubStep,
   } = useOrder();
-
+  const { user, hasMultipleLocations } = useSelector((state) => state.auth);
   // State for discount management
   const [discountTypes, setDiscountTypes] = useState({});
   const [discountResults, setDiscountResults] = useState({});
   const [discountInputs, setDiscountInputs] = useState({});
   const [applyingDiscounts, setApplyingDiscounts] = useState({});
   const [removingDiscounts, setRemovingDiscounts] = useState({});
+  const [removingOffers, setRemovingOffers] = useState({});
   const [deletingItems, setDeletingItems] = useState({});
   const [comment, setComment] = useState("");
+  const [openOffer, setOfferOpen] = useState(false);
+  const [openOffer4, setOffer4] = useState(false);
+  const [offerCode, setOfferCode] = useState("");
+  const [orderDetails, setOrderDetails] = useState(null);
+  const [offerDetails, setOfferDetails] = useState(null);
+  const [showOfferWarning, setShowOfferWarning] = useState(false);
+  const [offer4Warning, setOffer4Warning] = useState(false);
 
   // API queries
   const { data: savedOrders, isLoading: savedOrdersLoading } =
@@ -218,7 +256,21 @@ const OrderDetails = () => {
 
   const [removeOrder, { isLoading: isRemoveLoading }] =
     useRemoveOrderMutation();
+  const [applyOffer, { isLoading: isOfferApplying }] =
+    useGetOfferCodeDetailsMutation();
+  const { data: allOfferDetails } = useGetOfferDetailsQuery(
+    {
+      userId: parseInt(user.Id),
+    },
+    { skip: !parseInt(user.Id) }
+  );
 
+  const [removeOfferType3, { isLoading: isOfferRemoving }] =
+    useRemoveOfferType3Mutation();
+  const [removeOfferType4, { isLoading: isOfferType4Removing }] =
+    useRemoveOfferType4Mutation();
+  const [applyOffer4, { isLoading: isOffer4Applying }] =
+    useApplyOfferType4Mutation();
   const [applyDiscount] = useMainApplyDiscountMutation();
   const [removeDiscount] = useMainApplyRemoveDiscountMutation();
 
@@ -351,6 +403,39 @@ const OrderDetails = () => {
     }
   };
 
+  const handleRemoveOfferType3 = async (orderDetailId) => {
+    setRemovingOffers((prev) => ({ ...prev, [orderDetailId]: true }));
+    try {
+      await removeOfferType3({
+        payload: { orderDetailId: orderDetailId },
+      }).unwrap();
+      toast.success("Offer removed successfully");
+    } catch (error) {
+      toast.error(error?.data?.message || "Failed to remove offer");
+    } finally {
+      setRemovingOffers((prev) => {
+        const newState = { ...prev };
+        delete newState[orderDetailId];
+        return newState;
+      });
+    }
+  };
+
+  const handleRemoveOfferType4 = async () => {
+    try {
+      await removeOfferType4({
+        payload: {
+          offerCode: savedOrders[0]?.offer.offerCode,
+          orderId: customerId.orderId,
+        },
+      }).unwrap();
+      toast.success("Offer removed successfully");
+    } catch (error) {
+      toast.error(error?.data?.message || "Failed to remove offer");
+    } finally {
+      setOfferDetails(null);
+    }
+  };
   const handleDeleteItem = async (orderDetailId) => {
     setDeletingItems((prev) => ({ ...prev, [orderDetailId]: true }));
     try {
@@ -585,6 +670,165 @@ const OrderDetails = () => {
       console.log("Please try again after some time");
     }
   };
+
+  const handleOfferCheckConfirm = async () => {
+    if (!offerCode) {
+      toast.error("Please Enter the OfferCode");
+      return;
+    }
+    const payload = {
+      forceApply: true,
+      offerCode: offerCode,
+      orderDetailId: orderDetails?.OrderDetailId,
+      locationId: parseInt(hasMultipleLocations[0]),
+      ApplicationUserId: user.Id,
+    };
+    try {
+      const res = await applyOffer({ payload }).unwrap();
+      setOfferDetails(res?.data);
+      setOfferOpen(false);
+      toast.success("Offer applied successfully");
+      setOfferCode("");
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setShowOfferWarning(false);
+      setOfferCode("");
+    }
+  };
+
+  const handleOfferCodeSubmit = async (e) => {
+    e.preventDefault();
+    if (!offerCode) {
+      toast.error("Please Enter the OfferCode");
+      return;
+    }
+
+    const payload = {
+      forceApply: false,
+      offerCode: offerCode,
+      orderDetailId: orderDetails?.OrderDetailId,
+      locationId: parseInt(hasMultipleLocations[0]),
+      ApplicationUserId: user.Id,
+    };
+    try {
+      const res = await applyOffer({ payload }).unwrap();
+
+      if (res?.warning) {
+        setOfferDetails(res);
+        setShowOfferWarning(true);
+        setOfferOpen(false);
+        // setOfferCode("");
+      } else {
+        setOfferDetails(res?.data);
+        setOfferOpen(false);
+        toast.success("Offer applied successfully");
+        setOfferCode("");
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(
+        error?.data?.message || "No Offer Applicable on this product"
+      );
+      setOfferOpen(false);
+      setOfferCode("");
+    }
+  };
+
+  const handleOfferCheckConfirm4 = async (e) => {
+    e.preventDefault();
+
+    if (!offerCode) {
+      toast.error("Please Enter the OfferCode");
+      return;
+    }
+
+    const payload = {
+      forceApply: true,
+      offerCode: offerCode,
+      orderMasterId: customerId.orderId,
+      totalOrderValue: parseFloat(totalAmount),
+      ApplicationUserId: user.Id,
+    };
+
+    try {
+      const res = await applyOffer4({ payload }).unwrap();
+
+      if (res?.warning) {
+        setOfferDetails(res);
+        setShowOfferWarning(true);
+        setOffer4(false);
+        // setOfferCode("");
+      } else {
+        setOfferDetails(res?.data);
+        setOffer4(false);
+        toast.success("Offer applied successfully");
+        setOfferCode("");
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(
+        error?.data?.message || "No Offer Applicable on this product"
+      );
+      setOffer4(false);
+      setOfferCode("");
+    }
+  };
+  const handleCheckAppl = () => {
+    const isValid = savedOrders?.find((item) => item.offer);
+    if (isValid) {
+      toast.error(
+        "Item Level Offer has been applied please remove them to add this offer"
+      );
+      return;
+    }
+    setOffer4(true);
+  };
+  const handleOfferCodeSubmit4 = async (e) => {
+    e.preventDefault();
+
+    if (!offerCode) {
+      toast.error("Please Enter the OfferCode");
+      return;
+    }
+
+    const payload = {
+      forceApply: false,
+      offerCode: offerCode,
+      orderMasterId: customerId.orderId,
+      totalOrderValue: parseFloat(totalAmount),
+      ApplicationUserId: user.Id,
+    };
+
+    try {
+      const res = await applyOffer4({ payload }).unwrap();
+
+      if (res?.warning) {
+        setOfferDetails(res);
+        setShowOfferWarning(true);
+        setOffer4(false);
+        // setOfferCode("");
+      } else {
+        setOfferDetails(res?.data);
+        setOffer4(false);
+        toast.success("Offer applied successfully");
+        setOfferCode("");
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(
+        error?.data?.message || "No Offer Applicable on this product"
+      );
+      setOffer4(false);
+      setOfferCode("");
+    }
+  };
+
+  const offerType4ValueCheck = savedOrders?.reduce(
+    (sum, item) => sum + parseFloat(item.DiscountValue),
+    0
+  );
+  console.log(customerId);
   return (
     <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-md overflow-hidden">
@@ -674,115 +918,229 @@ const OrderDetails = () => {
             </div>
           </div>
           {/* Order Items Table */}
-         
-            <Table
+
+          <Table
             freeze={true}
-              columns={[
-                "S.NO",
-                "Type",
-                "Product Name",
-                "Qty",
-                "Rate",
-                "Discount",
-                "GST",
-                "Total",
-                "Action",
-              ]}
-              data={savedOrders || []}
-              renderRow={(item, index) => {
-                const discountType =
-                  item.DiscountType || discountTypes[item.OrderDetailId];
-                const discountValue =
-                  item.DiscountType === 1
-                    ? item.DiscountValue
-                    : item.DiscountPercentage;
+            columns={[
+              "S.NO",
+              "Type",
+              "Product Name",
+              "Qty",
+              "Rate",
+              "Discount",
+              "GST",
+              "Total",
+              "Action",
+            ]}
+            data={savedOrders || []}
+            renderRow={(item, index) => {
+              const discountType =
+                item.DiscountType || discountTypes[item.OrderDetailId];
+              const discountValue =
+                item.DiscountType === 1
+                  ? item.DiscountValue
+                  : item.DiscountPercentage;
 
-                const hasDiscount = discountType && discountValue > 0;
+              const hasDiscount = discountType && discountValue > 0;
 
-                const result = calculateGST(
-                  item.DiscountedSellingPrice,
-                  item.TaxPercentage
-                );
+              const result = calculateGST(
+                item.DiscountedSellingPrice,
+                item.TaxPercentage
+              );
 
-                return (
-                  <TableRow key={item.SlNo}>
-                    <TableCell>{item.SlNo}</TableCell>
-                    <TableCell>{getShortTypeName(item.typeid)}</TableCell>
-                    <TableCell>
-                      <div
-                        className="whitespace-pre-wrap"
-                        
-                      >
-                        {getProductName(item)}
+              return (
+                <TableRow key={item.SlNo}>
+                  <TableCell>{item.SlNo}</TableCell>
+                  <TableCell>{getShortTypeName(item.typeid)}</TableCell>
+                  <TableCell>
+                    <div className="whitespace-pre-wrap">
+                      {getProductName(item)}
+                    </div>
+                  </TableCell>
+                  <TableCell>{formatNumber(item.OrderQty)}</TableCell>
+                  <TableCell>₹{formatNumber(item.Rate)}</TableCell>
+                  <TableCell>
+                    <DiscountInput
+                      item={item}
+                      discountTypes={{
+                        ...discountTypes,
+                        [item.OrderDetailId]: discountType,
+                      }}
+                      discountInputs={{
+                        ...discountInputs,
+                        [item.OrderDetailId]:
+                          discountValue || discountInputs[item.OrderDetailId],
+                      }}
+                      discountResults={{
+                        ...discountResults,
+                        [item.OrderDetailId]: hasDiscount
+                          ? {
+                              value: discountValue,
+                              ...result,
+                            }
+                          : result,
+                      }}
+                      onTypeChange={handleDiscountTypeChange}
+                      onInputChange={handleDiscountInputChange}
+                      onApply={handleApplyDiscount}
+                      onRemoveDiscount={handleRemoveDiscount}
+                      onRemoveOffer={handleRemoveOfferType3}
+                      isApplyingDiscount={
+                        !!applyingDiscounts[item.OrderDetailId]
+                      }
+                      isRemovingDiscount={
+                        !!removingDiscounts[item.OrderDetailId]
+                      }
+                      isRemovingOffer={!!removingOffers[item.OrderDetailId]}
+                      offerData={allOfferDetails?.data?.data}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <div>₹{formatNumber(result.gstAmount)}</div>
+                    <div>({result.taxPercentage}%)</div>
+                  </TableCell>
+                  <TableCell>₹{formatNumber(getTotal(item))}</TableCell>
+                  <TableCell>
+                    {!item.offer && (
+                      <div className="flex items-center gap-0">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Remove item"
+                          onClick={() => handleDeleteItem(item.OrderDetailId)}
+                          disabled={deletingItems[item.OrderDetailId]}
+                        >
+                          {deletingItems[item.OrderDetailId] ? (
+                            <div className="animate-spin h-4 w-4 border-2 border-t-transparent border-gray-500 rounded-full" />
+                          ) : (
+                            <FiTrash2 size={14} />
+                          )}
+                        </Button>
+
+                        <Button
+                          icon={FiTag}
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setOfferOpen(true);
+                            setOrderDetails(item);
+                          }}
+                        ></Button>
                       </div>
-                    </TableCell>
-                    <TableCell>{formatNumber(item.OrderQty)}</TableCell>
-                    <TableCell>₹{formatNumber(item.Rate)}</TableCell>
-                    <TableCell>
-                      <DiscountInput
-                        item={item}
-                        discountTypes={{
-                          ...discountTypes,
-                          [item.OrderDetailId]: discountType,
-                        }}
-                        discountInputs={{
-                          ...discountInputs,
-                          [item.OrderDetailId]:
-                            discountValue || discountInputs[item.OrderDetailId],
-                        }}
-                        discountResults={{
-                          ...discountResults,
-                          [item.OrderDetailId]: hasDiscount
-                            ? {
-                                value: discountValue,
-                                ...result,
-                              }
-                            : result,
-                        }}
-                        onTypeChange={handleDiscountTypeChange}
-                        onInputChange={handleDiscountInputChange}
-                        onApply={handleApplyDiscount}
-                        onRemoveDiscount={handleRemoveDiscount}
-                        isApplyingDiscount={
-                          !!applyingDiscounts[item.OrderDetailId]
-                        }
-                        isRemovingDiscount={
-                          !!removingDiscounts[item.OrderDetailId]
-                        }
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div>₹{formatNumber(result.gstAmount)}</div>
-                      <div>({result.taxPercentage}%)</div>
-                    </TableCell>
-                    <TableCell>₹{formatNumber(getTotal(item))}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        title="Remove item"
-                        onClick={() => handleDeleteItem(item.OrderDetailId)}
-                        disabled={deletingItems[item.OrderDetailId]}
-                      >
-                        {deletingItems[item.OrderDetailId] ? (
-                          <div className="animate-spin h-4 w-4 border-2 border-t-transparent border-gray-500 rounded-full" />
-                        ) : (
-                          <FiTrash2 size={14} />
-                        )}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              }}
-              emptyMessage={
-                savedOrdersLoading
-                  ? "Loading..."
-                  : "No orders found. Click 'Add Product' to create one."
-              }
-              pagination={false}
-            />
-         
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            }}
+            emptyMessage={
+              savedOrdersLoading
+                ? "Loading..."
+                : "No orders found. Click 'Add Product' to create one."
+            }
+            pagination={false}
+          />
 
+          <Modal
+            isOpen={openOffer}
+            onClose={() => setOfferOpen(false)}
+            width="max-w-4xl"
+          >
+            <div className="">
+              <form onSubmit={handleOfferCodeSubmit} className="space-y-2">
+                <div className="flex flex-col gap-3">
+                  <label
+                    htmlFor="barcode"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Enter OfferCode
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex items-center">
+                      <input
+                        id="offerCode"
+                        type="text"
+                        value={offerCode}
+                        onChange={(e) => setOfferCode(e.target.value)}
+                        placeholder="Scan or enter barcode"
+                        className="w-[400px] pl-10 pr-4 py-3 border border-gray-300 rounded-lg"
+                      />
+                      <FiSearch className="absolute left-3 text-gray-400" />
+                    </div>
+
+                    <Button type="submit" isLoading={isOfferApplying}>
+                      Apply Offer
+                    </Button>
+                  </div>
+                </div>
+              </form>
+              {offerDetails?.computed && (
+                <div className="mt-5">
+                  {/* <div className="flex gap-3 items-center mt-5">
+                    <Input
+                      label={
+                        offerDetails?.rule.DiscountType === 0
+                          ? "Discount Percentage"
+                          : "Discounted Value"
+                      }
+                      value={
+                        offerDetails?.rule.DiscountType === 0
+                          ? `${offerDetails?.rule?.DiscountPerct}(%)`
+                          : offerDetails?.rule?.DiscountValue
+                      }
+                      readOnly
+                    />
+                    <Input
+                      label="Unit Rate"
+                      value={offerDetails?.computed?.finalUnitPrice}
+                      readOnly
+                    />
+                    <Input
+                      label="Discounted Amount"
+                      value={offerDetails?.computed?.offerDiscountAmount}
+                    />
+                  </div> */}
+                  {/* <div>
+                    <Button onClick={handleApplyOffer}>Apply Offer</Button>
+                  </div> */}
+                </div>
+              )}
+            </div>
+          </Modal>
+          <Modal
+            isOpen={openOffer4}
+            onClose={() => setOffer4(false)}
+            width="max-w-4xl"
+          >
+            <div className="">
+              <form onSubmit={handleOfferCodeSubmit4} className="space-y-2">
+                <div className="flex flex-col gap-3">
+                  <label
+                    htmlFor="barcode"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Enter OfferCode
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex items-center">
+                      <input
+                        id="offerCode"
+                        type="text"
+                        value={offerCode}
+                        onChange={(e) => setOfferCode(e.target.value)}
+                        placeholder="Scan or enter barcode"
+                        className="w-[400px] pl-10 pr-4 py-3 border border-gray-300 rounded-lg"
+                      />
+                      <FiSearch className="absolute left-3 text-gray-400" />
+                    </div>
+
+                    <Button type="submit" isLoading={isOffer4Applying}>
+                      Apply Offer
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </Modal>
           {/* Order Summary */}
           {savedOrders?.length > 0 && (
             <div className="mt-6 border-gray-200 pt-4 px-4">
@@ -799,11 +1157,50 @@ const OrderDetails = () => {
                     ₹{formatNumber(totalGST.toFixed(2))}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">Total Amount:</span>
-                  <span className="font-semibold text-3xl">
-                    ₹{formatNumber(totalAmount.toFixed(2))}
-                  </span>
+                <div className="flex items-end gap-1">
+                  <div className="flex items-center gap-2 relative">
+                    <span className="text-gray-500">Total Amount:</span>
+                    <span className="font-semibold text-3xl">
+                      ₹{formatNumber(totalAmount.toFixed(2))}
+                    </span>
+                    <div className="absolute -top-[60%] right-0 text-[11px] bg-green-50 px-2 py-1 rounded flex-nowrap text-green-700 font-medium">
+                      {savedOrders?.every((item) => item.offer?.offerType === 4)
+                        ? `OfferCode: ${savedOrders[0]?.offer.offerCode}`
+                        : ""}
+                    </div>
+                  </div>
+
+                  <div>
+                    {savedOrders?.length > 0 &&
+                    savedOrders?.every(
+                      (item) => item.offer?.offerType === 4
+                    ) ? (
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        className="shrink-0 relative"
+                        title={"Remove Offer"}
+                        onClick={handleRemoveOfferType4}
+                      >
+                        <div>
+                          {isOfferType4Removing ? (
+                            <div className="animate-spin h-4 w-4 border-2 border-t-transparent border-gray-500 rounded-full" />
+                          ) : (
+                            <FiX size={14} />
+                          )}
+                        </div>
+                      </Button>
+                    ) : (
+                      <Button
+                        icon={FiTag}
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          handleCheckAppl();
+                        }}
+                      ></Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -840,6 +1237,29 @@ const OrderDetails = () => {
               </div>
             </div>
           )}
+
+          <ConfirmationModal
+            isOpen={showOfferWarning}
+            onClose={() => setShowOfferWarning(false)}
+            onConfirm={handleOfferCheckConfirm}
+            title="Offer Discount warning!"
+            message={offerDetails?.message}
+            confirmText="Yes, Proceed"
+            cancelText="Cancel"
+            danger={false}
+            isLoading={isOfferApplying}
+          />
+          <ConfirmationModal
+            isOpen={offer4Warning}
+            onClose={() => setOffer4Warning(false)}
+            onConfirm={handleOfferCheckConfirm4}
+            title="Offer Discount warning!"
+            message={offerDetails?.message}
+            confirmText="Yes, Proceed"
+            cancelText="Cancel"
+            danger={false}
+            isLoading={isOffer4Applying}
+          />
         </div>
       </div>
     </div>

@@ -192,6 +192,13 @@ const ContactLens = () => {
       }
     }
 
+    if (name === "orderQty") {
+  const qty = parseInt(value, 10);
+  if (isNaN(qty) || qty <= 0) {
+    message = "OrderQty should be more than 0";
+  }
+}
+
     setErrors((prev) => ({ ...prev, [name]: message }));
   };
 
@@ -299,7 +306,7 @@ const ContactLens = () => {
             (sum, ite) => sum + parseInt(ite.quantity),
             0
           ),
-          orderQty: data.DefaultOrderQty || 0,
+          orderQty: data.DefaultOrderQty || 1,
           sellingPrice: parseFloat(data.priceMaster?.sellingPrice),
         });
         setSearchFetched(true);
