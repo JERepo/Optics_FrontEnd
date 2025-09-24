@@ -39,7 +39,7 @@ const FrameSunglass = () => {
   } = useOrder();
   const navigate = useNavigate();
 
-  const [quantity, setQuantity] = useState(0);
+  const [quantity, setQuantity] = useState(1);
   const [level, setLevel] = useState(0);
 
   const [selectedSubLevelBrandFirstRow, setSelectedSubLevelBrandFirstRow] =

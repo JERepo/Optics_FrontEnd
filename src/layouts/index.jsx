@@ -93,6 +93,10 @@ import CRView from "../pages/LedgerEntries/CustomerRefund/CRView";
 import SearchAccessory from "../pages/SearchStock/SearchAccessory";
 import OpticalLensStock from "../pages/SearchStock/OpticalLensStock";
 import OfferMainPage from "../pages/Offer/MainPage/OfferMainPage";
+import OrderReport from "../pages/Reports/OrderReport";
+import SalesReport from "../pages/Reports/SalesReport";
+import PurchaseReturnReport from "../pages/Reports/PurchaseReturnReport";
+import PurchaseReport from "../pages/Reports/PurchaseReport";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -923,6 +927,22 @@ export const router = createBrowserRouter([
         path: "customer-payment/view",
         element: <CustomerPaymentView />,
       },
+      {
+        path : "order-report",
+        element : <OrderReport />
+      },
+       {
+        path : "sales-report",
+        element : <SalesReport />
+      },
+      {
+        path : "purchase-return-report",
+        element : <PurchaseReturnReport />
+      },
+       {
+        path : "purchase-report",
+        element : <PurchaseReport />
+      }
     ],
   },
   {

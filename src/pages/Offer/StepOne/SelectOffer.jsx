@@ -28,16 +28,16 @@ const SelectOffer = () => {
   const navigate = useNavigate();
   const { customerOffer, setCusomerOffer, goToOfferStep } = useOrder();
   const { user, hasMultipleLocations } = useSelector((state) => state.auth);
-  const [selectedOffer, setSelectedOffer] = useState(null);
+  const [selectedOffer, setSelectedOffer] = useState(3);
   const [selectedLocation, setSelectedLocations] = useState([]);
   const [offerDisabled, setOfferDisabled] = useState(false);
 
   const [offer, setOffer] = useState({
     offerCode: null,
     offerDetails: null,
-    isBrandOffer: null,
-    offerOnGRN: null,
-    othersDiscountApplicable: null,
+    isBrandOffer: 0,
+    offerOnGRN: 0,
+    othersDiscountApplicable: 0,
     customerGroup: false,
     selectedCustomerGroup: null,
     approvalRequired:0

@@ -22,6 +22,7 @@ import {
   useGetInvoiceDataQuery,
   useUpdateCreditLimitMutation,
   useUpdateCustomerMutation,
+  useUpdatePatientMutation,
 } from "../../api/customerApi";
 import { useGetAllCustomerGroupsQuery } from "../../api/customerGroup";
 import {
@@ -39,6 +40,8 @@ import { useVerifyGSTQuery } from "../../api/externalApi";
 import Modal from "../../components/ui/Modal";
 import ConfirmationModal from "../../components/ui/ConfirmationModal";
 import Input from "../../components/Form/Input";
+import HasPermission from "../../components/HasPermission";
+import Toggle from "../../components/ui/Toggle";
 
 // Validation functions
 const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -56,6 +59,7 @@ const Customer = ({ isPop, onSubmit }) => {
   const location = useLocation();
   const { id } = useParams();
   const isCreate = location.pathname.includes("/create");
+  const isEdit = location.pathname.includes("/edit");
   const { formData, setFormData, constructPayload, resetFormForCustomerType } =
     useCustomerContext();
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
@@ -79,6 +83,10 @@ const Customer = ({ isPop, onSubmit }) => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [creditLimit, setCreditLimit] = useState(null);
   const [isGMOpen, setIsGMOpen] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState(null);
+  const [selectedPatientId, setSelectedPatientId] = useState(null);
+  const [isPatientStatusModalOpen, setIsPatientStatusStatusOpen] =
+    useState(false);
 
   // Address states
   const [billingAddress, setBillingAddress] = useState({
@@ -158,6 +166,9 @@ const Customer = ({ isPop, onSubmit }) => {
     { id: id },
     { skip: !id }
   );
+  const [deActivate, { isLoading: isDeActivating }] =
+    useUpdatePatientMutation();
+
   const invoice = invoiceData?.data?.data;
   // Derived data
   const rimTypes = rimData?.data?.filter((r) => r.IsActive === 1) || [];
@@ -186,7 +197,7 @@ const Customer = ({ isPop, onSubmit }) => {
         location: customer.CompanyID,
         name: customer.CustomerName || null,
         legalName: customer.CustomerName || null,
-        customerType: customer.CustomerType === 0 ? "B2C" : "B2B",
+        customerType: customer.CustomerType == 0 ? "B2C" : "B2B",
         GSTINType: String(customer.TAXRegisteration) || 0,
         GSTNumber: customer.TAXNo || null,
         PANNumber: customer.PANNumber || null,
@@ -241,6 +252,7 @@ const Customer = ({ isPop, onSubmit }) => {
 
       setPatientDetailsData(
         customer.CustomerContactDetails?.map((contact) => ({
+          Id: contact?.Id,
           name: contact.CustomerName || null,
           email: contact.Email || null,
           // emailAlert: contact.EmailAlert || 0,
@@ -250,36 +262,39 @@ const Customer = ({ isPop, onSubmit }) => {
           dob: contact.DOB || null,
           engraving: contact.Engraving || null,
           anniversary: contact.Anniversary || null,
+          IsActive: contact.IsActive,
         })) || []
       );
 
       // Initialize fitting prices if available
       if (customer.OpticalFittingChargesSales?.length > 0) {
         const newFittingPrices = { singleVision: {}, others: {} };
+
         rimTypes.forEach((rim) => {
           newFittingPrices.singleVision[rim.Id] = {};
           newFittingPrices.others[rim.Id] = {};
 
           indices.forEach((index) => {
-            const fitting = customer.OpticalFittingChargesSales.find(
+            // find all fittings for this rim + index
+            const fittings = customer.OpticalFittingChargesSales.filter(
               (f) => f.RimType === rim.Id && f.IndexID === index.Id
             );
 
-            if (fitting) {
+            // default values
+            newFittingPrices.singleVision[rim.Id][index.Id] = 0;
+            newFittingPrices.others[rim.Id][index.Id] = 0;
+
+            fittings.forEach((fitting) => {
               if (fitting.Focality === 0) {
                 // Single Vision
                 newFittingPrices.singleVision[rim.Id][index.Id] =
                   parseFloat(fitting.Amount) || 0;
-              } else {
+              } else if (fitting.Focality === 1) {
                 // Others (progressive, bifocal, etc.)
                 newFittingPrices.others[rim.Id][index.Id] =
                   parseFloat(fitting.Amount) || 0;
               }
-            } else {
-              // Default to 0 if no record found
-              newFittingPrices.singleVision[rim.Id][index.Id] = 0;
-              newFittingPrices.others[rim.Id][index.Id] = 0;
-            }
+            });
           });
         });
 
@@ -287,7 +302,6 @@ const Customer = ({ isPop, onSubmit }) => {
       }
     }
   }, [customerById]);
-
   useEffect(() => {
     const allMatching = allCustomerGroupIds?.data?.data.filter(
       (c) => c.CustomerPoolID === CustomerPoolID
@@ -486,10 +500,12 @@ const Customer = ({ isPop, onSubmit }) => {
     }));
   };
   const handleOpenCredit = () => {
+    console.log(creditLimit);
     setSelectedItem({
       Id: id,
       CreditLimit: creditLimit,
       openingBalance: creditDetails.openingBalance,
+      data: customerById?.data?.data,
     });
     setIsCreditLimitOpened(true);
   };
@@ -703,10 +719,41 @@ const Customer = ({ isPop, onSubmit }) => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+  const requestToggle = (id, status) => {
+    setSelectedPatientId(id);
+    setCurrentStatus(status);
+    setIsPatientStatusStatusOpen(true);
+  };
   const handleConfirmMobileOrGSTToggle = () => {
     handleSave();
-    setIsGMOpen(false)
+    setIsGMOpen(false);
   };
+const handleConfirmToggle = async () => {
+  try {
+    await deActivate({
+      customerId: parseInt(id),
+      payload: {
+        patientId: selectedPatientId,
+        isActive: currentStatus ? 0 : 1,
+      },
+    }).unwrap();
+
+    // Update local state
+    const updated = patientDetails?.map((item) =>
+      item.Id === selectedPatientId
+        ? { ...item, IsActive: currentStatus ? 0 : 1 }
+        : item
+    );
+    setPatientDetailsData(updated);
+  } catch (error) {
+    console.error("Toggle error:", error);
+  } finally {
+    setIsPatientStatusStatusOpen(false);
+    setSelectedPatientId(null);
+    setCurrentStatus(null);
+  }
+};
+
   const handleSave = async () => {
     if (!validateAll()) {
       toast.error("Please fix the validation errors before saving.");
@@ -729,9 +776,10 @@ const Customer = ({ isPop, onSubmit }) => {
       rimTypes,
       indices,
       companyId,
-      locationById
+      locationById,
+      isEdit
     );
-
+    console.log(payload);
     try {
       if (!id) {
         const response = await createCustomer({
@@ -894,6 +942,8 @@ const Customer = ({ isPop, onSubmit }) => {
             handleVerifyGST={handleVerifyGST}
             isVerifyGSTLoading={isVerifyGSTLoading}
             invoice={invoice}
+            isEdit={isEdit}
+            customerData={customerById?.data?.data}
           />
 
           <div className="mt-8">
@@ -946,13 +996,23 @@ const Customer = ({ isPop, onSubmit }) => {
                       >
                         <FiEdit2 size={18} />
                       </button>
-                      <button
-                        className="text-neutral-600 hover:text-red-600"
-                        aria-label="Delete"
-                        onClick={() => handleDeleteDetail(index)}
-                      >
-                        <FiTrash2 size={18} />
-                      </button>
+                      {/* <HasPermission module="Customer" action="deactivate"> */}
+                      <Toggle
+                        enabled={detail.IsActive === 1}
+                        onToggle={() =>
+                          requestToggle(detail.Id, detail.IsActive)
+                        }
+                      />
+                      {/* </HasPermission> */}
+                      {!isEdit && (
+                        <button
+                          className="text-neutral-600 hover:text-red-600"
+                          aria-label="Delete"
+                          onClick={() => handleDeleteDetail(index)}
+                        >
+                          <FiTrash2 size={18} />
+                        </button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -1103,7 +1163,7 @@ const Customer = ({ isPop, onSubmit }) => {
               <h2 className="text-xl font-semibold text-gray-800 mb-4">
                 Credit Billing
               </h2>
-              {enableCreditBilling === 1 && (
+              {customerById?.data?.data.CreditBilling === 1 && (
                 <div onClick={handleOpenCredit}>
                   <Button
                     variant="outline"
@@ -1327,6 +1387,20 @@ const Customer = ({ isPop, onSubmit }) => {
         confirmText="Continue"
         danger={false}
       />
+      <ConfirmationModal
+        isOpen={isPatientStatusModalOpen}
+        onClose={() => setIsPatientStatusStatusOpen(false)}
+        onConfirm={handleConfirmToggle}
+        title={`Are you sure you want to ${
+          currentStatus ? "deactivate" : "activate"
+        } this patient?`}
+        message={`This will ${
+          currentStatus ? "deactivate" : "activate"
+        } the Patient.`}
+        confirmText={currentStatus ? "Deactivate" : "Activate"}
+        danger={currentStatus}
+        isLoading={isDeActivating}
+      />
     </div>
   );
 };
@@ -1436,10 +1510,9 @@ const GstAddressSelector = ({ gstData, onCopy, onCancel }) => {
 };
 
 const ApplyCreditLimit = ({ isOpen, onClose, creditLimit }) => {
+  console.log(creditLimit);
   const [newCreditLimit, setNewCreditLimit] = useState(0);
-  const [openingBalance, setOpeningBalance] = useState(
-    creditLimit?.openingBalance
-  );
+  const [openingBalance, setOpeningBalance] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [creditBalanceType, setCreditBalanceType] = useState("Dr");
   const [higher, setHigher] = useState(false);
@@ -1447,6 +1520,11 @@ const ApplyCreditLimit = ({ isOpen, onClose, creditLimit }) => {
   const [updateCreditLimit, { isLoading: isCreditUpdating }] =
     useUpdateCreditLimitMutation();
 
+  useEffect(() => {
+    if (creditLimit?.openingBalance !== undefined) {
+      setOpeningBalance(creditLimit.openingBalance);
+    }
+  }, [creditLimit]);
   const handleNewCredit = (e) => {
     const value = e.target.value;
     if (isNaN(value) || parseFloat(value) < 0) return;
@@ -1536,7 +1614,7 @@ const ApplyCreditLimit = ({ isOpen, onClose, creditLimit }) => {
           />
           <Input
             label="Credit Limit Available"
-            value={creditLimit?.CustomerCreditLimit?.CreditLimitAvl}
+            value={creditLimit?.data?.CustomerCreditLimit?.CreditLimitAvl}
             disabled
           />
           <Input

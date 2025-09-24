@@ -28,6 +28,7 @@ const PatientDetails = ({
 
   const [errors, setErrors] = useState({});
 
+
   useEffect(() => {
     if (initialData) {
       setFormState(initialData);
@@ -100,7 +101,9 @@ const PatientDetails = ({
     }
   };
 
+
   return (
+    <div>
     <Modal
       isOpen={isOpen}
       onClose={onClose}
@@ -238,6 +241,8 @@ const PatientDetails = ({
         </div>
       </form>
     </Modal>
+    
+    </div>
   );
 };
 

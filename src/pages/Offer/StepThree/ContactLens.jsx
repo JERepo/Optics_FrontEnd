@@ -33,7 +33,7 @@ const ContactLens = () => {
   const [product, setProduct] = useState(null);
   const [discountPV, setDiscountPV] = useState(1);
   const [discountValue, setDiscountValue] = useState(null);
-  const [quantity, setQuantity] = useState(0);
+  const [quantity, setQuantity] = useState(1);
   const [items, setItems] = useState([]);
 
   const { data: allBrandsData, isLoading: isLoadingAllBrands } =
@@ -350,7 +350,7 @@ const ContactLens = () => {
               isLoading={isClSaving}
               disabled={isClSaving}
             >
-              Save & Next
+              Create Offer
             </Button>
           </div>
         </div>

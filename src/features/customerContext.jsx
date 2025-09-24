@@ -42,42 +42,52 @@ export const CustomerProvider = ({ children }) => {
     rimTypes,
     indices,
     companyId,
-    locationById
+    locationById,
+    isEdit
   ) => {
-    const finalPatientDetails =
-      formData.customerType === "B2B"
-        ? patientDetails.map((patient) => ({
-            name: patient.name || null,
-            mobile: patient.mobile || null,
-            tel: patient.tel || null,
-            email: patient.email || null,
-            dob: patient.dob || null,
-            engraving: patient.engraving || null,
-            anniversary: patient.anniversary || null,
-            MobAlert: patient.MobAlert || 0,
-          }))
-        : [
-            {
-              name: formData.name || null,
-              mobile: formData.phone || null,
-              tel: formData.telPhone || null,
-              email: formData.email || null,
-              dob: null,
-              engraving: "",
-              anniversary: null,
-              MobAlert: formData.sendPhoneAlert ? 1 : 0,
-            },
-            ...patientDetails.map((patient) => ({
-              name: patient.name || null,
-              mobile: patient.mobile || null,
-              tel: patient.tel || null,
-              email: patient.email || null,
-              dob: patient.dob || null,
-              engraving: patient.engraving || null,
-              anniversary: patient.anniversary || null,
-              MobAlert: parseInt(patient.MobAlert) || 0,
-            })),
-          ];
+   const finalPatientDetails =
+  formData.customerType === "B2B"
+    ? patientDetails.map((patient) => ({
+        Id: patient.Id ?? null,
+        name: patient.name || null,
+        mobile: patient.mobile || null,
+        tel: patient.tel || null,
+        email: patient.email || null,
+        dob: patient.dob || null,
+        engraving: patient.engraving || null,
+        anniversary: patient.anniversary || null,
+        MobAlert: parseInt(patient.MobAlert) || 0,
+      }))
+    : [
+        // Only include the main formData patient when creating (isEdit === false)
+        ...(isEdit
+          ? []
+          : [
+              {
+                Id: formData.Id ?? null,
+                name: formData.name || null,
+                mobile: formData.phone || null,
+                tel: formData.telPhone || null,
+                email: formData.email || null,
+                dob: null,
+                engraving: "",
+                anniversary: null,
+                MobAlert: formData.sendPhoneAlert ? 1 : 0,
+              },
+            ]),
+        ...patientDetails.map((patient) => ({
+          Id: patient.Id ?? null,
+          name: patient.name || null,
+          mobile: patient.mobile || null,
+          tel: patient.tel || null,
+          email: patient.email || null,
+          dob: patient.dob || null,
+          engraving: patient.engraving || null,
+          anniversary: patient.anniversary || null,
+          MobAlert: parseInt(patient.MobAlert) || 0,
+        })),
+      ];
+
 
     return {
       CustomerCode: null,
@@ -86,6 +96,7 @@ export const CustomerProvider = ({ children }) => {
       CustomerBrand: formData.BrandName,
       CustomerGroupID: parseInt(formData.customerGroup),
       Email: formData.email,
+      forceUpdate: true,
       EmailAlert: formData.sendAlert ? 1 : 0,
       MobileISDCode: formData.countryCode,
       MobNumber: formData.phone,
@@ -114,7 +125,7 @@ export const CustomerProvider = ({ children }) => {
       TAXNo: formData.GSTNumber,
       BillingMethod: parseInt(billingMethod),
       FittingPrice: parseInt(fittingType),
-      // LoyaltyEnrollment: parseInt(enableLoyalty),
+      LoyaltyEnrollment: parseInt(enableLoyalty),
       CreditBilling: parseInt(enableCreditBilling),
       OpeningBalance: Number(creditDetails.openingBalance),
       CreditLimit: Number(creditDetails.creditLimit),
@@ -127,6 +138,7 @@ export const CustomerProvider = ({ children }) => {
       EnableLoyalty: parseInt(enableLoyalty),
       CompanyID: parseInt(locationById.data.data.Id),
       PatientDetails: finalPatientDetails.map((detail) => ({
+        Id: detail.Id ?? null,
         CustomerName: detail.name,
         MobileISDCode: "+91",
         MobNumber: detail.mobile,

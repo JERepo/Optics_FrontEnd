@@ -255,7 +255,7 @@ const OrderList = () => {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              <HasPermission module="Order" action={["create","edit"]}>
+              <HasPermission module="Order" action={["create"]}>
                 <Button
                   icon={FiPlus}
                   className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"

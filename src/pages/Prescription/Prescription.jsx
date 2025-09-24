@@ -97,6 +97,7 @@ const Prescription = () => {
       }
       // Set the first prescription as selected and open the modal
       const parsedPrescription = {
+        name:item.CustomerContactDetail.CustomerName,
         ...data[0],
         values: {
           R: {
@@ -130,6 +131,7 @@ const Prescription = () => {
   };
 
   const handleView = (prescription) => {
+    console.log("pre",prescription)
     setSelectedId(prescription?.Id);
     const parsedPrescription = {
       ...prescription,
@@ -333,6 +335,8 @@ const DisplayMainData = ({
     setPrintingId(null);
   }
   };
+
+  console.log(selectedPrescription)
   return (
     <Modal
       isOpen={isOpen}
@@ -348,7 +352,7 @@ const DisplayMainData = ({
               <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                 <h2 className="text-lg font-semibold text-gray-800 flex items-center">
                   <FiClipboard className="mr-2 text-blue-500" />
-                  Prescription Details
+                  Prescription Details 
                 </h2>
                 <button
                   className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"

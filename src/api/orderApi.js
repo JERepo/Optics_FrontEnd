@@ -4,7 +4,7 @@ import { customBaseQuery } from "./customBaseQuery";
 export const orderApi = createApi({
   reducerPath: "orderApi",
   baseQuery: customBaseQuery,
-  tagTypes: ["Order", "Patient", "Prescription"],
+  tagTypes: ["Order", "Patient", "Prescription", "OfferD"],
   endpoints: (builder) => ({
     searchCustomer: builder.query({
       query: ({ input }) => ({
@@ -124,7 +124,7 @@ export const orderApi = createApi({
       query: ({ orderId }) => ({
         url: `/api/v1/order/getorderdetails/${orderId}`,
       }),
-      providesTags: ["Order"],
+      providesTags: ["Order", "OfferD"],
     }),
     applyFrameDiscount: builder.mutation({
       query: ({ locationId, orderId, detailId, payload }) => ({
@@ -445,6 +445,50 @@ export const orderApi = createApi({
         url: `/api/v1/order/getAdvanceAmount/${orderId}`,
       }),
     }),
+
+    getOfferCodeDetails: builder.mutation({
+      query: ({ payload }) => ({
+        url: `/api/v1/offer/applyoffertype3`,
+        method: "PUT",
+        body: payload,
+      }),
+      invalidatesTags: ["OfferD"],
+    }),
+    getOfferDetails: builder.query({
+      query: ({ userId }) => ({
+        url: `/api/v1/offer/getOfferDetails/${userId}`,
+      }),
+      providesTags: ["OfferD"],
+    }),
+    getOfferByMainId: builder.query({
+      query: ({ mainId }) => ({
+        url: `/api/v1/offer/getMainOfferById/${mainId}`,
+      }),
+    }),
+    removeOfferType3: builder.mutation({
+      query: ({ payload }) => ({
+        url: `/api/v1/offer/removeoffertype3`,
+        method: "PUT",
+        body: payload,
+      }),
+      invalidatesTags: ["Order"],
+    }),
+    applyOfferType4: builder.mutation({
+      query: ({ payload }) => ({
+        url: `/api/v1/offer/applyoffertype4`,
+        method: "PUT",
+        body: payload,
+      }),
+      invalidatesTags: ["Order"],
+    }),
+    removeOfferType4: builder.mutation({
+      query: ({ payload }) => ({
+        url: `/api/v1/offer/removeoffertype4`,
+        method: "PUT",
+        body: payload,
+      }),
+      invalidatesTags: ["Order"],
+    }),
   }),
 });
 
@@ -457,6 +501,14 @@ export const {
   useGenerateInvoiceFromOrderMutation,
   useLazyGetAdvanceAmtQuery,
   useLazyGenerateOpticalLensReceiptQuery,
+
+  // Offer
+  useGetOfferCodeDetailsMutation,
+  useGetOfferDetailsQuery,
+  useGetOfferByMainIdQuery,
+  useRemoveOfferType3Mutation,
+  useApplyOfferType4Mutation,
+  useRemoveOfferType4Mutation,
 
   // OPTICAL LENS
   useGetAllVisualAcuityQuery,

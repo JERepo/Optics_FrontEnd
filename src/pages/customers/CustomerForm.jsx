@@ -15,6 +15,8 @@ const CustomerForm = ({
   handleVerifyGST,
   isVerifyGSTLoading,
   invoice,
+  isEdit,
+  customerData
 }) => {
   // Auto-fill country code when countryIsd is available
   useEffect(() => {
@@ -179,7 +181,6 @@ const CustomerForm = ({
       return updatedFormData;
     });
   };
-
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       <div className="space-y-6">
@@ -197,7 +198,9 @@ const CustomerForm = ({
                   checked={formData.customerType === "B2C"}
                   onChange={handleInputChange}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  disabled={invoice?.Status === 1}
+                  disabled={
+                    invoice?.Status == 1 && customerData?.CustomerType == 0
+                  }
                 />
                 <span className="ml-2 text-gray-700">Individual (B2C)</span>
               </label>
@@ -209,7 +212,9 @@ const CustomerForm = ({
                   checked={formData.customerType === "B2B"}
                   onChange={handleInputChange}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  disabled={invoice?.Status === 1}
+                  disabled={
+                    invoice?.Status === 1 && customerData?.CustomerType == 1
+                  }
                 />
                 <span className="ml-2 text-gray-700">Business (B2B)</span>
               </label>
@@ -254,7 +259,9 @@ const CustomerForm = ({
                           checked={formData.GSTINType == 1}
                           onChange={handleInputChange}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                          disabled={invoice?.Status === 1}
+                          disabled={
+                            invoice?.Status === 1 && customerData?.CustomerType == 1
+                          }
                         />
                         <span className="ml-2 text-gray-700">Registered</span>
                       </label>
@@ -265,7 +272,9 @@ const CustomerForm = ({
                           value="0"
                           checked={formData.GSTINType == 0}
                           onChange={handleInputChange}
-                           disabled={invoice?.Status === 1}
+                          disabled={
+                            invoice?.Status === 1 && customerData?.CustomerType == 1
+                          }
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                         />
                         <span className="ml-2 text-gray-700">
@@ -286,20 +295,24 @@ const CustomerForm = ({
                             name="GSTNumber"
                             value={formData.GSTNumber?.toUpperCase()}
                             onChange={handleInputChange}
-                             disabled={invoice?.Status === 1}
+                            disabled={
+                              invoice?.Status === 1 && customerData?.CustomerType == 1
+                            }
                             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
-                          
-                          <button
-                            type="button"
-                            className="whitespace-nowrap px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm font-medium disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                            onClick={handleVerifyGST}
-                            disabled={formData.GSTNumber?.length !== 15}
-                          >
-                            {isVerifyGSTLoading
-                              ? "Getting data.."
-                              : "Verify GST"}
-                          </button>
+
+                          {!isEdit && (
+                            <button
+                              type="button"
+                              className="whitespace-nowrap px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm font-medium disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                              onClick={handleVerifyGST}
+                              disabled={formData.GSTNumber?.length !== 15}
+                            >
+                              {isVerifyGSTLoading
+                                ? "Getting data.."
+                                : "Verify GST"}
+                            </button>
+                          )}
                         </div>
                         {errors.GSTNumber && (
                           <p className="text-red-500 text-sm mt-1">
@@ -319,7 +332,11 @@ const CustomerForm = ({
                       value={formData.PANNumber}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={formData.GSTNumber?.length === 15 || invoice?.Status === 1}
+                      disabled={
+                        formData.GSTNumber?.length === 15 ||
+                        (invoice?.Status === 1 && 
+                              formData?.customerType == "B2B")
+                      }
                     />
                     {errors.PANNumber && (
                       <p className="text-red-500 text-sm mt-1">
@@ -340,7 +357,8 @@ const CustomerForm = ({
                     name="legalName"
                     value={formData.legalName}
                     onChange={handleInputChange}
-                     disabled={invoice?.Status === 1}
+                    disabled={invoice?.Status === 1 &&
+                              formData?.customerType == "B2B"}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   {errors.legalName && (
