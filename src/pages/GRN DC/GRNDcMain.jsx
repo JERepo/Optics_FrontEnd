@@ -48,7 +48,7 @@ export default function GRNDcMain() {
                                 Back to dashboard
                             </button>
                             <h1 className="text-3xl lg:text-4xl font-bold text-[#000060] mb-2">
-                                GRN
+                                GRN DC
                             </h1>
                             <div className="flex items-center mt-2">
                                 <div className={`flex items-center ${currentStep === 1 ? 'font-bold text-shadow-primary' : 'text-gray-500'}`}>

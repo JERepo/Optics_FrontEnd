@@ -53,6 +53,12 @@ export const grnDcApi = createApi({
                 method: 'POST',
                 body: payload
             })
+        }),
+        getAllGRNDCMain: builder.query({
+            query: () => ({
+                url: `/api/v1/grn-dc/get-all`,
+                method: 'GET'
+            })
         })
     })
 });
@@ -67,5 +73,6 @@ export const {
     useGetGRNDetailsMutation,
     useGetGRNDCdataMutation,
     useUpdateGRNPriceAndFittingMutation,
-    useSaveGRNDetailsMutation
+    useSaveGRNDetailsMutation,
+    useGetAllGRNDCMainQuery
 } = grnDcApi;

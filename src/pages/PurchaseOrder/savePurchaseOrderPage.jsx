@@ -2146,7 +2146,7 @@ export default function SavePurchaseOrder() {
                 {(currentStep === 2) && (
                     formState.shiptoAddress === "against" ? (
                         <PurchaseOrderStep2
-                            productOptions={["Frame/Sunglass", "Lens", "Contact Lens", "Accessories"]}
+                            productOptions={["Frame/Sunglass", "Contact Lens", "Accessories"]}
                             formState={formState}
                             handleInputChange={handleInputChange}
                             handleOptionChange={handleOptionChange}

@@ -99,6 +99,8 @@ import PurchaseReturnReport from "../pages/Reports/PurchaseReturnReport";
 import PurchaseReport from "../pages/Reports/PurchaseReport";
 import { GRNDCProvider } from "../features/GRNDcContext";
 import GRNDcMain from "../pages/GRN DC/GRNDcMain";
+import { GRNDCListPage } from "../pages/GRN DC/GRNListPage";
+import { GRNDCViewPage } from "../pages/GRN DC/GRNDCView";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -883,8 +885,8 @@ export const router = createBrowserRouter([
           // </PermissionRoute>
         ),
       },
-      { path: "grn-dc/", element: <GRNListPage /> },
-      { path: "grn-dc/view", element: <GRNViewPage /> },
+      { path: "grn-dc/", element: <GRNDCListPage /> },
+      { path: "grn-dc/view", element: <GRNDCViewPage /> },
 
       {
         path: "gift-voucher",

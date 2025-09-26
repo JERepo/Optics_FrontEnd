@@ -4,22 +4,20 @@ import { ArrowLeft, PenIcon, Trash2 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useGetAllPoDetailsForNewOrderMutation, useGetAllPoDetailsMutation } from "../../api/purchaseOrderApi";
-import { useGetGRNDetailsMutation } from "../../api/grnApi";
+
 import { Table, TableRow, TableCell } from "../../components/Table";
+import { useGetGRNDetailsMutation } from "../../api/grnDcApi";
 
 
 
-export function GRNViewPage() {
+export function GRNDCViewPage() {
     const location = useLocation();
     const navigate = useNavigate();
     const { user, hasMultipleLocations } = useSelector((state) => state.auth);
 
     const [getAllPoDetails] = useGetAllPoDetailsMutation();
     const [getAllPoDetailsForNewOrder] = useGetAllPoDetailsForNewOrderMutation();
-    const [getGRNDetails, {
-        isLoading: isLoadingGRNDetails,
-        error: errorGRNDetails
-    }] = useGetGRNDetailsMutation();
+    const [getGRNDetails] = useGetGRNDetailsMutation();
 
 
 
@@ -50,10 +48,7 @@ export function GRNViewPage() {
         const fetchGRNDetails = async () => {
             const payload = {
                 companyId: grnData?.CompanyID,
-                grnMain: grnData?.id,
-                // againstPo: String(grnData?.AgainstPO),
-                // applicationUserId: grnData?.applicationUser,
-                status: 1
+                grnMain: grnData?.id
             }
 
             try {
@@ -211,13 +206,13 @@ export function GRNViewPage() {
             <div className=" items-center mb-4">
                 <button
                     className="text-[#000060] hover:text-[#0000a0] transition-colors flex items-center mb-3"
-                    onClick={() => { navigate('/grn') }}
+                    onClick={() => { navigate('/grn-dc') }}
                 >
                     <ArrowLeft className="w-5 h-5 mr-2" />
                     Back to dashboard
                 </button>
                 <h1 className="text-3xl lg:text-4xl font-bold text-[#000060] mb-2">
-                    GRN Order
+                    GRN DC Order
                 </h1>
 
             </div>
@@ -247,16 +242,14 @@ export function GRNViewPage() {
             <div className="mt-6">
                 <h3 className="text-lg font-semibold mb-4">GRN Items</h3>
                 <Table
-                    columns={["Sl No.", "PO No.", "Supplier Order No.", "Type", "Product Name", "MRP", "GST", "QTY", "Buying Price", "Total Amount"]}
+                    columns={["Sl No.", "PO No.", "Supplier Order No.", "Product Type", "Product Details", "MRP", "Buying Price", "GST", "GRN QTY", "Total Amount"]}
                     data={grnViewDetails}
                     renderRow={(item, index) => (
                         <TableRow key={item.Barcode || index}>
                             <TableCell>{index + 1}</TableCell>
-                            <TableCell>{item.PONo || null}<br />{item.OrderNo || null}</TableCell>
-                            <TableCell>{item.VendorOrderNo}</TableCell>
-                            {/* <TableCell>{item.OrderNo || null}</TableCell> */}
-                            <TableCell>{item?.ProductDetails?.ProductType == 0 && `OL` || item?.ProductDetails?.ProductType == 1 && `F` || item?.ProductDetails?.ProductType == 2 && `Acc` || item?.ProductDetails?.ProductType == 3 && `CL`}</TableCell>
-                            {/* <TableCell>{item?.ProductDetails?.barcode}</TableCell> */}
+                            <TableCell>{item.PONo || null}</TableCell>
+                            <TableCell>{item.VendorOrderNo || null}</TableCell>
+                            <TableCell>{item?.ProductDetails?.ProductType == 0 && `OL` || item?.ProductDetails?.ProductType == 1 && `F/S` || item?.ProductDetails?.ProductType == 2 && `ACC` || item?.ProductDetails?.ProductType == 3 && `CL`}</TableCell>
                             {item?.ProductDetails?.ProductType === 1 ?
                                 <TableCell>{item?.ProductDetails?.productName}<br />
                                     Size: {item?.ProductDetails?.Size?.Size}<br />
@@ -326,9 +319,9 @@ export function GRNViewPage() {
                                             : null
                             }
                             <TableCell>{item?.ProductDetails?.price?.MRP || null}</TableCell>
-                            <TableCell>₹{" "} {parseFloat(parseInt(item?.GRNPrice) * (parseInt(item?.ProductDetails?.GSTPercentage) / 100))}{`(${item?.ProductDetails?.GSTPercentage}%)`}</TableCell>
-                            <TableCell>{item.GRNQty}</TableCell>
                             <TableCell>₹ {item.GRNPrice}</TableCell>
+                            <TableCell>₹{" "} {parseFloat(parseInt(item?.GRNPrice) * (parseInt(item?.TaxPercent) / 100))} {`(${item.TaxPercent}%)`}</TableCell>
+                            <TableCell>{item.GRNQty}</TableCell>
                             <TableCell>₹{" "}{parseFloat(parseInt(item?.GRNPrice * item?.GRNQty) * (parseInt(item?.ProductDetails?.GSTPercentage) / 100)) + parseInt(item?.GRNPrice * item?.GRNQty)}
                             </TableCell>
                         </TableRow>
