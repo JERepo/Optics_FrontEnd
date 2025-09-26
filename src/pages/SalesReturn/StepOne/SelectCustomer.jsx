@@ -218,8 +218,8 @@ console.log(selectedPatient)
                     </div>
                     <div className="flex gap-1">
                       <strong>Credit Limit Available:</strong>
-                      {parseFloat(
-                        selectedPatient.mainCustomerObject?.CreditLimit
+                      ₹{parseFloat(
+                        selectedPatient.mainCustomerObject?.CustomerCreditLimit?.CreditLimitAvl
                       ).toLocaleString()}
                     </div>
                   </>

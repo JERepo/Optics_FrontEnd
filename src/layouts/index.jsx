@@ -976,7 +976,7 @@ export const router = createBrowserRouter([
         element : <CLMaster />
       },
       {
-        path : "company-seetings",
+        path : "company-settings",
         element : <CompanySettings />
       }
     ],
