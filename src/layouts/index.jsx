@@ -97,6 +97,8 @@ import OrderReport from "../pages/Reports/OrderReport";
 import SalesReport from "../pages/Reports/SalesReport";
 import PurchaseReturnReport from "../pages/Reports/PurchaseReturnReport";
 import PurchaseReport from "../pages/Reports/PurchaseReport";
+import { GRNDCProvider } from "../features/GRNDcContext";
+import GRNDcMain from "../pages/GRN DC/GRNDcMain";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -872,6 +874,19 @@ export const router = createBrowserRouter([
       { path: "grn/view", element: <GRNViewPage /> },
 
       {
+        path: "grn-dc/create",
+        element: (
+          // <PermissionRoute module="GRN" action="view">
+          <GRNDCProvider>
+            <GRNDcMain />
+          </GRNDCProvider>
+          // </PermissionRoute>
+        ),
+      },
+      { path: "grn-dc/", element: <GRNListPage /> },
+      { path: "grn-dc/view", element: <GRNViewPage /> },
+
+      {
         path: "gift-voucher",
         element: <NewGVMain />,
       },
@@ -928,20 +943,20 @@ export const router = createBrowserRouter([
         element: <CustomerPaymentView />,
       },
       {
-        path : "order-report",
-        element : <OrderReport />
-      },
-       {
-        path : "sales-report",
-        element : <SalesReport />
+        path: "order-report",
+        element: <OrderReport />
       },
       {
-        path : "purchase-return-report",
-        element : <PurchaseReturnReport />
+        path: "sales-report",
+        element: <SalesReport />
       },
-       {
-        path : "purchase-report",
-        element : <PurchaseReport />
+      {
+        path: "purchase-return-report",
+        element: <PurchaseReturnReport />
+      },
+      {
+        path: "purchase-report",
+        element: <PurchaseReport />
       }
     ],
   },
