@@ -74,7 +74,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                                     </TableCell>
                                 }
                                 <TableCell className=" ">{item.POQty}</TableCell>
-                                <TableCell>{item.POQty - (item.quantity ?? 0) - item.CancelledQty - (item.ReceivedQty ?? 0)}</TableCell>
+                                <TableCell>{item.POQty - (item.quantity ?? 0) - item.CancelledQty - (item.ReceivedQty ?? 0) - (item.TotalGRNQty ?? 0)}</TableCell>
                                 {/* <TableCell>
                                     <button
                                         onClick={() => openModal(index, item.quantity || 1)}
