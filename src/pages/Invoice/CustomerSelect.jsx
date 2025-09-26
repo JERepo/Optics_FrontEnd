@@ -969,7 +969,7 @@ const CustomerSelect = () => {
   };
 
   const handleByPassCheck = () => {};
-
+console.log(selectedPatient)
   const handleGenerateInvoice = async () => {
     if (!validateBatchCodes()) {
       toast.error(

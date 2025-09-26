@@ -325,7 +325,7 @@ const CompleteStockTransferIn = () => {
               "type",
               "product details",
               "transfer price",
-              "transfer out qty",
+              "pending qty",
               "transfer in qty",
               "gst",
               "total amount",
@@ -340,7 +340,7 @@ const CompleteStockTransferIn = () => {
                   {getProductName(item)}
                 </TableCell>
                 <TableCell>₹{formatINR(getStockOutPrice(item))}</TableCell>
-                <TableCell>{item.STQtyOut}</TableCell>
+                <TableCell>{item.PendingQty || 0}</TableCell>
                 <TableCell>{item.STQtyIn}</TableCell>
 
                 <TableCell>

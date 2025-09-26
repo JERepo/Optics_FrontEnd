@@ -240,6 +240,15 @@ const ContactLens = () => {
   const [saveStockTransfer, { isLoading: isStockTransferLoading }] =
     useSaveSTIMutation();
 
+  const getCurrentProposedQty = (clDetailId) => {
+    return mainClDetails.reduce((sum, item) => {
+      if (item.CLDetailId === clDetailId) {
+        return sum + item.tiq;
+      }
+      return sum;
+    }, 0);
+  };
+
   useEffect(() => {
     setEditMode((prev) => {
       const newEditMode = { ...prev };
@@ -393,12 +402,18 @@ const ContactLens = () => {
             toast.error("No Pending Qty left for the given product");
             return;
           }
-
+          const clDetailId = data.CLDetailId;
+          const currentProposed = getCurrentProposedQty(clDetailId);
+          const remaining =
+            STOProduct.STQtyOut - STOProduct.STQtyIn - currentProposed;
+          if (1 > remaining) {
+            toast.error("No Pending Qty left for the given product");
+            return;
+          }
           const cc = {
             ...data,
             ...STOProduct,
             tiq: 1,
-            // BuyingPrice: parseFloat(data?.priceMaster.buyingPrice),
             BuyingPrice: parseFloat(STOProduct?.TransferPrice),
             MRP: STOProduct?.SRP,
             sbatchCode: data.stock[0]?.batchCode,
@@ -408,12 +423,6 @@ const ContactLens = () => {
             (item) => item.Barcode == data.Barcode
           );
           if (existingIndex !== -1) {
-            const item = mainClDetails[existingIndex];
-            const newQty = item.tiq + 1;
-            if (newQty > item.STQtyOut) {
-              toast.error("Stock quantity cannot exceed available quantity!");
-              return;
-            }
             setMainClDetails((prev) =>
               prev.map((it, idx) =>
                 idx === existingIndex ? { ...it, tiq: it.tiq + 1 } : it
@@ -431,7 +440,7 @@ const ContactLens = () => {
       }
     } catch (error) {
       console.error("error", error);
-      toast.error(error?.data?.error?.message || "No Stock available")
+      toast.error(error?.data?.error?.message || "No Stock available");
       setSearchFetched(false);
       setDetailId(false);
       setOpenBatch(false);
@@ -495,14 +504,15 @@ const ContactLens = () => {
   };
   const handleQtyChange = (barcode, qty, index) => {
     const newQty = Number(qty);
-    // const avlQty = Number(mainClDetails[index].Quantity);
-    // Find existing in our items (local scanned state)
     const existing = mainClDetails[index];
-    console.log("ex", existing, newQty);
-    // Determine current STQtyIn (from state if exists, else from backend)
-    const currentSTQtyIn = existing?.STQtyOut;
-    if (newQty > currentSTQtyIn) {
-      toast.error("TransferIn qty cannot exceed transferOut qty!");
+    const clDetailId = existing.CLDetailId;
+    const oldTiq = existing.tiq;
+    const currentProposed = getCurrentProposedQty(clDetailId);
+    const alreadyReceived = existing.STQtyIn;
+    const maxAllowed = existing.STQtyOut - alreadyReceived;
+    const effectiveRemaining = maxAllowed - (currentProposed - oldTiq);
+    if (newQty > effectiveRemaining) {
+      toast.error("Cannot exceed pending quantity!");
       return;
     }
     if (newQty < 0) {
@@ -537,16 +547,23 @@ const ContactLens = () => {
           toast.error("No Pending Qty left for the given product");
           return;
         }
-
+        const clDetailId = batchBarCodeDetails?.data?.data.CLDetailId;
+        const currentProposed = getCurrentProposedQty(clDetailId);
+        const remaining =
+          STOProduct.STQtyOut - STOProduct.STQtyIn - currentProposed;
+        if (1 > remaining) {
+          toast.error("No Pending Qty left for the given product");
+          return;
+        }
         const newItemCl = {
           sbatchbarCode: isAvailable.CLBatchBarCode,
+          sbatchCode: isAvailable.CLBatchCode,
           sMRP: isAvailable.CLMRP,
           ExpiryDate: isAvailable.ExpiryDate,
 
           ...newItem.powerData,
           ...STOProduct,
           selectBatch,
-          // BuyingPrice: parseFloat(isAvailable.BuyingPrice),
           BuyingPrice: parseFloat(STOProduct?.TransferPrice),
           MRP: STOProduct?.SRP,
           tiq: 1,
@@ -561,16 +578,11 @@ const ContactLens = () => {
           existingIndex = mainClDetails.findIndex(
             (item) =>
               item.Barcode == newItemCl.Barcode &&
+              item.sbatchCode == newItemCl.sbatchCode &&
               item.sbatchbarCode == newItemCl.sbatchbarCode
           );
         }
         if (existingIndex !== -1) {
-          const item = mainClDetails[existingIndex];
-          const newQty = item.tiq + 1;
-          if (newQty > STOProduct.STQtyOut) {
-            toast.error("Stock quantity cannot exceed available quantity!");
-            return;
-          }
           setMainClDetails((prev) =>
             prev.map((it, idx) =>
               idx === existingIndex ? { ...it, tiq: it.tiq + 1 } : it
@@ -633,15 +645,19 @@ const ContactLens = () => {
           toast.error("No Pending Qty left for the given product");
           return;
         }
+        const clDetailId = response?.data.data.CLDetailId;
+        const currentProposed = getCurrentProposedQty(clDetailId);
+        const remaining =
+          STOProduct.STQtyOut - STOProduct.STQtyIn - currentProposed;
+        if (1 > remaining) {
+          toast.error("No Pending Qty left for the given product");
+          return;
+        }
         const cc = {
           ...response?.data.data,
           ...STOProduct,
           sbatchCode: response?.data.data.stock.BatchCode,
           ExpiryDate: response?.data.data.Expiry,
-          // BuyingPrice:
-          //   response?.data.data.CLBatchCode === 0
-          //     ? parseFloat(response?.data.data.price.BuyingPrice)
-          //     : parseFloat(response?.data.data.stock.BuyingPrice),
           BuyingPrice: parseFloat(STOProduct?.TransferPrice),
           MRP: STOProduct?.SRP,
           tiq: 1,
@@ -650,12 +666,6 @@ const ContactLens = () => {
           (item) => item.Barcode == response?.data.data.Barcode
         );
         if (existingIndex !== -1) {
-          const item = mainClDetails[existingIndex];
-          const newQty = item.tiq + 1;
-          if (newQty > STOProduct.STQtyOut) {
-            toast.error("Stock quantity cannot exceed available quantity!");
-            return;
-          }
           setMainClDetails((prev) =>
             prev.map((it, idx) =>
               idx === existingIndex ? { ...it, tiq: it.tiq + 1 } : it
@@ -679,13 +689,30 @@ const ContactLens = () => {
       toast.error(error?.data.error);
     }
   };
-  console.log(stockOutData?.data?.details);
   const handleSaveBatchData = async () => {
     let sub;
+    let STOProduct;
+    let clDetailId;
     if ((!detailId || openBatch) && productSearch == 0) {
-      const STOProduct = stockOutData?.data?.details?.find(
+      STOProduct = stockOutData?.data?.details?.find(
         (item) => item.ContactLensDetailId === newItem.CLDetailId
       );
+      clDetailId = newItem.CLDetailId;
+      if (!STOProduct) {
+        toast.error("Product is not present in the selected Stock Transfer");
+        return;
+      }
+
+      if (STOProduct.STQtyOut === STOProduct.STQtyIn) {
+        toast.error("No Pending Qty left for the given product");
+        return;
+      }
+    } else if (detailId && productSearch == 1) {
+      STOProduct = stockOutData?.data?.details?.find(
+        (item) =>
+          item.ContactLensDetailId === batchBarCodeDetails?.data.data.CLDetailId
+      );
+      clDetailId = batchBarCodeDetails?.data.data.CLDetailId;
       if (!STOProduct) {
         toast.error("Product is not present in the selected Stock Transfer");
         return;
@@ -694,42 +721,37 @@ const ContactLens = () => {
         toast.error("No Pending Qty left for the given product");
         return;
       }
+    }
+    const currentProposed = getCurrentProposedQty(clDetailId);
+    const remaining =
+      STOProduct.STQtyOut - STOProduct.STQtyIn - currentProposed;
+    if (1 > remaining) {
+      toast.error("No Pending Qty left for the given product");
+      return;
+    }
+    if ((!detailId || openBatch) && productSearch == 0) {
       sub = {
         ...newItem.powerData,
         sbatchCode: selectedBatchCode.CLBatchCode,
+        sbatchbarCode: selectedBatchCode.CLBatchBarCode,
         sMRP: selectedBatchCode.CLMRP,
         ExpiryDate: selectedBatchCode.ExpiryDate,
 
         ...STOProduct,
         tiq: 1,
-        // MRP: parseFloat(selectedBatchCode.CLMRP),
-        // BuyingPrice: parseFloat(selectedBatchCode.BuyingPrice),
         BuyingPrice: parseFloat(STOProduct?.TransferPrice),
         MRP: STOProduct?.SRP,
       };
     } else if (detailId && productSearch == 1) {
-      const STOProduct = stockOutData?.data?.details?.find(
-        (item) =>
-          item.ContactLensDetailId === batchBarCodeDetails?.data.data.CLDetailId
-      );
-      if (!STOProduct) {
-        toast.error("Product is not present in the selected Stock Transfer");
-        return;
-      }
-      if (STOProduct.STQtyOut === STOProduct.STQtyIn) {
-        toast.error("No Pending Qty left for the given product");
-        return;
-      }
       sub = {
-        ...batchBarCodeDetails?.data.data,
+        ...batchBarCodeDetails?.data?.data,
         sbatchCode: selectedBatchCode.CLBatchCode,
+        sbatchbarCode: selectedBatchCode.CLBatchBarCode,
         sMRP: selectedBatchCode.CLMRP,
         ExpiryDate: selectedBatchCode.ExpiryDate,
 
         ...STOProduct,
         tiq: 1,
-        // BuyingPrice: parseFloat(selectedBatchCode.BuyingPrice),
-        // MRP: parseFloat(selectedBatchCode.CLMRP),
         BuyingPrice: parseFloat(STOProduct?.TransferPrice),
         MRP: STOProduct?.SRP,
       };
@@ -743,19 +765,12 @@ const ContactLens = () => {
     } else {
       existingIndex = mainClDetails.findIndex(
         (item) =>
-          item.Barcode == sub.Barcode && item.sbatchCode == sub.sbatchCode
+          item.Barcode == sub.Barcode &&
+          item.sbatchCode == sub.sbatchCode &&
+          item.sbatchbarCode == sub.sbatchbarCode
       );
     }
     if (existingIndex !== -1) {
-      const item = mainClDetails[existingIndex];
-      const newQty = item.tiq + 1;
-      if (newQty > item.STQtyOut) {
-        toast.error(
-          "Stock transfer out quantity cannot exceed stock transfer in quantity!"
-        );
-        return;
-      }
-
       setMainClDetails((prev) =>
         prev.map((it, idx) =>
           idx === existingIndex ? { ...it, tiq: it.tiq + 1 } : it
@@ -767,6 +782,7 @@ const ContactLens = () => {
 
     handleRefresh();
   };
+
   const handleSellingPriceChange = (barcode, price, index) => {
     const item = mainClDetails.find((i, idx) => idx === index);
     const newPrice = Number(price);
@@ -925,7 +941,7 @@ const ContactLens = () => {
                   "type",
                   "product name",
                   "transfer price",
-                  "transfer out qty",
+                  "pending qty",
                   "transfer in qty",
                   "gst",
                   "total amount",
@@ -1000,7 +1016,7 @@ const ContactLens = () => {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell>{item.STQtyOut}</TableCell>
+                    <TableCell>{item.STQtyOut - item.STQtyIn}</TableCell>
                     <TableCell>
                       {editMode[`${item.Barcode}-${index}`]?.qty ? (
                         <div className="flex items-center gap-2">

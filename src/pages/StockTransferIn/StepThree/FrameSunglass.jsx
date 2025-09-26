@@ -22,7 +22,6 @@ import toast from "react-hot-toast";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import { Autocomplete, TextField } from "@mui/material";
 import Radio from "../../../components/Form/Radio";
-
 import { useSelector } from "react-redux";
 import { formatINR } from "../../../utils/formatINR";
 import {
@@ -51,14 +50,11 @@ const FrameSunglass = () => {
   const [selectedRows, setSelectedRows] = useState([]);
   const [singleOrCombine, setSingleOrCombine] = useState(0);
   const [editMode, setEditMode] = useState({}); // { [barcode-index]: { sellingPrice: false, qty: false } }
+
   const { data: stockOutData } = useGetStockOutDetailsQuery({
     mainId: customerStockTransferIn.mainId,
     locationId: parseInt(hasMultipleLocations[0]),
   });
-  // const { data: stockOutData } = useGetStockOutDataForStockInQuery({
-  //   mainId: customerStockTransferIn.mainId,
-  //   locationId: parseInt(hasMultipleLocations[0]),
-  // });
 
   const { data: allBrands } = useGetAllBrandsQuery();
   const [
@@ -77,6 +73,16 @@ const FrameSunglass = () => {
   const [saveStockTransfer, { isLoading: isStockTransferLoading }] =
     useSaveSTIMutation();
 
+  // Helper function to calculate current proposed tiq for a given FrameDetailId
+  const getCurrentProposedQty = (frameDetailId) => {
+    return items.reduce((sum, item) => {
+      if (item.FrameDetailId === frameDetailId) {
+        return sum + item.tiq;
+      }
+      return sum;
+    }, 0);
+  };
+
   useEffect(() => {
     setEditMode((prev) => {
       const newEditMode = { ...prev };
@@ -87,13 +93,14 @@ const FrameSunglass = () => {
             BuyingPrice: false,
             qty: false,
             originalPrice: item.BuyingPrice,
-            originalQty: item.stkQty, // Store original quantity
+            originalQty: item.tiq, // Store original quantity
           };
         }
       });
       return newEditMode;
     });
   }, [items]);
+
   const handleBarcodeSubmit = async (e) => {
     e.preventDefault();
     if (!barcode) return;
@@ -104,49 +111,43 @@ const FrameSunglass = () => {
       }).unwrap();
       const data = res?.data;
 
+      // Check if product exists in StockTransferOut
+      const STOProduct = stockOutData?.data?.details?.find(
+        (item) => item.FrameDetailId === data.Id
+      );
+      if (!STOProduct) {
+        toast.error("Product is not present in the selected Stock Transfer");
+        setBarcode("");
+        return;
+      }
+
+      // Calculate pending quantity
+      const currentProposed = getCurrentProposedQty(data.Id);
+      const remaining = STOProduct.STQtyOut - STOProduct.STQtyIn - currentProposed;
+      if (1 > remaining) {
+        toast.error("No Pending Qty left for the given product");
+        setBarcode("");
+        return;
+      }
+
       setItems((prev) => {
-        // Check if product exists in StockTransferOut
-        const STOProduct = stockOutData?.data?.details?.find(
-          (item) => item.FrameDetailId === data.Id
-        );
-        if (!STOProduct) {
-          toast.error("Product is not present in the selected Stock Transfer");
-          return prev;
-        }
+        // Find existing item in state
+        const existingIndex = prev.findIndex((i) => i.Barcode === data.Barcode);
 
-        // Find existing in our items (local scanned state)
-        const existing = prev.find((i) => i.Barcode === data.Barcode);
-
-        // Determine current STQtyIn (from state if exists, else from backend)
-        const currentSTQtyIn = existing?.tiq ?? STOProduct.STQtyIn;
-
-        // Check pending qty
-        if (STOProduct.STQtyOut === currentSTQtyIn) {
-          toast.error("No Pending Qty left for the given product");
-          return prev;
-        }
-
-        if (existing) {
-          const newStkQty = currentSTQtyIn + 1;
-          return prev.map((item) =>
-            item.Barcode === data.Barcode
-              ? {
-                  ...item,
-                  ...STOProduct,
-                  STQtyIn: newStkQty,
-                  tiq: newStkQty,
-                  BuyingPrice: parseFloat(STOProduct?.TransferPrice),
-                  MRP: STOProduct?.SRP,
-                }
+        if (existingIndex !== -1) {
+          // Update existing item
+          return prev.map((item, idx) =>
+            idx === existingIndex
+              ? { ...item, tiq: item.tiq + 1 }
               : item
           );
         } else {
+          // Add new item
           return [
             {
               ...data,
               ...STOProduct,
               tiq: 1,
-              STQtyIn: currentSTQtyIn + 1,
               BuyingPrice: parseFloat(STOProduct?.TransferPrice),
               MRP: STOProduct?.SRP,
             },
@@ -164,7 +165,10 @@ const FrameSunglass = () => {
 
   const handleBrandModelSubmit = async (e) => {
     e.preventDefault();
-    if (!brandId) return;
+    if (!brandId) {
+      toast.error("Brand is mandatory!");
+      return;
+    }
 
     try {
       const res = await fetchByBrandModal({
@@ -233,48 +237,36 @@ const FrameSunglass = () => {
           return;
         }
 
-        // Find existing item in state
-        const existing = updated.find((i) => i.Barcode === selected.Barcode);
-
-        // Use updated STQtyIn from state if exists, else from backend
-        const currentSTQtyIn = existing?.tiq ?? STOProduct.STQtyIn;
-
-        // Check pending qty with latest value
-        if (STOProduct.STQtyOut === currentSTQtyIn) {
+        // Calculate pending quantity
+        const currentProposed = getCurrentProposedQty(selected.Id);
+        const remaining = STOProduct.STQtyOut - STOProduct.STQtyIn - currentProposed;
+        if (1 > remaining) {
           toast.error("No Pending Qty left for the given product");
           return;
         }
 
-        // If still pending
-        if (STOProduct.STQtyOut > currentSTQtyIn) {
-          if (existing) {
-            const newStkQty = currentSTQtyIn + 1;
+        // Find existing item in state
+        const existingIndex = updated.findIndex((i) => i.Barcode === selected.Barcode);
 
-            updated = updated.map((item) =>
-              item.Barcode === selected.Barcode
-                ? {
-                    ...item,
-                    ...STOProduct,
-                    STQtyIn: newStkQty,
-                    tiq: newStkQty,
-                    BuyingPrice: parseFloat(STOProduct?.TransferPrice),
-                    MRP: STOProduct?.SRP,
-                  }
-                : item
-            );
-          } else {
-            updated = [
-              {
-                ...selected,
-                ...STOProduct,
-                tiq: 1,
-                STQtyIn: currentSTQtyIn + 1,
-                BuyingPrice: parseFloat(STOProduct?.TransferPrice),
-                MRP: STOProduct?.SRP,
-              },
-              ...updated,
-            ];
-          }
+        if (existingIndex !== -1) {
+          // Update existing item
+          updated = updated.map((item, idx) =>
+            idx === existingIndex
+              ? { ...item, tiq: item.tiq + 1 }
+              : item
+          );
+        } else {
+          // Add new item
+          updated = [
+            {
+              ...selected,
+              ...STOProduct,
+              tiq: 1,
+              BuyingPrice: parseFloat(STOProduct?.TransferPrice),
+              MRP: STOProduct?.SRP,
+            },
+            ...updated,
+          ];
         }
       });
 
@@ -287,9 +279,14 @@ const FrameSunglass = () => {
 
   const handleQtyChange = (barcode, qty, index) => {
     const newQty = Number(qty);
-    const avlQty = Number(items[index].STQtyOut);
-    if (newQty > avlQty) {
-      toast.error("TransferIn qty cannot exceed transferOut qty");
+    const item = items[index];
+    const currentProposed = getCurrentProposedQty(item.FrameDetailId);
+    const alreadyReceived = item.STQtyIn;
+    const maxAllowed = item.STQtyOut - alreadyReceived;
+    const effectiveRemaining = maxAllowed - (currentProposed - item.tiq);
+
+    if (newQty > effectiveRemaining) {
+      toast.error("Cannot exceed pending quantity!");
       return;
     }
     if (newQty < 0) {
@@ -639,7 +636,7 @@ const FrameSunglass = () => {
                   "type",
                   "product name",
                   "transfer price",
-                  "transfer out qty",
+                  "pending qty",
                   "transfer in qty",
                   "gst",
                   "total amount",
@@ -725,7 +722,7 @@ const FrameSunglass = () => {
                       )}
                     </TableCell>
 
-                    <TableCell>{item.STQtyOut}</TableCell>
+                    <TableCell>{item.STQtyOut - item.STQtyIn}</TableCell>
                     <TableCell>
                       {editMode[`${item.Barcode}-${index}`]?.qty ? (
                         <div className="flex items-center gap-2">
