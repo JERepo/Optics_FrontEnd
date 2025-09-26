@@ -343,7 +343,7 @@ const CustomerSelect = () => {
       } = order;
       if (orderMasterStatus !== 1) return false;
       const allowedStatusesByType = {
-        0: [0, 1, 2, 6], // OL
+        0: [1, 2, 6], // OL
         1: [0, 1, 2], // Frame
         2: [0, 1, 2], // Accessory
         3: [0, 1, 2], // CL
@@ -1056,7 +1056,7 @@ const CustomerSelect = () => {
       totalQty: totalQty,
       totalGSTValue: totalGst,
       totalValue: totalAmount,
-      roundOff: 0.0,
+      // roundOff: 0.0,
       balanceAmount: totalAmount - totalAdvance,
       applicationUserId: user.Id,
       // bypassCreditCheck :

@@ -277,6 +277,7 @@ const OpticalLens = () => {
   //     mainId: customerStockTransferIn.mainId,
   //     locationId: parseInt(hasMultipleLocations[0]),
   //   });
+  console.log(stockOutData?.data?.details);
   const calculateStockGST = (item) => {
     if (!item) return { gstAmount: 0, slabNo: null, gstPercent: 0 };
 
@@ -474,7 +475,7 @@ const OpticalLens = () => {
     const avlQty = Number(barcodeData[index].STQtyOut);
     if (newQty > avlQty) {
       toast.error(
-        "Stock Out Transfer Quantity cannot exceed the transfer Quantity!"
+        "Stock Out Transfer Quantity cannot exceed the transferIn Quantity!"
       );
       return;
     }
@@ -483,9 +484,7 @@ const OpticalLens = () => {
       return;
     }
     setBarcodeData((prev) =>
-      prev.map((i, idx) =>
-         idx === index ? { ...i, tiq: newQty } : i
-      )
+      prev.map((i, idx) => (idx === index ? { ...i, tiq: newQty } : i))
     );
   };
   console.log("bar", barcodeData);
@@ -595,6 +594,8 @@ const OpticalLens = () => {
                     ...STOProduct,
                     STQtyIn: newStkQty,
                     tiq: newStkQty,
+                    BuyingPrice: parseFloat(STOProduct?.TransferPrice),
+                    MRP: STOProduct?.SRP,
                   }
                 : item
             );
@@ -606,6 +607,8 @@ const OpticalLens = () => {
                 ...STOProduct,
                 tiq: 1,
                 STQtyIn: currentSTQtyIn + 1,
+                BuyingPrice: parseFloat(STOProduct?.TransferPrice),
+                MRP: STOProduct?.SRP,
               },
             ];
           }
@@ -819,19 +822,19 @@ const OpticalLens = () => {
         return;
       }
 
-      if (parseInt(formValues["R"].transferQty) > res?.data.Quantity) {
-        toast.error("Stock Quantity cannot exceed the available Quantity!");
-        return;
-      }
       // Check if product exists in StockTransferOut
       const STOProduct = stockOutData?.data?.details?.find(
         (item) => item.OpticalLensDetailId === res?.data.OpticalLensDetailId
       );
+
       if (!STOProduct) {
         toast.error("Product is not present in the selected Stock Transfer");
         return;
       }
-
+      if (parseInt(formValues["R"].transferQty) > STOProduct.STQtyOut) {
+        toast.error("Stock Quantity cannot exceed the Stock Out Qunatity!");
+        return;
+      }
       // Find existing in our items (local scanned state)
       const existing = barcodeData.find((i) => i.Barcode === res?.data.Barcode);
 
@@ -853,6 +856,8 @@ const OpticalLens = () => {
               ...STOProduct,
               tiq: parseInt(formValues[eye]?.transferQty),
               STQtyIn: currentSTQtyIn + 1,
+              BuyingPrice: parseFloat(STOProduct?.TransferPrice),
+              MRP: STOProduct?.SRP,
             },
           ];
         });

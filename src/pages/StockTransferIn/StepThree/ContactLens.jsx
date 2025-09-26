@@ -398,7 +398,9 @@ const ContactLens = () => {
             ...data,
             ...STOProduct,
             tiq: 1,
-            BuyingPrice: parseFloat(data?.priceMaster.buyingPrice),
+            // BuyingPrice: parseFloat(data?.priceMaster.buyingPrice),
+            BuyingPrice: parseFloat(STOProduct?.TransferPrice),
+            MRP: STOProduct?.SRP,
             sbatchCode: data.stock[0]?.batchCode,
             ExpiryDate: data.stock[0]?.CLBatchExpiry,
           };
@@ -429,6 +431,7 @@ const ContactLens = () => {
       }
     } catch (error) {
       console.error("error", error);
+      toast.error(error?.data?.error?.message || "No Stock available")
       setSearchFetched(false);
       setDetailId(false);
       setOpenBatch(false);
@@ -543,7 +546,9 @@ const ContactLens = () => {
           ...newItem.powerData,
           ...STOProduct,
           selectBatch,
-          BuyingPrice: parseFloat(isAvailable.BuyingPrice),
+          // BuyingPrice: parseFloat(isAvailable.BuyingPrice),
+          BuyingPrice: parseFloat(STOProduct?.TransferPrice),
+          MRP: STOProduct?.SRP,
           tiq: 1,
           ...(detailId ? batchBarCodeDetails?.data?.data : {}),
         };
@@ -633,10 +638,12 @@ const ContactLens = () => {
           ...STOProduct,
           sbatchCode: response?.data.data.stock.BatchCode,
           ExpiryDate: response?.data.data.Expiry,
-          BuyingPrice:
-            response?.data.data.CLBatchCode === 0
-              ? parseFloat(response?.data.data.price.BuyingPrice)
-              : parseFloat(response?.data.data.stock.BuyingPrice),
+          // BuyingPrice:
+          //   response?.data.data.CLBatchCode === 0
+          //     ? parseFloat(response?.data.data.price.BuyingPrice)
+          //     : parseFloat(response?.data.data.stock.BuyingPrice),
+          BuyingPrice: parseFloat(STOProduct?.TransferPrice),
+          MRP: STOProduct?.SRP,
           tiq: 1,
         };
         const existingIndex = mainClDetails.findIndex(
@@ -672,6 +679,7 @@ const ContactLens = () => {
       toast.error(error?.data.error);
     }
   };
+  console.log(stockOutData?.data?.details);
   const handleSaveBatchData = async () => {
     let sub;
     if ((!detailId || openBatch) && productSearch == 0) {
@@ -694,8 +702,10 @@ const ContactLens = () => {
 
         ...STOProduct,
         tiq: 1,
-        MRP: parseFloat(selectedBatchCode.CLMRP),
-        BuyingPrice: parseFloat(selectedBatchCode.BuyingPrice),
+        // MRP: parseFloat(selectedBatchCode.CLMRP),
+        // BuyingPrice: parseFloat(selectedBatchCode.BuyingPrice),
+        BuyingPrice: parseFloat(STOProduct?.TransferPrice),
+        MRP: STOProduct?.SRP,
       };
     } else if (detailId && productSearch == 1) {
       const STOProduct = stockOutData?.data?.details?.find(
@@ -718,8 +728,10 @@ const ContactLens = () => {
 
         ...STOProduct,
         tiq: 1,
-        BuyingPrice: parseFloat(selectedBatchCode.BuyingPrice),
-        MRP: parseFloat(selectedBatchCode.CLMRP),
+        // BuyingPrice: parseFloat(selectedBatchCode.BuyingPrice),
+        // MRP: parseFloat(selectedBatchCode.CLMRP),
+        BuyingPrice: parseFloat(STOProduct?.TransferPrice),
+        MRP: STOProduct?.SRP,
       };
     }
 
@@ -738,7 +750,9 @@ const ContactLens = () => {
       const item = mainClDetails[existingIndex];
       const newQty = item.tiq + 1;
       if (newQty > item.STQtyOut) {
-        toast.error("Stock transfer out quantity cannot exceed stock transfer in quantity!");
+        toast.error(
+          "Stock transfer out quantity cannot exceed stock transfer in quantity!"
+        );
         return;
       }
 
@@ -820,7 +834,7 @@ const ContactLens = () => {
       gstPercent: fallbackTaxPercent,
     };
   };
-  
+
   const handleSaveData = async () => {
     if (!Array.isArray(mainClDetails) || mainClDetails.length === 0) {
       console.warn("No details to save");

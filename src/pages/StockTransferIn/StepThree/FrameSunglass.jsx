@@ -52,8 +52,8 @@ const FrameSunglass = () => {
   const [singleOrCombine, setSingleOrCombine] = useState(0);
   const [editMode, setEditMode] = useState({}); // { [barcode-index]: { sellingPrice: false, qty: false } }
   const { data: stockOutData } = useGetStockOutDetailsQuery({
-  mainId: customerStockTransferIn.mainId,
-  locationId: parseInt(hasMultipleLocations[0]),
+    mainId: customerStockTransferIn.mainId,
+    locationId: parseInt(hasMultipleLocations[0]),
   });
   // const { data: stockOutData } = useGetStockOutDataForStockInQuery({
   //   mainId: customerStockTransferIn.mainId,
@@ -135,12 +135,21 @@ const FrameSunglass = () => {
                   ...STOProduct,
                   STQtyIn: newStkQty,
                   tiq: newStkQty,
+                  BuyingPrice: parseFloat(STOProduct?.TransferPrice),
+                  MRP: STOProduct?.SRP,
                 }
               : item
           );
         } else {
           return [
-            { ...data, ...STOProduct, tiq: 1, STQtyIn: currentSTQtyIn + 1 },
+            {
+              ...data,
+              ...STOProduct,
+              tiq: 1,
+              STQtyIn: currentSTQtyIn + 1,
+              BuyingPrice: parseFloat(STOProduct?.TransferPrice),
+              MRP: STOProduct?.SRP,
+            },
             ...prev,
           ];
         }
@@ -248,6 +257,8 @@ const FrameSunglass = () => {
                     ...STOProduct,
                     STQtyIn: newStkQty,
                     tiq: newStkQty,
+                    BuyingPrice: parseFloat(STOProduct?.TransferPrice),
+                    MRP: STOProduct?.SRP,
                   }
                 : item
             );
@@ -258,6 +269,8 @@ const FrameSunglass = () => {
                 ...STOProduct,
                 tiq: 1,
                 STQtyIn: currentSTQtyIn + 1,
+                BuyingPrice: parseFloat(STOProduct?.TransferPrice),
+                MRP: STOProduct?.SRP,
               },
               ...updated,
             ];

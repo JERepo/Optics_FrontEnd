@@ -134,6 +134,7 @@ const Prescription = () => {
     console.log("pre",prescription)
     setSelectedId(prescription?.Id);
     const parsedPrescription = {
+      name :prescription?.CustomerContactDetail.CustomerName,
       ...prescription,
       values: {
         R: {
@@ -371,7 +372,16 @@ const DisplayMainData = ({
 
               <div className="p-6">
                 {/* Metadata Section */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                   <div className="flex items-start">
+                    <FiCalendar className="mt-1 mr-3 text-gray-400" />
+                    <div>
+                      <p className="text-sm text-gray-500">Patient Name</p>
+                      <p className="font-medium">
+                        {selectedPrescription?.name}
+                      </p>
+                    </div>
+                  </div>
                   <div className="flex items-start">
                     <FiCalendar className="mt-1 mr-3 text-gray-400" />
                     <div>

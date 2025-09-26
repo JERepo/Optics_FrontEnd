@@ -695,14 +695,6 @@ const Customer = ({ isPop, onSubmit }) => {
           "Credit days are required and cannot be negative";
       }
 
-      if (
-        !creditDetails.paymentTerms ||
-        creditDetails.paymentTerms.trim().length < 5
-      ) {
-        newErrors.paymentTerms =
-          "Payment terms are required and must be at least 5 characters";
-      }
-
       if (!creditBalanceType) {
         newErrors.creditBalanceType = "Balance type (Dr/Cr) is required";
       }
@@ -724,35 +716,45 @@ const Customer = ({ isPop, onSubmit }) => {
     setCurrentStatus(status);
     setIsPatientStatusStatusOpen(true);
   };
-  const handleConfirmMobileOrGSTToggle = () => {
+useEffect(() => {
+  if (formData.forceUpdate) {
     handleSave();
-    setIsGMOpen(false);
-  };
-const handleConfirmToggle = async () => {
-  try {
-    await deActivate({
-      customerId: parseInt(id),
-      payload: {
-        patientId: selectedPatientId,
-        isActive: currentStatus ? 0 : 1,
-      },
-    }).unwrap();
-
-    // Update local state
-    const updated = patientDetails?.map((item) =>
-      item.Id === selectedPatientId
-        ? { ...item, IsActive: currentStatus ? 0 : 1 }
-        : item
-    );
-    setPatientDetailsData(updated);
-  } catch (error) {
-    console.error("Toggle error:", error);
-  } finally {
-    setIsPatientStatusStatusOpen(false);
-    setSelectedPatientId(null);
-    setCurrentStatus(null);
   }
+}, [formData.forceUpdate]);
+
+const handleConfirmMobileOrGSTToggle = () => {
+  setFormData((prev) => ({
+    ...prev,
+    forceUpdate: true,
+  }));
+  setIsGMOpen(false);
 };
+
+  const handleConfirmToggle = async () => {
+    try {
+      await deActivate({
+        customerId: parseInt(id),
+        payload: {
+          patientId: selectedPatientId,
+          isActive: currentStatus ? 0 : 1,
+        },
+      }).unwrap();
+
+      // Update local state
+      const updated = patientDetails?.map((item) =>
+        item.Id === selectedPatientId
+          ? { ...item, IsActive: currentStatus ? 0 : 1 }
+          : item
+      );
+      setPatientDetailsData(updated);
+    } catch (error) {
+      console.error("Toggle error:", error);
+    } finally {
+      setIsPatientStatusStatusOpen(false);
+      setSelectedPatientId(null);
+      setCurrentStatus(null);
+    }
+  };
 
   const handleSave = async () => {
     if (!validateAll()) {
@@ -779,6 +781,7 @@ const handleConfirmToggle = async () => {
       locationById,
       isEdit
     );
+
     console.log(payload);
     try {
       if (!id) {
@@ -802,6 +805,7 @@ const handleConfirmToggle = async () => {
         toast.success("Customer data updated successfully!");
         navigate(-1);
       }
+      resetFormForCustomerType()
     } catch (error) {
       console.error(error);
       if (error?.data?.error?.warning) {
@@ -813,7 +817,7 @@ const handleConfirmToggle = async () => {
       );
     }
   };
-
+console.log(formData)
   const renderFittingTable = (
     focalityLabel,
     focalityKey,
@@ -1321,11 +1325,6 @@ const handleConfirmToggle = async () => {
                     rows={3}
                     placeholder="Enter payment terms and conditions"
                   />
-                  {errors.paymentTerms && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.paymentTerms}
-                    </p>
-                  )}
                 </div>
               </div>
             )}
@@ -1382,7 +1381,7 @@ const handleConfirmToggle = async () => {
           setIsGMOpen(false);
         }}
         onConfirm={handleConfirmMobileOrGSTToggle}
-        title="GST or Mobile Number warning!"
+        title="GST or Mobile Number Exist warning!"
         message="Are you sure you want to continue?"
         confirmText="Continue"
         danger={false}
