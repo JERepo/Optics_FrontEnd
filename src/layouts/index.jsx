@@ -97,11 +97,11 @@ import OrderReport from "../pages/Reports/OrderReport";
 import SalesReport from "../pages/Reports/SalesReport";
 import PurchaseReturnReport from "../pages/Reports/PurchaseReturnReport";
 import PurchaseReport from "../pages/Reports/PurchaseReport";
-import { GRNDCProvider } from "../features/GRNDcContext";
-import GRNDcMain from "../pages/GRN DC/GRNDcMain";
 import CLMaster from "../pages/ContactLensMaster/CLMaster";
 import CLMain from "../pages/ContactLensMaster/CLMain";
 import CompanySettings from "../pages/companySettings/CompanySettings";
+import { GRNDCProvider } from "../features/GRNDcContext";
+import GRNDcMain from "../pages/GRN DC/GRNDcMain";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -947,26 +947,16 @@ export const router = createBrowserRouter([
       },
       {
         path: "order-report",
-        element: <OrderReport />
-        path: "order-report",
         element: <OrderReport />,
       },
-      {
-        path: "sales-report",
-        element: <SalesReport />
       {
         path: "sales-report",
         element: <SalesReport />,
       },
       {
         path: "purchase-return-report",
-        element: <PurchaseReturnReport />
-        path: "purchase-return-report",
         element: <PurchaseReturnReport />,
       },
-      {
-        path: "purchase-report",
-        element: <PurchaseReport />
       {
         path: "purchase-report",
         element: <PurchaseReport />,
