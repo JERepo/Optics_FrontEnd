@@ -632,7 +632,7 @@ const NewPrescription = ({
                       <FiEye className="mr-1.5" />
                       View
                     </button>
-                    <HasPermission module="Prescription" action={["edit","create"]}>
+                    <HasPermission module="Prescription" action={["edit"]}>
                     <button
                       className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                       onClick={() => handleUpdate(p)}

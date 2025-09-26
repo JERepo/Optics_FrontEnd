@@ -41,7 +41,7 @@ const SelectCustomer = () => {
     getDraftData,
     { data: salesDraftData, isLoading: isSalesDraftLoading },
   ] = useLazyGetDraftDetailsQuery();
-
+console.log(selectedPatient)
   const allContacts = useMemo(() => {
     if (!contactResp?.data?.data) return [];
 

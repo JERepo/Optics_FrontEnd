@@ -24,6 +24,7 @@ export const CustomerProvider = ({ children }) => {
     BrandName: null,
     whatsAppGroupId: null,
     whatsappAlert: false,
+    forceUpdate :false
   });
 
   const constructPayload = (
@@ -96,7 +97,7 @@ export const CustomerProvider = ({ children }) => {
       CustomerBrand: formData.BrandName,
       CustomerGroupID: parseInt(formData.customerGroup),
       Email: formData.email,
-      forceUpdate: true,
+      forceUpdate: formData.forceUpdate,
       EmailAlert: formData.sendAlert ? 1 : 0,
       MobileISDCode: formData.countryCode,
       MobNumber: formData.phone,
@@ -196,6 +197,7 @@ export const CustomerProvider = ({ children }) => {
       BrandName: null,
       whatsAppGroupId: null,
       whatsappAlert: false,
+      forceUpdate :false
     });
   };
 

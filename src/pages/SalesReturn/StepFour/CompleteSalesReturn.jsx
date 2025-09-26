@@ -569,7 +569,7 @@ const CompleteSalesReturn = () => {
 
               return (
                 <TableRow key={item.SalesReturnDetailId || index}>
-                  <TableCell className="text-center">{index + 1}</TableCell>
+                  <TableCell >{index + 1}</TableCell>
                   <TableCell>
                     {item.InvoiceMain && (
                       <div>
@@ -579,7 +579,7 @@ const CompleteSalesReturn = () => {
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell >
                     {getShortTypeName(item.ProductType)}
                   </TableCell>
                   <TableCell>
@@ -613,7 +613,7 @@ const CompleteSalesReturn = () => {
                     }
                     % )
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell >
                     {item.ReturnQty || 0}
                   </TableCell>
                   <TableCell>

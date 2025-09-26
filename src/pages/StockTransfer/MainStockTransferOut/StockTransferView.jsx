@@ -197,7 +197,7 @@ const getStockOutMRP = (data) => {
     return parseFloat(item.Stock?.MRP || 0);
   }
   if (item.ProductType === 1) {
-    return parseFloat(item.Stock?.FrameSRP || 0);
+    return parseFloat(item.Stock?.MRP || 0);
   }
   if (item.ProductType === 2) {
     return parseFloat(item.Stock?.OPMRP || 0);

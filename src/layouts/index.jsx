@@ -97,6 +97,9 @@ import OrderReport from "../pages/Reports/OrderReport";
 import SalesReport from "../pages/Reports/SalesReport";
 import PurchaseReturnReport from "../pages/Reports/PurchaseReturnReport";
 import PurchaseReport from "../pages/Reports/PurchaseReport";
+import CLMaster from "../pages/ContactLensMaster/CLMaster";
+import CLMain from "../pages/ContactLensMaster/CLMain";
+import CompanySettings from "../pages/companySettings/CompanySettings";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -928,20 +931,36 @@ export const router = createBrowserRouter([
         element: <CustomerPaymentView />,
       },
       {
-        path : "order-report",
-        element : <OrderReport />
-      },
-       {
-        path : "sales-report",
-        element : <SalesReport />
+        path: "order-report",
+        element: <OrderReport />,
       },
       {
-        path : "purchase-return-report",
-        element : <PurchaseReturnReport />
+        path: "sales-report",
+        element: <SalesReport />,
       },
-       {
-        path : "purchase-report",
-        element : <PurchaseReport />
+      {
+        path: "purchase-return-report",
+        element: <PurchaseReturnReport />,
+      },
+      {
+        path: "purchase-report",
+        element: <PurchaseReport />,
+      },
+      {
+        path :"contact-lens-master",
+        element : <CLMain />
+      },
+      {
+        path : "contact-lens-master/create",
+        element : <CLMaster />
+      },
+      {
+        path : "contact-lens-master/:id",
+        element : <CLMaster />
+      },
+      {
+        path : "company-seetings",
+        element : <CompanySettings />
       }
     ],
   },

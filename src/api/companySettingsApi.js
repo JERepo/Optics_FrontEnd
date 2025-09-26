@@ -13,9 +13,20 @@ export const companySettingsApi = createApi({
       }),
       providesTags: ["CompanySettings"],
     }),
-    })
+    getAllPools: builder.query({
+      query: () => ({
+        url: `/api/v1/location-settings/getpool`,
+      }),
+    }),
+    updateSettings: builder.mutation({
+      query: ({ payload }) => ({
+        url: `/api/v1/location-settings/updateLocationSettings`,
+        method: "PUT",
+        body: payload,
+      }),
+    }),
+  }),
 });
 
-export const {
-    useGetCompanySettingsQuery
-} = companySettingsApi;
+export const { useGetCompanySettingsQuery, useGetAllPoolsQuery,useUpdateSettingsMutation } =
+  companySettingsApi;

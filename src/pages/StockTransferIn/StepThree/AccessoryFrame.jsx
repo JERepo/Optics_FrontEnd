@@ -82,8 +82,8 @@ const AccessoryFrame = () => {
     useSaveAccessoryMutation();
   // const [saveStockTransfer, { isLoading: isStockTransferLoading }] =
   //   useSaveStockDetailsMutation();
-    const [saveStockTransfer, { isLoading: isStockTransferLoading }] =
-      useSaveSTIMutation();
+  const [saveStockTransfer, { isLoading: isStockTransferLoading }] =
+    useSaveSTIMutation();
 
   useEffect(() => {
     setEditMode((prev) => {
@@ -136,26 +136,34 @@ const AccessoryFrame = () => {
         }
 
         // If valid, update state
-      
-          if (existing) {
-            const newStkQty = currentSTQtyIn + 1;
-            return prev.map((item) =>
-              item.Barcode === data.Barcode
-                ? {
-                    ...item,
-                    ...STOProduct,
-                    STQtyIn: newStkQty,
-                    tiq: newStkQty,
-                  }
-                : item
-            );
-          } else {
-            return [
-              { ...data, ...STOProduct, tiq: 1, STQtyIn: currentSTQtyIn + 1 },
-              ...prev,
-            ];
-          }
-        
+
+        if (existing) {
+          const newStkQty = currentSTQtyIn + 1;
+          return prev.map((item) =>
+            item.Barcode === data.Barcode
+              ? {
+                  ...item,
+                  ...STOProduct,
+                  STQtyIn: newStkQty,
+                  tiq: newStkQty,
+                  BuyingPrice: parseFloat(STOProduct?.TransferPrice),
+                  MRP: STOProduct?.SRP,
+                }
+              : item
+          );
+        } else {
+          return [
+            {
+              ...data,
+              ...STOProduct,
+              tiq: 1,
+              STQtyIn: currentSTQtyIn + 1,
+              BuyingPrice: parseFloat(STOProduct?.TransferPrice),
+              MRP: STOProduct?.SRP,
+            },
+            ...prev,
+          ];
+        }
       });
 
       setBarcode("");
@@ -253,32 +261,34 @@ const AccessoryFrame = () => {
 
         // If still pending
         if (STOProduct.STQtyOut > currentSTQtyIn) {
-          
-            if (existing) {
-              const newStkQty = currentSTQtyIn + 1;
+          if (existing) {
+            const newStkQty = currentSTQtyIn + 1;
 
-              updated = updated.map((item) =>
-                item.Barcode === selected.Barcode
-                  ? {
-                      ...item,
-                      ...STOProduct,
-                      STQtyIn: newStkQty,
-                      tiq: newStkQty,
-                    }
-                  : item
-              );
-            } else {
-              updated = [
-                {
-                  ...selected,
-                  ...STOProduct,
-                  tiq: 1,
-                  STQtyIn: currentSTQtyIn + 1,
-                },
-                ...updated,
-              ];
-            }
-          
+            updated = updated.map((item) =>
+              item.Barcode === selected.Barcode
+                ? {
+                    ...item,
+                    ...STOProduct,
+                    STQtyIn: newStkQty,
+                    tiq: newStkQty,
+                    BuyingPrice: parseFloat(STOProduct?.TransferPrice),
+                    MRP: STOProduct?.SRP,
+                  }
+                : item
+            );
+          } else {
+            updated = [
+              {
+                ...selected,
+                ...STOProduct,
+                tiq: 1,
+                STQtyIn: currentSTQtyIn + 1,
+                BuyingPrice: parseFloat(STOProduct?.TransferPrice),
+                MRP: STOProduct?.SRP,
+              },
+              ...updated,
+            ];
+          }
         }
       });
 
@@ -531,8 +541,6 @@ const AccessoryFrame = () => {
                   >
                     Enter Barcode
                   </label>
-
-                  
                 </div>
                 <div className="flex gap-2">
                   <div className="relative flex items-center">
@@ -572,7 +580,6 @@ const AccessoryFrame = () => {
                   >
                     Search by Brand & Model *
                   </label>
-                  
                 </div>
                 <div className="flex gap-2">
                   <Autocomplete
@@ -718,17 +725,7 @@ const AccessoryFrame = () => {
                     )}
                   </TableCell>
                   <TableCell>{item.STQtyOut}</TableCell>
-                  <TableCell>
-                    ₹{formatINR(calculateStockGST(item).gstAmount)}(
-                    {calculateStockGST(item).gstPercent}%)
-                  </TableCell>
-                  <TableCell>
-                    ₹
-                    {formatINR(
-                      parseFloat(item.BuyingPrice) * item.tiq +
-                        calculateStockGST(item).gstAmount * item.tiq
-                    )}
-                  </TableCell>
+                  {/* <TableCell>{item.tiq}</TableCell> */}
                   <TableCell>
                     {editMode[`${item.Barcode}-${index}`]?.qty ? (
                       <div className="flex items-center gap-2">
@@ -762,7 +759,7 @@ const AccessoryFrame = () => {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        {item.stkQty}
+                        {item.tiq}
                         <button
                           onClick={() =>
                             toggleEditMode(item.Barcode, index, "qty")
@@ -775,6 +772,18 @@ const AccessoryFrame = () => {
                       </div>
                     )}
                   </TableCell>
+                  <TableCell>
+                    ₹{formatINR(calculateStockGST(item).gstAmount)}(
+                    {calculateStockGST(item).gstPercent}%)
+                  </TableCell>
+                  <TableCell>
+                    ₹
+                    {formatINR(
+                      parseFloat(item.BuyingPrice) * item.tiq +
+                        calculateStockGST(item).gstAmount * item.tiq
+                    )}
+                  </TableCell>
+                  
 
                   <TableCell>
                     <button
