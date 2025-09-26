@@ -81,12 +81,12 @@ export default function GRNDCStep2() {
                 setGrnViewDetails(response?.data?.data || []);
 
                 //Update the context
-                if (response?.data?.data[0]?.GRNMainId) {
-                    updateStep1Data({
-                        GrnMainId: response?.data?.data[0]?.GRNMainId,
-                    });
-                    console.log("Updated GRNMainId in context.", response?.data?.data[0]?.GRNMainId);
-                }
+                // if (response?.data?.data[0]?.GRNMainId) {
+                //     updateStep1Data({
+                //         GrnMainId: response?.data?.data[0]?.GRNMainId,
+                //     });
+                //     console.log("Updated GRNMainId in context.", response?.data?.data[0]?.GRNMainId);
+                // }
             }
         } catch (error) {
             console.error("Error fetching GRN details:", error);

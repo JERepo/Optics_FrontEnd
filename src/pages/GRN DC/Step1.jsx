@@ -135,7 +135,7 @@ export default function GRNDCStep1() {
                 const dateObj = vendorDocDate ? new Date(vendorDocDate) : null;
 
                 updateStep1Data({
-                    GrnMainId: GRNMainResponse.data[0]?.Id,
+                    GrnMainId: grnMainId,
                     selectedLocation: parseInt(selectedLocation),
                     selectedVendor: parseInt(selectedVendor),
                     againstPO: formState?.againstPO
@@ -216,62 +216,62 @@ export default function GRNDCStep1() {
                 console.log("grnResponse ---------------- ", grnResponse);
 
                 // console.log("Grn REsponse ================== ", grnResponse.data.status);
-                if (grnResponse.data.status === 'success') {
-                    const body = {
-                        companyId: selectedLocation,
-                        vendorId: formState?.vendorDetails?.Id,
-                        applicationUserId: user?.Id,
-                        grnMain: grnData?.step1?.GrnMainId,
-                        status: 0
-                    }
+                // if (grnResponse.data.status === 'success') {
+                //     const body = {
+                //         companyId: selectedLocation,
+                //         vendorId: formState?.vendorDetails?.Id,
+                //         applicationUserId: user?.Id,
+                //         grnMain: grnData?.step1?.GrnMainId,
+                //         status: 0
+                //     }
 
-                    const grnDataResponse = await getGRNDetails(body);
-                    console.log("grnDataResponse 1--------------- ", grnDataResponse.data.data);
+                //     const grnDataResponse = await getGRNDetails(body);
+                //     console.log("grnDataResponse 1--------------- ", grnDataResponse.data.data);
 
-                    if (grnDataResponse?.data?.data && grnDataResponse?.data?.data.length > 0) {
-                        // setCurrentStep(2);
-                        // return;
-                    }
-                }
+                //     if (grnDataResponse?.data?.data && grnDataResponse?.data?.data.length > 0) {
+                //         // setCurrentStep(2);
+                //         // return;
+                //     }
+                // }
 
                 nextStep();
                 return;
             }
 
-            const payload = {
-                companyId: selectedLocation,
-                vendorId: formState?.vendorDetails?.Id,
-                applicationUserId: user?.Id,
-                status: 0
-                // grnMain: grnData?.step1?.GrnMainId 
-            }
+            // const payload = {
+            //     companyId: selectedLocation,
+            //     vendorId: formState?.vendorDetails?.Id,
+            //     applicationUserId: user?.Id,
+            //     status: 0
+            //     // grnMain: grnData?.step1?.GrnMainId 
+            // }
 
-            console.log("fetchGRNDetails payload 2-------------- ", payload);
-            const response = await getGRNDetails(payload);
+            // console.log("fetchGRNDetails payload 2-------------- ", payload);
+            // const response = await getGRNDetails(payload);
 
-            console.log("Detail response 3------------ ", response);
+            // console.log("Detail response 3------------ ", response);
 
-            if (response?.data?.data.length > 0) {
-                console.log("getAllGRNDetails response 4-------------- ", response?.data);
-                setGRNData(prev => ({
-                    ...prev,
-                    step1: {
-                        ...prev.step1,
-                        selectedLocation: parseInt(selectedLocation),
-                        selectedVendor: formState.vendorDetails?.Id,
-                        GrnMainId: response?.data?.data[0]?.GrnMainId,
-                        vendorDetails: formState.vendorDetails,
-                        documentNo: formState.documentNo,
-                        documentDate: formState.documentDate,
-                        billingMethod: formState.billingMethod,
-                        againstPO: formState?.againstPO
-                    }
-                }));
-                // setCurrentStep(2);
-                // return;
-                // return;
-                // setGrnViewDetails(response?.data?.data || []);
-            }
+            // if (response?.data?.data.length > 0) {
+            //     console.log("getAllGRNDetails response 4-------------- ", response?.data);
+            //     setGRNData(prev => ({
+            //         ...prev,
+            //         step1: {
+            //             ...prev.step1,
+            //             selectedLocation: parseInt(selectedLocation),
+            //             selectedVendor: formState.vendorDetails?.Id,
+            //             GrnMainId: response?.data?.data[0]?.GrnMainId,
+            //             vendorDetails: formState.vendorDetails,
+            //             documentNo: formState.documentNo,
+            //             documentDate: formState.documentDate,
+            //             billingMethod: formState.billingMethod,
+            //             againstPO: formState?.againstPO
+            //         }
+            //     }));
+            //     // setCurrentStep(2);
+            //     // return;
+            //     // return;
+            //     // setGrnViewDetails(response?.data?.data || []);
+            // }
         } catch (error) {
             console.error("Error fetching GRN details:", error);
             toast.error("Failed to fetch GRN details. Please try again.");
