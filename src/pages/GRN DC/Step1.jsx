@@ -9,21 +9,21 @@ import { AlertCircle, ArrowLeft } from "lucide-react";
 import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
 import { useGetAllvendorByLocationQuery } from "../../api/vendorApi";
 import { useGetCompanySettingsQuery } from "../../api/companySettingsApi";
-import { useCheckDocNoUniqueQuery, useGetGRNDetailsMutation, useGetGRNMainMutation, useUpdateGRNMainMutation } from "../../api/grnApi";
-import { useSaveGRNMainMutation } from "../../api/grnApi";
-import { useGRN } from "../../features/GRNContext";
+import { useCheckDocNoUniqueQuery, useUpdateGRNMainMutation } from "../../api/grnApi";
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { useGRNDC } from "../../features/GRNDcContext";
+import { useGetGRNDetailsMutation, useGetGRNMainMutation, useGetVendorQuery, useSaveGRNMainMutation } from "../../api/grnDcApi";
 
 
 
-export default function GRNStep1() {
+export default function GRNDCStep1() {
 
     const navigate = useNavigate();
 
     // Context
-    const { grnData, setGRNData, currentStep, setCurrentStep, updateStep1Data, nextStep } = useGRN();
+    const { grnData, setGRNData, currentStep, setCurrentStep, updateStep1Data, nextStep } = useGRNDC();
 
     // App states
     const [showAlert, setShowAlert] = useState(false);
@@ -60,10 +60,13 @@ export default function GRNStep1() {
 
     // Query-----------------------------------------------------------------------------------------------------------------------
     const { data: allLocations } = useGetAllLocationsQuery();
-    const { data: vendorData } = useGetAllvendorByLocationQuery(
-        { id: selectedLocation },
+    const { data: vendorData } = useGetVendorQuery(
+        { companyId: selectedLocation },
         { skip: !selectedLocation }
     );
+
+
+
 
     // User assigned locations
     const hasLocation = allLocations?.data ? allLocations?.data?.filter(loc =>
@@ -84,6 +87,7 @@ export default function GRNStep1() {
     )
 
     console.log("isUniqueResponse ------------------ ", isUniqueResponse);
+    console.log("selectedLocation", selectedLocation);
 
     const isUnique = isUniqueResponse?.isUnique;
 
@@ -117,7 +121,6 @@ export default function GRNStep1() {
             const payload = {
                 companyId: selectedLocation,
                 vendorId: selectedVendor,
-                againstPo: formState?.againstPO,
                 applicationUserId: user?.Id
             }
 
@@ -132,7 +135,7 @@ export default function GRNStep1() {
                 const dateObj = vendorDocDate ? new Date(vendorDocDate) : null;
 
                 updateStep1Data({
-                    GrnMainId: GRNMainResponse.data[0]?.Id,
+                    GrnMainId: grnMainId,
                     selectedLocation: parseInt(selectedLocation),
                     selectedVendor: parseInt(selectedVendor),
                     againstPO: formState?.againstPO
@@ -213,61 +216,62 @@ export default function GRNStep1() {
                 console.log("grnResponse ---------------- ", grnResponse);
 
                 // console.log("Grn REsponse ================== ", grnResponse.data.status);
-                if (grnResponse.data.status === 'success') {
-                    const body = {
-                        companyId: selectedLocation,
-                        vendorId: formState?.vendorDetails?.Id,
-                        againstPo: formState?.againstPO,
-                        applicationUserId: user?.Id,
-                        grnMain: grnData?.step1?.GrnMainId,
-                        status: 0
-                    }
+                // if (grnResponse.data.status === 'success') {
+                //     const body = {
+                //         companyId: selectedLocation,
+                //         vendorId: formState?.vendorDetails?.Id,
+                //         applicationUserId: user?.Id,
+                //         grnMain: grnData?.step1?.GrnMainId,
+                //         status: 0
+                //     }
 
-                    const grnDataResponse = await getGRNDetails(body);
-                    console.log("grnDataResponse --------------- ", grnDataResponse.data.data);
+                //     const grnDataResponse = await getGRNDetails(body);
+                //     console.log("grnDataResponse 1--------------- ", grnDataResponse.data.data);
 
-                    if (grnDataResponse?.data?.data && grnDataResponse?.data?.data.length > 0) {
-                        setCurrentStep(5);
-                        return;
-                    }
-                }
+                //     if (grnDataResponse?.data?.data && grnDataResponse?.data?.data.length > 0) {
+                //         // setCurrentStep(2);
+                //         // return;
+                //     }
+                // }
 
                 nextStep();
                 return;
             }
 
-            const payload = {
-                companyId: selectedLocation,
-                vendorId: formState?.vendorDetails?.Id,
-                againstPo: formState?.againstPO,
-                applicationUserId: user?.Id,
-                // grnMain: grnData?.step1?.GrnMainId 
-            }
+            // const payload = {
+            //     companyId: selectedLocation,
+            //     vendorId: formState?.vendorDetails?.Id,
+            //     applicationUserId: user?.Id,
+            //     status: 0
+            //     // grnMain: grnData?.step1?.GrnMainId 
+            // }
 
-            console.log("fetchGRNDetails payload -------------- ", payload);
-            const response = await getGRNDetails(payload);
+            // console.log("fetchGRNDetails payload 2-------------- ", payload);
+            // const response = await getGRNDetails(payload);
 
-            if (response?.data?.data.length > 0) {
-                console.log("getAllGRNDetails response -------------- ", response?.data);
-                setGRNData(prev => ({
-                    ...prev,
-                    step1: {
-                        ...prev.step1,
-                        selectedLocation: parseInt(selectedLocation),
-                        selectedVendor: formState.vendorDetails?.Id,
-                        GrnMainId: response?.data?.data[0]?.GrnMainId,
-                        vendorDetails: formState.vendorDetails,
-                        documentNo: formState.documentNo,
-                        documentDate: formState.documentDate,
-                        billingMethod: formState.billingMethod,
-                        againstPO: formState?.againstPO
-                    }
-                }));
-                // setCurrentStep(5);
-                // return;
-                // return;
-                // setGrnViewDetails(response?.data?.data || []);
-            }
+            // console.log("Detail response 3------------ ", response);
+
+            // if (response?.data?.data.length > 0) {
+            //     console.log("getAllGRNDetails response 4-------------- ", response?.data);
+            //     setGRNData(prev => ({
+            //         ...prev,
+            //         step1: {
+            //             ...prev.step1,
+            //             selectedLocation: parseInt(selectedLocation),
+            //             selectedVendor: formState.vendorDetails?.Id,
+            //             GrnMainId: response?.data?.data[0]?.GrnMainId,
+            //             vendorDetails: formState.vendorDetails,
+            //             documentNo: formState.documentNo,
+            //             documentDate: formState.documentDate,
+            //             billingMethod: formState.billingMethod,
+            //             againstPO: formState?.againstPO
+            //         }
+            //     }));
+            //     // setCurrentStep(2);
+            //     // return;
+            //     // return;
+            //     // setGrnViewDetails(response?.data?.data || []);
+            // }
         } catch (error) {
             console.error("Error fetching GRN details:", error);
             toast.error("Failed to fetch GRN details. Please try again.");
@@ -301,10 +305,7 @@ export default function GRNStep1() {
             selectedVendor: formState.vendorDetails?.Id,
             vendorDetails: formState.vendorDetails,
             documentNo: formState.documentNo,
-            documentDate: formState.documentDate,
-            billingMethod: formState.billingMethod,
-            againstPO: formState?.againstPO,
-            grnType: formState?.billingMethod
+            documentDate: formState.documentDate
         });
 
         // 3. Save the GRN main entry in db
@@ -314,9 +315,7 @@ export default function GRNStep1() {
             inState: formState?.vendorDetails?.StateID === companySettingsData?.data?.data?.State?.Id ? 0 : 1,
             vendorDocNo: formState.documentNo,
             vendorDocDate: formState.documentDate,
-            grnByMethod: 1,         // GRN by Order 1 : 0 (DC)
-            grnType: formState.billingMethod === "invoice" ? 0 : 1,             // GRN Type 0 : Invoice and 1 : DC
-            againstPO: formState?.againstPO,
+            grnType: 0,             // GRN Type 0 : Invoice and 1 : DC
             applicationUserId: user.Id
         }
 
@@ -532,6 +531,7 @@ export default function GRNStep1() {
                                                     checked={formState.billingMethod === "invoice"}
                                                     onChange={handleInputChange}
                                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    disabled={true}
                                                 />
                                                 <span className="text-gray-700 font-medium">Invoice</span>
                                             </label>
@@ -544,39 +544,9 @@ export default function GRNStep1() {
                                                     checked={formState.billingMethod === "dc"}
                                                     onChange={handleInputChange}
                                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    disabled={true}
                                                 />
                                                 <span className="text-gray-700 font-medium">DC</span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-8">
-                                    <div className="flex items-center space-x-10">
-                                        <p className="font-bold text-gray-500">Against Purchase Order:</p>
-                                        <div className="flex space-x-4">
-                                            <label className="flex items-center space-x-2 cursor-pointer">
-                                                <input
-                                                    type="radio"
-                                                    name="againstPO"
-                                                    value="1"
-                                                    checked={formState.againstPO === "1"}
-                                                    onChange={handleInputChange}
-                                                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                />
-                                                <span className="text-gray-700 font-medium">Yes</span>
-                                            </label>
-
-                                            <label className="flex items-center space-x-2 cursor-pointer">
-                                                <input
-                                                    type="radio"
-                                                    name="againstPO"
-                                                    value="0"
-                                                    checked={formState.againstPO === "0"}
-                                                    onChange={handleInputChange}
-                                                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                />
-                                                <span className="text-gray-700 font-medium">No</span>
                                             </label>
                                         </div>
                                     </div>

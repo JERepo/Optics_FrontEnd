@@ -592,7 +592,11 @@ export default function GRNStep3() {
 
     const handleGetBatchBarCodeDetails = async () => {
 
-        const batches = CLBatches;
+        // const batches = CLBatches;
+
+        const batches = CLBatches?.data;
+        console.log("CLBatches ----------- ", CLBatches);
+        console.log("selectedBatchCode --------------- ", selectedBatchCode);
         const isAvailable = batches?.find(
             (b) => b.CLBatchCode.toLowerCase() === batchCodeInput.toLowerCase()
         );
@@ -834,7 +838,7 @@ export default function GRNStep3() {
                     GRNPrice: formState.rate, // Use user-entered rate
                     TaxPercent: GRNOrderPowerDetails?.TaxPercentage,
                     FittingPrice: (GRNOrderPowerDetails?.FittingChargeDetails?.FittingCharges === 1 && GRNOrderPowerDetails?.FittingChargeDetails?.FittingChargesPurchase === 1 && GRNOrderPowerDetails?.FittingChargeDetails?.WithFitting === 1) ? formState.fittingCharge : null,
-                    FittingGSTPercentage: (GRNOrderPowerDetails?.FittingChargeDetails?.FittingCharges === 1 && GRNOrderPowerDetails?.FittingChargeDetails?.FittingChargesPurchase === 1 && GRNOrderPowerDetails?.FittingChargeDetails?.WithFitting === 1) ?  GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST : null,
+                    FittingGSTPercentage: (GRNOrderPowerDetails?.FittingChargeDetails?.FittingCharges === 1 && GRNOrderPowerDetails?.FittingChargeDetails?.FittingChargesPurchase === 1 && GRNOrderPowerDetails?.FittingChargeDetails?.WithFitting === 1) ? GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST : null,
                     ApplicationUserId: user.Id
                 }];
             }
@@ -1546,50 +1550,6 @@ export default function GRNStep3() {
                                     </div>
                                 )}
 
-                                {/* <div className="flex items-center justify-between gap-4 w-full mb-4">
-                                    <div className="flex flex-col flex-1">
-                                        <label htmlFor="rQty" className="text-sm font-medium text-gray-700 mb-1">Total Basic Amt</label>
-                                        {`₹ ${(
-                                            ((parseFloat(formState.rate)
-                                                + parseFloat(GRNOrderPowerDetails.Tint.TintBuying ? (GRNOrderPowerDetails?.OrderQuantity < 2 ? (GRNOrderPowerDetails.Tint.TintBuying / 2 || 0) : GRNOrderPowerDetails.Tint.TintBuying || 0) : 0)
-                                                + parseFloat(GRNOrderPowerDetails.AddOd.AddOnBuying ? (GRNOrderPowerDetails?.OrderQuantity < 2 ? (GRNOrderPowerDetails.AddOd.AddOnBuying / 2 || 0) : GRNOrderPowerDetails.AddOd.AddOnBuying || 0) : 0))
-                                                * GRNOrderPowerDetails?.OrderQuantity)
-                                            + parseFloat(formState.fittingCharge || 0)
-                                        ).toFixed(2)}`}
-                                    </div>
-                                    <div className="flex flex-col flex-1">
-                                        <label htmlFor="rate" className="text-sm font-medium text-gray-700 mb-1">Total GST *</label>
-                                        {`${((parseFloat(formState.rate)
-                                            + parseFloat(GRNOrderPowerDetails.Tint.TintBuying ? (GRNOrderPowerDetails?.OrderQuantity < 2 ? (GRNOrderPowerDetails.Tint.TintBuying / 2 || 0) : GRNOrderPowerDetails.Tint.TintBuying || 0) : 0)
-                                            + parseFloat(GRNOrderPowerDetails.AddOd.AddOnBuying ? (GRNOrderPowerDetails?.OrderQuantity < 2 ? (GRNOrderPowerDetails.AddOd.AddOnBuying / 2 || 0) : GRNOrderPowerDetails.AddOd.AddOnBuying || 0) : 0))
-                                            * (GRNOrderPowerDetails?.TaxPercentage / 100) * GRNOrderPowerDetails?.OrderQuantity)
-                                            + ((Number(formState.fittingCharge || 0) *
-                                                (Number(GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST || 0) / 100)))
-                                            }`}
-                                    </div>
-                                    <div className="flex flex-col flex-1">
-                                        <label htmlFor="gst" className="text-sm font-medium text-gray-700 mb-1">Total Qty *</label>
-                                        {GRNOrderPowerDetails?.OrderQuantity}
-
-                                    </div>
-                                    <div className="flex flex-col flex-1">
-                                        <label htmlFor="gst" className="text-sm font-medium text-gray-700 mb-1">Total Amt *</label>
-                                        {((parseFloat(formState.rate)
-                                            + parseFloat(GRNOrderPowerDetails.Tint.TintBuying ? (GRNOrderPowerDetails?.OrderQuantity < 2 ? (GRNOrderPowerDetails.Tint.TintBuying / 2 || 0) : GRNOrderPowerDetails.Tint.TintBuying || 0) : 0)
-                                            + parseFloat(GRNOrderPowerDetails.AddOd.AddOnBuying ? (GRNOrderPowerDetails?.OrderQuantity < 2 ? (GRNOrderPowerDetails.AddOd.AddOnBuying / 2 || 0) : GRNOrderPowerDetails.AddOd.AddOnBuying || 0) : 0))
-                                            * GRNOrderPowerDetails?.OrderQuantity)
-                                            + parseFloat(formState.fittingCharge || 0)
-                                            +
-                                            ((parseFloat(formState.rate)
-                                                + parseFloat(GRNOrderPowerDetails.Tint.TintBuying ? (GRNOrderPowerDetails?.OrderQuantity < 2 ? (GRNOrderPowerDetails.Tint.TintBuying / 2 || 0) : GRNOrderPowerDetails.Tint.TintBuying || 0) : 0)
-                                                + parseFloat(GRNOrderPowerDetails.AddOd.AddOnBuying ? (GRNOrderPowerDetails?.OrderQuantity < 2 ? (GRNOrderPowerDetails.AddOd.AddOnBuying / 2 || 0) : GRNOrderPowerDetails.AddOd.AddOnBuying || 0) : 0))
-                                                * (GRNOrderPowerDetails?.TaxPercentage / 100) * GRNOrderPowerDetails?.OrderQuantity)
-                                            + ((Number(formState.fittingCharge || 0) *
-                                                (Number(GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST || 0) / 100)))
-                                        }
-                                    </div>
-                                </div> */}
-
                                 <div className="flex items-center justify-between gap-4 w-full mb-4">
                                     <div className="flex flex-col flex-1">
                                         <label htmlFor="totalBasicAmt" className="text-sm font-medium text-gray-700 mb-1">Total Basic Amt</label>
@@ -1609,17 +1569,20 @@ export default function GRNStep3() {
                                             {GRNOrderPowerDetails?.OrderQuantity}
                                         </div>
                                     </div>
-                                    <div className="flex flex-col flex-1">
-                                        <label htmlFor="totalAmt" className="text-sm font-medium text-gray-700 mb-1">Total Amt *</label>
-                                        <div className="w-full px-3 py-2 text-sm">
-                                            {`₹ ${(
-                                                ((formState.rate || 0) * GRNOrderPowerDetails?.OrderQuantity) +
-                                                Number(formState.fittingCharge || 0) +
-                                                ((formState.rate || 0) * (GRNOrderPowerDetails?.TaxPercentage / 100) * GRNOrderPowerDetails?.OrderQuantity) +
-                                                (Number(formState.fittingCharge || 0) * (Number(GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST || 0) / 100))
-                                            ).toFixed(2)}`}
+                                    {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? null : (
+                                        <div className="flex flex-col flex-1">
+                                            <label htmlFor="totalAmt" className="text-sm font-medium text-gray-700 mb-1">Total Amt *</label>
+                                            <div className="w-full px-3 py-2 text-sm">
+                                                {`₹ ${(
+                                                    ((formState.rate || 0) * GRNOrderPowerDetails?.OrderQuantity) +
+                                                    Number(formState.fittingCharge || 0) +
+                                                    ((formState.rate || 0) * (GRNOrderPowerDetails?.TaxPercentage / 100) * GRNOrderPowerDetails?.OrderQuantity) +
+                                                    (Number(formState.fittingCharge || 0) * (Number(GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST || 0) / 100))
+                                                ).toFixed(2)}`}
+                                            </div>
                                         </div>
-                                    </div>
+
+                                    )}
                                 </div>
                             </>
                         )}
@@ -1691,7 +1654,7 @@ export default function GRNStep3() {
                                             onChange={handleInputChange}
                                             className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                         />
-                                        <span className="text-gray-700 font-medium">Scan Batch Barcode</span>
+                                        <span className="text-gray-700 font-medium">Enter Batch Barcode</span>
                                     </label>
                                 </div>
                             </div>
@@ -1738,20 +1701,73 @@ export default function GRNStep3() {
                                 )}
                             </div>
                         ) : formState.clBatchInputType === "enter" ? (
+                            // <div className="w-1/2 mt-5 flex items-center gap-4">
+                            //     <Input
+                            //         value={batchCodeInput}
+                            //         onChange={(e) => setbatchCodeInput(e.target.value)}
+                            //         label="Enter BatchBarCode"
+                            //         onKeyDown={(e) => {
+                            //             if (e.key === "Enter") {
+                            //                 handleGetBatchBarCodeDetails();
+                            //             }
+                            //         }}
+                            //     />
+                            //     <button
+                            //         className="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
+                            //         onClick={handleGetBatchBarCodeDetails}
+                            //     >
+                            //         Add
+                            //     </button>
+                            // </div>
                             <div className="w-1/2 mt-5 flex items-center gap-4">
                                 <Input
                                     value={batchCodeInput}
                                     onChange={(e) => setbatchCodeInput(e.target.value)}
                                     label="Enter BatchBarCode"
+                                    error={
+                                        batchCodeInput &&
+                                        !CLBatches?.data?.find(
+                                            (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
+                                        )
+                                    }
+                                    helperText={
+                                        batchCodeInput &&
+                                            !CLBatches?.data?.find(
+                                                (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
+                                            )
+                                            ? "Invalid batch barcode"
+                                            : "Required"
+                                    }
                                     onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                            handleGetBatchBarCodeDetails();
+                                        if (e.key === "Enter" && batchCodeInput) {
+                                            const isValidBatch = CLBatches?.data?.find(
+                                                (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
+                                            );
+                                            if (isValidBatch) {
+                                                setSelectedBatchCode(isValidBatch);
+                                                handleGetBatchBarCodeDetails();
+                                            } else {
+                                                toast.error("Invalid batch barcode");
+                                            }
                                         }
                                     }}
                                 />
                                 <button
                                     className="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
-                                    onClick={handleGetBatchBarCodeDetails}
+                                    onClick={() => {
+                                        if (batchCodeInput) {
+                                            const isValidBatch = CLBatches?.data?.find(
+                                                (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
+                                            );
+                                            if (isValidBatch) {
+                                                setSelectedBatchCode(isValidBatch);
+                                                handleGetBatchBarCodeDetails();
+                                            } else {
+                                                toast.error("Invalid batch barcode");
+                                            }
+                                        }
+                                    }}
+                                    disabled={!batchCodeInput}
                                 >
                                     Add
                                 </button>

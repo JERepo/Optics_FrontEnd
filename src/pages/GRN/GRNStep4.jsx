@@ -153,6 +153,25 @@ export default function GRNStep4() {
         }));
     };
 
+    // Calculate total GRNQty for each PODetail
+    const calculateTotalGRNQty = (data) => {
+        const grnQtyByPODetail = data.reduce((acc, item) => {
+            const key = item.PODetailId || item.PONo; // Use PODetailId or PONo as the unique identifier
+            acc[key] = (acc[key] || 0) + (item.GRNQty || item.quantity || 1);
+            return acc;
+        }, {});
+
+        // Map each item to include the total GRNQty for its PODetail
+        return data.map((item) => ({
+            ...item,
+            TotalGRNQty: grnQtyByPODetail[item.PODetailId || item.PONo],
+            PendingQty: item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty - grnQtyByPODetail[item.PODetailId || item.PONo],
+        }));
+    };
+
+    // Preprocess data to include TotalGRNQty and PendingQty
+    const processedData = calculateTotalGRNQty(grnViewDetails);
+
 
     const handleCompleteGRN = async () => {
         try {
@@ -406,70 +425,210 @@ export default function GRNStep4() {
                             )}
                         />
                     ) : (
+                        // <Table
+                        //     columns={["PO No. (Order No.)", "Product type", "Product Details", "MRP", "PO QTY", "Pending Qty", "GRN Qty", "Buying Price", "Total", "Action"]}
+                        //     data={grnViewDetails}
+                        //     renderRow={(item, index) => (
+                        //         <TableRow key={index}>
+                        //             <TableCell>{item.PONo} <br /> {(item.OrderNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
+                        //             <TableCell className="">
+                        //                 {item?.ProductDetails?.ProductType === 1 ? 'F/S' : item?.ProductDetails?.ProductType === 2 ? 'ACC' : item?.ProductDetails?.ProductType === 3 ? 'CL' : ''}
+                        //             </TableCell>
+                        //             {item?.ProductDetails?.ProductType === 1 ?
+                        //                 <TableCell>{item?.ProductDetails?.productName}<br />
+                        //                     Size: {item?.ProductDetails?.Size?.Size}<br />
+                        //                     Barcode: {item?.ProductDetails?.barcode}<br />
+                        //                     Category: {item?.category === 0 ? `Sunglass` : `OpticalFrame`} <br />
+                        //                     HSN: {item?.ProductDetails?.HSN}
+                        //                 </TableCell>
+                        //                 : item?.ProductDetails?.ProductType === 2 ?
+                        //                     <TableCell>{item?.ProductDetails?.productName}<br />
+                        //                         Variation: {item?.ProductDetails?.Variation?.Variation}<br />
+                        //                         Barcode: {item?.ProductDetails?.barcode}<br />
+                        //                         HSN: {item?.ProductDetails?.HSN}
+                        //                     </TableCell>
+                        //                     : item?.ProductDetails?.ProductType === 3 ?
+                        //                         <TableCell>
+                        //                             {item?.ProductDetails?.productName}
+                        //                             {item?.ProductDetails?.PowerSpecs?.Sph && <><br />Sph: {item.ProductDetails.PowerSpecs.Sph > 0 ? '+' : ''}{item.ProductDetails.PowerSpecs.Sph}</>}
+                        //                             {item?.PowerSpecsCylindricalPower ? ` Cyl: ${item.CylindricalPower > 0 ? '+' : ''}${item.CylindricalPower}` : ` Cyl: `}
+                        //                             {item?.PowerSpecsAxis ? ` Axis: ${item.PowerSpecsAxis > 0 ? '+' : ''}${item.PowerSpecsAxis}` : ` Axis: `}
+                        //                             {item?.PowerSpecsAdditional ? ` Add: ${item.PowerSpecsAdditional > 0 ? '+' : ''}${item.PowerSpecsAdditional}` : ` Add: `}
+                        //                             {item?.Size && <><br />{item.Size}</>}
+                        //                             {item?.ProductDetails?.barcode && <><br />Barcode: {item.ProductDetails.barcode}</>}
+                        //                             {item?.BatchCode && <><br />BatchCode: {item.BatchCode}</>}
+                        //                             {/* {(() => {
+                        //                                 console.log("Iteme ajnd", item);
+                        //                                 const stock = item?.ProductDetails?.Stock?.find(stock => stock.BatchCode === item.BatchCode);
+                        //                                 console.log("item.BatchCode:", item.BatchCode);
+                        //                                 console.log("Stock array:", item?.ProductDetails?.Stock);
+                        //                                 console.log("Found stock:", stock);
+                        //                                 return stock?.Expiry ? <><br />Expiry: {stock.Expiry}</> : null;
+                        //                             })()} */}
+                        //                             {/* {item?.Expiry && <br />}{item.Expiry ? ` Expiry: ${item.Expiry}` : null} */}
+                        //                             {item?.Expiry && <br />}
+                        //                             {item.Expiry ? (() => {
+                        //                                 const [year, month, day] = item.Expiry.split('-');
+                        //                                 const formattedExpiry = `${day}-${month}-${year}`;
+                        //                                 return ` Expiry: ${formattedExpiry}`;
+                        //                             })() : null}
+                        //                             {item?.ProductDetails?.HSN && <><br />HSN: {item.ProductDetails.HSN}</>}
+                        //                         </TableCell>
+                        //                         : null
+                        //             }
+                        //             {item?.ProductDetails?.ProductType === 1 ?
+                        //                 <TableCell className="">₹ {item?.ProductDetails?.Stock?.MRP}</TableCell>
+                        //                 : item?.ProductDetails?.ProductType === 2 ?
+                        //                     <TableCell className="">₹ {item?.ProductDetails?.Stock?.OPMRP}</TableCell>
+                        //                     : item?.ProductDetails?.ProductType === 3 ?
+                        //                         <TableCell className="">₹ {item?.ProductDetails?.price?.MRP}</TableCell>
+                        //                         : null
+                        //             }
+                        //             <TableCell className=" ">{item.POQty}</TableCell>
+                        //             <TableCell>{item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty - (item.GRNQty || item.quantity || 1)}</TableCell>
+                        //             <TableCell>{item.GRNQty || item.quantity || 1}</TableCell>
+                        //             <TableCell>{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (item.GRNPrice || 0)}</TableCell>
+                        //             <TableCell>₹{" "}{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` : (parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty)).toFixed(2)}</TableCell>
+                        //             <TableCell className="px-6 py-4 whitespace-nowrap">
+                        //                 <button
+                        //                     onClick={() => {
+                        //                         setOrderToRemove(item?.GRNDetailId);
+                        //                         setShowRemoveModal(true);
+                        //                     }}
+                        //                     className="p-1 text-red-600 hover:text-red-800"
+                        //                     aria-label="Delete item"
+                        //                 >
+                        //                     <Trash2 className="h-5 w-5" />
+                        //                 </button>
+                        //             </TableCell>
+                        //         </TableRow>
+                        //     )}
+                        // />
+
                         <Table
-                            columns={["PO No. (Order No.)", "Product type", "Product Details", "MRP", "PO QTY", "Pending Qty", "GRN Qty", "Buying Price", "Total", "Action"]}
-                            data={grnViewDetails}
+                            columns={[
+                                "PO No. (Order No.)",
+                                "Product type",
+                                "Product Details",
+                                "MRP",
+                                "PO QTY",
+                                "Pending Qty",
+                                "GRN Qty",
+                                "Buying Price",
+                                "Total",
+                                "Action",
+                            ]}
+                            data={processedData}
                             renderRow={(item, index) => (
                                 <TableRow key={index}>
-                                    <TableCell>{item.PONo} <br /> {(item.OrderNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
-                                    <TableCell className="">
-                                        {item?.ProductDetails?.ProductType === 1 ? 'F/S' : item?.ProductDetails?.ProductType === 2 ? 'ACC' : item?.ProductDetails?.ProductType === 3 ? 'CL' : ''}
+                                    <TableCell>
+                                        {item.PONo}{" "}
+                                        {(item.OrderNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}
                                     </TableCell>
-                                    {item?.ProductDetails?.ProductType === 1 ?
-                                        <TableCell>{item?.ProductDetails?.productName}<br />
-                                            Size: {item?.ProductDetails?.Size?.Size}<br />
-                                            Barcode: {item?.ProductDetails?.barcode}<br />
-                                            Category: {item?.category === 0 ? `Sunglass` : `OpticalFrame`} <br />
+                                    <TableCell>
+                                        {item?.ProductDetails?.ProductType === 1
+                                            ? "F/S"
+                                            : item?.ProductDetails?.ProductType === 2
+                                                ? "ACC"
+                                                : item?.ProductDetails?.ProductType === 3
+                                                    ? "CL"
+                                                    : ""}
+                                    </TableCell>
+                                    {item?.ProductDetails?.ProductType === 1 ? (
+                                        <TableCell>
+                                            {item?.ProductDetails?.productName}
+                                            <br />
+                                            Size: {item?.ProductDetails?.Size?.Size}
+                                            <br />
+                                            Barcode: {item?.ProductDetails?.barcode}
+                                            <br />
+                                            Category: {item?.category === 0 ? `Sunglass` : `OpticalFrame`}
+                                            <br />
                                             HSN: {item?.ProductDetails?.HSN}
                                         </TableCell>
-                                        : item?.ProductDetails?.ProductType === 2 ?
-                                            <TableCell>{item?.ProductDetails?.productName}<br />
-                                                Variation: {item?.ProductDetails?.Variation?.Variation}<br />
-                                                Barcode: {item?.ProductDetails?.barcode}<br />
-                                                HSN: {item?.ProductDetails?.HSN}
-                                            </TableCell>
-                                            : item?.ProductDetails?.ProductType === 3 ?
-                                                <TableCell>
-                                                    {item?.ProductDetails?.productName}
-                                                    {item?.ProductDetails?.PowerSpecs?.Sph && <><br />Sph: {item.ProductDetails.PowerSpecs.Sph > 0 ? '+' : '-'}{item.ProductDetails.PowerSpecs.Sph}</>}
-                                                    {item?.PowerSpecsCylindricalPower ? ` Cyl: ${item.CylindricalPower > 0 ? '+' : '-'}${item.CylindricalPower}` : ` Cyl: `}
-                                                    {item?.PowerSpecsAxis ? ` Axis: ${item.PowerSpecsAxis > 0 ? '+' : '-'}${item.PowerSpecsAxis}` : ` Axis: `}
-                                                    {item?.PowerSpecsAdditional ? ` Add: ${item.PowerSpecsAdditional > 0 ? '+' : '-'}${item.PowerSpecsAdditional}` : ` Add: `}
-                                                    {item?.Size && <><br />{item.Size}</>}
-                                                    {item?.ProductDetails?.barcode && <><br />Barcode: {item.ProductDetails.barcode}</>}
-                                                    {item?.BatchCode && <><br />BatchCode: {item.BatchCode}</>}
-                                                    {/* {(() => {
-                                                        console.log("Iteme ajnd", item);
-                                                        const stock = item?.ProductDetails?.Stock?.find(stock => stock.BatchCode === item.BatchCode);
-                                                        console.log("item.BatchCode:", item.BatchCode);
-                                                        console.log("Stock array:", item?.ProductDetails?.Stock);
-                                                        console.log("Found stock:", stock);
-                                                        return stock?.Expiry ? <><br />Expiry: {stock.Expiry}</> : null;
-                                                    })()} */}
-                                                    {/* {item?.Expiry && <br />}{item.Expiry ? ` Expiry: ${item.Expiry}` : null} */}
-                                                    {item?.Expiry && <br />}
-                                                    {item.Expiry ? (() => {
-                                                        const [year, month, day] = item.Expiry.split('-');
-                                                        const formattedExpiry = `${day}-${month}-${year}`;
-                                                        return ` Expiry: ${formattedExpiry}`;
-                                                    })() : null}
-                                                    {item?.ProductDetails?.HSN && <><br />HSN: {item.ProductDetails.HSN}</>}
-                                                </TableCell>
-                                                : null
-                                    }
-                                    {item?.ProductDetails?.ProductType === 1 ?
-                                        <TableCell className="">₹ {item?.ProductDetails?.Stock?.MRP}</TableCell>
-                                        : item?.ProductDetails?.ProductType === 2 ?
-                                            <TableCell className="">₹ {item?.ProductDetails?.Stock?.OPMRP}</TableCell>
-                                            : item?.ProductDetails?.ProductType === 3 ?
-                                                <TableCell className="">₹ {item?.ProductDetails?.price?.MRP}</TableCell>
-                                                : null
-                                    }
-                                    <TableCell className=" ">{item.POQty}</TableCell>
-                                    <TableCell>{item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty - (item.GRNQty || item.quantity || 1)}</TableCell>
-                                    <TableCell>{item.GRNQty || item.quantity || 1}</TableCell>
+                                    ) : item?.ProductDetails?.ProductType === 2 ? (
+                                        <TableCell>
+                                            {item?.ProductDetails?.productName}
+                                            <br />
+                                            Variation: {item?.ProductDetails?.Variation?.Variation}
+                                            <br />
+                                            Barcode: {item?.ProductDetails?.barcode}
+                                            <br />
+                                            HSN: {item?.ProductDetails?.HSN}
+                                        </TableCell>
+                                    ) : item?.ProductDetails?.ProductType === 3 ? (
+                                        <TableCell>
+                                            {item?.ProductDetails?.productName}
+                                            {item?.ProductDetails?.PowerSpecs?.Sph && (
+                                                <>
+                                                    <br />
+                                                    Sph: {item.ProductDetails.PowerSpecs.Sph > 0 ? "+" : ""}
+                                                    {item.ProductDetails.PowerSpecs.Sph}
+                                                </>
+                                            )}
+                                            {item?.PowerSpecsCylindricalPower
+                                                ? ` Cyl: ${item.CylindricalPower > 0 ? "+" : ""}${item.CylindricalPower}`
+                                                : ` Cyl: `}
+                                            {item?.PowerSpecsAxis
+                                                ? ` Axis: ${item.PowerSpecsAxis > 0 ? "+" : ""}${item.PowerSpecsAxis}`
+                                                : ` Axis: `}
+                                            {item?.PowerSpecsAdditional
+                                                ? ` Add: ${item.PowerSpecsAdditional > 0 ? "+" : ""}${item.PowerSpecsAdditional}`
+                                                : ` Add: `}
+                                            {item?.Size && (
+                                                <>
+                                                    <br />
+                                                    {item.Size}
+                                                </>
+                                            )}
+                                            {item?.ProductDetails?.barcode && (
+                                                <>
+                                                    <br />
+                                                    Barcode: {item.ProductDetails.barcode}
+                                                </>
+                                            )}
+                                            {item?.BatchCode && (
+                                                <>
+                                                    <br />
+                                                    BatchCode: {item.BatchCode}
+                                                </>
+                                            )}
+                                            {item?.Expiry && <br />}
+                                            {item.Expiry
+                                                ? (() => {
+                                                    const [year, month, day] = item.Expiry.split("-");
+                                                    const formattedExpiry = `${day}-${month}-${year}`;
+                                                    return ` Expiry: ${formattedExpiry}`;
+                                                })()
+                                                : null}
+                                            {item?.ProductDetails?.HSN && (
+                                                <>
+                                                    <br />
+                                                    HSN: {item.ProductDetails.HSN}
+                                                </>
+                                            )}
+                                        </TableCell>
+                                    ) : null}
+                                    {item?.ProductDetails?.ProductType === 1 ? (
+                                        <TableCell>₹ {item?.ProductDetails?.Stock?.MRP}</TableCell>
+                                    ) : item?.ProductDetails?.ProductType === 2 ? (
+                                        <TableCell>₹ {item?.ProductDetails?.Stock?.OPMRP}</TableCell>
+                                    ) : item?.ProductDetails?.ProductType === 3 ? (
+                                        <TableCell>₹ {item?.ProductDetails?.price?.MRP}</TableCell>
+                                    ) : null}
+                                    <TableCell>{item.POQty}</TableCell>
+                                    <TableCell>{item.PendingQty}</TableCell>
+                                    <TableCell>{item.GRNQty}</TableCell>
                                     <TableCell>{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (item.GRNPrice || 0)}</TableCell>
-                                    <TableCell>₹{" "}{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty)).toFixed(2)}</TableCell>
+                                    <TableCell>
+                                        ₹{" "}
+                                        {grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc"
+                                            ? ""
+                                            : (
+                                                parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) +
+                                                parseFloat(item?.GRNPrice * item?.GRNQty)
+                                            ).toFixed(2)}
+                                    </TableCell>
                                     <TableCell className="px-6 py-4 whitespace-nowrap">
                                         <button
                                             onClick={() => {
@@ -540,23 +699,26 @@ export default function GRNStep4() {
 
                         <div className="flex justify-between gap-4">
                             <span className="text-gray-600 font-bold text-lg">Total Net Value :</span>
-                            <span className="font-bold text-lg">
-                                ₹{grnViewDetails
-                                    .reduce((total, item) => {
-                                        const quantity = item.GRNQty || 0;
-                                        const price = (item.GRNPrice) || 0;
-                                        const gstPercentage = parseInt(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) || 0;
+                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                                <span className="font-bold text-lg">
 
-                                        if (price && !isNaN(price) && !isNaN(quantity)) {
-                                            const subtotal = price * quantity;
-                                            const gstAmount = subtotal * (gstPercentage / 100);
-                                            return total + subtotal + gstAmount + Number(item?.FittingPrice) + ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0);
-                                        }
-                                        return total;
-                                    }, 0)
-                                    ?.toFixed?.(2) ?? '0.00'}
+                                    ₹{grnViewDetails
+                                        .reduce((total, item) => {
+                                            const quantity = item.GRNQty || 0;
+                                            const price = (item.GRNPrice) || 0;
+                                            const gstPercentage = parseInt(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) || 0;
 
-                            </span>
+                                            if (price && !isNaN(price) && !isNaN(quantity)) {
+                                                const subtotal = price * quantity;
+                                                const gstAmount = subtotal * (gstPercentage / 100);
+                                                return total + subtotal + gstAmount + Number(item?.FittingPrice) + ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0);
+                                            }
+                                            return total;
+                                        }, 0)
+                                        ?.toFixed?.(2) ?? '0.00'}
+
+                                </span>
+                            }
                         </div>
                     </div>
                 )}

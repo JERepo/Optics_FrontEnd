@@ -552,100 +552,6 @@ export default function GRNStep4AgainstPO() {
         }
     };
 
-
-    // const handleBatchSelection = async (batch, item) => {
-    //     console.log("batch ----------- res --------- ", batch);
-    //     console.log("item ----------- res --------- ", item);
-
-    //     try {
-    //         // Calculate total GRNQty for this PODetailId from existing scanned items
-    //         const existingGRNQtyForPO = scannedItems
-    //             .filter(scannedItem => scannedItem.PODetailsId === item.PODetailsId)
-    //             .reduce((total, scannedItem) => total + (scannedItem.quantity || 0), 0);
-
-    //         const newTotalGRNQty = existingGRNQtyForPO + 1; // Adding 1 for the new item
-    //         const pendingQty = item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty;
-
-    //         // Client-side validation
-    //         if (newTotalGRNQty > pendingQty) {
-    //             toast.error(`Total GRN quantity (${newTotalGRNQty}) cannot exceed pending quantity (${pendingQty}) for this PO`);
-    //             return;
-    //         }
-
-    //         // API validation
-    //         const payload = {
-    //             PODetailsId: item.PODetailsId,
-    //             GRNQty: newTotalGRNQty,
-    //             grnMainId: grnData?.step1?.GrnMainId
-    //         };
-
-    //         const validationResult = await triggerGRNQtyValidationCheck(payload).unwrap();
-
-    //         if (!validationResult.isValid) {
-    //             toast.error(validationResult.message || "Quantity validation failed");
-    //             return;
-    //         }
-
-    //         // Add item with selected batch to scanned items
-    //         const itemToAdd = {
-    //             ...item,
-    //             BatchCode: formState.productType === "Contact Lens" && item.CLBatchCode === 1 ? batch.CLBatchCode : undefined,
-    //             CLBatchBarCode: formState.productType === "Contact Lens" && item.CLBatchCode === 1 ? batch.CLBatchBarCode : undefined,
-    //             Expiry: formState.productType === "Contact Lens" && item.CLBatchCode === 1 ? batch.CLBatchExpiry : undefined,
-    //             price: (formState.productType === "Contact Lens" && item.CLBatchCode === 1 ? batch.BuyingPrice : item.BuyingPrice) || 0,
-    //             quantity: 1,
-    //             uniqueId: Date.now() + Math.random(),
-    //             detailId: item.Id,
-    //             timestamp: Date.now()
-    //         };
-
-    //         console.log("itemToAdd -------------- ", itemToAdd);
-
-    //         setScannedItems(prevItems => {
-    //             let updatedItems = [...prevItems];
-
-    //             console.log("updatedItems 0---------- ", updatedItems);
-    //             console.log("item 0---------- ", item);
-
-
-    //             if (formState.EntryType === "combined") {
-    //                 const existingItemIndex = updatedItems.findIndex(
-    //                     existingItem =>
-    //                         existingItem.uniqueId === item.uniqueId &&
-    //                         (formState.productType !== "Contact Lens" ||
-    //                             item.CLBatchCode !== 1 ||
-    //                             existingItem.CLBatchCode === batch.CLBatchCode)
-    //                 );
-
-    //                 if (existingItemIndex >= 0) {
-    //                     updatedItems[existingItemIndex] = {
-    //                         ...updatedItems[existingItemIndex],
-    //                         quantity: updatedItems[existingItemIndex].quantity + 1
-    //                     };
-    //                 } else {
-    //                     updatedItems.push(itemToAdd);
-    //                 }
-    //             } else {
-    //                 updatedItems.push(itemToAdd);
-    //             }
-
-    //             // Sort by timestamp in descending order (latest first)
-    //             updatedItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-    //             return updatedItems;
-    //         });
-
-    //         toast.success("Item with batch code added to GRN successfully");
-    //         setPODetailsItems([]);
-    //         setSearchResults([]);
-    //         setSelectedBatchCode(null);
-    //         setbatchCodeInput("");
-    //     } catch (error) {
-    //         console.error("Failed to add item with batch:", error);
-    //         toast.error("Failed to add item with batch code. Please try again.");
-    //     }
-    // };
-
-
     const handleBatchSelection = async (batch, item) => {
         console.log("batch ----------- res --------- ", batch);
         console.log("item ----------- res --------- ", item);
@@ -1090,11 +996,14 @@ export default function GRNStep4AgainstPO() {
                         continue;
                     }
 
+                    console.log("selectedBatch dadad", selectedBatch);
+
                     // API validation - only validate if there's pending quantity
                     const payload = {
                         PODetailsId: item.PODetailsId,
                         GRNQty: alreadyScannedQty + Math.min(remainingQty, actualPendingQty),
-                        grnMainId: grnData?.step1?.GrnMainId
+                        grnMainId: grnData?.step1?.GrnMainId,
+                        batchCode: selectedBatch?.CLBatchCode
                     };
 
                     const validationResult = await triggerGRNQtyValidationCheck(payload).unwrap();
@@ -1136,7 +1045,7 @@ export default function GRNStep4AgainstPO() {
                         }
                     } else {
                         console.log(`Validation failed for PO ${item.PONo}: ${validationResult.message}`);
-                        toast.error(validationResult.message || `Validation failed for PO ${item.PONo}. Skipping this item.`);
+                        toast.error(`${validationResult.message}, Skipping to next item.` || `Validation failed for PO ${item.PONo}. Skipping this item.`);
                     }
                 } catch (error) {
                     console.error(`API validation failed for PO ${item.PONo}:`, error);
@@ -2652,38 +2561,67 @@ export default function GRNStep4AgainstPO() {
                                             />
                                         </div>
                                     ) : (
-                                        <div className="w-full max-w-md">
-                                            <Input
-                                                value={batchCodeInput}
-                                                onChange={(e) => setbatchCodeInput(e.target.value)}
-                                                label="Enter Batch Barcode *"
-                                                error={
-                                                    batchCodeInput &&
-                                                    !CLBatches?.data?.find(
-                                                        (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
-                                                    )
-                                                }
-                                                helperText={
-                                                    batchCodeInput &&
+
+                                        <div className="w-full max-w-md flex flex-col gap-4">
+                                            <div className="flex gap-2 items-center">
+                                                <Input
+                                                    value={batchCodeInput}
+                                                    onChange={(e) => setbatchCodeInput(e.target.value)}
+                                                    label="Enter Batch Barcode *"
+                                                    error={
+                                                        batchCodeInput &&
                                                         !CLBatches?.data?.find(
                                                             (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
                                                         )
-                                                        ? "Invalid batch barcode"
-                                                        : "Required"
-                                                }
-                                                onKeyDown={(e) => {
-                                                    if (e.key === "Enter" && batchCodeInput) {
-                                                        const isValidBatch = CLBatches?.data?.find(
-                                                            (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
-                                                        );
-                                                        if (isValidBatch) {
-                                                            handleAddBarcodeSearchItemsToScannedTable();
-                                                        } else {
-                                                            toast.error("Invalid batch barcode");
-                                                        }
                                                     }
-                                                }}
-                                            />
+                                                    helperText={
+                                                        batchCodeInput &&
+                                                            !CLBatches?.data?.find(
+                                                                (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
+                                                            )
+                                                            ? "Invalid batch barcode"
+                                                            : "Required"
+                                                    }
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter" && batchCodeInput) {
+                                                            const isValidBatch = CLBatches?.data?.find(
+                                                                (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
+                                                            );
+                                                            if (isValidBatch) {
+                                                                setSelectedBatchCode(isValidBatch);
+                                                                handleAddBarcodeSearchItemsToScannedTable();
+                                                            } else {
+                                                                toast.error("Invalid batch barcode");
+                                                            }
+                                                        }
+                                                    }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (batchCodeInput) {
+                                                            const isValidBatch = CLBatches?.data?.find(
+                                                                (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
+                                                            );
+                                                            if (isValidBatch) {
+                                                                setSelectedBatchCode(isValidBatch);
+                                                                // handleAddBarcodeSearchItemsToScannedTable();
+                                                            } else {
+                                                                toast.error("Invalid batch barcode");
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                                    disabled={!batchCodeInput}
+                                                >
+                                                    Search
+                                                </button>
+                                            </div>
+                                            {selectedBatchCode && (
+                                                <div className="text-sm text-gray-700">
+                                                    Selected Batch: <span className="font-medium">{selectedBatchCode.CLBatchCode}</span>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                     {/* </div> */}

@@ -33,6 +33,7 @@ import { salesReturnApi } from "../api/salesReturnApi";
 import { stockTransferApi } from "../api/stockTransfer";
 import { purchaseReturnApi } from "../api/purchaseReturn";
 import { grnApi } from "../api/grnApi";
+import { grnDcApi } from "../api/grnDcApi";
 import { giftVoucher } from "../api/giftVoucher";
 import { customerRefundApi } from "../api/customerRefund";
 import { offerApi } from "../api/offerApi";
@@ -88,6 +89,7 @@ export const store = configureStore({
     [stockTransferApi.reducerPath]: stockTransferApi.reducer,
     [purchaseReturnApi.reducerPath]:purchaseReturnApi.reducer,
     [grnApi.reducerPath]: grnApi.reducer,
+    [grnDcApi.reducerPath]: grnDcApi.reducer,
     [giftVoucher.reducerPath]: giftVoucher.reducer,
     [customerRefundApi.reducerPath]: customerRefundApi.reducer,
     [offerApi.reducerPath]: offerApi.reducer,
@@ -129,6 +131,7 @@ export const store = configureStore({
       purchaseReturnApi.middleware,
       // salesReturnApi.middleware,
       grnApi.middleware,
+      grnDcApi.middleware,
       giftVoucher.middleware,
       customerRefundApi.middleware,
       offerApi.middleware,

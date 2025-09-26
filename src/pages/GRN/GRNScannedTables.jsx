@@ -53,7 +53,7 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                                     min="1"
                                 />
                             </TableCell> */}
-                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                            {/* {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` : */}
                                 <TableCell>
                                     <input
                                         type="number"
@@ -62,7 +62,8 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                                         className="w-16 px-2 py-1 border rounded"
                                         min="1"
                                     />
-                                </TableCell>}
+                                </TableCell>
+                                {/* } */}
                             <TableCell className="px-6 py-4 whitespace-nowrap">
                                 <button
                                     onClick={() => removeScannedItem(index)}
@@ -114,7 +115,7 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                                     min="1"
                                 />
                             </TableCell> */}
-                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                            {/* {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` : */}
                                 <TableCell>
                                     <input
                                         type="number"
@@ -123,7 +124,8 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                                         className="w-16 px-2 py-1 border rounded"
                                         min="1"
                                     />
-                                </TableCell>}
+                                </TableCell>
+                                {/* } */}
                             <TableCell className="px-6 py-4 whitespace-nowrap">
                                 <button
                                     onClick={() => removeScannedItem(index)}
@@ -166,14 +168,16 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                                 {item.HSN && <br />}{item.HSN && `HSN: ` + item.HSN}
                             </TableCell>
                             <TableCell>₹{item.MRP || item.MRPMaster || 0}</TableCell>
-                            <TableCell>₹{" "}
-                                <input
-                                    type="number"
-                                    value={item.price || item.BuyingPriceMaster}
-                                    onChange={(e) => updateScannedItemPrice(index, e.target.value)}
-                                    className="w-20 px-2 py-1 border rounded"
-                                />
-                            </TableCell>
+                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                                <TableCell>₹{" "}
+                                    <input
+                                        type="number"
+                                        value={item.price || item.BuyingPriceMaster}
+                                        onChange={(e) => updateScannedItemPrice(index, e.target.value)}
+                                        className="w-20 px-2 py-1 border rounded"
+                                    />
+                                </TableCell>
+                            }
                             <TableCell>
                                 <input
                                     type="number"

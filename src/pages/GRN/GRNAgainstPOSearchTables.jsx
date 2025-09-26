@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Table, TableRow, TableCell } from "../../components/Table";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Autocomplete, TextField } from "@mui/material";
+import { useGRN } from "../../features/GRNContext";
+import toast from "react-hot-toast";
 
 export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGetPOdetailsByDetailId, handleAddPOdetailstoScannedTable, handleCheckboxChange, productType, poDetailsItem, isAddingItem, GRNAgainstPOorderType }) {
     console.log('TEST see searchResults', searchResults)
     // const [setIsAddingItem, isAddingItem] = useState(false);
+    const { grnData } = useGRN();
     return (
         <>
             {(productType === 1 && poDetailsItem === 1) && (
@@ -27,7 +30,9 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                             <TableCell className="text-center">{item.Ph ? "Yes" : "No"}</TableCell>
                             <TableCell className="text-center">{item.Cl}</TableCell>
                             <TableCell>₹ {item.MRP}</TableCell>
-                            <TableCell>₹ {item.BuyingPrice}</TableCell>
+                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                                <TableCell>₹ {item.BuyingPrice}</TableCell>
+                            }
                             <TableCell>
                                 <button
                                     onClick={() => handleGetPOdetailsByDetailId(item.Id)}
@@ -67,7 +72,9 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                             </TableCell>
                             {/* <TableCell className="text-center grid grid-cols-2">{item.IsRxable ? "Rx" : ""}<br />{item.Ph ? "PH" : ""}<br />{item.PO ? "PO" : ""}<br />{`CL - ${item.Cl || ""}`}</TableCell> */}
                             <TableCell className="">₹ {item.MRP}</TableCell>
-                            <TableCell>₹{item.price || 0}</TableCell>
+                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                                <TableCell>₹{item.price || 0}</TableCell>
+                            }
                             <TableCell className=" ">{item.POQty}</TableCell>
                             <TableCell>{item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty}</TableCell>
                             <TableCell>
@@ -111,7 +118,9 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                             </TableCell>
                             {/* <TableCell className="text-center flex">{item.IsRxable ? "Rx" : ""}<br />{item.Ph ? "PH" : ""}<br />{item.PO ? "PO" : ""}<br />{`CL - ${item.Cl || ""}`}</TableCell> */}
                             <TableCell className="">₹ {item.MRP}</TableCell>
-                            <TableCell>₹{item.price || 0}</TableCell>
+                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                                <TableCell>₹{item.price || 0}</TableCell>
+                            }
                             <TableCell className=" ">{item.POQty}</TableCell>
                             {/* <TableCell>{item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty}</TableCell> */}
                         </TableRow>
@@ -154,7 +163,10 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                             </TableCell>
                             {/* <TableCell className="text-center flex">{item.IsRxable ? "Rx" : ""}<br />{item.Ph ? "PH" : ""}<br />{item.PO ? "PO" : ""}<br />{`CL - ${item.Cl || ""}`}</TableCell> */}
                             <TableCell className="">₹ {item.MRP}</TableCell>
-                            <TableCell>₹{item.price || 0}</TableCell>
+                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+
+                                <TableCell>₹{item.price || 0}</TableCell>
+                            }
                             <TableCell className=" ">{item.POQty}</TableCell>
                             {/* <TableCell>{item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty}</TableCell> */}
                         </TableRow>
@@ -183,7 +195,10 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                 {/* <TableCell>{item.Variation}</TableCell> */}
                                 <TableCell>{item.SKU}</TableCell>
                                 <TableCell>₹{item.MRP}</TableCell>
-                                <TableCell>₹{item.BuyingPrice}</TableCell>
+                                {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+
+                                    <TableCell>₹{item.BuyingPrice}</TableCell>
+                                }
                                 <TableCell className=" ">{item.POQty}</TableCell>
                             </TableRow>
                         )}
@@ -208,7 +223,10 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     <TableCell>{item.Variation}</TableCell>
                                     <TableCell>{item.SKU}</TableCell>
                                     <TableCell>₹{item.MRP}</TableCell>
-                                    <TableCell>₹{item.BuyingPrice}</TableCell>
+                                    {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+
+                                        <TableCell>₹{item.BuyingPrice}</TableCell>
+                                    }
                                     <TableCell>
                                         <button
                                             onClick={() => handleGetPOdetailsByDetailId(item.Id)}
@@ -240,7 +258,10 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                 <TableCell>{item.Variation}</TableCell>
                                 <TableCell>{item.SKU}</TableCell>
                                 <TableCell>₹{item.MRP}</TableCell>
-                                <TableCell>₹{item.BuyingPrice}</TableCell>
+                                {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+
+                                    <TableCell>₹{item.BuyingPrice}</TableCell>
+                                }
                                 <TableCell>
                                     <button
                                         onClick={() => handleGetPOdetailsByDetailId(item.Id)}
@@ -272,7 +293,10 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     </TableCell> */}
                                     <TableCell>{item.SKU}</TableCell>
                                     <TableCell className="">₹ {item.MRP}</TableCell>
-                                    <TableCell>₹{item.price || 0}</TableCell>
+                                    {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+
+                                        <TableCell>₹{item.price || 0}</TableCell>
+                                    }
                                     <TableCell className=" ">{item.POQty}</TableCell>
                                     <TableCell>{item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty}</TableCell>
                                     <TableCell>
@@ -320,7 +344,10 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                 <TableCell>{item.Variation}</TableCell>
                                 <TableCell>{item.SKU}</TableCell>
                                 <TableCell>₹{item.MRP}</TableCell>
-                                <TableCell>₹{item.BuyingPrice}</TableCell>
+                                {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+
+                                    <TableCell>₹{item.BuyingPrice}</TableCell>
+                                }
                             </TableRow>
                         )}
                     />
@@ -357,7 +384,10 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     {item.HSN && <br />}{`HSN: ${item.HSN}`}
                                 </TableCell>
                                 <TableCell>₹{item.MRP}</TableCell>
-                                <TableCell>₹{item.BuyingPrice}</TableCell>
+                                {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+
+                                    <TableCell>₹{item.BuyingPrice}</TableCell>
+                                }
                                 <TableCell>{item.POQty || 0}</TableCell>
                                 <TableCell>
                                     <button
@@ -386,7 +416,10 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     <TableCell>{item.Axis}</TableCell>
                                     <TableCell>{item.Additional}</TableCell>
                                     <TableCell>₹{item.MRPMaster}</TableCell>
-                                    <TableCell>₹{item.BuyingPriceMaster}</TableCell>
+                                    {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+
+                                        <TableCell>₹{item.BuyingPriceMaster}</TableCell>
+                                    }
                                     <TableCell>
                                         <button
                                             onClick={() => handleGetPOdetailsByDetailId(item.CLDetailId)}
@@ -420,7 +453,10 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     <TableCell>{item.Variation}</TableCell>
                                     <TableCell>{item.SKU}</TableCell>
                                     <TableCell>₹{item.MRP}</TableCell>
-                                    <TableCell>₹{item.BuyingPrice}</TableCell>
+                                    {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+
+                                        <TableCell>₹{item.BuyingPrice}</TableCell>
+                                    }
                                 </TableRow>
                             )}
                         />
@@ -455,7 +491,10 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     {item.HSN && <br />}{`HSN: ${item.HSN}`}
                                 </TableCell>
                                 <TableCell>₹{item.MRP}</TableCell>
-                                <TableCell>₹{item.BuyingPrice}</TableCell>
+                                {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+
+                                    <TableCell>₹{item.BuyingPrice}</TableCell>
+                                }
                                 <TableCell>{item.POQty || 0}</TableCell>
                             </TableRow>
                         )}
@@ -474,7 +513,10 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     <TableCell>{item.Axis}</TableCell>
                                     <TableCell>{item.Additional}</TableCell>
                                     <TableCell>₹{item.MRPMaster}</TableCell>
-                                    <TableCell>₹{item.BuyingPriceMaster}</TableCell>
+                                    {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+
+                                        <TableCell>₹{item.BuyingPriceMaster}</TableCell>
+                                    }
                                     <TableCell>
                                         <button
                                             onClick={() => handleGetPOdetailsByDetailId(item.CLDetailId)}
@@ -508,7 +550,10 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     <TableCell>{item.Variation}</TableCell>
                                     <TableCell>{item.SKU}</TableCell>
                                     <TableCell>₹{item.MRP}</TableCell>
-                                    <TableCell>₹{item.BuyingPrice}</TableCell>
+                                    {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+
+                                        <TableCell>₹{item.BuyingPrice}</TableCell>
+                                    }
                                 </TableRow>
                             )}
                         />
@@ -537,7 +582,10 @@ export function GRNCLSearchTable({ clSearchItems }) {
                         <TableCell className="text-center">{item.Ph ? "Yes" : "No"}</TableCell>
                         <TableCell className="text-center">{item.Cl}</TableCell>
                         <TableCell>₹{item.MRP}</TableCell>
-                        <TableCell>₹{item.BuyingPrice}</TableCell>
+                        {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+
+                            <TableCell>₹{item.BuyingPrice}</TableCell>
+                        }
                     </TableRow>
                 )}
             />
