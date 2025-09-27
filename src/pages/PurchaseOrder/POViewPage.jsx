@@ -1,95 +1,222 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { ArrowLeft, PenIcon, Trash2 } from "lucide-react";
+import { ArrowLeft, CheckCircle, PenIcon, X } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { useGetAllPoDetailsForNewOrderMutation, useGetAllPoDetailsMutation } from "../../api/purchaseOrderApi";
-import { calculateTotalQuantity } from "./helperFunction";
+import {
+    useApproveUpdatePriceMutation,
+    useGetAllPoDetailsForNewOrderMutation,
+    useGetAllPoDetailsMutation,
+    useLazyApprovePoQuery,
+    useApproveUpdateQtyMutation,
+    useGetPOMainMutation,
+} from "../../api/purchaseOrderApi";
+import HasPermission from "../../components/HasPermission";
+import toast from "react-hot-toast";
 
 export function POViewPage() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { user, hasMultipleLocations } = useSelector((state) => state.auth);
+    const { user } = useSelector((state) => state.auth);
 
     const [getAllPoDetails] = useGetAllPoDetailsMutation();
     const [getAllPoDetailsForNewOrder] = useGetAllPoDetailsForNewOrderMutation();
+    const [triggerApprovePo] = useLazyApprovePoQuery();
+    const [triggerUpdatePrice] = useApproveUpdatePriceMutation();
+    const [triggerUpdateQty] = useApproveUpdateQtyMutation();
+    const [fetchPoMain] = useGetPOMainMutation();
 
-
-
-    // Get parameters from navigation state
-    const {
-        poData
-    } = location.state || {};
-
-    console.log("Get data ---------- ",
-        poData);
-
+    // Get parameters from navigation state and make poData mutable
+    const { poData: initialPoData } = location.state || {};
+    const [poData, setPoData] = useState(initialPoData || {});
     const [poreviewDetails, setPoreviewDetails] = useState([]);
-    const [formState, setFormState] = useState({
-        shiptoAddress: "against",
-        remarks: "",
-        vendorId: null
-    });
-    const [selectedVendor, setSelectedVendor] = useState(null);
-    const [selectedLocation, setSelectedLocation] = useState(null);
-    const [currentStep, setCurrentStep] = useState(4);
-    const [showRemoveModal, setShowRemoveModal] = useState(false);
-    const [orderToRemove, setOrderToRemove] = useState(null);
-    const [createdPOMainId, setCreatedPOMainId] = useState(null);
+    const [poMainStatus, setPoMainStatus] = useState(null);
 
+    // State for price edit popup
+    const [showPriceModal, setShowPriceModal] = useState(false);
+    const [selectedOrder, setSelectedOrder] = useState(null);
+    const [newBuyingPrice, setNewBuyingPrice] = useState("");
+
+    // State for quantity edit popup
+    const [showQtyModal, setShowQtyModal] = useState(false);
+    const [newQty, setNewQty] = useState("");
 
     useEffect(() => {
         const fetchOrderDetails = async () => {
             try {
+                // Skip if poData.id is not available
+                if (!poData.id || !poData.createdCompanyID || !poData.applicationUser || !poData.vendor?.Id) {
+                    console.error("Missing required poData fields:", poData);
+                    toast.error("Invalid purchase order data");
+                    return;
+                }
+
                 const payload = {
                     locationId: poData.createdCompanyID,
-                    ApplicationUserId: poData.applicationUser, // Replace with actual user ID
+                    ApplicationUserId: poData.applicationUser,
                     vendorId: poData.vendor.Id,
                     againstOrder: String(poData.againstOrder),
                     status: 1,
                     poMainId: poData.id,
-                    poMain: poData.id
+                    poMain: poData.id,
                 };
 
+                // Fetch PO details
+                let poDetailsResponse;
                 if (poData.againstOrder === 1) {
-                    console.log("Hi");
-                    const response = await getAllPoDetails(payload);
-                    setPoreviewDetails(response.data || []);
+                    poDetailsResponse = await getAllPoDetails(payload);
+                    setPoreviewDetails(poDetailsResponse.data || []);
+                    setPoMainStatus(poDetailsResponse.data[0]?.Status || null);
                 } else if (poData.againstOrder === 0) {
-                    const poDetailsResponse = await getAllPoDetailsForNewOrder(payload);
-                    console.log("poDetailsResponse --------------- ", poDetailsResponse);
-                    setPoreviewDetails(poDetailsResponse.data.data || []);
+                    poDetailsResponse = await getAllPoDetailsForNewOrder(payload);
+                    setPoreviewDetails(poDetailsResponse.data?.data || []);
+                    setPoMainStatus(poDetailsResponse.data?.data[0]?.Status || null);
+                }
+
+                // Fetch PurchaseOrderMain data for calculation summary
+                const poMainRes = await fetchPoMain({ poMainId: poData.id }).unwrap();
+                console.log("poMainRes (initial load)", poMainRes);
+                if (poMainRes.status === "success" && poMainRes.data && poMainRes.data[0]) {
+                    const mainData = poMainRes.data[0];
+                    setPoData((prev) => ({
+                        ...prev,
+                        vendor: prev.vendor || {}, // Preserve vendor object
+                        totalQty: mainData.TotalQty || 0,
+                        totalGrossValue: mainData.TotalBasicValue || 0,
+                        totalGSTValue: mainData.TotalGSTValue || 0,
+                        totalValue: mainData.TotalValue || 0,
+                    }));
+                } else {
+                    console.error("Invalid poMainRes structure:", poMainRes);
+                    toast.error("Failed to fetch purchase order summary");
                 }
             } catch (error) {
                 console.error("Error fetching PO details:", error);
+                toast.error("Error loading purchase order data");
             }
         };
 
         fetchOrderDetails();
-    }, [poData]);
+    }, [poData.id, poData.createdCompanyID, poData.applicationUser, poData.vendor?.Id, poData.againstOrder]);
 
-    console.log("poreviewDetails --------------------- ", poreviewDetails);
+    const approvePo = async () => {
+        try {
+            const response = await triggerApprovePo({ poMainId: poData.id }).unwrap();
+            if (response.status == "success") {
+                toast.success("PO Approved successfully");
+                navigate("/purchase-order");
+            }
+        } catch (error) {
+            console.error("Error approving PO:", error);
+            toast.error("Error approving PO");
+        }
+    };
 
+    const updateBuyingPrice = async () => {
+        if (!newBuyingPrice || isNaN(newBuyingPrice) || newBuyingPrice <= 0) {
+            toast.error("Please enter a valid buying price");
+            return;
+        }
 
-    const calculateTotalAmount = () => {
-        if (poData.againstOrder === 1) {
-            return poreviewDetails.reduce((total, order) => {
-                const quantity = order.poQty ?? (order.orderQty - order.billedQty - order.cancelledQty);
-                const price = parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0;
-                // : parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
-                const taxPercentage = parseFloat(order.taxPercentage) / 100 || 0;
+        try {
+            const payload = {
+                poDetailId: selectedOrder.poDetailId,
+                p_buyingPrice: parseFloat(newBuyingPrice),
+            };
+            const response = await triggerUpdatePrice(payload).unwrap();
 
-                return total + (price * quantity * (1 + taxPercentage));
-            }, 0);
-        } else {
-            return poreviewDetails.reduce((total, order) => {
-                const quantity = order.poQty ?? order.POQty;
-                const price = parseFloat(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) || 0;
-                // : parseFloat(order.poPrice ?? order?.ProductDetails?.Stock?.BuyingPrice) || 0;
-                const taxPercentage = parseFloat(order?.ProductDetails?.GSTPercentage) / 100 || 0;
+            if (response.status === "success") {
+                toast.success("Buying price updated successfully");
+                setPoreviewDetails((prev) =>
+                    prev.map((order) =>
+                        order.poDetailId === selectedOrder.poDetailId
+                            ? { ...order, poPrice: parseFloat(newBuyingPrice) }
+                            : order
+                    )
+                );
 
-                return total + (price * quantity * (1 + taxPercentage));
-            }, 0);
+                // Fetch updated poMain data
+                const poMainRes = await fetchPoMain({ poMainId: poData.id }).unwrap();
+                console.log("poMainRes (price update)", poMainRes);
+                if (poMainRes.status === "success" && poMainRes.data && poMainRes.data[0]) {
+                    const mainData = poMainRes.data[0];
+                    setPoData((prev) => ({
+                        ...prev,
+                        vendor: prev.vendor,
+                        totalQty: mainData.TotalQty || 0,
+                        totalGrossValue: mainData.TotalBasicValue || 0,
+                        totalGSTValue: mainData.TotalGSTValue || 0,
+                        totalValue: mainData.TotalValue || 0,
+                    }));
+                } else {
+                    toast.error("Failed to fetch updated PO data");
+                }
+
+                setShowPriceModal(false);
+                setNewBuyingPrice("");
+                setSelectedOrder(null);
+            } else {
+                toast.error(response.message || "Failed to update buying price");
+            }
+        } catch (error) {
+            console.error("Error updating buying price:", error);
+            toast.error("Error updating buying price");
+        }
+    };
+
+    const updateQty = async () => {
+        if (!newQty || isNaN(newQty) || newQty < 0) {
+            toast.error("Please enter a valid quantity");
+            return;
+        }
+        if (poData.againstOrder === 1 && selectedOrder.orderQty && Number(newQty) > Number(selectedOrder.orderQty)) {
+            toast.error("PO Quantity cannot be greater than Order Quantity");
+            return;
+        }
+
+        try {
+            const payload = {
+                poDetailId: selectedOrder.poDetailId,
+                p_qty: Number(newQty),
+            };
+            const response = await triggerUpdateQty(payload).unwrap();
+
+            if (response.status === "success") {
+                toast.success("PO Quantity updated successfully");
+                setPoreviewDetails((prev) =>
+                    prev.map((order) =>
+                        order.poDetailId === selectedOrder.poDetailId
+                            ? { ...order, poQty: Number(newQty) }
+                            : order
+                    )
+                );
+
+                // Fetch updated poMain data
+                const poMainRes = await fetchPoMain({ poMainId: poData.id }).unwrap();
+                console.log("poMainRes (qty update)", poMainRes);
+                if (poMainRes.status === "success" && poMainRes.data && poMainRes.data[0]) {
+                    const mainData = poMainRes.data[0];
+                    setPoData((prev) => ({
+                        ...prev,
+                        vendor: prev.vendor,
+                        totalQty: mainData.TotalQty || 0,
+                        totalGrossValue: mainData.TotalBasicValue || 0,
+                        totalGSTValue: mainData.TotalGSTValue || 0,
+                        totalValue: mainData.TotalValue || 0,
+                    }));
+                } else {
+                    toast.error("Failed to fetch updated PO data");
+                }
+
+                setShowQtyModal(false);
+                setNewQty("");
+                setSelectedOrder(null);
+            } else {
+                toast.error(response.message || "Failed to update PO quantity");
+            }
+        } catch (error) {
+            console.error("Error updating PO quantity:", error);
+            toast.error("Error updating PO quantity");
         }
     };
 
@@ -99,7 +226,6 @@ export function POViewPage() {
                 return (
                     <td className="px-6 py-4 whitespace-wrap min-w-72">
                         {order?.productDescName}
-                        {/* Lens specifications rendering */}
                         {(order?.specs?.powerDetails?.right?.sphericalPower ||
                             order?.specs?.powerDetails?.right?.cylindricalPower ||
                             order?.specs?.powerDetails?.right?.axis ||
@@ -107,21 +233,20 @@ export function POViewPage() {
                                 <>
                                     <br />
                                     R: {order?.specs?.powerDetails?.right?.sphericalPower &&
-                                        `SPH: ${order?.specs?.powerDetails?.right?.sphericalPower > 0 ?
-                                            `+${order?.specs?.powerDetails?.right?.sphericalPower}` :
-                                            order?.specs?.powerDetails?.right?.sphericalPower}`}
+                                        `SPH: ${order?.specs?.powerDetails?.right?.sphericalPower > 0
+                                            ? `+${order?.specs?.powerDetails?.right?.sphericalPower}`
+                                            : order?.specs?.powerDetails?.right?.sphericalPower}`}
                                     {order?.specs?.powerDetails?.right?.cylindricalPower &&
-                                        ` CYL: ${order?.specs?.powerDetails?.right?.cylindricalPower > 0 ?
-                                            `+${order?.specs?.powerDetails?.right?.cylindricalPower}` :
-                                            order?.specs?.powerDetails?.right?.cylindricalPower}`}
+                                        ` CYL: ${order?.specs?.powerDetails?.right?.cylindricalPower > 0
+                                            ? `+${order?.specs?.powerDetails?.right?.cylindricalPower}`
+                                            : order?.specs?.powerDetails?.right?.cylindricalPower}`}
                                     {order?.specs?.powerDetails?.right?.axis && ` Axis: ${order?.specs?.powerDetails?.right?.axis}`}
                                     {order?.specs?.powerDetails?.right?.additional &&
-                                        ` Add: ${order?.specs?.powerDetails?.right?.additional > 0 ?
-                                            `+${order?.specs?.powerDetails?.right?.additional}` :
-                                            order?.specs?.powerDetails?.right?.additional}`}
+                                        ` Add: ${order?.specs?.powerDetails?.right?.additional > 0
+                                            ? `+${order?.specs?.powerDetails?.right?.additional}`
+                                            : order?.specs?.powerDetails?.right?.additional}`}
                                 </>
                             )}
-                        {/* Left lens specifications */}
                         {(order?.specs?.powerDetails?.left?.sphericalPower ||
                             order?.specs?.powerDetails?.left?.cylindricalPower ||
                             order?.specs?.powerDetails?.left?.axis ||
@@ -129,59 +254,108 @@ export function POViewPage() {
                                 <>
                                     <br />
                                     L: {order?.specs?.powerDetails?.left?.sphericalPower &&
-                                        `SPH: ${order?.specs?.powerDetails?.left?.sphericalPower > 0 ?
-                                            `+${order?.specs?.powerDetails?.left?.sphericalPower}` :
-                                            order?.specs?.powerDetails?.left?.sphericalPower}`}
+                                        `SPH: ${order?.specs?.powerDetails?.left?.sphericalPower > 0
+                                            ? `+${order?.specs?.powerDetails?.left?.sphericalPower}`
+                                            : order?.specs?.powerDetails?.left?.sphericalPower}`}
                                     {order?.specs?.powerDetails?.left?.cylindricalPower &&
-                                        ` CYL: ${order?.specs?.powerDetails?.left?.cylindricalPower > 0 ?
-                                            `+${order?.specs?.powerDetails?.left?.cylindricalPower}` :
-                                            order?.specs?.powerDetails?.left?.cylindricalPower}`}
+                                        ` CYL: ${order?.specs?.powerDetails?.left?.cylindricalPower > 0
+                                            ? `+${order?.specs?.powerDetails?.left?.cylindricalPower}`
+                                            : order?.specs?.powerDetails?.left?.cylindricalPower}`}
                                     {order?.specs?.powerDetails?.left?.axis && ` Axis: ${order?.specs?.powerDetails?.left?.axis}`}
                                     {order?.specs?.powerDetails?.left?.additional &&
-                                        ` Add: ${order?.specs?.powerDetails?.left?.additional > 0 ?
-                                            `+${order?.specs?.powerDetails?.left?.additional}` :
-                                            order?.specs?.powerDetails?.left?.additional}`}
+                                        ` Add: ${order?.specs?.powerDetails?.left?.additional > 0
+                                            ? `+${order?.specs?.powerDetails?.left?.additional}`
+                                            : order?.specs?.powerDetails?.left?.additional}`}
                                 </>
                             )}
                         {order?.specs?.addOn?.addOnId && (
-                            <><br /><span className="font-medium">AddOn: {order?.specs?.addOn?.addOnName}</span></>
+                            <>
+                                <br />
+                                <span className="font-medium">AddOn: {order?.specs?.addOn?.addOnName}</span>
+                            </>
                         )}
                         {order?.specs?.tint?.tintCode && (
-                            <><br /><span className="font-medium">Tint: {order?.specs?.tint?.tintName}</span></>
+                            <>
+                                <br />
+                                <span className="font-medium">Tint: {order?.specs?.tint?.tintName}</span>
+                            </>
                         )}
-                        {order?.hSN && <><br /><span className="font-medium">HSN: {order?.hSN}</span></>}
+                        {order?.hSN && (
+                            <>
+                                <br />
+                                <span className="font-medium">HSN: {order?.hSN}</span>
+                            </>
+                        )}
                     </td>
                 );
             case 1: // Frame
                 return (
                     <td className="px-6 py-4 whitespace-wrap">
                         {order?.productDescName}
-                        <br />{order?.size}-{order?.dBL}-{order?.templeLength}
-                        <br />{order?.category === 0 ? `Sunglass` : `OpticalFrame`}
-                        <br />{order?.barcode && `Barcode: ${order?.barcode}`}
-                        <br />{order?.hSN && `HSN: ${order?.hSN}`}
+                        <br />
+                        {order?.size}-{order?.dBL}-{order?.templeLength}
+                        <br />
+                        {order?.category === 0 ? `Sunglass` : `OpticalFrame`}
+                        <br />
+                        {order?.barcode && `Barcode: ${order?.barcode}`}
+                        <br />
+                        {order?.hSN && `HSN: ${order?.hSN}`}
                     </td>
                 );
             case 2: // Accessory
                 return (
                     <td className="px-6 py-4 whitespace-wrap">
                         {order?.productDescName}
-                        {order?.variationName && <><br />Variation: {order?.variationName}</>}
-                        {order?.barcode && <><br />Barcode: {order?.barcode}</>}
-                        {order?.hSN && <><br />HSN: {order?.hSN}</>}
+                        {order?.variationName && (
+                            <>
+                                <br />
+                                Variation: {order?.variationName}
+                            </>
+                        )}
+                        {order?.barcode && (
+                            <>
+                                <br />
+                                Barcode: {order?.barcode}
+                            </>
+                        )}
+                        {order?.hSN && (
+                            <>
+                                <br />
+                                HSN: {order?.hSN}
+                            </>
+                        )}
                     </td>
                 );
             case 3: // Contact Lens
                 return (
                     <td className="px-6 py-4 whitespace-wrap">
                         {order?.productDescName}
-                        <br />{order?.sphericalPower && `Sph: ${order?.sphericalPower > 0 ? `+${order?.sphericalPower}` : order?.sphericalPower}`}
-                        {order?.cylindricalPower && ` Cyld: ${order?.cylindricalPower > 0 ? `+${order?.cylindricalPower}` : order?.cylindricalPower}`}
+                        <br />
+                        {order?.sphericalPower &&
+                            `Sph: ${order?.sphericalPower > 0 ? `+${order?.sphericalPower}` : order?.sphericalPower}`}
+                        {order?.cylindricalPower &&
+                            ` Cyld: ${order?.cylindricalPower > 0 ? `+${order?.cylindricalPower}` : order?.cylindricalPower}`}
                         {order?.axis && ` Axis: ${order?.axis}`}
-                        {order?.additional && ` Add: ${order?.additional > 0 ? `+${order?.additional}` : order?.additional}`}
-                        {order?.color && <><br />Clr: {order?.color}</>}
-                        {order?.barcode && <><br />Barcode: {order?.barcode}</>}
-                        {order?.hSN && <><br />HSN: {order?.hSN}</>}
+                        {order?.additional &&
+                            ` Add: ${order?.additional > 0 ? `+${order?.additional}` : order?.additional}`}
+                        {order?.color && (
+                            <>
+                                <br />
+                                Clr: {order?.color}
+                            </>
+                        )}
+                        {order?.barcode && (
+                            <>
+                                <br />
+                                Barcode: {order?.barcode}
+                            </>
+                        )}
+                        {order?.hSN && (
+                            <>
+                                <br />
+                                HSN: {order?.hSN}
+                            </>
+                        )}
                     </td>
                 );
             default:
@@ -196,38 +370,50 @@ export function POViewPage() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="bg-white rounded-2xl shadow-xl p-6"
         >
-            <div className=" items-center mb-4">
-                <button
-                    className="text-[#000060] hover:text-[#0000a0] transition-colors flex items-center mb-3"
-                    onClick={() => { navigate('/purchase-order') }}
-                >
-                    <ArrowLeft className="w-5 h-5 mr-2" />
-                    Back to dashboard
-                </button>
-                <h1 className="text-3xl lg:text-4xl font-bold text-[#000060] mb-2">
-                    Purchase Order
-                </h1>
-
+            <div className="flex justify-between">
+                <div className="items-center mb-4">
+                    <button
+                        className="text-[#000060] hover:text-[#0000a0] transition-colors flex items-center mb-3"
+                        onClick={() => navigate("/purchase-order")}
+                    >
+                        <ArrowLeft className="w-5 h-5 mr-2" />
+                        Back to dashboard
+                    </button>
+                    <h1 className="text-3xl lg:text-4xl font-bold text-[#000060] mb-2">Purchase Order</h1>
+                </div>
+                {poMainStatus === 1 && (
+                    <HasPermission module="Purchase Order" action={["edit"]}>
+                        <div>
+                            <button
+                                className="flex gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
+                                onClick={approvePo}
+                            >
+                                <CheckCircle />
+                                Approve PO
+                            </button>
+                        </div>
+                    </HasPermission>
+                )}
             </div>
 
-            <div key={poData.vendor.Id} className=" gap-12 my-10">
+            <div key={poData.vendor?.Id || "vendor"} className="gap-12 my-10">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <p className="text-gray-700 ">
-                        <span className="font-bold flex">Vendor Name </span>
-                        <span>{poData.vendor.VendorName}</span>
+                    <p className="text-gray-700">
+                        <span className="font-bold flex">Vendor Name</span>
+                        <span>{poData.vendor?.VendorName || "N/A"}</span>
                     </p>
                     <p className="text-gray-700">
                         <span className="font-bold flex">Mobile Number</span>
-                        <span>{poData.vendor.MobNumber}</span>
+                        <span>{poData.vendor?.MobNumber || "N/A"}</span>
                     </p>
                     <p className="text-gray-700">
                         <span className="font-bold flex">Address</span>
-                        <span className="flex">{poData.vendor.Address1} {poData.vendor.Address2}</span>
-                        <span>{poData.vendor.City}</span>
+                        <span className="flex">{poData.vendor?.Address1 || ""} {poData.vendor?.Address2 || ""}</span>
+                        <span>{poData.vendor?.City || "N/A"}</span>
                     </p>
                     <p className="text-gray-700">
                         <span className="font-bold flex">GST Number</span>
-                        <span className="">{poData.vendor.TAXNo}</span>
+                        <span>{poData.vendor?.TAXNo || "N/A"}</span>
                     </p>
                 </div>
             </div>
@@ -254,40 +440,62 @@ export function POViewPage() {
                                     <td className="px-6 py-4 whitespace-nowrap">{index + 1}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">{order.orderPrefix}/{order.orderNo}/{order.slNo}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        {order.productType === 0 ? 'OL' :
-                                            order.productType === 1 ? 'F' :
-                                                order.productType === 2 ? 'Acc' :
-                                                    order.productType === 3 ? 'CL' : 'N/A'}
+                                        {order.productType === 0 ? "OL" :
+                                            order.productType === 1 ? "F" :
+                                                order.productType === 2 ? "Acc" :
+                                                    order.productType === 3 ? "CL" : "N/A"}
                                     </td>
                                     {renderProductDetails(order)}
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        {
-                                            (order.poPrice ?? order?.priceMaster?.buyingPrice)
-                                        }
+                                        {order.poPrice ?? order?.priceMaster?.buyingPrice}
+                                        {poMainStatus === 1 && (
+                                            <HasPermission module="Purchase Order" action={["edit"]}>
+                                                <button
+                                                    className="ml-2"
+                                                    style={{ color: "#2563EB" }}
+                                                    onClick={() => {
+                                                        setSelectedOrder(order);
+                                                        setNewBuyingPrice(order.poPrice ?? order?.priceMaster?.buyingPrice);
+                                                        setShowPriceModal(true);
+                                                    }}
+                                                >
+                                                    <PenIcon style={{ width: "16px", height: "16px" }} />
+                                                </button>
+                                            </HasPermission>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">{order?.orderQty}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {order.poQty ?? (order.orderQty - order.billedQty - order.cancelledQty)}
+                                        {poMainStatus === 1 && (
+                                            <HasPermission module="Purchase Order" action={["edit"]}>
+                                                <button
+                                                    className="ml-2"
+                                                    style={{ color: "#2563EB" }}
+                                                    onClick={() => {
+                                                        setSelectedOrder(order);
+                                                        setNewQty(order.poQty ?? (order.orderQty - order.billedQty - order.cancelledQty));
+                                                        setShowQtyModal(true);
+                                                    }}
+                                                >
+                                                    <PenIcon style={{ width: "16px", height: "16px" }} />
+                                                </button>
+                                            </HasPermission>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                                        {order.productType === 3 ?
-                                            (order?.stock?.reduce((total, item) => total + item.quantity, 0) || 0) :
-                                            (order?.pricing?.quantity || 0)
-                                        }
+                                        {order.productType === 3
+                                            ? (order?.stock?.reduce((total, item) => total + item.quantity, 0) || 0)
+                                            : (order?.pricing?.quantity || 0)}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {(() => {
                                             const bothLens = order?.specs?.powerDetails?.bothLens === 1;
                                             const quantity = order.poQty ?? (order.orderQty - order.billedQty - order.cancelledQty);
-                                            const price = parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0
-                                            // parseFloat(order.poPrice ?? order?.pricing?.buyingPrice) || 0;
+                                            const price = parseFloat(order.poPrice ?? order?.priceMaster?.buyingPrice) || 0;
                                             const taxPercentage = parseFloat(order.taxPercentage) / 100 || 0;
 
-                                            // Tint buying price
-                                            const tintBuying =
-                                                parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) || 0;
-
-                                            // Sum of addon buying prices
+                                            const tintBuying = parseFloat(order?.specs?.tint?.tintBuyingPrice || 0) || 0;
                                             const addonBuying = Array.isArray(order?.specs?.addOn)
                                                 ? order.specs.addOn.reduce(
                                                     (sum, add) => sum + (parseFloat(add?.addOnBuyingPrice || 0) || 0),
@@ -295,7 +503,6 @@ export function POViewPage() {
                                                 )
                                                 : parseFloat(order?.specs?.addOn?.addOnBuyingPrice || 0) || 0;
 
-                                            // Calculate base
                                             let total;
                                             if (bothLens) {
                                                 total = (price * quantity) + tintBuying + addonBuying;
@@ -303,7 +510,7 @@ export function POViewPage() {
                                                 total = (price * quantity) + tintBuying / 2 + addonBuying / 2;
                                             }
 
-                                            return (total + total * (taxPercentage)).toFixed(2);
+                                            return (total + total * taxPercentage).toFixed(2);
                                         })()}
                                     </td>
                                 </tr>
@@ -329,74 +536,112 @@ export function POViewPage() {
                                 <tr key={index}>
                                     <td className="px-6 py-4 whitespace-nowrap">{index + 1}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        {order?.ProductDetails?.ProductType === 0 ? 'OL' :
-                                            order?.ProductDetails?.ProductType === 1 ? 'F' :
-                                                order?.ProductDetails?.ProductType === 2 ? 'Acc' :
-                                                    order?.ProductDetails?.ProductType === 3 ? 'CL' : 'N/A'}
+                                        {order?.ProductDetails?.ProductType === 0 ? "OL" :
+                                            order?.ProductDetails?.ProductType === 1 ? "F" :
+                                                order?.ProductDetails?.ProductType === 2 ? "Acc" :
+                                                    order?.ProductDetails?.ProductType === 3 ? "CL" : "N/A"}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.ProductType == 0 ? "" : order?.ProductDetails?.barcode}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        {order?.ProductDetails?.ProductType == 0 ?
-                                            <td className="px-6 py-4 whitespace-wrap min-w-72">{order?.ProductDetails?.productName
-                                            }
+                                        {order?.ProductDetails?.ProductType === 0 ? "" : order?.ProductDetails?.barcode}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        {order?.ProductDetails?.ProductType === 0 ? (
+                                            <td className="px-6 py-4 whitespace-wrap min-w-72">
+                                                {order?.ProductDetails?.productName}
                                                 <br />
                                                 {order?.ProductDetails?.Specs?.Spherical ? `Sph: ${order?.ProductDetails?.Specs?.Spherical} ` : `Sph: `}
                                                 {order?.ProductDetails?.Specs?.Cylinder ? `Cyl: ${order?.ProductDetails?.Specs?.Cylinder} ` : `Cyl: `}
                                                 {order?.ProductDetails?.Specs?.Diameter ? `Dia: ${order?.ProductDetails?.Specs?.Diameter} ` : `Dia: `}
-
-                                                <br></br>{order?.ProductDetails?.HSN && `HSN: ` + order?.ProductDetails?.HSN}
-
+                                                <br />
+                                                {order?.ProductDetails?.HSN && `HSN: ${order?.ProductDetails?.HSN}`}
                                             </td>
-                                            : order?.ProductDetails?.ProductType == 1 ?
-                                                <td className="px-6 py-4 whitespace-wrap">{order?.ProductDetails?.productName}
-                                                    <br></br>Size: {order?.ProductDetails?.Size?.Size}
-                                                    <br></br>{order?.ProductDetails?.ProductType === 0 ? `Category: Sunglass` : `Category: OpticalFrame`}
-                                                    <br></br>{order?.ProductDetails?.HSN && `HSN: ` + order?.ProductDetails?.HSN}
-                                                </td>
-                                                : order?.ProductDetails?.ProductType == 2 ?
-                                                    <td className="px-6 py-4 whitespace-wrap">{order?.ProductDetails?.productName}
-                                                        {order?.ProductDetails?.Variation?.Variation && (<><br />Variation: {order?.ProductDetails?.Variation?.Variation}</>)}
-                                                        <br></br>{order?.ProductDetails?.HSN && `HSN: ` + order?.ProductDetails?.HSN}
-                                                    </td>
-                                                    : order?.ProductDetails?.ProductType == 3 ?
-                                                        <td className="px-6 py-4 whitespace-wrap">{order?.ProductDetails?.productName}
-                                                            <br />
-                                                            {order?.ProductDetails?.PowerSpecs?.Sph ? `Sph: ${order?.ProductDetails?.PowerSpecs?.Sph} ` : `Sph: `}
-                                                            {order?.ProductDetails?.PowerSpecs?.Cyl ? `Cyl: ${order?.ProductDetails?.PowerSpecs?.Cyl} ` : `Cyl: `}
-                                                            {order?.ProductDetails?.PowerSpecs?.Axis ? `Axis: ${order?.ProductDetails?.PowerSpecs?.Axis} ` : `Axis: `}
-                                                            {order?.ProductDetails?.PowerSpecs?.Add ? `Add: ${order?.ProductDetails?.PowerSpecs?.Axis} ` : `Add: `}
-                                                            <br></br>{order?.ProductDetails?.HSN && `HSN: ` + order?.ProductDetails?.HSN}
-                                                        </td>
-                                                        :
-                                                        <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.productName}
-                                                            <br />{order?.ProductDetails?.hsncode ? `HSN: ` + order?.ProductDetails?.hsncode : null}
-                                                        </td>
-                                        }
+                                        ) : order?.ProductDetails?.ProductType === 1 ? (
+                                            <td className="px-6 py-4 whitespace-wrap">
+                                                {order?.ProductDetails?.productName}
+                                                <br />
+                                                Size: {order?.ProductDetails?.Size?.Size}
+                                                <br />
+                                                {order?.ProductDetails?.ProductType === 0 ? `Category: Sunglass` : `Category: OpticalFrame`}
+                                                <br />
+                                                {order?.ProductDetails?.HSN && `HSN: ${order?.ProductDetails?.HSN}`}
+                                            </td>
+                                        ) : order?.ProductDetails?.ProductType === 2 ? (
+                                            <td className="px-6 py-4 whitespace-wrap">
+                                                {order?.ProductDetails?.productName}
+                                                {order?.ProductDetails?.Variation?.Variation && (
+                                                    <>
+                                                        <br />
+                                                        Variation: {order?.ProductDetails?.Variation?.Variation}
+                                                    </>
+                                                )}
+                                                <br />
+                                                {order?.ProductDetails?.HSN && `HSN: ${order?.ProductDetails?.HSN}`}
+                                            </td>
+                                        ) : order?.ProductDetails?.ProductType === 3 ? (
+                                            <td className="px-6 py-4 whitespace-wrap">
+                                                {order?.ProductDetails?.productName}
+                                                <br />
+                                                {order?.ProductDetails?.PowerSpecs?.Sph ? `Sph: ${order?.ProductDetails?.PowerSpecs?.Sph} ` : `Sph: `}
+                                                {order?.ProductDetails?.PowerSpecs?.Cyl ? `Cyl: ${order?.ProductDetails?.PowerSpecs?.Cyl} ` : `Cyl: `}
+                                                {order?.ProductDetails?.PowerSpecs?.Axis ? `Axis: ${order?.ProductDetails?.PowerSpecs?.Axis} ` : `Axis: `}
+                                                {order?.ProductDetails?.PowerSpecs?.Add ? `Add: ${order?.ProductDetails?.PowerSpecs?.Add} ` : `Add: `}
+                                                <br />
+                                                {order?.ProductDetails?.HSN && `HSN: ${order?.ProductDetails?.HSN}`}
+                                            </td>
+                                        ) : (
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                {order?.ProductDetails?.productName}
+                                                <br />
+                                                {order?.ProductDetails?.hsncode ? `HSN: ${order?.ProductDetails?.hsncode}` : null}
+                                            </td>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        {
-                                            (order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice)
-                                        }
+                                        {order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice}
+                                        {poMainStatus === 1 && (
+                                            <HasPermission module="Purchase Order" action={["edit"]}>
+                                                <button
+                                                    className="ml-2"
+                                                    style={{ color: "#2563EB" }}
+                                                    onClick={() => {
+                                                        setSelectedOrder(order);
+                                                        setNewBuyingPrice(order.poPrice ?? order?.ProductDetails?.price?.BuyingPrice);
+                                                        setShowPriceModal(true);
+                                                    }}
+                                                >
+                                                    <PenIcon style={{ width: "16px", height: "16px" }} />
+                                                </button>
+                                            </HasPermission>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {order.poQty ?? order?.POQty}
+                                        {poMainStatus === 1 && (
+                                            <HasPermission module="Purchase Order" action={["edit"]}>
+                                                <button
+                                                    className="ml-2"
+                                                    style={{ color: "#2563EB" }}
+                                                    onClick={() => {
+                                                        setSelectedOrder(order);
+                                                        setNewQty(order.poQty ?? order?.POQty);
+                                                        setShowQtyModal(true);
+                                                    }}
+                                                >
+                                                    <PenIcon style={{ width: "16px", height: "16px" }} />
+                                                </button>
+                                            </HasPermission>
+                                        )}
                                     </td>
-                                    {order?.ProductDetails?.ProductType === 3 ?
-                                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            {order?.ProductDetails?.Stock.reduce((total, item) => total + item.Quantity, 0)}
-                                        </td>
-                                        :
-                                        <td className="px-6 py-4 whitespace-nowrap text-center">{order?.ProductDetails?.Stock?.Quantity}</td>
-                                    }
+                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                        {order?.ProductDetails?.ProductType === 3
+                                            ? order?.ProductDetails?.Stock.reduce((total, item) => total + item.Quantity, 0)
+                                            : order?.ProductDetails?.Stock?.Quantity}
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-
-                                        {(
-                                            ((order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) * (order.poQty ?? order?.POQty)) +
+                                        {(((order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) * (order.poQty ?? order?.POQty)) +
                                             ((order?.poPrice ?? order?.ProductDetails?.price?.BuyingPrice) *
                                                 (order.poQty ?? order?.POQty) *
-                                                ((order?.taxPercent) / 100) || 1)
-                                        ).toFixed(2)}
-
+                                                (order?.taxPercent / 100 || 0))).toFixed(2)}
                                     </td>
                                 </tr>
                             ))}
@@ -405,34 +650,123 @@ export function POViewPage() {
                 ) : null}
             </div>
 
-            {/* Calculation Summary Section */}
+            {showPriceModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-[#000060]">Edit Buying Price</h2>
+                            <button
+                                onClick={() => {
+                                    setShowPriceModal(false);
+                                    setNewBuyingPrice("");
+                                    setSelectedOrder(null);
+                                }}
+                            >
+                                <X className="w-6 h-6 text-gray-600" />
+                            </button>
+                        </div>
+                        <div className="mb-4">
+                            <label className="block text-gray-700 font-medium mb-2">New Buying Price</label>
+                            <input
+                                type="number"
+                                value={newBuyingPrice}
+                                onChange={(e) => setNewBuyingPrice(e.target.value)}
+                                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                placeholder="Enter new buying price"
+                                min="0"
+                                step="0.01"
+                            />
+                        </div>
+                        <div className="flex justify-end gap-4">
+                            <button
+                                className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400"
+                                onClick={() => {
+                                    setShowPriceModal(false);
+                                    setNewBuyingPrice("");
+                                    setSelectedOrder(null);
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800"
+                                onClick={updateBuyingPrice}
+                            >
+                                Update Price
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showQtyModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-[#000060]">Edit PO Quantity</h2>
+                            <button
+                                onClick={() => {
+                                    setShowQtyModal(false);
+                                    setNewQty("");
+                                    setSelectedOrder(null);
+                                }}
+                            >
+                                <X className="w-6 h-6 text-gray-600" />
+                            </button>
+                        </div>
+                        <div className="mb-4">
+                            <label className="block text-gray-700 font-medium mb-2">New PO Quantity</label>
+                            <input
+                                type="number"
+                                value={newQty}
+                                onChange={(e) => setNewQty(e.target.value)}
+                                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                placeholder="Enter new PO quantity"
+                                min="0"
+                                step="1"
+                            />
+                            {poData.againstOrder === 1 && selectedOrder.orderQty && (
+                                <p className="text-sm text-gray-600 mt-2">Maximum allowed: {selectedOrder.orderQty}</p>
+                            )}
+                        </div>
+                        <div className="flex justify-end gap-4">
+                            <button
+                                className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400"
+                                onClick={() => {
+                                    setShowQtyModal(false);
+                                    setNewQty("");
+                                    setSelectedOrder(null);
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800"
+                                onClick={updateQty}
+                            >
+                                Update Quantity
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="flex mt-10 justify-between px-5 rounded-2xl shadow p-8">
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total Quantity:</span>
-                    <span className="font-bold text-lg">
-                        {Number(poData.totalQty)}
-                    </span>
+                    <span className="font-bold text-lg">{Number(poData.totalQty) || 0}</span>
                 </div>
-
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total Gross Value:</span>
-                    <span className="font-bold text-lg">
-                        ₹ {Number(poData.totalGrossValue).toFixed(2)}
-                    </span>
+                    <span className="font-bold text-lg">₹ {Number(poData.totalGrossValue).toFixed(2) || "0.00"}</span>
                 </div>
-
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total GST:</span>
-                    <span className="font-bold text-lg">
-                        ₹ {Number(poData.totalGSTValue).toFixed(2)}
-                    </span>
+                    <span className="font-bold text-lg">₹ {Number(poData.totalGSTValue).toFixed(2) || "0.00"}</span>
                 </div>
-
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total Net Value:</span>
-                    <span className="font-bold text-lg">
-                        ₹ {Number(poData.totalValue).toFixed(2)}
-                    </span>
+                    <span className="font-bold text-lg">₹ {Number(poData.totalValue).toFixed(2) || "0.00"}</span>
                 </div>
             </div>
         </motion.div>

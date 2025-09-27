@@ -15,6 +15,7 @@ import { Plus, PlusCircle, Search } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useGetAllGRNmainQuery } from "../../api/grnApi";
 import { useGetAllGRNDCMainQuery } from "../../api/grnDcApi";
+import HasPermission from "../../components/HasPermission";
 
 export function GRNDCListPage() {
     const navigate = useNavigate();
@@ -235,14 +236,16 @@ export function GRNDCListPage() {
                             </div>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                            <button
-                                icon={FiPlus}
-                                className="flex gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
-                                onClick={handleCreateGRN}
-                            >
-                                <Plus />
-                                Create GRN DC Order
-                            </button>
+                            <HasPermission module="GRN DC" action={["create"]}>
+                                <button
+                                    icon={FiPlus}
+                                    className="flex gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
+                                    onClick={handleCreateGRN}
+                                >
+                                    <Plus />
+                                    Create GRN DC Order
+                                </button>
+                            </HasPermission>
                         </div>
                     </div>
 

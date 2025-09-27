@@ -13,6 +13,7 @@ import Loader from "../../components/ui/Loader";
 import { useGetPOviewQuery } from "../../api/purchaseOrderApi";
 import { Plus, PlusCircle, Search } from "lucide-react";
 import { useSelector } from "react-redux";
+import HasPermission from "../../components/HasPermission";
 
 export function PurchaseOrderMainPage() {
     const navigate = useNavigate();
@@ -230,7 +231,8 @@ export function PurchaseOrderMainPage() {
                             </div>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                            <button
+                            <HasPermission module="Purchase Order" action={["create"]}>
+                                <button
                                 icon={FiPlus}
                                 className="flex gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
                                 onClick={handleCreatePO}
@@ -238,6 +240,7 @@ export function PurchaseOrderMainPage() {
                                 <Plus />
                                 Create Purchase Order
                             </button>
+                            </HasPermission>
                         </div>
                     </div>
 

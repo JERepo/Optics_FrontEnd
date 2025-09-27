@@ -107,6 +107,26 @@ export const purchaseOrderApi = createApi({
             }),
             invalidatesTags: ['PurchaseOrder'],
         }),
+        approvePo: builder.query({
+            query: ({ poMainId }) => ({
+                url: `/api/v1/purchase-order/approve-po?poMainId=${poMainId}`,
+                method: 'GET',
+            })
+        }),
+        approveUpdatePrice: builder.mutation({
+            query: (payload) => ({
+                url: `/api/v1/purchase-order/approve/update-price`,
+                method: 'POST',
+                body: payload
+            })
+        }),
+        approveUpdateQty: builder.mutation({
+            query: (payload) => ({
+                url: `/api/v1/purchase-order/approve/update-qty`,
+                method: 'POST',
+                body: payload
+            })
+        }),
     })
 });
 
@@ -126,5 +146,8 @@ export const {
     useGetAllPoDetailsForNewOrderMutation,
     useGetPOviewQuery,
     useGetPOMainMutation,
-    useUpdatePOMainDataMutation
+    useUpdatePOMainDataMutation,
+    useLazyApprovePoQuery,
+    useApproveUpdatePriceMutation,
+    useApproveUpdateQtyMutation
 } = purchaseOrderApi;

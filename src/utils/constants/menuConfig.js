@@ -252,7 +252,7 @@ export const menuItems = [
     name: "GRN DC",
     icon: FiArrowRightCircle,
     module: "GRN DC",
-    path: "/grn-dc/create",
+    path: "/grn-dc",
     // subItems: [
     //   {
     //     name: "Add GRN",
