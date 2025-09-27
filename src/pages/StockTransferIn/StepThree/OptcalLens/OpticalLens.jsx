@@ -882,7 +882,7 @@ const OpticalLens = () => {
       toast.success("Optical Lens transferin successfully added");
       goToStockTransferInStep(4);
     } catch (error) {
-      toast.error(error?.data.error.message);
+      toast.error(error?.data.error.message || error?.data?.error || "Please try again after some time!");
     }
   };
 

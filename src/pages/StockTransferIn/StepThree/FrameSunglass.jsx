@@ -123,7 +123,8 @@ const FrameSunglass = () => {
 
       // Calculate pending quantity
       const currentProposed = getCurrentProposedQty(data.Id);
-      const remaining = STOProduct.STQtyOut - STOProduct.STQtyIn - currentProposed;
+      const remaining =
+        STOProduct.STQtyOut - STOProduct.STQtyIn - currentProposed;
       if (1 > remaining) {
         toast.error("No Pending Qty left for the given product");
         setBarcode("");
@@ -137,9 +138,7 @@ const FrameSunglass = () => {
         if (existingIndex !== -1) {
           // Update existing item
           return prev.map((item, idx) =>
-            idx === existingIndex
-              ? { ...item, tiq: item.tiq + 1 }
-              : item
+            idx === existingIndex ? { ...item, tiq: item.tiq + 1 } : item
           );
         } else {
           // Add new item
@@ -239,21 +238,22 @@ const FrameSunglass = () => {
 
         // Calculate pending quantity
         const currentProposed = getCurrentProposedQty(selected.Id);
-        const remaining = STOProduct.STQtyOut - STOProduct.STQtyIn - currentProposed;
+        const remaining =
+          STOProduct.STQtyOut - STOProduct.STQtyIn - currentProposed;
         if (1 > remaining) {
           toast.error("No Pending Qty left for the given product");
           return;
         }
 
         // Find existing item in state
-        const existingIndex = updated.findIndex((i) => i.Barcode === selected.Barcode);
+        const existingIndex = updated.findIndex(
+          (i) => i.Barcode === selected.Barcode
+        );
 
         if (existingIndex !== -1) {
           // Update existing item
           updated = updated.map((item, idx) =>
-            idx === existingIndex
-              ? { ...item, tiq: item.tiq + 1 }
-              : item
+            idx === existingIndex ? { ...item, tiq: item.tiq + 1 } : item
           );
         } else {
           // Add new item
@@ -473,6 +473,7 @@ const FrameSunglass = () => {
       goToStockTransferInStep(4);
     } catch (error) {
       console.log(error);
+      toast.error(error?.data?.error || "Please try again after some time!");
     }
   };
 

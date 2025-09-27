@@ -474,6 +474,7 @@ const AccessoryFrame = () => {
       goToStockTransferInStep(4);
     } catch (error) {
       console.log(error);
+      toast.error(error?.data?.error || "Please try again after some time!")
     }
   };
 
