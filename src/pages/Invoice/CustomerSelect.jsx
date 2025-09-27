@@ -842,6 +842,7 @@ const CustomerSelect = () => {
       TotalValue: totalAmount,
       totalAdvance: totalBalance,
       advance: totalAdvance,
+      customerId :selectedPatient.CustomerMaster?.Id || null
     };
     updatePaymentDetails(payload);
     if (totalBalance > 0) {
@@ -969,7 +970,7 @@ const CustomerSelect = () => {
   };
 
   const handleByPassCheck = () => {};
-
+console.log(selectedPatient)
   const handleGenerateInvoice = async () => {
     if (!validateBatchCodes()) {
       toast.error(
@@ -1065,7 +1066,7 @@ const CustomerSelect = () => {
     if (payload.creditBilling === 0) {
       payload.payments = preparePaymentsStructure();
     }
-
+console.log("pay",payload)
     //  customerData use this
     try {
       const response = await generateInvoice({ payload }).unwrap();

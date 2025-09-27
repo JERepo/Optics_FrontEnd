@@ -17,16 +17,14 @@ import {
   FiEdit,
   FiCheck,
   FiX,
-  FiEdit2,
   FiSearch,
+  FiEdit2,
 } from "react-icons/fi";
 import { Autocomplete, TextField } from "@mui/material";
 import { useGetAllBrandsQuery } from "../../../../api/brandsApi";
 import Loader from "../../../../components/ui/Loader";
 import { Table, TableCell, TableRow } from "../../../../components/Table";
-
 import { useSelector } from "react-redux";
-
 const Input = lazy(() => import("../../../../components/Form/Input"));
 const Radio = lazy(() => import("../../../../components/Form/Radio"));
 const Checkbox = lazy(() => import("../../../../components/Form/Checkbox"));
@@ -45,6 +43,7 @@ import {
 import toast from "react-hot-toast";
 import PowerDetailsFetch from "../../../Order/StepThree/OptcalLens/PowerDetailsFetch";
 import { ErrorDisplayModal } from "../../../../components/ErrorsDisplay";
+
 const productTypes = [
   { value: 0, lable: "Stock" },
   { value: 1, lable: "Rx" },
@@ -73,10 +72,7 @@ const getProductName = (item) => {
     return num > 0 ? `+${val}` : val;
   };
 
-  // For Optical Lens (ProductType = 0)
   if (detail.ProductType === 0 || true) {
-    // const tintName = clean(Tint?.name) || "";
-    // const addOns = AddOns?.map((a) => clean(a.name)).filter(Boolean) || [];
     const productName = clean(detail.productName);
     const hsn = clean(detail.HSN);
 
@@ -110,14 +106,7 @@ const getProductName = (item) => {
     ]
       .filter(Boolean)
       .join(", ");
-    const lines = [
-      productName && productName,
-      specsList,
-      hsn && `HSN: ${hsn}`,
-      // tintName ? `Tint: ${tintName}` : "",
-      // addOns?.length > 0 ? `AddOn: ${addOns.join(", ")}` : "",
-      // clean(FittingPrice) ? `Fitting Price: ${FittingPrice}` : "",
-    ];
+    const lines = [productName && productName, specsList, hsn && `HSN: ${hsn}`];
 
     return lines.filter(Boolean).join("\n");
   }
@@ -127,13 +116,6 @@ const getProductName = (item) => {
 
 const OpticalLens = () => {
   const {
-    // selectedStockTransferInProduct,
-    // prevStockTransferInStep,
-    // goToStockTransferInStep,
-    // stockTransferInDraftData,
-    // customerStock,
-    // calculateGST,
-    // currentStockTransferInStep,
     customerStockTransferIn,
     currentStockTransferInStep,
     stockTransferInDraftData,
@@ -177,7 +159,6 @@ const OpticalLens = () => {
   // API calls
   const { data: allBrandsData, isLoading: isLoadingAllBrands } =
     useGetAllBrandsQuery();
-
   const { data: focalityData, isLoading: isLoadingFocality } =
     useGetFocalityQuery(
       {
@@ -188,7 +169,6 @@ const OpticalLens = () => {
         skip: !(lensData.brandId && lensData.productType !== null),
       }
     );
-
   const { data: familyData, isLoading: isLoadingFamily } = useGetFamilyQuery(
     {
       brandId: lensData.brandId,
@@ -203,7 +183,6 @@ const OpticalLens = () => {
       ),
     }
   );
-
   const { data: productDesignData, isLoading: isLoadingProductDesign } =
     useGetProductDesignQuery(
       {
@@ -221,7 +200,6 @@ const OpticalLens = () => {
         ),
       }
     );
-
   const { data: indexValuesData, isLoading: isLoadingIndexValues } =
     useGetIndexValuesQuery(
       {
@@ -241,13 +219,11 @@ const OpticalLens = () => {
         ),
       }
     );
-
   const { data: coatingsData, isLoading: isLoadingCoatings } =
     useGetCoatingsQuery(
       { masterId: lensData.masterId },
       { skip: !lensData.masterId }
     );
-
   const { data: treatmentsData, isLoading: isLoadingTreatments } =
     useGetTreatmentsQuery(
       {
@@ -258,7 +234,6 @@ const OpticalLens = () => {
         skip: !lensData.masterId,
       }
     );
-
   const [
     getOLByBarcode,
     {
@@ -273,11 +248,17 @@ const OpticalLens = () => {
     mainId: customerStockTransferIn.mainId,
     locationId: customerStockTransferIn.locationId,
   });
-  // const { data: stockOutData } = useGetStockOutDataForStockInQuery({
-  //     mainId: customerStockTransferIn.mainId,
-  //     locationId: parseInt(hasMultipleLocations[0]),
-  //   });
-  console.log(stockOutData?.data?.details);
+
+  // Helper function to calculate current proposed tiq for a given OpticalLensDetailId
+  const getCurrentProposedQty = (opticalLensDetailId) => {
+    return barcodeData.reduce((sum, item) => {
+      if (item.OpticalLensDetailId === opticalLensDetailId) {
+        return sum + item.tiq;
+      }
+      return sum;
+    }, 0);
+  };
+
   const calculateStockGST = (item) => {
     if (!item) return { gstAmount: 0, slabNo: null, gstPercent: 0 };
 
@@ -288,7 +269,6 @@ const OpticalLens = () => {
 
     const transferPrice = parseFloat(item.BuyingPrice) || 0;
 
-    // case: single tax slab
     if (tax.length === 1) {
       const detail = tax[0];
       const taxPercent = parseFloat(detail.PurTaxPerct) || 0;
@@ -300,7 +280,6 @@ const OpticalLens = () => {
       };
     }
 
-    // case: multiple slabs
     for (let i = 0; i < tax.length; i++) {
       const detail = tax[i];
       const slabEnd = parseFloat(detail.SlabEnd);
@@ -320,7 +299,6 @@ const OpticalLens = () => {
       }
     }
 
-    // fallback: last slab
     const lastDetail = tax[tax.length - 1];
     const fallbackTaxPercent = parseFloat(lastDetail?.PurTaxPerct) || 0;
     const gstAmount = transferPrice * (fallbackTaxPercent / 100);
@@ -331,7 +309,6 @@ const OpticalLens = () => {
     };
   };
 
-  // Update productName based on dropdown selections
   useEffect(() => {
     const brand =
       allBrandsData?.find((b) => b.Id === lensData.brandId)?.BrandName || "";
@@ -392,6 +369,7 @@ const OpticalLens = () => {
     coatingsData,
     treatmentsData,
   ]);
+
   useEffect(() => {
     setEditMode((prev) => {
       const newEditMode = { ...prev };
@@ -402,13 +380,14 @@ const OpticalLens = () => {
             BuyingPrice: false,
             qty: false,
             originalPrice: item.BuyingPrice,
-            originalQty: item.tiq, // Store original quantity
+            originalQty: item.tiq,
           };
         }
       });
       return newEditMode;
     });
   }, [barcodeData]);
+
   const handleRefresh = () => {
     setLensData({
       orderReference: null,
@@ -439,13 +418,13 @@ const OpticalLens = () => {
     });
     setBarcodeData([]);
     setPowerDetailId(null);
-
     setEditMode({});
   };
 
   const handleOLensBack = () => {
     prevStockTransferInStep();
   };
+
   const handleDelete = (id, index) => {
     setBarcodeData((prev) =>
       prev.filter((i, idx) => !(i.Barcode === id && idx === index))
@@ -456,12 +435,9 @@ const OpticalLens = () => {
       return newEditMode;
     });
   };
-  const handleSellingPriceChange = (barcode, price, index) => {
-    const item = barcodeData.find(
-      (i, idx) => i.Barcode === barcode && idx === index
-    );
-    const newPrice = Number(price);
 
+  const handleSellingPriceChange = (barcode, price, index) => {
+    const newPrice = Number(price);
     setBarcodeData((prev) =>
       prev.map((i, idx) =>
         i.Barcode === barcode && idx === index
@@ -470,13 +446,17 @@ const OpticalLens = () => {
       )
     );
   };
+
   const handleQtyChange = (barcode, qty, index) => {
     const newQty = Number(qty);
-    const avlQty = Number(barcodeData[index].STQtyOut);
-    if (newQty > avlQty) {
-      toast.error(
-        "Stock Out Transfer Quantity cannot exceed the transferIn Quantity!"
-      );
+    const item = barcodeData[index];
+    const currentProposed = getCurrentProposedQty(item.OpticalLensDetailId);
+    const alreadyReceived = item.STQtyIn;
+    const maxAllowed = item.STQtyOut - alreadyReceived;
+    const effectiveRemaining = maxAllowed - (currentProposed - item.tiq);
+
+    if (newQty > effectiveRemaining) {
+      toast.error("Cannot exceed pending quantity!");
       return;
     }
     if (newQty < 0) {
@@ -484,10 +464,12 @@ const OpticalLens = () => {
       return;
     }
     setBarcodeData((prev) =>
-      prev.map((i, idx) => (idx === index ? { ...i, tiq: newQty } : i))
+      prev.map((i, idx) =>
+        i.Barcode === barcode && idx === index ? { ...i, tiq: newQty } : i
+      )
     );
   };
-  console.log("bar", barcodeData);
+
   const toggleEditMode = (id, index, field, action = "toggle") => {
     setEditMode((prev) => {
       const key = `${id}-${index}`;
@@ -513,7 +495,7 @@ const OpticalLens = () => {
           [key]: {
             ...prev[key],
             [field]: !currentMode,
-            originalQty: item.tqty, // Store original quantity
+            originalQty: item.tiq,
           },
         };
       }
@@ -531,7 +513,7 @@ const OpticalLens = () => {
           setBarcodeData((prevItems) =>
             prevItems.map((i, idx) =>
               i.Barcode === id && idx === index
-                ? { ...i, tqty: prev[key].originalQty }
+                ? { ...i, tiq: prev[key].originalQty }
                 : i
             )
           );
@@ -549,6 +531,7 @@ const OpticalLens = () => {
       };
     });
   };
+
   const handleBarcodeSubmit = async (e) => {
     e.preventDefault();
     if (!barcode) return;
@@ -560,68 +543,65 @@ const OpticalLens = () => {
       }).unwrap();
 
       if (res?.data) {
+        // Check if product exists in StockTransferOut
+        const STOProduct = stockOutData?.data?.details?.find(
+          (item) => item.OpticalLensDetailId === res?.data.OpticalLensDetailId
+        );
+        if (!STOProduct) {
+          toast.error("Product is not present in the selected Stock Transfer");
+          setBarcode("");
+          return;
+        }
+
+        // Calculate pending quantity
+        const currentProposed = getCurrentProposedQty(
+          res.data.OpticalLensDetailId
+        );
+        const remaining =
+          STOProduct.STQtyOut - STOProduct.STQtyIn - currentProposed;
+        if (1 > remaining) {
+          toast.error("No Pending Qty left for the given product");
+          setBarcode("");
+          return;
+        }
+
         setBarcodeData((prev) => {
-          // Check if product exists in StockTransferOut
-          const STOProduct = stockOutData?.data?.details?.find(
-            (item) => item.OpticalLensDetailId === res?.data.OpticalLensDetailId
+          // Find existing item in state
+          const existingIndex = prev.findIndex(
+            (i) => i.Barcode === res.data.Barcode
           );
-          if (!STOProduct) {
-            toast.error(
-              "Product is not present in the selected Stock Transfer"
-            );
-            return prev;
-          }
 
-          // Find existing in our items (local scanned state)
-          const existing = prev.find((i) => i.Barcode === res?.data.Barcode);
-
-          // Determine current STQtyIn (from state if exists, else from backend)
-          const currentSTQtyIn = existing?.tiq ?? STOProduct.STQtyIn;
-
-          // Check pending qty
-          if (STOProduct.STQtyOut === currentSTQtyIn) {
-            toast.error("No Pending Qty left for the given product");
-            return prev;
-          }
-
-          if (existing) {
-            const newStkQty = currentSTQtyIn + 1;
-            // Otherwise, increment
+          if (existingIndex !== -1) {
+            // Update existing item
             return prev.map((item, idx) =>
-              item.Barcode === res.data.Barcode
-                ? {
-                    ...item,
-                    ...STOProduct,
-                    STQtyIn: newStkQty,
-                    tiq: newStkQty,
-                    BuyingPrice: parseFloat(STOProduct?.TransferPrice),
-                    MRP: STOProduct?.SRP,
-                  }
-                : item
+              idx === existingIndex ? { ...item, tiq: item.tiq + 1 } : item
             );
           } else {
+            // Add new item
             return [
-              ...prev,
               {
                 ...res.data,
                 ...STOProduct,
                 tiq: 1,
-                STQtyIn: currentSTQtyIn + 1,
                 BuyingPrice: parseFloat(STOProduct?.TransferPrice),
                 MRP: STOProduct?.SRP,
               },
+              ...prev,
             ];
           }
         });
 
-        setBarcode(""); // clear input after scan
+        setBarcode("");
       } else {
         toast.error("Barcode doesn't exist!");
+        setBarcode("");
       }
     } catch (error) {
       toast.error(error?.data?.error || "Barcode doesn't exist!");
+      setBarcode("");
     }
   };
+
   const [selectedEyes, setSelectedEyes] = useState([]);
   const [diaOptions, setDiaOptions] = useState([]);
   const [addFieldError, setAddFieldError] = useState(false);
@@ -641,6 +621,7 @@ const OpticalLens = () => {
       Dia: null,
       transferQty: "",
       Id: null,
+      detailId: null,
     },
     L: {
       SPH: "",
@@ -648,6 +629,7 @@ const OpticalLens = () => {
       Dia: null,
       transferQty: "",
       Id: null,
+      detailId: null,
     },
   });
   const [getDIADetails, { isLoading: isDiaLoading }] =
@@ -658,6 +640,7 @@ const OpticalLens = () => {
   useEffect(() => {
     setSelectedEyes(["R"]);
   }, []);
+
   useEffect(() => {
     setBarcodeData([]);
   }, [barCodeOrproduct]);
@@ -671,12 +654,16 @@ const OpticalLens = () => {
         CYLD: "",
         Dia: null,
         transferQty: "",
+        Id: null,
+        detailId: null,
       },
       L: {
         SPH: "",
         CYLD: "",
         Dia: null,
         transferQty: "",
+        Id: null,
+        detailId: null,
       },
     });
     setAddFieldError(false);
@@ -685,6 +672,7 @@ const OpticalLens = () => {
     setDiaOptions([]);
     setPowerDetailId(null);
   };
+
   const isFieldDisabled = (eye, field) => {
     if (field === "Dia") {
       return (
@@ -710,7 +698,7 @@ const OpticalLens = () => {
   };
 
   const handleInputChange = (eye, field, value) => {
-    if (field == "transferQty") {
+    if (field === "transferQty") {
       if (!isValidNumericInput(value)) {
         return;
       }
@@ -721,6 +709,7 @@ const OpticalLens = () => {
       [eye]: { ...prev[eye], [field]: value },
     }));
   };
+
   const handleGetDia = async () => {
     const isBothSelected = lensData.powerSingleORboth === 1;
     const isRSelected = isBothSelected || selectedEyes.includes("R");
@@ -794,15 +783,23 @@ const OpticalLens = () => {
 
   const handleAddPowerData = async (eye) => {
     try {
-      // check if sto quantity
-
-      const STOQuantityCheck = stockOutData?.data?.details?.find(
-        (item) => item.OpticalLensDetailId === formValues["R"].detailId
+      const STOProduct = stockOutData?.data?.details?.find(
+        (item) => item.OpticalLensDetailId === formValues[eye].detailId
       );
-      if (parseInt(formValues["R"].transferQty) > STOQuantityCheck.STQtyOut) {
-        toast.error(
-          "Stock Out Transfer Quantity cannot exceed the transfer Quantity!"
-        );
+
+      if (!STOProduct) {
+        toast.error("Product is not present in the selected Stock Transfer");
+        return;
+      }
+
+      // Calculate pending quantity
+      const currentProposed = getCurrentProposedQty(formValues[eye].detailId);
+      const remaining =
+        STOProduct.STQtyOut - STOProduct.STQtyIn - currentProposed;
+      const requestedQty = parseInt(formValues[eye].transferQty) || 1;
+
+      if (requestedQty > remaining) {
+        toast.error("No Pending Qty left for the given product");
         return;
       }
 
@@ -822,53 +819,40 @@ const OpticalLens = () => {
         return;
       }
 
-      // Check if product exists in StockTransferOut
-      const STOProduct = stockOutData?.data?.details?.find(
-        (item) => item.OpticalLensDetailId === res?.data.OpticalLensDetailId
-      );
+      setBarcodeData((prev) => {
+        // Find existing item in state
+        const existingIndex = prev.findIndex(
+          (i) => i.Barcode === res.data.Barcode
+        );
 
-      if (!STOProduct) {
-        toast.error("Product is not present in the selected Stock Transfer");
-        return;
-      }
-      if (parseInt(formValues["R"].transferQty) > STOProduct.STQtyOut) {
-        toast.error("Stock Quantity cannot exceed the Stock Out Qunatity!");
-        return;
-      }
-      // Find existing in our items (local scanned state)
-      const existing = barcodeData.find((i) => i.Barcode === res?.data.Barcode);
-
-      // Determine current STQtyIn (from state if exists, else from backend)
-      const currentSTQtyIn = existing?.tiq ?? STOProduct.STQtyIn;
-
-      // Check pending qty
-      if (STOProduct.STQtyOut === currentSTQtyIn) {
-        toast.error("No Pending Qty left for the given product");
-        return;
-      }
-
-      if (res?.data) {
-        setBarcodeData((prev) => {
+        if (existingIndex !== -1) {
+          // Update existing item
+          return prev.map((item, idx) =>
+            idx === existingIndex
+              ? { ...item, tiq: item.tiq + requestedQty }
+              : item
+          );
+        } else {
+          // Add new item
           return [
             ...prev,
             {
               ...res.data,
               ...STOProduct,
-              tiq: parseInt(formValues[eye]?.transferQty),
-              STQtyIn: currentSTQtyIn + 1,
+              tiq: requestedQty,
               BuyingPrice: parseFloat(STOProduct?.TransferPrice),
               MRP: STOProduct?.SRP,
             },
           ];
-        });
+        }
+      });
 
-        setBarcode("");
-        setShowAdd(false);
-      } else {
-        toast.error("Barcode doesn't exist!");
-      }
+      setBarcode("");
+      setShowAdd(false);
+      handleReset();
     } catch (error) {
       console.log(error?.data?.error);
+      toast.error(error?.data?.error || "Failed to add power data");
     }
   };
 
@@ -898,7 +882,7 @@ const OpticalLens = () => {
       toast.success("Optical Lens transferin successfully added");
       goToStockTransferInStep(4);
     } catch (error) {
-      toast.error(error?.data.error.message);
+      toast.error(error?.data.error.message || error?.data?.error || "Please try again after some time!");
     }
   };
 
@@ -985,7 +969,7 @@ const OpticalLens = () => {
                 "type",
                 "product name",
                 "transfer price",
-                "transfer out qty",
+                "pending qty",
                 "transfer in qty",
                 "gst",
                 "total amount",
@@ -1059,7 +1043,7 @@ const OpticalLens = () => {
                       </div>
                     )}
                   </TableCell>
-                  <TableCell>{item.STQtyOut}</TableCell>
+                  <TableCell>{item.STQtyOut - item.STQtyIn}</TableCell>
                   <TableCell>
                     {editMode[`${item.Barcode}-${index}`]?.qty ? (
                       <div className="flex items-center gap-2">
@@ -1485,7 +1469,7 @@ const OpticalLens = () => {
                 "type",
                 "product name",
                 "transfer price",
-                "transfer out qty",
+                "pending qty",
                 "transfer in qty",
                 "gst",
                 "total amount",
@@ -1559,7 +1543,7 @@ const OpticalLens = () => {
                       </div>
                     )}
                   </TableCell>
-                  <TableCell>{item.STQtyOut}</TableCell>
+                  <TableCell>{item.STQtyOut - item.STQtyIn}</TableCell>
                   <TableCell>
                     {editMode[`${item.Barcode}-${index}`]?.qty ? (
                       <div className="flex items-center gap-2">

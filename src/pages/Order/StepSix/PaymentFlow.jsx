@@ -280,7 +280,6 @@ const PaymentFlow = ({
       detailidwithoutadvance: paymentDetails?.withOutAdvance,
       payments: preparePaymentsStructure(),
     };
-    console.log("fins", finalStructure);
     try {
       await saveFinalPayment({
         orderId: customerId.orderId,
@@ -297,7 +296,7 @@ const PaymentFlow = ({
       toast.error("Please try again!");
     }
   };
-
+  console.log("pp", fullPayments);
   const handleAddPayment = () => {
     const validationErrors = {};
 
@@ -310,6 +309,48 @@ const PaymentFlow = ({
       Number(parseFloat(updatedDetails.RemainingToPay).toFixed(2))
     ) {
       validationErrors.amount = "Amount cannot exceed remaining balance";
+    }
+
+    // Duplicate validation for Advance (method 6) and Gift Voucher (method 7)
+    if (selectedPaymentMethod === 6 && newPayment.advanceId) {
+      const isAdvanceDuplicate = fullPaymentDetails.some(
+        (payment) => payment.advanceId === newPayment.advanceId
+      );
+      if (isAdvanceDuplicate) {
+        toast.error("This advance has already been added");
+        return;
+      }
+    }
+
+    if (selectedPaymentMethod === 7 && newPayment.GVCode) {
+      const isGiftVoucherDuplicate = fullPaymentDetails.some(
+        (payment) => payment.GVCode === newPayment.GVCode
+      );
+      if (isGiftVoucherDuplicate) {
+        toast.error("This gift voucher has already been added");
+        return;
+      }
+    }
+
+    // Duplicate validation for Advance (method 6) and Gift Voucher (method 7)
+    if (selectedPaymentMethod === 6 && newPayment.advanceId) {
+      const isAdvanceDuplicate = fullPayments.some(
+        (payment) => payment.advanceId === newPayment.advanceId
+      );
+      if (isAdvanceDuplicate) {
+        toast.error("This advance has already been added");
+        return;
+      }
+    }
+
+    if (selectedPaymentMethod === 7 && newPayment.GVCode) {
+      const isGiftVoucherDuplicate = fullPayments.some(
+        (payment) => payment.GVCode === newPayment.GVCode
+      );
+      if (isGiftVoucherDuplicate) {
+        toast.error("This gift voucher has already been added");
+        return;
+      }
     }
 
     switch (selectedPaymentMethod) {
@@ -577,6 +618,8 @@ const PaymentFlow = ({
                 remainingToPay={updatedDetails.RemainingToPay} // Add this prop
                 collectPayment={collectPayment}
                 customerId={customerId}
+                fullPaymentDetails={fullPaymentDetails}
+                paymentDetails={paymentDetails}
               />
 
               {updatedDetails.RemainingToPay > 0 && (
@@ -648,6 +691,8 @@ const MethodForm = ({
   remainingToPay,
   collectPayment,
   customerId,
+  fullPaymentDetails,
+  paymentDetails,
 }) => {
   if (!method) return null;
 
@@ -701,7 +746,9 @@ const MethodForm = ({
     try {
       const res = await validateGiftVoucher({
         GVCode: gvCode,
-        CustomerID: collectPayment ? null : customerId.customerId,
+        CustomerID: collectPayment
+          ? paymentDetails?.customerId || null
+          : customerId.customerId,
       }).unwrap();
       toast.success("Entered GVCode Valid");
 

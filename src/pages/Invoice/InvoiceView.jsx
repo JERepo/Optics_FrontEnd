@@ -371,7 +371,7 @@ const InvoiceView = () => {
   );
 
   useEffect(() => {
-    setCarry(!isUPIBankAvl ? 1 : 0);
+    setCarry(isUPIBankAvl ? 1 : 0);
   }, [isUPIBankAvl, paymentDetails]);
 
   const handleCancelInvoice = async () => {
@@ -442,6 +442,7 @@ const InvoiceView = () => {
       </div>
     );
   }
+  console.log("ni",invoiceDetails)
 
   return (
     <div className="max-w-8xl">
@@ -454,18 +455,19 @@ const InvoiceView = () => {
             <Button variant="outline" onClick={() => navigate("/invoice")}>
               Back
             </Button>
-            {invoiceDetails?.InvoiceType === 0 && (
-              <HasPermission module="Invoice" action="deactivate">
-                <Button
-                  variant="danger"
-                  onClick={handleCancelInvoice}
-                  disabled={cancelDisabled}
-                  isLoading={!isCancelOpen ? isCancelling : false}
-                >
-                  Cancel Invoice
-                </Button>
-              </HasPermission>
-            )}
+            {invoiceDetails?.InvoiceType === 0 &&
+              invoiceDetails?.Status !== 3 && (
+                <HasPermission module="Invoice" action="deactivate">
+                  <Button
+                    variant="danger"
+                    onClick={handleCancelInvoice}
+                    disabled={cancelDisabled}
+                    isLoading={!isCancelOpen ? isCancelling : false}
+                  >
+                    Cancel Invoice
+                  </Button>
+                </HasPermission>
+              )}
           </div>
         </div>
         {/* Order Details */}
@@ -663,8 +665,8 @@ const InvoiceView = () => {
                     carry === 0
                       ? "border-blue-500 bg-blue-50"
                       : "border-gray-200"
-                  } ${!isUPIBankAvl ? "opacity-50 cursor-not-allowed" : ""}`}
-                  onClick={() => isUPIBankAvl && setCarry(0)}
+                  } ${isUPIBankAvl ? "opacity-50 cursor-not-allowed" : ""}`}
+                  onClick={() => setCarry(0)}
                 >
                   <div className="flex items-center h-5">
                     <input
@@ -674,7 +676,7 @@ const InvoiceView = () => {
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                       checked={carry === 0}
                       onChange={() => setCarry(0)}
-                      disabled={!isUPIBankAvl}
+                      disabled={isUPIBankAvl}
                     />
                   </div>
                   <div className="ml-3 flex flex-col">
@@ -709,13 +711,6 @@ const InvoiceView = () => {
                   </div>
                 </div>
               </div>
-
-              {!isUPIBankAvl && (
-                <p className="mt-2 text-sm text-amber-600">
-                  Refund option is currently unavailable. Please select Carry
-                  Forward.
-                </p>
-              )}
             </div>
 
             {/* Payment Methods */}

@@ -96,7 +96,7 @@ export const InvoiceApi = createApi({
       query: ({ id }) => ({
         url: `/api/v1/invoice/PaymentDetails/${id}`,
       }),
-      invalidatesTags: ["Invoice"],
+      providesTags: ["Invoice"],
     }),
     cancelInvoice: builder.mutation({
       query: ({ payload }) => ({

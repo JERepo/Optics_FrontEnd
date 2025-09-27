@@ -188,13 +188,13 @@ const getStockOutMRP = (data) => {
       return parseFloat(item.price?.MRP || 0);
     } else if (item.CLBatchCode === 1) {
       if (Array.isArray(item.Stock)) {
-        return item.Stock[0].MRP || 0;
-      } else if (item.Stock && typeof item.Stock === "object") {
-        return parseFloat(item.Stock.MRP || 0);
+        return item?.Stock[0]?.MRP || 0;
+      } else if (item?.Stock && typeof item.Stock === "object") {
+        return parseFloat(item?.Stock?.MRP || 0);
       }
     }
 
-    return parseFloat(item.Stock?.MRP || 0);
+    return parseFloat(item?.Stock?.MRP || 0);
   }
   if (item.ProductType === 1) {
     return parseFloat(item.Stock?.MRP || 0);
@@ -203,17 +203,7 @@ const getStockOutMRP = (data) => {
     return parseFloat(item.Stock?.OPMRP || 0);
   }
   if (item.ProductType === 0) {
-    if (item.CLBatchCode === 0) {
-      return parseFloat(item.price?.MRP || 0);
-    } else if (item.CLBatchCode === 1) {
-      if (Array.isArray(item.Stock)) {
-        return item.Stock[0].MRP || 0;
-      } else if (item.Stock && typeof item.Stock === "object") {
-        return parseFloat(item.Stock.MRP || 0);
-      }
-    }
-
-    return parseFloat(item.Stock?.MRP || 0);
+    return 0;
   }
 
   return 0;
@@ -360,9 +350,9 @@ const StockTransferView = () => {
 
                 <TableCell>{item.STQtyOut}</TableCell>
                 <TableCell>
-                  {Array.isArray(item.ProductDetails.Stock)
-                    ? item.ProductDetails.Stock[0].Quantity
-                    : item.ProductDetails.Stock.Quantity}
+                  {Array.isArray(item?.ProductDetails?.Stock)
+                    ? item?.ProductDetails?.Stock[0]?.Quantity ?? 0
+                    : item?.ProductDetails?.Stock?.Quantity ?? 0}
                 </TableCell>
                 <TableCell>
                   ₹

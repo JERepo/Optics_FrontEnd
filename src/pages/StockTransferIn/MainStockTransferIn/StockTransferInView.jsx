@@ -283,7 +283,7 @@ const StockTransferInView = () => {
               "type",
               "product name",
               "transfer price",
-              "transfer out qty",
+              "pending qty",
               "transfer in qty",
               "gst",
               "total amount",
@@ -297,7 +297,7 @@ const StockTransferInView = () => {
                   {getProductName(item)}
                 </TableCell>
                 <TableCell>₹{formatINR(item.TransferPrice)}</TableCell>
-                <TableCell>{item.STQtyOut}</TableCell>
+                <TableCell>{item.PendingQty || 0}</TableCell>
                 <TableCell>{item.STQtyIn}</TableCell>
 
                 <TableCell>
