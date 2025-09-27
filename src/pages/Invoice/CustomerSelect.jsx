@@ -842,6 +842,7 @@ const CustomerSelect = () => {
       TotalValue: totalAmount,
       totalAdvance: totalBalance,
       advance: totalAdvance,
+      customerId :selectedPatient.CustomerMaster?.Id || null
     };
     updatePaymentDetails(payload);
     if (totalBalance > 0) {
@@ -1065,7 +1066,7 @@ console.log(selectedPatient)
     if (payload.creditBilling === 0) {
       payload.payments = preparePaymentsStructure();
     }
-
+console.log("pay",payload)
     //  customerData use this
     try {
       const response = await generateInvoice({ payload }).unwrap();

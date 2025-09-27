@@ -328,15 +328,15 @@ const SelectCustomer = () => {
         if (!newPayment.ChequeDate) {
           validationErrors.chequeDate = "Cheque date is required";
         } else {
-                  const today = startOfDay(new Date());
-                  const minDate = subDays(today, 90);
-                  const selectedDate = startOfDay(new Date(newPayment.ChequeDate));
-        
-                  if (isBefore(selectedDate, minDate)) {
-                    validationErrors.chequeDate =
-                      "Cheque date must be within the last 90 days or in the future";
-                  }
-                }
+          const today = startOfDay(new Date());
+          const minDate = subDays(today, 90);
+          const selectedDate = startOfDay(new Date(newPayment.ChequeDate));
+
+          if (isBefore(selectedDate, minDate)) {
+            validationErrors.chequeDate =
+              "Cheque date must be within the last 90 days or in the future";
+          }
+        }
         break;
       case 3:
         if (!newPayment.BankAccountID)
@@ -417,7 +417,7 @@ const SelectCustomer = () => {
     };
 
     updatedPayments.forEach((payment) => {
-      console.log("paymr",payment)
+      console.log("paymr", payment);
       const typeKey = normalizeType(payment.Type || "");
       const amount = parseFloat(payment.Amount);
       if (isNaN(amount)) return;
@@ -488,7 +488,7 @@ const SelectCustomer = () => {
             const res = await createGVForRefund({
               payload: { ...gv, customerId: selectedCustomer?.Id },
             }).unwrap();
-           
+
             updatedPayments = updatedPayments.map((p) =>
               p.GVCode == gv.GVCode
                 ? { ...p, GVMasterID: res?.data?.ID ?? null }
@@ -497,7 +497,9 @@ const SelectCustomer = () => {
           } catch (error) {
             console.error("GV creation failed", error);
             toast.error(
-              error?.data?.message || error?.data.error || "Failed to create Gift Voucher"
+              error?.data?.message ||
+                error?.data.error ||
+                "Failed to create Gift Voucher"
             );
             return;
           }
@@ -525,10 +527,10 @@ const SelectCustomer = () => {
           ...preparePaymentsStructure(updatedPayments), // Use updatedPayments directly
         },
       };
-      
+
       await createRefund({ payload }).unwrap();
       toast.success("Customer refund successfully generated!");
-      navigate("/customer-refund")
+      navigate("/customer-refund");
     } catch (error) {
       console.error("Refund error", error);
       toast.error(
@@ -810,7 +812,10 @@ const SelectCustomer = () => {
               </span>
               <Button
                 variant="outline"
-                onClick={() => {setAmountsSelected(false);setFullPaymentDetails([])}}
+                onClick={() => {
+                  setAmountsSelected(false);
+                  setFullPaymentDetails([]);
+                }}
               >
                 Back
               </Button>
@@ -898,9 +903,13 @@ const SelectCustomer = () => {
                         }
                         onChange={(_, newValue) => {
                           if (newValue?.value === 4) {
-                            const g = fullPaymentDetails?.find((item) => item.GVData)
-                            if(g){
-                              toast.error("Gift Voucher can be added only once!")
+                            const g = fullPaymentDetails?.find(
+                              (item) => item.GVData
+                            );
+                            if (g) {
+                              toast.error(
+                                "Gift Voucher can be added only once!"
+                              );
                               return;
                             }
                             setCollectGiftAmount(true);
@@ -958,6 +967,8 @@ const SelectCustomer = () => {
                   <Button
                     className="flex items-center gap-2"
                     onClick={handleCreateRefund}
+                    isLoading={isRefundCreating}
+                    disabled={isRefundCreating}
                   >
                     Complete Customer Refund
                   </Button>

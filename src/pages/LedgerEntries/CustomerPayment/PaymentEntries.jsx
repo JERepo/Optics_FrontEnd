@@ -293,6 +293,25 @@ const PaymentEntries = ({
       validationErrors.amount = "Amount cannot exceed remaining balance";
     }
 
+    if (selectedPaymentMethod === 6 && newPayment.advanceId) {
+      const isAdvanceDuplicate = fullPaymentDetails.some(
+        (payment) => payment.advanceId === newPayment.advanceId
+      );
+      if (isAdvanceDuplicate) {
+        toast.error("This advance has already been added");
+        return;
+      }
+    }
+
+    if (selectedPaymentMethod === 7 && newPayment.GVMasterID) {
+      const isGiftVoucherDuplicate = fullPaymentDetails.some(
+        (payment) => payment.GVMasterID === newPayment.GVMasterID
+      );
+      if (isGiftVoucherDuplicate) {
+        toast.error("This gift voucher has already been added");
+        return;
+      }
+    }
     switch (selectedPaymentMethod) {
       case 2:
         if (!newPayment.PaymentMachineID)
@@ -367,7 +386,7 @@ const PaymentEntries = ({
   const handlePaymentBack = () => {
     goToStep(currentStep - 1);
   };
-
+console.log(fullPaymentDetails)
   return (
     <div className="">
       <div className="max-w-8xl">
@@ -656,6 +675,7 @@ const MethodForm = ({
   //     toast.error("Entered GVCode Not Valid!");
   //   }
   // };
+
   const handleGIftVoucher = async (e) => {
     e.preventDefault();
     try {
@@ -681,7 +701,7 @@ const MethodForm = ({
         ...prev,
         GVCode: gvCode,
         GVMasterID: res?.data.ID,
-        Amount: amountToSet, // Set the calculated amount
+        Amount: amountToSet,
       }));
       setPartPaymentEnabled(res?.data.PartPayment === 0);
       setGVData(res?.data);
