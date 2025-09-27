@@ -32,9 +32,12 @@ const OrderView = () => {
   const orderId = params.get("orderId");
   const [errors, setErrors] = useState(null);
   const [errorModalOpen, setErrorModalOpen] = useState(false);
-  const [isLimitOpen, setisLimitOpen] = useState(false);
+  const [isWarningOpen, setIsWarningOpen] = useState(false);
   const [warningMessage, setWarningMessage] = useState(null);
   const [printingId, setPrintingId] = useState(null);
+  const [selectedItemId, setSelectedItemId] = useState(null);
+  const [byPassInvoice, setByPassInvoice] = useState(false);
+  
 
   const { data: orderDetails, isLoading } = useGetSavedOrderDetailsQuery(
     { orderId },
@@ -219,7 +222,24 @@ const OrderView = () => {
   );
   const balanceAmount = grandTotal - advanceAmount;
 
+  const handleConfirmWarnings = async () => {
+    try {
+      const payload = {
+        proceedAfterWarnings: true,
+        applicationUserId: user.Id,
+      };
+
+      const res = await cancelItem({ id: selectedItemId, payload }).unwrap();
+      toast.success("Item cancelled successfully");
+      setSelectedItemId(null);
+      setIsWarningOpen(false);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   const handleCancelItem = async (id) => {
+    setSelectedItemId(id);
     try {
       const payload = {
         proceedAfterWarnings: false,
@@ -227,9 +247,13 @@ const OrderView = () => {
       };
 
       const res = await cancelItem({ id, payload }).unwrap();
-      toast.success("Item cancelled successfully");
+      if (res?.status == "warning") {
+        setWarningMessage(res?.warnings[0]);
+        setIsWarningOpen(true);
+      }
     } catch (error) {
       console.log(error);
+      toast.error(error?.data?.message || "Item already cancelled");
     }
   };
   const handleCancelOrder = async () => {
@@ -259,7 +283,7 @@ const OrderView = () => {
         {
           orderDetailId: order.OrderDetailId,
           batchCode: null,
-          toBillQty: order.OrderQty, //incorrect
+          toBillQty: order.OrderQty,
           srp: 0,
           discountedSellingPrice: order.DiscountedSellingPrice,
           invoicePrice: order.DiscountedSellingPrice,
@@ -286,7 +310,7 @@ const OrderView = () => {
           (parseFloat(order.FittingGSTPercentage || 0) / 100) +
         parseFloat(order.FittingPrice || 0) -
         (order.AdvanceAmount || 0),
-      roundOff: 0.0,
+      // roundOff: 0.0,
 
       applicationUserId: user.Id,
       balanceAmount: 0,
@@ -298,9 +322,13 @@ const OrderView = () => {
     console.log(payload);
     try {
       const res = await generateInvoice({ payload }).unwrap();
+      // if()
     } catch (error) {
       console.log(error);
 
+      // if(error?.data?.warning){
+
+      // }
       setErrors(
         Array.isArray(error?.data?.validationErrors)
           ? error?.data?.validationErrors
@@ -386,16 +414,21 @@ const OrderView = () => {
             Order Details
           </div>
           <div className="flex items-center gap-3">
-            <HasPermission module="Order" action={["deactivate"]}>
-              <Button
-                variant="danger"
-                onClick={handleCancelOrder}
-                className=""
-                size="md"
-              >
-                Cancel Order
-              </Button>
-            </HasPermission>
+            {orderDetails?.every((item) => item.Status !== 4) &&
+              customerDataById?.data.data?.Status !== 4 && (
+                <HasPermission module="Order" action={["deactivate"]}>
+                  <Button
+                    variant="danger"
+                    onClick={handleCancelOrder}
+                    className=""
+                    size="md"
+                    isLoading={isOrderCancelling}
+                    disabled={isOrderCancelling || isItemCancelling}
+                  >
+                    Cancel Order
+                  </Button>
+                </HasPermission>
+              )}
 
             <Button variant="outline" onClick={() => navigate("/order-list")}>
               Back
@@ -533,23 +566,29 @@ const OrderView = () => {
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2 items-center">
-                    <HasPermission module="Order" action={["view"]} >
+                    <HasPermission module="Order" action={["view"]}>
                       <Button
                         size="sm"
                         icon={FiFileText}
                         onClick={() => handleGenerateInvoice(order)}
+                        title="Generate Invoice"
                       ></Button>
                     </HasPermission>
-                    <HasPermission module="Order" action="deactivate">
-                      <Button
-                        variant="danger"
-                        onClick={() => handleCancelItem(order.OrderDetailId)}
-                        className=""
-                        size="sm"
-                      >
-                        Cancel Item
-                      </Button>
-                    </HasPermission>
+                    {order.Status !== 4 && (
+                      <HasPermission module="Order" action="deactivate">
+                        <Button
+                          variant="danger"
+                          onClick={() => handleCancelItem(order.OrderDetailId)}
+                          className=""
+                          size="sm"
+                          isLoading={selectedItemId === order.OrderDetailId ? isItemCancelling :false}
+                          disabled={isOrderCancelling || isItemCancelling}
+                          title="Cancel Item"
+                        >
+                          Cancel Item
+                        </Button>
+                      </HasPermission>
+                    )}
                     {order.typeid === 0 && (
                       <button
                         className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
@@ -645,19 +684,17 @@ const OrderView = () => {
         open={errorModalOpen}
         onClose={() => setErrorModalOpen(false)}
       />
-      {/* <ConfirmationModal
-              isOpen={isLimitOpen}
-              onClose={() => setisLimitOpen(false)}
-              onConfirm={handleConfirmDiaDiff}
-              title="CreditLimit warning!"
-              message={
-                warningMessage 
-              }
-              confirmText="Yes, Proceed"
-              cancelText="Cancel"
-              danger={false}
-              isLoading={isPriceLoading}
-            /> */}
+      <ConfirmationModal
+        isOpen={isWarningOpen}
+        onClose={() => setIsWarningOpen(false)}
+        onConfirm={handleConfirmWarnings}
+        title="Cancel Item Warning!"
+        message={warningMessage}
+        confirmText="Yes, Proceed"
+        cancelText="Cancel"
+        danger={false}
+        isLoading={isItemCancelling}
+      />
     </div>
   );
 };
