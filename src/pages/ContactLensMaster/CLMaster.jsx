@@ -503,7 +503,7 @@ const CLMaster = () => {
         let details = [];
         if (lensData.excel === 0 && items?.length) {
           details = items.map((item) => ({
-            SKUCode: item.activeCode || "",
+            SKUCode: item.skucode || "",
             Barcode: item.barCode || "",
             SphericalPower: parseFloat(item.sph) || 0,
             CylindricalPower: parseFloat(item.cyl) || 0,
@@ -547,6 +547,7 @@ const CLMaster = () => {
 
       toast.success(`Contact lens ${id ? "updated" : "saved"} successfully!`);
       handleRefresh();
+      navigate("/contact-lens-master")
     } catch (error) {
       toast.error(error?.data?.message || "Failed to save Contact Lens Master");
     }

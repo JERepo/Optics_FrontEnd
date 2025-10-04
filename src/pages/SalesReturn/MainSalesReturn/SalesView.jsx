@@ -7,6 +7,7 @@ import Loader from "../../../components/ui/Loader";
 import {
   useGetMainSalesByIdQuery,
   useGetSalesReturnByIdQuery,
+  useLazyPrintPdfQuery,
 } from "../../../api/salesReturnApi";
 import { useOrder } from "../../../features/OrderContext";
 import { formatINR } from "../../../utils/formatINR";
@@ -20,6 +21,7 @@ import { toast } from "react-hot-toast";
 import { useGetLocationByIdQuery } from "../../../api/roleManagementApi";
 import { useGetCompanyIdQuery } from "../../../api/customerApi";
 import HasPermission from "../../../components/HasPermission";
+import { FiPrinter } from "react-icons/fi";
 const formatNumber = (num) => {
   return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "0";
 };
@@ -54,6 +56,8 @@ const SalesView = () => {
     { id: companyId },
     { skip: !companyId }
   );
+  const [printingId, setPrintingId] = useState(null);
+  const [generatePrint, { isFetching: isPrinting }] = useLazyPrintPdfQuery();
   const EInvoiceEnable = companySettings?.data?.data.EInvoiceEnable;
   const InvInvoiceEnable = companySettings?.data?.data.CNEInvoiceEnable;
   const getTypeName = (id) => {
@@ -463,7 +467,34 @@ const SalesView = () => {
       );
     }
   };
+  const handlePrint = async (item) => {
+    setPrintingId(item.Id);
 
+    try {
+      const blob = await generatePrint({
+        returnId: salesId,
+        companyId: parseInt(hasMultipleLocations[0]),
+      }).unwrap();
+
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "application/pdf" })
+      );
+      const newWindow = window.open(url);
+      if (newWindow) {
+        newWindow.onload = () => {
+          newWindow.focus();
+          newWindow.print();
+        };
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(
+        "Unable to print the stock transfer out please try again after some time!"
+      );
+    } finally {
+      setPrintingId(null);
+    }
+  };
   if (isViewLoading || isLoading) {
     return (
       <div>
@@ -479,10 +510,15 @@ const SalesView = () => {
           <div className="text-2xl text-neutral-700 font-semibold">
             View Sales Return Details
           </div>
-          <div>
+          <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => navigate("/sales-return")}>
               Back
             </Button>
+            <Button
+              onClick={() => handlePrint(customerDataById?.data)}
+              icon={FiPrinter}
+              isLoading={printingId === customerDataById?.data.Id}
+            ></Button>
           </div>
         </div>
         {/* Order Details */}
@@ -656,21 +692,21 @@ const SalesView = () => {
                   </div>
                   <div>
                     <HasPermission module="SalesReturn" action="deactivate">
-                    <Button
-                      onClick={getEInvoiceData}
-                      isLoading={isInvoiceCreating}
-                      disabled={
-                        isInvoiceCreating ||
-                        (eInvoiceData?.data?.data?.length > 0 &&
-                          eInvoiceData.data.data[
-                            eInvoiceData.data.data.length - 1
-                          ]?.ErrorCode === "200") ||
-                        (eInvoiceData?.data?.data?.length > 0 &&
-                          eInvoiceData.data.data[0]?.ErrorCode === "200")
-                      }
-                    >
-                      Generate E-Invoice
-                    </Button>
+                      <Button
+                        onClick={getEInvoiceData}
+                        isLoading={isInvoiceCreating}
+                        disabled={
+                          isInvoiceCreating ||
+                          (eInvoiceData?.data?.data?.length > 0 &&
+                            eInvoiceData.data.data[
+                              eInvoiceData.data.data.length - 1
+                            ]?.ErrorCode === "200") ||
+                          (eInvoiceData?.data?.data?.length > 0 &&
+                            eInvoiceData.data.data[0]?.ErrorCode === "200")
+                        }
+                      >
+                        Generate E-Invoice
+                      </Button>
                     </HasPermission>
                   </div>
                 </div>

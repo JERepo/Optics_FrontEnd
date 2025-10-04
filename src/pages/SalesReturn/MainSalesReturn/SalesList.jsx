@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { FiEye, FiPlus, FiSearch } from "react-icons/fi";
+import { FiEye, FiPlus, FiPrinter, FiSearch } from "react-icons/fi";
 
 import Button from "../../../components/ui/Button";
 import { useOrder } from "../../../features/OrderContext";
@@ -8,13 +8,17 @@ import { Table, TableCell, TableRow } from "../../../components/Table";
 
 import Loader from "../../../components/ui/Loader";
 import { useSelector } from "react-redux";
-import { useGetAllSalesReturnQuery } from "../../../api/salesReturnApi";
+import {
+  useGetAllSalesReturnQuery,
+  useLazyPrintPdfQuery,
+} from "../../../api/salesReturnApi";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { enGB } from "date-fns/locale";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { TextField } from "@mui/material";
 import HasPermission from "../../../components/HasPermission";
+import toast from "react-hot-toast";
 
 const getStatus = (status) => {
   if (status == 0) {
@@ -22,7 +26,7 @@ const getStatus = (status) => {
   } else if (status == 1) {
     return "Confirmed";
   }
-  return "UNKNOWN"
+  return "UNKNOWN";
 };
 
 const SalesList = () => {
@@ -34,6 +38,7 @@ const SalesList = () => {
   const [pageSize, setPageSize] = useState(10);
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
+  const [printingId, setPrintingId] = useState(null);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -41,6 +46,7 @@ const SalesList = () => {
 
   const { data: allSalesReturn, isLoading: isAllOrdersLoading } =
     useGetAllSalesReturnQuery();
+  const [generatePrint, { isFetching: isPrinting }] = useLazyPrintPdfQuery();
 
   const Sales = useMemo(() => {
     if (!allSalesReturn?.data) return [];
@@ -100,7 +106,7 @@ const SalesList = () => {
         totalPrice: s.CNTotal,
         CompanyID: parseInt(s.CompanyID),
         CNDate: s.CNDate,
-        status :getStatus(s.Status)
+        status: getStatus(s.Status),
       }))
       .filter((order) => order.CompanyID === parseInt(hasMultipleLocations[0]))
       .sort((a, b) => new Date(b.CNDate) - new Date(a.CNDate));
@@ -114,7 +120,34 @@ const SalesList = () => {
   const handleViewSalesReturn = (id) => {
     navigate(`/sales-return/view?salesId=${id}`);
   };
+  const handlePrint = async (item) => {
+    setPrintingId(item.id);
 
+    try {
+      const blob = await generatePrint({
+        returnId: item.id,
+        companyId: parseInt(hasMultipleLocations[0]),
+      }).unwrap();
+
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "application/pdf" })
+      );
+      const newWindow = window.open(url);
+      if (newWindow) {
+        newWindow.onload = () => {
+          newWindow.focus();
+          newWindow.print();
+        };
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(
+        "Unable to print the stock transfer out please try again after some time!"
+      );
+    } finally {
+      setPrintingId(null);
+    }
+  };
   if (isAllOrdersLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -222,16 +255,16 @@ const SalesList = () => {
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <HasPermission module="SalesReturn" action="create">
-              <Button
-                icon={FiPlus}
-                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
-                onClick={() => {
-                  goToSalesStep(1);
-                  navigate("/sales-return/create");
-                }}
-              >
-                Add
-              </Button>
+                <Button
+                  icon={FiPlus}
+                  className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
+                  onClick={() => {
+                    goToSalesStep(1);
+                    navigate("/sales-return/create");
+                  }}
+                >
+                  Add
+                </Button>
               </HasPermission>
             </div>
           </div>
@@ -262,13 +295,25 @@ const SalesList = () => {
                 <TableCell>{s.totalQty}</TableCell>
                 <TableCell>₹{s.totalPrice}</TableCell>
                 <TableCell>{s.status}</TableCell>
-                <TableCell>
+                <TableCell className="flex gap-2">
                   <button
                     onClick={() => handleViewSalesReturn(s.id)}
                     className="flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
                     <FiEye className="mr-1.5" />
                     View
+                  </button>
+                  <button
+                    className="flex items-center justify-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                    onClick={() => handlePrint(s)}
+                  >
+                    {printingId === s?.id ? (
+                      <Loader color="black" />
+                    ) : (
+                      <div className="flex items-center">
+                        <FiPrinter />
+                      </div>
+                    )}
                   </button>
                 </TableCell>
               </TableRow>

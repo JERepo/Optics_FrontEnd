@@ -66,7 +66,7 @@ export const salesReturnApi = createApi({
       query: () => ({
         url: `/api/v1/sales-Return/salesmasters`,
       }),
-      providesTags :["SalesReturn"]
+      providesTags: ["SalesReturn"],
     }),
     getSalesReturnById: builder.query({
       query: ({ id }) => ({
@@ -104,6 +104,13 @@ export const salesReturnApi = createApi({
         url: `/api/v1/sales-Return/getsalesreturn?ApplicationUserId=${userId}&CompanyId=${companyId}&PatientId=${patientId}&ReferenceApplicable=${reference}`,
       }),
     }),
+    printPdf: builder.query({
+      query: ({returnId,companyId}) => ({
+        url: `/api/v1/pdf/credit-note-receipt?salesReturnId=${returnId}&companyId=${companyId}`,
+        responseHandler: (response) => response.blob(),
+      }),
+      transformResponse: (response) => response,
+    }),
   }),
 });
 
@@ -124,4 +131,5 @@ export const {
   useLazyGetBatchesForCLQuery,
   useGetOlInvoiceDetailsQuery,
   useLazyGetDraftDetailsQuery,
+  useLazyPrintPdfQuery
 } = salesReturnApi;

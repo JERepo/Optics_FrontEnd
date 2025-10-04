@@ -199,7 +199,7 @@ const CustomerForm = ({
                   onChange={handleInputChange}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                   disabled={
-                    invoice?.Status == 1 && customerData?.CustomerType == 0
+                    invoice?.Status == 1 
                   }
                 />
                 <span className="ml-2 text-gray-700">Individual (B2C)</span>
@@ -213,7 +213,7 @@ const CustomerForm = ({
                   onChange={handleInputChange}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                   disabled={
-                    invoice?.Status === 1 && customerData?.CustomerType == 1
+                    invoice?.Status === 1 
                   }
                 />
                 <span className="ml-2 text-gray-700">Business (B2B)</span>

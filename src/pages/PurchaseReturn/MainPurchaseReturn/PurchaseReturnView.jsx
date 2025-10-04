@@ -10,6 +10,7 @@ import { useSelector } from "react-redux";
 import {
   useGetPRByIdQuery,
   useGetPRDataForViewQuery,
+  useLazyPrintPdfQuery,
 } from "../../../api/purchaseReturn";
 import {
   useCreateEInvoiceMutation,
@@ -19,6 +20,7 @@ import toast from "react-hot-toast";
 import { useGetLocationByIdQuery } from "../../../api/roleManagementApi";
 import { useGetCompanyIdQuery } from "../../../api/customerApi";
 import HasPermission from "../../../components/HasPermission";
+import { FiPrinter } from "react-icons/fi";
 
 const getProductName = (item) => {
   const type = item.ProductType;
@@ -147,6 +149,7 @@ const PurchaseReturnView = () => {
   const params = new URLSearchParams(search);
   const PR = params.get("purchaseId");
   const [InvoiceEnabled, setInvoiceEnabled] = useState(true);
+  const [printingId, setPrintingId] = useState(null);
 
   const { data: PRDetails, isLoading } = useGetPRByIdQuery(PR, {
     skip: !PR,
@@ -160,7 +163,7 @@ const PurchaseReturnView = () => {
   const [createInvoice, { isLoading: isInvoiceCreating }] =
     useCreateEInvoiceMutation();
   const { data: eInvoiceData, isLoading: isEInvoiceLoading } =
-    useGetEInvoiceDataQuery({ id: parseInt(PR),type:"purchaseReturn" });
+    useGetEInvoiceDataQuery({ id: parseInt(PR), type: "purchaseReturn" });
   const { data: locationById } = useGetLocationByIdQuery(
     { id: parseInt(hasMultipleLocations[0]) },
     { skip: !parseInt(hasMultipleLocations[0]) }
@@ -171,6 +174,7 @@ const PurchaseReturnView = () => {
     { id: companyId },
     { skip: !companyId }
   );
+  const [generatePrint, { isFetching: isPrinting }] = useLazyPrintPdfQuery();
   const EInvoiceEnable = companySettings?.data?.data.EInvoiceEnable;
   const InvInvoiceEnable = companySettings?.data?.data.DNEInvoiceEnable;
   const getShortTypeName = (id) => {
@@ -229,6 +233,34 @@ const PurchaseReturnView = () => {
       );
     }
   };
+  const handlePrint = async (item) => {
+    setPrintingId(item.Id);
+
+    try {
+      const blob = await generatePrint({
+        prId: PR,
+        companyId: parseInt(hasMultipleLocations[0]),
+      }).unwrap();
+
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "application/pdf" })
+      );
+      const newWindow = window.open(url);
+      if (newWindow) {
+        newWindow.onload = () => {
+          newWindow.focus();
+          newWindow.print();
+        };
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(
+        "Unable to print the stock transfer out please try again after some time!"
+      );
+    } finally {
+      setPrintingId(null);
+    }
+  };
 
   if (isLoading) {
     return <Loader color="black" />;
@@ -240,13 +272,18 @@ const PurchaseReturnView = () => {
           <div className="text-xl font-medium text-neutral-700">
             View Purchase Return Details
           </div>
-          <div>
+          <div className="flex gap-2">
             <Button
               variant="outline"
               onClick={() => navigate("/purchase-return")}
             >
               Back
             </Button>
+            <Button
+              onClick={() => handlePrint(PRDetails?.data.data)}
+              icon={FiPrinter}
+              isLoading={printingId == PRDetails?.data.data.Id}
+            ></Button>
           </div>
         </div>
         {/* Order Details */}
@@ -269,9 +306,9 @@ const PurchaseReturnView = () => {
                 label="Address"
                 value={
                   (PRDetails?.data.data.Vendor.Address1 &&
-                  PRDetails?.data.data.Vendor.Landmark) ||
-                  PRDetails?.data.data.Vendor.City &&
-                  `${PRDetails?.data.data.Vendor.Address1} ${PRDetails?.data.data.Vendor.Landmark} ${PRDetails?.data.data.Vendor.City}`
+                    PRDetails?.data.data.Vendor.Landmark) ||
+                  (PRDetails?.data.data.Vendor.City &&
+                    `${PRDetails?.data.data.Vendor.Address1} ${PRDetails?.data.data.Vendor.Landmark} ${PRDetails?.data.data.Vendor.City}`)
                 }
               />
             </>
@@ -316,7 +353,7 @@ const PurchaseReturnView = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    parseFloat (parseFloat(item.DNPrice) * item.DNQty) +
+                    parseFloat(parseFloat(item.DNPrice) * item.DNQty) +
                       parseFloat(item.DNPrice) *
                         ((parseFloat(item.ProductTaxPercentage) / 100) *
                           item.DNQty)
@@ -369,21 +406,21 @@ const PurchaseReturnView = () => {
                   </div>
                   <div>
                     <HasPermission module="Purchase-Return" action="deactivate">
-                    <Button
-                      onClick={getEInvoiceData}
-                      isLoading={isInvoiceCreating}
-                      disabled={
-                        isInvoiceCreating ||
-                        (eInvoiceData?.data?.data?.length > 0 &&
-                          eInvoiceData.data.data[
-                            eInvoiceData.data.data.length - 1
-                          ]?.ErrorCode === "200") ||
-                        (eInvoiceData?.data?.data?.length > 0 &&
-                          eInvoiceData.data.data[0]?.ErrorCode === "200")
-                      }
-                    >
-                      Generate E-Invoice
-                    </Button>
+                      <Button
+                        onClick={getEInvoiceData}
+                        isLoading={isInvoiceCreating}
+                        disabled={
+                          isInvoiceCreating ||
+                          (eInvoiceData?.data?.data?.length > 0 &&
+                            eInvoiceData.data.data[
+                              eInvoiceData.data.data.length - 1
+                            ]?.ErrorCode === "200") ||
+                          (eInvoiceData?.data?.data?.length > 0 &&
+                            eInvoiceData.data.data[0]?.ErrorCode === "200")
+                        }
+                      >
+                        Generate E-Invoice
+                      </Button>
                     </HasPermission>
                   </div>
                 </div>

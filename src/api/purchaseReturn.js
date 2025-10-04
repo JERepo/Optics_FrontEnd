@@ -51,16 +51,23 @@ export const purchaseReturnApi = createApi({
       }),
       providesTags: ["PurchaseReturn"],
     }),
-    getPRById:builder.query({
-      query : (id) => ({
-        url : `/api/v1/purchase-Return/PR/${id}`
-      })
+    getPRById: builder.query({
+      query: (id) => ({
+        url: `/api/v1/purchase-Return/PR/${id}`,
+      }),
     }),
-    getPRDataForView:builder.query({
-      query : ({id,locationId}) => ({
-        url : `/api/v1/purchase-Return/getPrdetails/${id}?locationId=${locationId}`
-      })
-    })
+    getPRDataForView: builder.query({
+      query: ({ id, locationId }) => ({
+        url: `/api/v1/purchase-Return/getPrdetails/${id}?locationId=${locationId}`,
+      }),
+    }),
+    printPdf: builder.query({
+      query: ({ prId, companyId }) => ({
+        url: `/api/v1/pdf/debit-note-receipt?purchaseReturnId=${prId}&companyId=${companyId}`,
+        responseHandler: (response) => response.blob(),
+      }),
+      transformResponse: (response) => response,
+    }),
   }),
 });
 
@@ -73,6 +80,6 @@ export const {
   useDeleteUpdatePRMutation,
   useGetAllPRQuery,
   useGetPRByIdQuery,
-  useGetPRDataForViewQuery
-
+  useGetPRDataForViewQuery,
+  useLazyPrintPdfQuery
 } = purchaseReturnApi;
