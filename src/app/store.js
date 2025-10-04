@@ -39,6 +39,7 @@ import { customerRefundApi } from "../api/customerRefund";
 import { offerApi } from "../api/offerApi";
 import { cusomerPaymentApi } from "../api/customerPayment";
 import { contactLensMasterApi } from "../api/contactlensMaster";
+import { reportApi } from "../api/reportApi";
 
 const persistConfig = {
   key: "auth",
@@ -94,7 +95,8 @@ export const store = configureStore({
     [customerRefundApi.reducerPath]: customerRefundApi.reducer,
     [offerApi.reducerPath]: offerApi.reducer,
     [cusomerPaymentApi.reducerPath]: cusomerPaymentApi.reducer,
-    [contactLensMasterApi.reducerPath]:contactLensMasterApi.reducer
+    [contactLensMasterApi.reducerPath]:contactLensMasterApi.reducer,
+    [reportApi.reducerPath]:reportApi.reducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -136,7 +138,8 @@ export const store = configureStore({
       customerRefundApi.middleware,
       offerApi.middleware,
       cusomerPaymentApi.middleware,
-      contactLensMasterApi.middleware
+      contactLensMasterApi.middleware,
+      reportApi.middleware
     ),
 });
 

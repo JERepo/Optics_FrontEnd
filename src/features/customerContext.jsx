@@ -122,7 +122,7 @@ export const CustomerProvider = ({ children }) => {
       ShipCountryID: parseInt(shippingAddress.country),
       PANNumber: formData.PANNumber,
       TAXRegisteration:
-        formData.customerType === "B2C" ? 0 : formData.GSTINType == 0 ? 1 : 0,
+        formData.customerType === "B2C" ? 0 : formData.GSTINType == 1 ? 1 : 0,
       TAXNo: formData.GSTNumber,
       BillingMethod: parseInt(billingMethod),
       FittingPrice: parseInt(fittingType),

@@ -84,6 +84,7 @@ const Customer = ({ isPop, onSubmit }) => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [creditLimit, setCreditLimit] = useState(null);
   const [isGMOpen, setIsGMOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState("");
   const [currentStatus, setCurrentStatus] = useState(null);
   const [selectedPatientId, setSelectedPatientId] = useState(null);
   const [isPatientStatusModalOpen, setIsPatientStatusStatusOpen] =
@@ -543,7 +544,17 @@ const Customer = ({ isPop, onSubmit }) => {
       }
     }
 
-    if (formData.customerType === "B2B" && formData.GSTINType == 0) {
+    // if (formData.customerType === "B2B" && formData.GSTINType == 0) {
+    //   if (!formData.GSTNumber) {
+    //     newErrors.GSTNumber = "GSTIN number is required for B2B customers";
+    //   } else if (formData.GSTNumber.length !== 15) {
+    //     newErrors.GSTNumber = "GSTIN number should be 15 characters long";
+    //   }
+    // }
+    if (formData.customerType === "B2B" && formData.GSTINType == 1) {
+      delete newErrors.GSTNumber; // Explicitly clear GSTNumber error for Un-registered
+    }
+    if (formData.customerType === "B2B" && formData.GSTINType == 1) {
       if (!formData.GSTNumber) {
         newErrors.GSTNumber = "GSTIN number is required for B2B customers";
       } else if (formData.GSTNumber.length !== 15) {
@@ -810,6 +821,7 @@ const Customer = ({ isPop, onSubmit }) => {
     } catch (error) {
       console.error(error);
       if (error?.data?.error?.warning) {
+        setIsMobile(error?.data?.error?.field);
         setIsGMOpen(true);
         return;
       }
@@ -1381,8 +1393,16 @@ const Customer = ({ isPop, onSubmit }) => {
           setIsGMOpen(false);
         }}
         onConfirm={handleConfirmMobileOrGSTToggle}
-        title="GST or Mobile Number Exist warning!"
-        message="Are you sure you want to continue?"
+        title={
+          isMobile == "MobNumber"
+            ? "Mobile Number Exist Warning!"
+            : "GSTNo Exist Warning!"
+        }
+        message={
+          isMobile != "MobNumber"
+            ? "Another customer exists with the same GSTNo. Do you still wish to continue?"
+            : "Another customer exists with the same Mobile Number. Do you still wish to continue?"
+        }
         confirmText="Continue"
         danger={false}
       />
