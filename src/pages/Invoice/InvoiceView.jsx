@@ -391,18 +391,18 @@ const InvoiceView = () => {
         toast.error(result.message);
         return;
       }
-      try {
-        const payload = {
-          InvoiceMainId: parseInt(invoiceId) ?? null,
-          CustomerMasterID: invoiceDetails?.CustomerMaster?.Id ?? null,
-          locationId: parseInt(hasMultipleLocations[0]),
-        };
+      // try {
+      //   const payload = {
+      //     InvoiceMainId: parseInt(invoiceId) ?? null,
+      //     CustomerMasterID: invoiceDetails?.CustomerMaster?.Id ?? null,
+      //     locationId: parseInt(hasMultipleLocations[0]),
+      //   };
 
-        const res = await cancelInvoice({ payload }).unwrap();
-        toast.success("Invoice Cancelled Successfully");
-      } catch (error) {
-        console.log(error);
-      }
+      //   const res = await cancelInvoice({ payload }).unwrap();
+      //   toast.success("Invoice Cancelled Successfully");
+      // } catch (error) {
+      //   console.log(error);
+      // }
     }
   };
 
