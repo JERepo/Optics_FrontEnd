@@ -320,7 +320,7 @@ export function GRNDCViewPage() {
                             }
                             <TableCell>{item?.ProductDetails?.price?.MRP || null}</TableCell>
                             <TableCell>₹ {item.GRNPrice}</TableCell>
-                            <TableCell>₹{" "} {parseFloat(parseInt(item?.GRNPrice) * (parseInt(item?.TaxPercent) / 100))} {`(${item.TaxPercent}%)`}</TableCell>
+                            <TableCell>₹{" "} {parseFloat(parseInt(item?.GRNPrice) * (parseInt(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) / 100)).toFixed(2)} {`(${item.TaxPercent || item?.ProductDetails?.GSTPercentage}%)`}</TableCell>
                             <TableCell>{item.GRNQty}</TableCell>
                             <TableCell>₹{" "}{parseFloat(parseInt(item?.GRNPrice * item?.GRNQty) * (parseInt(item?.ProductDetails?.GSTPercentage) / 100)) + parseInt(item?.GRNPrice * item?.GRNQty)}
                             </TableCell>
