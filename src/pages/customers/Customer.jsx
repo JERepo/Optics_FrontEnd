@@ -42,6 +42,7 @@ import ConfirmationModal from "../../components/ui/ConfirmationModal";
 import Input from "../../components/Form/Input";
 import HasPermission from "../../components/HasPermission";
 import Toggle from "../../components/ui/Toggle";
+import Radio from "../../components/Form/Radio";
 
 // Validation functions
 const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -83,6 +84,7 @@ const Customer = ({ isPop, onSubmit }) => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [creditLimit, setCreditLimit] = useState(null);
   const [isGMOpen, setIsGMOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState("");
   const [currentStatus, setCurrentStatus] = useState(null);
   const [selectedPatientId, setSelectedPatientId] = useState(null);
   const [isPatientStatusModalOpen, setIsPatientStatusStatusOpen] =
@@ -248,7 +250,7 @@ const Customer = ({ isPop, onSubmit }) => {
         paymentTerms: customer.PaymentTerms || null,
       });
 
-      setCreditBalanceType(customer.OBType === 0 ? "Dr" : "Cr");
+      setCreditBalanceType(customer.OBType == 0 ? "Dr" : "Cr");
 
       setPatientDetailsData(
         customer.CustomerContactDetails?.map((contact) => ({
@@ -542,7 +544,17 @@ const Customer = ({ isPop, onSubmit }) => {
       }
     }
 
-    if (formData.customerType === "B2B" && formData.GSTINType == 0) {
+    // if (formData.customerType === "B2B" && formData.GSTINType == 0) {
+    //   if (!formData.GSTNumber) {
+    //     newErrors.GSTNumber = "GSTIN number is required for B2B customers";
+    //   } else if (formData.GSTNumber.length !== 15) {
+    //     newErrors.GSTNumber = "GSTIN number should be 15 characters long";
+    //   }
+    // }
+    if (formData.customerType === "B2B" && formData.GSTINType == 1) {
+      delete newErrors.GSTNumber; // Explicitly clear GSTNumber error for Un-registered
+    }
+    if (formData.customerType === "B2B" && formData.GSTINType == 1) {
       if (!formData.GSTNumber) {
         newErrors.GSTNumber = "GSTIN number is required for B2B customers";
       } else if (formData.GSTNumber.length !== 15) {
@@ -716,19 +728,19 @@ const Customer = ({ isPop, onSubmit }) => {
     setCurrentStatus(status);
     setIsPatientStatusStatusOpen(true);
   };
-useEffect(() => {
-  if (formData.forceUpdate) {
-    handleSave();
-  }
-}, [formData.forceUpdate]);
+  useEffect(() => {
+    if (formData.forceUpdate) {
+      handleSave();
+    }
+  }, [formData.forceUpdate]);
 
-const handleConfirmMobileOrGSTToggle = () => {
-  setFormData((prev) => ({
-    ...prev,
-    forceUpdate: true,
-  }));
-  setIsGMOpen(false);
-};
+  const handleConfirmMobileOrGSTToggle = () => {
+    setFormData((prev) => ({
+      ...prev,
+      forceUpdate: true,
+    }));
+    setIsGMOpen(false);
+  };
 
   const handleConfirmToggle = async () => {
     try {
@@ -805,10 +817,11 @@ const handleConfirmMobileOrGSTToggle = () => {
         toast.success("Customer data updated successfully!");
         navigate(-1);
       }
-      resetFormForCustomerType()
+      resetFormForCustomerType();
     } catch (error) {
       console.error(error);
       if (error?.data?.error?.warning) {
+        setIsMobile(error?.data?.error?.field);
         setIsGMOpen(true);
         return;
       }
@@ -817,7 +830,6 @@ const handleConfirmMobileOrGSTToggle = () => {
       );
     }
   };
-console.log(formData)
   const renderFittingTable = (
     focalityLabel,
     focalityKey,
@@ -1381,8 +1393,16 @@ console.log(formData)
           setIsGMOpen(false);
         }}
         onConfirm={handleConfirmMobileOrGSTToggle}
-        title="GST or Mobile Number Exist warning!"
-        message="Are you sure you want to continue?"
+        title={
+          isMobile == "MobNumber"
+            ? "Mobile Number Exist Warning!"
+            : "GSTNo Exist Warning!"
+        }
+        message={
+          isMobile != "MobNumber"
+            ? "Another customer exists with the same GSTNo. Do you still wish to continue?"
+            : "Another customer exists with the same Mobile Number. Do you still wish to continue?"
+        }
         confirmText="Continue"
         danger={false}
       />
@@ -1509,11 +1529,11 @@ const GstAddressSelector = ({ gstData, onCopy, onCancel }) => {
 };
 
 const ApplyCreditLimit = ({ isOpen, onClose, creditLimit }) => {
-  console.log(creditLimit);
+  console.log("d", creditLimit);
   const [newCreditLimit, setNewCreditLimit] = useState(0);
   const [openingBalance, setOpeningBalance] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [creditBalanceType, setCreditBalanceType] = useState("Dr");
+  const [creditBalanType, setCreditBalanType] = useState(0);
   const [higher, setHigher] = useState(false);
 
   const [updateCreditLimit, { isLoading: isCreditUpdating }] =
@@ -1523,6 +1543,8 @@ const ApplyCreditLimit = ({ isOpen, onClose, creditLimit }) => {
     if (creditLimit?.openingBalance !== undefined) {
       setOpeningBalance(creditLimit.openingBalance);
     }
+    setCreditBalanType(Number(creditLimit?.data?.OBType));
+    console.log("creditBalanceType after:", Number(creditLimit?.data?.OBType));
   }, [creditLimit]);
   const handleNewCredit = (e) => {
     const value = e.target.value;
@@ -1547,7 +1569,7 @@ const ApplyCreditLimit = ({ isOpen, onClose, creditLimit }) => {
         newCreditLimit: parseFloat(limit) || 0,
         currentOpeningBalance: parseFloat(creditLimit?.openingBalance),
         newOpeningBalance: parseFloat(openingBalance) || 0,
-        OBType: creditBalanceType === "Dr" ? 0 : 1,
+        OBType: creditBalanType,
       };
       const res = await updateCreditLimit({ payload }).unwrap();
       toast.success(res?.data?.message || "creditLimit updated successfully!");
@@ -1564,7 +1586,7 @@ const ApplyCreditLimit = ({ isOpen, onClose, creditLimit }) => {
     saveCreditLimit(parseFloat(newCreditLimit));
     setIsModalOpen(false);
   };
-
+  console.log(creditBalanType);
   return (
     <div>
       <Modal isOpen={isOpen} onClose={onClose}>
@@ -1582,28 +1604,20 @@ const ApplyCreditLimit = ({ isOpen, onClose, creditLimit }) => {
               Balance Type
             </label>
             <div className="flex gap-4">
-              <label className="inline-flex items-center">
-                <input
-                  type="radio"
-                  name="creditBalanceType"
-                  value="Dr"
-                  checked={creditBalanceType === "Dr"}
-                  onChange={() => setCreditBalanceType("Dr")}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                />
-                <span className="ml-2 text-gray-700">Debit (Dr)</span>
-              </label>
-              <label className="inline-flex items-center">
-                <input
-                  type="radio"
-                  name="creditBalanceType"
-                  value="Cr"
-                  checked={creditBalanceType === "Cr"}
-                  onChange={() => setCreditBalanceType("Cr")}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                />
-                <span className="ml-2 text-gray-700">Credit (Cr)</span>
-              </label>
+              <Radio
+                label="Debit (Dr)"
+                name="cc"
+                value="0" // Change from "0" to 0
+                checked={creditBalanType == 0} // Use strict equality for clarity
+                onChange={() => setCreditBalanType(0)}
+              />
+              <Radio
+                label="Credit (Cr)"
+                name="cc"
+                value="1" // Change from "1" to 1
+                checked={creditBalanType == 1} // Use strict equality
+                onChange={() => setCreditBalanType(1)}
+              />
             </div>
           </div>
           <Input

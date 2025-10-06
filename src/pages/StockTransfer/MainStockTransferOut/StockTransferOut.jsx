@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { FiEye, FiPlus, FiSearch } from "react-icons/fi";
+import { FiEye, FiPlus, FiPrinter, FiSearch } from "react-icons/fi";
 
 import Button from "../../../components/ui/Button";
 import { useOrder } from "../../../features/OrderContext";
@@ -16,9 +16,11 @@ import { TextField } from "@mui/material";
 import {
   useGetAllStockOutDetailsQuery,
   useGetStockLocationsQuery,
+  useLazyPrintPdfQuery,
 } from "../../../api/stockTransfer";
 import { formatINR } from "../../../utils/formatINR";
 import HasPermission from "../../../components/HasPermission";
+import toast from "react-hot-toast";
 
 const getStatus = (status) => {
   const types = {
@@ -39,6 +41,8 @@ const StockTransferOut = () => {
   const [pageSize, setPageSize] = useState(10);
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
+    const [printingId, setPrintingId] = useState(null);
+  
 
   const { data: allLocations, isLoading: isLocationsLoading } =
     useGetStockLocationsQuery({
@@ -50,6 +54,8 @@ const StockTransferOut = () => {
 
   const { data: allStockOut, isLoading: isStockLoading } =
     useGetAllStockOutDetailsQuery();
+      const [generatePrint, { isFetching: isPrinting }] =
+        useLazyPrintPdfQuery();
 
   const StockOut = useMemo(() => {
     if (!allStockOut?.data) return [];
@@ -123,7 +129,34 @@ const StockTransferOut = () => {
   const handleViewSalesReturn = (id) => {
     navigate(`/stock-transfer/view?stockOutId=${id}`);
   };
+  const handlePrint = async (item) => {
+    setPrintingId(item.id);
 
+    try {
+      const blob = await generatePrint({
+        mainId: item.id,
+        companyId: parseInt(hasMultipleLocations[0]),
+      }).unwrap();
+
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "application/pdf" })
+      );
+      const newWindow = window.open(url);
+      if (newWindow) {
+        newWindow.onload = () => {
+          newWindow.focus();
+          newWindow.print();
+        };
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(
+        "Unable to print the stock transfer out please try again after some time!"
+      );
+    } finally {
+      setPrintingId(null);
+    }
+  };
   if (isStockLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -266,13 +299,25 @@ const StockTransferOut = () => {
                 <TableCell>{item.totalQty}</TableCell>
                 <TableCell>₹{formatINR(item.totalValue)}</TableCell>
                 <TableCell>{item.status}</TableCell>
-                <TableCell>
+                <TableCell className="flex gap-2">
                   <button
                     onClick={() => handleViewSalesReturn(item.id)}
                     className="flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
                     <FiEye className="mr-1.5" />
                     View
+                  </button>
+                  <button
+                    className="flex items-center justify-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                    onClick={() => handlePrint(item)}
+                  >
+                    {printingId === item?.id ? (
+                      <Loader color="black" />
+                    ) : (
+                      <div className="flex items-center">
+                        <FiPrinter  />
+                      </div>
+                    )}
                   </button>
                 </TableCell>
               </TableRow>

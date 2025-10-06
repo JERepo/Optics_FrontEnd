@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { FiEye, FiPlus, FiSearch } from "react-icons/fi";
+import { FiEye, FiPlus, FiPrinter, FiSearch } from "react-icons/fi";
 
 import Button from "../../../components/ui/Button";
 import { useOrder } from "../../../features/OrderContext";
@@ -14,22 +14,25 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { TextField } from "@mui/material";
 import { useGetStockLocationsQuery } from "../../../api/stockTransfer";
-import { useGetAllPRQuery } from "../../../api/purchaseReturn";
+import {
+  useGetAllPRQuery,
+  useLazyPrintPdfQuery,
+} from "../../../api/purchaseReturn";
 import { formatINR } from "../../../utils/formatINR";
 import { format } from "date-fns";
 import HasPermission from "../../../components/HasPermission";
+import toast from "react-hot-toast";
 
 const getStatus = (status) => {
   if (status == 0) {
     return "Draft";
   } else if (status == 1) {
     return "Confirmed";
-  }else if(status === 3){
-    return "Cancelled"
+  } else if (status === 3) {
+    return "Cancelled";
   }
-  return "UNKNOWN"
+  return "UNKNOWN";
 };
-
 
 const PurchaseReturn = () => {
   const navigate = useNavigate();
@@ -40,6 +43,7 @@ const PurchaseReturn = () => {
   const [pageSize, setPageSize] = useState(10);
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
+  const [printingId, setPrintingId] = useState(null);
 
   const { data: allLocations, isLoading: isLocationsLoading } =
     useGetStockLocationsQuery({
@@ -50,6 +54,7 @@ const PurchaseReturn = () => {
   }, [fromDate, toDate, searchQuery]);
 
   const { data: PRDetails, isLoading: isPRDetailsLoading } = useGetAllPRQuery();
+  const [generatePrint, { isFetching: isPrinting }] = useLazyPrintPdfQuery();
 
   const StockOut = useMemo(() => {
     if (!PRDetails?.data?.data) return [];
@@ -81,23 +86,27 @@ const PurchaseReturn = () => {
       });
     }
 
-    return filtered.map((s) => ({
-      id: s.Id,
-      pn: s.DNNo,
-      p: s,
-      date: s?.PurchaseReturnDate
-        ? format(new Date(s.PurchaseReturnDate), "dd/MM/yyyy")
-        : "",
+    return filtered
+      .map((s) => ({
+        id: s.Id,
+        pn: s.DNNo,
+        p: s,
+        date: s?.PurchaseReturnDate
+          ? format(new Date(s.PurchaseReturnDate), "dd/MM/yyyy")
+          : "",
 
-      name: s.Vendor.VendorName,
-      totalQty: s.TotalQty,
-      totalPrice: s.TotalValue,
-      status :getStatus(s.Status),
-      CompanyId:s.CompanyId,
-      PurchaseReturnDate:s.PurchaseReturnDate
-    }))
-    .filter((order) => order.CompanyId == hasMultipleLocations[0])
-    .sort((a, b) => new Date(b.PurchaseReturnDate) - new Date(a.PurchaseReturnDate));
+        name: s.Vendor.VendorName,
+        totalQty: s.TotalQty,
+        totalPrice: s.TotalValue,
+        status: getStatus(s.Status),
+        CompanyId: s.CompanyId,
+        PurchaseReturnDate: s.PurchaseReturnDate,
+      }))
+      .filter((order) => order.CompanyId == hasMultipleLocations[0])
+      .sort(
+        (a, b) =>
+          new Date(b.PurchaseReturnDate) - new Date(a.PurchaseReturnDate)
+      );
   }, [PRDetails, fromDate, toDate, searchQuery]);
 
   const startIndex = (currentPage - 1) * pageSize;
@@ -108,7 +117,34 @@ const PurchaseReturn = () => {
   const handleViewSalesReturn = (id) => {
     navigate(`/purchase-return/view?purchaseId=${id}`);
   };
+  const handlePrint = async (item) => {
+    setPrintingId(item.id);
 
+    try {
+      const blob = await generatePrint({
+        prId: item.id,
+        companyId: parseInt(hasMultipleLocations[0]),
+      }).unwrap();
+
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "application/pdf" })
+      );
+      const newWindow = window.open(url);
+      if (newWindow) {
+        newWindow.onload = () => {
+          newWindow.focus();
+          newWindow.print();
+        };
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(
+        "Unable to print the stock transfer out please try again after some time!"
+      );
+    } finally {
+      setPrintingId(null);
+    }
+  };
   if (isPRDetailsLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -215,16 +251,16 @@ const PurchaseReturn = () => {
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <HasPermission module="Purchase-Return" action="create">
-              <Button
-                icon={FiPlus}
-                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
-                onClick={() => {
-                  goToPurchaseStep(1);
-                  navigate("/purchase-return/create");
-                }}
-              >
-                Add
-              </Button>
+                <Button
+                  icon={FiPlus}
+                  className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
+                  onClick={() => {
+                    goToPurchaseStep(1);
+                    navigate("/purchase-return/create");
+                  }}
+                >
+                  Add
+                </Button>
               </HasPermission>
             </div>
           </div>
@@ -252,13 +288,25 @@ const PurchaseReturn = () => {
                 <TableCell>{item.totalQty}</TableCell>
                 <TableCell>₹{formatINR(item.totalPrice)}</TableCell>
                 <TableCell>{item.status}</TableCell>
-                <TableCell>
+                <TableCell className="flex gap-2">
                   <button
                     onClick={() => handleViewSalesReturn(item.id)}
                     className="flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
                     <FiEye className="mr-1.5" />
                     View
+                  </button>
+                  <button
+                    className="flex items-center justify-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                    onClick={() => handlePrint(item)}
+                  >
+                    {printingId === item?.id ? (
+                      <Loader color="black" />
+                    ) : (
+                      <div className="flex items-center">
+                        <FiPrinter />
+                      </div>
+                    )}
                   </button>
                 </TableCell>
               </TableRow>

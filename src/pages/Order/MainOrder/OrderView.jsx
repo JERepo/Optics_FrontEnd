@@ -34,10 +34,11 @@ const OrderView = () => {
   const [errorModalOpen, setErrorModalOpen] = useState(false);
   const [isWarningOpen, setIsWarningOpen] = useState(false);
   const [warningMessage, setWarningMessage] = useState(null);
+  const [isCancelOrder, setIsCancelOrder] = useState(false);
+
   const [printingId, setPrintingId] = useState(null);
   const [selectedItemId, setSelectedItemId] = useState(null);
   const [byPassInvoice, setByPassInvoice] = useState(false);
-  
 
   const { data: orderDetails, isLoading } = useGetSavedOrderDetailsQuery(
     { orderId },
@@ -233,6 +234,26 @@ const OrderView = () => {
       toast.success("Item cancelled successfully");
       setSelectedItemId(null);
       setIsWarningOpen(false);
+      setWarningMessage("");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const handleConfirmWarningsForOrder = async () => {
+    try {
+      const payload = {
+        proceedAfterWarnings: true,
+        applicationUserId: user.Id,
+      };
+
+      const res = await cancelOrder({
+        id: parseInt(orderId),
+        payload,
+      }).unwrap();
+      toast.success("Order cancelled successfully");
+      setSelectedItemId(null);
+      setIsCancelOrder(false);
+      setWarningMessage("");
     } catch (error) {
       console.log(error);
     }
@@ -267,6 +288,11 @@ const OrderView = () => {
         id: parseInt(orderId),
         payload,
       }).unwrap();
+      if (res?.status == "warning") {
+        setWarningMessage(res?.warnings[0]);
+        setIsCancelOrder(true);
+        return;
+      }
       toast.success("Order cancelled successfully");
     } catch (error) {
       console.log(error);
@@ -581,7 +607,11 @@ const OrderView = () => {
                           onClick={() => handleCancelItem(order.OrderDetailId)}
                           className=""
                           size="sm"
-                          isLoading={selectedItemId === order.OrderDetailId ? isItemCancelling :false}
+                          isLoading={
+                            selectedItemId === order.OrderDetailId
+                              ? isItemCancelling
+                              : false
+                          }
                           disabled={isOrderCancelling || isItemCancelling}
                           title="Cancel Item"
                         >
@@ -694,6 +724,17 @@ const OrderView = () => {
         cancelText="Cancel"
         danger={false}
         isLoading={isItemCancelling}
+      />
+      <ConfirmationModal
+        isOpen={isCancelOrder}
+        onClose={() => setIsCancelOrder(false)}
+        onConfirm={handleConfirmWarningsForOrder}
+        title="Cancel Order Warning!"
+        message={warningMessage}
+        confirmText="Yes, Proceed"
+        cancelText="Cancel"
+        danger={false}
+        isLoading={isOrderCancelling}
       />
     </div>
   );

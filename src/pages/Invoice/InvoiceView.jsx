@@ -391,18 +391,18 @@ const InvoiceView = () => {
         toast.error(result.message);
         return;
       }
-      try {
-        const payload = {
-          InvoiceMainId: parseInt(invoiceId) ?? null,
-          CustomerMasterID: invoiceDetails?.CustomerMaster?.Id ?? null,
-          locationId: parseInt(hasMultipleLocations[0]),
-        };
+      // try {
+      //   const payload = {
+      //     InvoiceMainId: parseInt(invoiceId) ?? null,
+      //     CustomerMasterID: invoiceDetails?.CustomerMaster?.Id ?? null,
+      //     locationId: parseInt(hasMultipleLocations[0]),
+      //   };
 
-        const res = await cancelInvoice({ payload }).unwrap();
-        toast.success("Invoice Cancelled Successfully");
-      } catch (error) {
-        console.log(error);
-      }
+      //   const res = await cancelInvoice({ payload }).unwrap();
+      //   toast.success("Invoice Cancelled Successfully");
+      // } catch (error) {
+      //   console.log(error);
+      // }
     }
   };
 
@@ -412,6 +412,7 @@ const InvoiceView = () => {
       CustomerMasterID: invoiceDetails?.CustomerMaster?.Id ?? null,
 
       locationId: parseInt(hasMultipleLocations[0]),
+      ApplicationUserId :user.Id
     };
 
     if (carry === 0) {
@@ -422,12 +423,11 @@ const InvoiceView = () => {
         paymentDetails?.data?.receiptDetails?.map((item) => item.Type) || [];
     }
     try {
-      const payload = {
-        InvoiceMainId: parseInt(invoiceId) ?? null,
-        CustomerMasterID: invoiceDetails?.CustomerMaster?.Id ?? null,
-        locationId: parseInt(hasMultipleLocations[0]),
-      };
-
+      // const payload = {
+      //   InvoiceMainId: parseInt(invoiceId) ?? null,
+      //   CustomerMasterID: invoiceDetails?.CustomerMaster?.Id ?? null,
+      //   locationId: parseInt(hasMultipleLocations[0]),
+      // };
       const res = await cancelInvoice({ payload }).unwrap();
       toast.success("Invoice Cancelled Successfully");
       setIsCancelOpen(false);
@@ -442,7 +442,7 @@ const InvoiceView = () => {
       </div>
     );
   }
-  console.log("ni",invoiceDetails)
+  console.log("ni", invoiceDetails);
 
   return (
     <div className="max-w-8xl">
@@ -661,19 +661,23 @@ const InvoiceView = () => {
               </label>
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <div
-                  className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all ${
+                  className={`flex items-center p-4 border rounded-lg transition-all ${
                     carry === 0
                       ? "border-blue-500 bg-blue-50"
                       : "border-gray-200"
                   } ${isUPIBankAvl ? "opacity-50 cursor-not-allowed" : ""}`}
-                  onClick={() => setCarry(0)}
+                  onClick={() => {
+                    if (!isUPIBankAvl) setCarry(0);
+                  }}
                 >
                   <div className="flex items-center h-5">
                     <input
                       id="refund-option"
                       name="refund-type"
                       type="radio"
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${
+                        isUPIBankAvl ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
                       checked={carry === 0}
                       onChange={() => setCarry(0)}
                       disabled={isUPIBankAvl}

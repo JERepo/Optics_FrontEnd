@@ -124,6 +124,13 @@ export const stockTransferApi = createApi({
         url: `/api/v1/stock-transfer/in/details?STInMainID=${mainId}&locationId=${locationId}`,
       }),
     }),
+    printPdf: builder.query({
+      query: ({ mainId, companyId }) => ({
+        url: `/api/v1/pdf/sto-receipt?STOId=${mainId}&companyId=${companyId}`,
+        responseHandler: (response) => response.blob(),
+      }),
+      transformResponse: (response) => response,
+    }),
   }),
 });
 
@@ -138,6 +145,7 @@ export const {
   useGetOlDetailsByOlDetailIdMutation,
   useGetAllStockOutDetailsQuery,
   useGetStockTransferOutByIdQuery,
+  useLazyPrintPdfQuery,
 
   // Stock transfer In APIs
   useGetStockOutDataForStockInQuery,

@@ -5,7 +5,10 @@ import { format } from "date-fns";
 import Button from "../../../components/ui/Button";
 import Loader from "../../../components/ui/Loader";
 import { formatINR } from "../../../utils/formatINR";
-import { useGetStockTransferOutByIdQuery } from "../../../api/stockTransfer";
+import {
+  useGetStockTransferOutByIdQuery,
+  useLazyPrintPdfQuery,
+} from "../../../api/stockTransfer";
 import { useSelector } from "react-redux";
 import {
   useCreateEInvoiceMutation,
@@ -15,6 +18,7 @@ import toast from "react-hot-toast";
 import { useGetLocationByIdQuery } from "../../../api/roleManagementApi";
 import { useGetCompanyIdQuery } from "../../../api/customerApi";
 import HasPermission from "../../../components/HasPermission";
+import { FiPrinter } from "react-icons/fi";
 
 const getProductName = (data) => {
   const item = { ...data, ...data.ProductDetails };
@@ -215,6 +219,8 @@ const StockTransferView = () => {
   const params = new URLSearchParams(search);
   const stockOut = params.get("stockOutId");
   const [InvoiceEnabled, setInvoiceEnabled] = useState(true);
+  const [printingId, setPrintingId] = useState(null);
+  const [generatePrint, { isFetching: isPrinting }] = useLazyPrintPdfQuery();
 
   const { data: stockDetails, isLoading } = useGetStockTransferOutByIdQuery({
     mainId: stockOut,
@@ -268,6 +274,34 @@ const StockTransferView = () => {
     }
   };
 
+  const handlePrint = async (item) => {
+    setPrintingId(item.ID);
+
+    try {
+      const blob = await generatePrint({
+        mainId: stockOut,
+        companyId: parseInt(hasMultipleLocations[0]),
+      }).unwrap();
+
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "application/pdf" })
+      );
+      const newWindow = window.open(url);
+      if (newWindow) {
+        newWindow.onload = () => {
+          newWindow.focus();
+          newWindow.print();
+        };
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(
+        "Unable to print the stock transfer out please try again after some time!"
+      );
+    } finally {
+      setPrintingId(null);
+    }
+  };
   if (isLoading) {
     return <Loader color="black" />;
   }
@@ -278,13 +312,18 @@ const StockTransferView = () => {
           <div className="text-xl font-medium text-neutral-700">
             View Stock Transfer Out Details
           </div>
-          <div>
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               onClick={() => navigate("/stock-transfer")}
             >
               Back
             </Button>
+            <Button
+              onClick={() => handlePrint(stockDetails?.data?.result)}
+              icon={FiPrinter}
+              isLoading={printingId === stockDetails?.data?.result?.ID}
+            ></Button>
           </div>
         </div>
         {/* Order Details */}

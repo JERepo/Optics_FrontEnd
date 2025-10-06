@@ -41,7 +41,7 @@ const FrameSunglass = () => {
     calculateGST,
     currentStockStep,
   } = useOrder();
-  console.log("st",stockDraftData)
+  console.log("st", stockDraftData);
   const { user } = useSelector((state) => state.auth);
   const [barcode, setBarcode] = useState("");
   const [searchMode, setSearchMode] = useState(false);
@@ -102,30 +102,26 @@ const FrameSunglass = () => {
       const data = res?.data;
       if (data && validateQuantity(data)) {
         setItems((prev) => {
-          if (singleOrCombine === 1) {
-            return [{ ...data, stkQty: 1 }, ...prev];
-          } else {
-            // Combine Entry: Increment stkQty or add new item
-            const index = prev.findIndex((i) => i.Barcode === data.Barcode);
-            if (index !== -1) {
-              const newStkQty = Number(prev[index].stkQty) + 1;
-              const qty = Number(prev[index].Quantity);
-              if (newStkQty > qty) {
-                toast.error("Stock quantity cannot exceed available quantity!");
-                return prev;
-              }
-              return prev.map((item, idx) =>
-                idx === index
-                  ? {
-                      ...item,
-                      stkQty: newStkQty,
-                      // Quantity: qty + 1,
-                    }
-                  : item
-              );
-            } else {
-              return [{ ...data, stkQty: 1 }, ...prev];
+          // Combine Entry: Increment stkQty or add new item
+          const index = prev.findIndex((i) => i.Barcode === data.Barcode);
+          if (index !== -1) {
+            const newStkQty = Number(prev[index].stkQty) + 1;
+            const qty = Number(prev[index].Quantity);
+            if (newStkQty > qty) {
+              toast.error("Stock quantity cannot exceed available quantity!");
+              return prev;
             }
+            return prev.map((item, idx) =>
+              idx === index
+                ? {
+                    ...item,
+                    stkQty: newStkQty,
+                    // Quantity: qty + 1,
+                  }
+                : item
+            );
+          } else {
+            return [{ ...data, stkQty: 1 }, ...prev];
           }
         });
         setBarcode("");
@@ -198,31 +194,25 @@ const FrameSunglass = () => {
       let updated = [...prev];
       selectedRows.forEach((selected) => {
         if (!validateQuantity(selected)) return;
-        if (singleOrCombine === 1) {
-          // Separate Entry: Add new item with stkQty: 1
-          updated = [{ ...selected, stkQty: 1 }, ...updated];
-        } else {
-          // Combine Entry: Increment stkQty or add new item
-          const index = updated.findIndex(
-            (i) => i.Barcode === selected.Barcode
-          );
-          if (index !== -1) {
-            const newStkQty = Number(updated[index].stkQty) + 1;
-            const qty = Number(prev[index].Quantity);
-            if (newStkQty > qty) {
-              toast.error("Stock quantity cannot exceed available quantity!");
-              return prev;
-            }
-            if (!validateStockQty(updated[index], newStkQty)) {
-              return; // Skip this item if stkQty exceeds AvlQty
-            }
-            updated = updated.map((item, idx) =>
-              idx === index ? { ...item, stkQty: newStkQty } : item
-            );
-            //  Quantity: qty + 1
-          } else {
-            updated = [{ ...selected, stkQty: 1 }, ...updated];
+
+        // Combine Entry: Increment stkQty or add new item
+        const index = updated.findIndex((i) => i.Barcode === selected.Barcode);
+        if (index !== -1) {
+          const newStkQty = Number(updated[index].stkQty) + 1;
+          const qty = Number(prev[index].Quantity);
+          if (newStkQty > qty) {
+            toast.error("Stock quantity cannot exceed available quantity!");
+            return prev;
           }
+          if (!validateStockQty(updated[index], newStkQty)) {
+            return; // Skip this item if stkQty exceeds AvlQty
+          }
+          updated = updated.map((item, idx) =>
+            idx === index ? { ...item, stkQty: newStkQty } : item
+          );
+          //  Quantity: qty + 1
+        } else {
+          updated = [{ ...selected, stkQty: 1 }, ...updated];
         }
       });
       return updated;
@@ -420,7 +410,7 @@ const FrameSunglass = () => {
       )
     );
   };
-  console.log("sto",stockDraftData)
+  console.log("sto", stockDraftData);
   const handleSaveData = async () => {
     if (!Array.isArray(items) || items.length === 0) {
       console.warn("No details to save");
@@ -503,21 +493,6 @@ const FrameSunglass = () => {
                   >
                     Enter Barcode
                   </label>
-
-                  <div className="flex items-center gap-5">
-                    <Radio
-                      value="0"
-                      onChange={() => setSingleOrCombine(0)}
-                      checked={singleOrCombine === 0}
-                      label="Combine Entry"
-                    />
-                    <Radio
-                      value="1"
-                      onChange={() => setSingleOrCombine(1)}
-                      checked={singleOrCombine === 1}
-                      label="Separate Entry"
-                    />
-                  </div>
                 </div>
                 <div className="flex gap-2">
                   <div className="relative flex items-center">
