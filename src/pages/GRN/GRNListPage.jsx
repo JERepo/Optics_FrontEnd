@@ -135,6 +135,15 @@ export function GRNListPage() {
         );
     }
 
+    const formatDate = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    };
+
     return (
         <div className="max-w-8xl">
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -264,7 +273,9 @@ export function GRNListPage() {
                                 <TableCell>{startIndex + index + 1}</TableCell>
                                 <TableCell>{`${grn.GRNPrefix}/${grn.GRNNo}`}</TableCell>
                                 <TableCell>{grn.VendorDocNo}</TableCell>
-                                <TableCell>{grn.VendorDocDate}</TableCell>
+                                {/* <TableCell>{grn.VendorDocDate}</TableCell>
+                                <TableCell>{grn.grnDate}</TableCell> */}
+                                <TableCell>{formatDate(grn.VendorDocDate)}</TableCell>
                                 <TableCell>{grn.grnDate}</TableCell>
                                 <TableCell>{grn.GRNType === 0 ? 'Invoice' : 'DC'}</TableCell>
                                 <TableCell>{grn.vendorName}</TableCell>

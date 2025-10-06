@@ -385,29 +385,10 @@ export default function GRNStep4() {
                                                     </TableCell>
                                                     : null
                                     }
-                                    {/* <TableCell>{item.MRP || null}</TableCell> */}
                                     <TableCell>₹{" "} {parseFloat(parseInt(item?.GRNPrice) * ((parseInt(item?.TaxPercent) / 100) || 0)).toFixed(2)}{`(` + item?.TaxPercent + `%)`}</TableCell>
-                                    {/* <TableCell>
-                                        <input
-                                            type="number"
-                                            value={item?.GRNQty || 1}
-                                            onChange={(e) => updateGRNItemQuantity(index, e.target.value)}
-                                            className="w-16 px-2 py-1 border rounded"
-                                            min="1"
-                                        />
-                                    </TableCell>
-                                    <TableCell>₹{" "}
-                                        <input
-                                            type="number"
-                                            value={grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (item.GRNPrice || 0)}
-                                            onChange={(e) => updateGRNItemPrice(index, e.target.value)}
-                                            className="w-20 px-2 py-1 border rounded"
-                                        />
-                                    </TableCell> */}
-
-                                    <TableCell>{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (item.GRNQty || 0)}</TableCell>
-                                    <TableCell>{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (item.GRNPrice || 0)}</TableCell>
-                                    <TableCell>₹{" "}{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty) + parseFloat(item?.FittingPrice || 0) + ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0)).toFixed(2)}</TableCell>
+                                    <TableCell>{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnViewDetails?.GRNType === 1) ? "" : (item.GRNQty || 0)}</TableCell>
+                                    <TableCell>{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnViewDetails?.GRNType === 1) ? "" : (item.GRNPrice || 0)}</TableCell>
+                                    <TableCell>₹{" "}{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnViewDetails?.GRNType === 1) ? "" : (parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty) + parseFloat(item?.FittingPrice || 0) + ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0)).toFixed(2)}</TableCell>
 
                                     <TableCell className="px-6 py-4 whitespace-nowrap">
                                         <button
@@ -425,85 +406,6 @@ export default function GRNStep4() {
                             )}
                         />
                     ) : (
-                        // <Table
-                        //     columns={["PO No. (Order No.)", "Product type", "Product Details", "MRP", "PO QTY", "Pending Qty", "GRN Qty", "Buying Price", "Total", "Action"]}
-                        //     data={grnViewDetails}
-                        //     renderRow={(item, index) => (
-                        //         <TableRow key={index}>
-                        //             <TableCell>{item.PONo} <br /> {(item.OrderNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}</TableCell>
-                        //             <TableCell className="">
-                        //                 {item?.ProductDetails?.ProductType === 1 ? 'F/S' : item?.ProductDetails?.ProductType === 2 ? 'ACC' : item?.ProductDetails?.ProductType === 3 ? 'CL' : ''}
-                        //             </TableCell>
-                        //             {item?.ProductDetails?.ProductType === 1 ?
-                        //                 <TableCell>{item?.ProductDetails?.productName}<br />
-                        //                     Size: {item?.ProductDetails?.Size?.Size}<br />
-                        //                     Barcode: {item?.ProductDetails?.barcode}<br />
-                        //                     Category: {item?.category === 0 ? `Sunglass` : `OpticalFrame`} <br />
-                        //                     HSN: {item?.ProductDetails?.HSN}
-                        //                 </TableCell>
-                        //                 : item?.ProductDetails?.ProductType === 2 ?
-                        //                     <TableCell>{item?.ProductDetails?.productName}<br />
-                        //                         Variation: {item?.ProductDetails?.Variation?.Variation}<br />
-                        //                         Barcode: {item?.ProductDetails?.barcode}<br />
-                        //                         HSN: {item?.ProductDetails?.HSN}
-                        //                     </TableCell>
-                        //                     : item?.ProductDetails?.ProductType === 3 ?
-                        //                         <TableCell>
-                        //                             {item?.ProductDetails?.productName}
-                        //                             {item?.ProductDetails?.PowerSpecs?.Sph && <><br />Sph: {item.ProductDetails.PowerSpecs.Sph > 0 ? '+' : ''}{item.ProductDetails.PowerSpecs.Sph}</>}
-                        //                             {item?.PowerSpecsCylindricalPower ? ` Cyl: ${item.CylindricalPower > 0 ? '+' : ''}${item.CylindricalPower}` : ` Cyl: `}
-                        //                             {item?.PowerSpecsAxis ? ` Axis: ${item.PowerSpecsAxis > 0 ? '+' : ''}${item.PowerSpecsAxis}` : ` Axis: `}
-                        //                             {item?.PowerSpecsAdditional ? ` Add: ${item.PowerSpecsAdditional > 0 ? '+' : ''}${item.PowerSpecsAdditional}` : ` Add: `}
-                        //                             {item?.Size && <><br />{item.Size}</>}
-                        //                             {item?.ProductDetails?.barcode && <><br />Barcode: {item.ProductDetails.barcode}</>}
-                        //                             {item?.BatchCode && <><br />BatchCode: {item.BatchCode}</>}
-                        //                             {/* {(() => {
-                        //                                 console.log("Iteme ajnd", item);
-                        //                                 const stock = item?.ProductDetails?.Stock?.find(stock => stock.BatchCode === item.BatchCode);
-                        //                                 console.log("item.BatchCode:", item.BatchCode);
-                        //                                 console.log("Stock array:", item?.ProductDetails?.Stock);
-                        //                                 console.log("Found stock:", stock);
-                        //                                 return stock?.Expiry ? <><br />Expiry: {stock.Expiry}</> : null;
-                        //                             })()} */}
-                        //                             {/* {item?.Expiry && <br />}{item.Expiry ? ` Expiry: ${item.Expiry}` : null} */}
-                        //                             {item?.Expiry && <br />}
-                        //                             {item.Expiry ? (() => {
-                        //                                 const [year, month, day] = item.Expiry.split('-');
-                        //                                 const formattedExpiry = `${day}-${month}-${year}`;
-                        //                                 return ` Expiry: ${formattedExpiry}`;
-                        //                             })() : null}
-                        //                             {item?.ProductDetails?.HSN && <><br />HSN: {item.ProductDetails.HSN}</>}
-                        //                         </TableCell>
-                        //                         : null
-                        //             }
-                        //             {item?.ProductDetails?.ProductType === 1 ?
-                        //                 <TableCell className="">₹ {item?.ProductDetails?.Stock?.MRP}</TableCell>
-                        //                 : item?.ProductDetails?.ProductType === 2 ?
-                        //                     <TableCell className="">₹ {item?.ProductDetails?.Stock?.OPMRP}</TableCell>
-                        //                     : item?.ProductDetails?.ProductType === 3 ?
-                        //                         <TableCell className="">₹ {item?.ProductDetails?.price?.MRP}</TableCell>
-                        //                         : null
-                        //             }
-                        //             <TableCell className=" ">{item.POQty}</TableCell>
-                        //             <TableCell>{item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty - (item.GRNQty || item.quantity || 1)}</TableCell>
-                        //             <TableCell>{item.GRNQty || item.quantity || 1}</TableCell>
-                        //             <TableCell>{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (item.GRNPrice || 0)}</TableCell>
-                        //             <TableCell>₹{" "}{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` : (parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty)).toFixed(2)}</TableCell>
-                        //             <TableCell className="px-6 py-4 whitespace-nowrap">
-                        //                 <button
-                        //                     onClick={() => {
-                        //                         setOrderToRemove(item?.GRNDetailId);
-                        //                         setShowRemoveModal(true);
-                        //                     }}
-                        //                     className="p-1 text-red-600 hover:text-red-800"
-                        //                     aria-label="Delete item"
-                        //                 >
-                        //                     <Trash2 className="h-5 w-5" />
-                        //                 </button>
-                        //             </TableCell>
-                        //         </TableRow>
-                        //     )}
-                        // />
 
                         <Table
                             columns={[
@@ -522,7 +424,7 @@ export default function GRNStep4() {
                             renderRow={(item, index) => (
                                 <TableRow key={index}>
                                     <TableCell>
-                                        {item.PONo}{" "}
+                                        {item.PONo}{" "} <br/>
                                         {(item.OrderNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}
                                     </TableCell>
                                     <TableCell>
@@ -587,7 +489,7 @@ export default function GRNStep4() {
                                                     Barcode: {item.ProductDetails.barcode}
                                                 </>
                                             )}
-                                            {item?.BatchCode && (
+                                            {(item?.BatchCode && item?.CLBatchCode) && (
                                                 <>
                                                     <br />
                                                     BatchCode: {item.BatchCode}
@@ -619,10 +521,10 @@ export default function GRNStep4() {
                                     <TableCell>{item.POQty}</TableCell>
                                     <TableCell>{item.PendingQty}</TableCell>
                                     <TableCell>{item.GRNQty}</TableCell>
-                                    <TableCell>{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (item.GRNPrice || 0)}</TableCell>
+                                    <TableCell>{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnViewDetails?.GRNType === 1) ? "" : (item.GRNPrice || 0)}</TableCell>
                                     <TableCell>
                                         ₹{" "}
-                                        {grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc"
+                                        {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnViewDetails?.GRNType === 1) && grnData?.step1?.billingMethod === "dc"
                                             ? ""
                                             : (
                                                 parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) +
@@ -649,59 +551,61 @@ export default function GRNStep4() {
 
 
                 {/* Calculation Summary Section */}
-                {grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (
-                    <div className="flex mt-10 justify-between px-5 rounded-2xl shadow p-8">
+                <div className="flex mt-10 justify-between px-5 rounded-2xl shadow p-8">
 
-                        <div className="flex justify-between gap-4">
-                            <span className="text-gray-600 font-bold text-lg">Total Quantity :</span>
-                            <span className="font-bold text-lg">
-                                {grnViewDetails
-                                    .reduce((total, order) => total + (order.GRNQty), 0)}
-                            </span>
-                        </div>
+                    {/* Total Quantity - Always shown */}
+                    <div className="flex justify-between gap-4">
+                        <span className="text-gray-600 font-bold text-lg">Total Quantity :</span>
+                        <span className="font-bold text-lg">
+                            {grnViewDetails.reduce((total, order) => total + (order.GRNQty || 0), 0)}
+                        </span>
+                    </div>
 
-                        <div className="flex justify-between gap-4">
-                            <span className="text-gray-600 font-bold text-lg">Total Gross Value :</span>
-                            <span className="font-bold text-lg">
-                                ₹{
-                                    grnViewDetails
+                    {/* Conditional rendering for other totals */}
+                    {!(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnViewDetails?.GRNType === 1) && (
+                        <>
+                            {/* Total Gross Value */}
+                            <div className="flex justify-between gap-4">
+                                <span className="text-gray-600 font-bold text-lg">Total Gross Value :</span>
+                                <span className="font-bold text-lg">
+                                    ₹{
+                                        grnViewDetails
+                                            .reduce((total, order) => {
+                                                const quantity = order.GRNQty;
+                                                const price = parseFloat(order.GRNPrice) || 0;
+
+                                                if (price && !isNaN(price) && !isNaN(quantity)) {
+                                                    return total + (price * quantity) + Number(order?.FittingPrice || 0);
+                                                }
+                                                return total;
+                                            }, 0)
+                                            ?.toFixed?.(2) ?? '0.00'
+                                    }
+                                </span>
+                            </div>
+
+                            {/* Total GST */}
+                            <div className="flex justify-between gap-4">
+                                <span className="text-gray-600 font-bold text-lg">Total GST :</span>
+                                <span className="font-bold text-lg">
+                                    ₹{grnViewDetails
                                         .reduce((total, order) => {
                                             const quantity = order.GRNQty;
-                                            const price = parseFloat(order.GRNPrice) || 0;
-
-                                            // Ensure both price and quantity are valid numbers
+                                            const price = parseFloat(order.GRNPrice + order.FittingPrice) || 0;
+                                            const taxPercentage = parseFloat((order?.TaxPercent || order?.ProductDetails?.GSTPercentage) / 100) || 0;
                                             if (price && !isNaN(price) && !isNaN(quantity)) {
-                                                return total + (price * quantity) + Number(order?.FittingPrice || 0);
+                                                return total + (price * quantity * taxPercentage) + Number(order?.FittingGSTPercentage || 0);
                                             }
                                             return total;
                                         }, 0)
-                                        ?.toFixed?.(2) ?? '0.00'
-                                }
-                            </span>
-                        </div>
+                                        ?.toFixed?.(2) ?? '0.00'}
+                                </span>
+                            </div>
 
-                        <div className="flex justify-between gap-4">
-                            <span className="text-gray-600 font-bold text-lg">Total GST :</span>
-                            <span className="font-bold text-lg">
-                                ₹{grnViewDetails
-                                    .reduce((total, order) => {
-                                        const quantity = order.GRNQty;
-                                        const price = parseFloat(order.GRNPrice + order.FittingPrice) || 0;
-                                        const taxPercentage = parseFloat((order?.TaxPercent || order?.ProductDetails?.GSTPercentage) / 100) || 0;
-                                        if (price && !isNaN(price) && !isNaN(quantity)) {
-                                            return total + (price * quantity * taxPercentage) + Number(order?.FittingGSTPercentage || 0);
-                                        }
-                                        return total;
-                                    }, 0)
-                                    ?.toFixed?.(2) ?? '0.00'}
-                            </span>
-                        </div>
-
-                        <div className="flex justify-between gap-4">
-                            <span className="text-gray-600 font-bold text-lg">Total Net Value :</span>
-                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                            {/* Total Net Value */}
+                            <div className="flex justify-between gap-4">
+                                <span className="text-gray-600 font-bold text-lg">Total Net Value :</span>
                                 <span className="font-bold text-lg">
-
                                     ₹{grnViewDetails
                                         .reduce((total, item) => {
                                             const quantity = item.GRNQty || 0;
@@ -716,12 +620,11 @@ export default function GRNStep4() {
                                             return total;
                                         }, 0)
                                         ?.toFixed?.(2) ?? '0.00'}
-
                                 </span>
-                            }
-                        </div>
-                    </div>
-                )}
+                            </div>
+                        </>
+                    )}
+                </div>
 
 
                 {/* Footer Complete GRN button */}

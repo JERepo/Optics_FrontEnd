@@ -242,12 +242,12 @@ export function GRNDCViewPage() {
             <div className="mt-6">
                 <h3 className="text-lg font-semibold mb-4">GRN Items</h3>
                 <Table
-                    columns={["Sl No.", "PO No.", "Supplier Order No.", "Product Type", "Product Details", "MRP", "Buying Price", "GST", "GRN QTY", "Total Amount"]}
+                    columns={["Sl No.", "Supplier Order No.", "Product Type", "Product Details", "MRP", "Buying Price", "GST", "GRN QTY", "Total Amount"]}
                     data={grnViewDetails}
                     renderRow={(item, index) => (
                         <TableRow key={item.Barcode || index}>
                             <TableCell>{index + 1}</TableCell>
-                            <TableCell>{item.PONo || null}</TableCell>
+                            {/* <TableCell>{item.PONo || null}</TableCell> */}
                             <TableCell>{item.VendorOrderNo || null}</TableCell>
                             <TableCell>{item?.ProductDetails?.ProductType == 0 && `OL` || item?.ProductDetails?.ProductType == 1 && `F/S` || item?.ProductDetails?.ProductType == 2 && `ACC` || item?.ProductDetails?.ProductType == 3 && `CL`}</TableCell>
                             {item?.ProductDetails?.ProductType === 1 ?
@@ -367,7 +367,7 @@ export function GRNDCViewPage() {
                             .reduce((total, order) => {
                                 const quantity = order.GRNQty;
                                 const price = parseFloat(order.GRNPrice) || 0;
-                                const taxPercentage = parseFloat(order?.ProductDetails?.GSTPercentage / 100) || 0;
+                                const taxPercentage = parseFloat(order?.TaxPercent / 100) || 0;
                                 if (price && !isNaN(price) && !isNaN(quantity)) {
                                     return total + (price * quantity * taxPercentage);
                                 }
@@ -384,7 +384,7 @@ export function GRNDCViewPage() {
                             .reduce((total, item) => {
                                 const quantity = item.GRNQty || 0;
                                 const price = item.GRNPrice || 0;
-                                const gstPercentage = parseInt(item?.ProductDetails?.GSTPercentage) || 0;
+                                const gstPercentage = parseInt(item?.TaxPercent) || 0;
 
                                 if (price && !isNaN(price) && !isNaN(quantity)) {
                                     const subtotal = price * quantity;

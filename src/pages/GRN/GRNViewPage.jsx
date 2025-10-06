@@ -217,7 +217,7 @@ export function GRNViewPage() {
                     Back to dashboard
                 </button>
                 <h1 className="text-3xl lg:text-4xl font-bold text-[#000060] mb-2">
-                    GRN Order
+                    GRN Order View
                 </h1>
 
             </div>
@@ -255,7 +255,7 @@ export function GRNViewPage() {
                             <TableCell>{item.PONo || null}<br />{item.OrderNo || null}</TableCell>
                             <TableCell>{item.VendorOrderNo}</TableCell>
                             {/* <TableCell>{item.OrderNo || null}</TableCell> */}
-                            <TableCell>{item?.ProductDetails?.ProductType == 0 && `OL` || item?.ProductDetails?.ProductType == 1 && `F` || item?.ProductDetails?.ProductType == 2 && `Acc` || item?.ProductDetails?.ProductType == 3 && `CL`}</TableCell>
+                            <TableCell>{item?.ProductDetails?.ProductType == 0 && `OL` || item?.ProductDetails?.ProductType == 1 && `F/S` || item?.ProductDetails?.ProductType == 2 && `ACC` || item?.ProductDetails?.ProductType == 3 && `CL`}</TableCell>
                             {/* <TableCell>{item?.ProductDetails?.barcode}</TableCell> */}
                             {item?.ProductDetails?.ProductType === 1 ?
                                 <TableCell>{item?.ProductDetails?.productName}<br />
@@ -325,11 +325,11 @@ export function GRNViewPage() {
                                             </TableCell>
                                             : null
                             }
-                            <TableCell>{item?.ProductDetails?.price?.MRP || null}</TableCell>
-                            <TableCell>₹{" "} {parseFloat(parseInt(item?.GRNPrice) * (parseInt(item?.ProductDetails?.GSTPercentage) / 100))}{`(${item?.ProductDetails?.GSTPercentage}%)`}</TableCell>
+                            <TableCell>₹{item?.ProductDetails?.price?.MRP || item?.ProductDetails?.Stock?.MRP || null}</TableCell>
+                            <TableCell>₹{" "} {parseFloat(parseInt(item?.GRNPrice) * (parseInt(item?.ProductDetails?.GSTPercentage) / 100)).toFixed(2)}<br/>{`(${item?.ProductDetails?.GSTPercentage}%)`}</TableCell>
                             <TableCell>{item.GRNQty}</TableCell>
                             <TableCell>₹ {item.GRNPrice}</TableCell>
-                            <TableCell>₹{" "}{parseFloat(parseInt(item?.GRNPrice * item?.GRNQty) * (parseInt(item?.ProductDetails?.GSTPercentage) / 100)) + parseInt(item?.GRNPrice * item?.GRNQty)}
+                            <TableCell>₹{" "}{parseFloat(parseInt(item?.GRNPrice * item?.GRNQty) * (parseInt(item?.TaxPercent) / 100)) + parseInt(item?.GRNPrice * item?.GRNQty)}
                             </TableCell>
                         </TableRow>
                     )}

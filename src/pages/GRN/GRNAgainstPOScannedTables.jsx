@@ -214,7 +214,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                 />
             )}
 
-            {/* {console.log("jahdbakjhbd", scannedItems)} */}
+            {console.log("jahdbakjhbd", scannedItems)}
             {productType === 3 && (
                 <Table
                     columns={["PO No. (Order No.)", "Product Details", "MRP", "Buying Price", "PO Qty", "Pending Qty", "GRN Qty", "Action"]}
@@ -232,7 +232,12 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                                 {item.Additional ? ` Add: ${item.Additional > 0 ? `+` : ``}${item.Additional}` : ` Add: `}
                                 {item.Size && <br />}{item.Size}
                                 {item?.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : null}
-                                {item?.BatchCode && <br />}{item.BatchCode ? `BatchCode: ${item.BatchCode} - ${item.Expiry ? `Expiry: ${item.Expiry}` : ``}` : null}
+                                {(item?.CLBatchCode && item?.BatchCode) && <br />}{item.BatchCode ? `BatchCode: ${item.BatchCode} - ` : null}
+                                {(item?.CLBatchCode && item.Expiry) ? (() => {
+                                    const [year, month, day] = item.Expiry.split('-');
+                                    const formattedExpiry = `${day}-${month}-${year}`;
+                                    return ` Expiry: ${formattedExpiry}`;
+                                })() : null}
                                 {/* {item?.Expiry && <br />}{item.Expiry ? `Expiry: ${item.Expiry}` : null} */}
                                 {item.HSN && <br />}{`HSN: ${item.HSN}`}
                             </TableCell>

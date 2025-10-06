@@ -44,7 +44,7 @@ export default function GRNStep1() {
         selectedGRNOptions: "order",
         vendorDetails: grnData.step1.vendorDetails,
         documentNo: grnData.step1.documentNo,
-        documentDate: grnData.step1.documentDate,
+        documentDate: grnData.step1.documentDate ?? new Date(),
         billingMethod: grnData.step1.billingMethod || "invoice",
         againstPO: String(grnData.step1.againstPO || 1),
         grnMainId: grnData.step1.GrnMainId
@@ -148,7 +148,7 @@ export default function GRNStep1() {
                 setFormState((prev) => ({
                     ...prev,
                     documentNo: "",
-                    documentDate: null
+                    documentDate: new Date()
                 }));
             }
         }
@@ -501,24 +501,24 @@ export default function GRNStep1() {
                                             helperText={error.documentNo || "Must be unique for this vendor"}
                                         />
                                     </div>
+                                    {console.log(formState?.documentDate)}
                                     <div className="flex items-center mt-6 space-x-20">
                                         <LocalizationProvider dateAdapter={AdapterDateFns}>
                                             <DatePicker
                                                 label="Document Date *"
-                                                value={formState.documentDate}
+                                                value={formState?.documentDate}
                                                 onChange={handleDateChange}
                                                 name="documentDate"
-                                                // minDate={fromDate}
-                                                maxDate={new Date()}
-                                                inputFormat="dd/MM/yyyy"
-                                                renderInput={(params) => (
-                                                    <TextField
-                                                        {...params}
-                                                        size="small"
-                                                        fullWidth
-                                                        variant="outlined"
-                                                    />
-                                                )}
+                                                maxDate={new Date()} 
+                                                format="dd/MM/yyyy" 
+                                                // renderInput={(params) => (
+                                                //     <TextField
+                                                //         {...params}
+                                                //         size="small"
+                                                //         fullWidth
+                                                //         variant="outlined"
+                                                //     />
+                                                // )}
                                             />
                                         </LocalizationProvider>
                                     </div>

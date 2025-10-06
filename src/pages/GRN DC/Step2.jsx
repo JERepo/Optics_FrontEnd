@@ -226,6 +226,8 @@ export default function GRNDCStep2() {
             return;
         }
 
+        console.log("selectedItems --------- ", selectedItems);
+
         // Update context with selected items
         updateStep3Data({
             selectedItems: selectedItems
@@ -355,8 +357,8 @@ export default function GRNDCStep2() {
                                 {item?.ProductDetails?.ProductType === 1 ?
                                     <TableCell>{item?.ProductDetails?.productName}<br />
                                         Size: {item?.ProductDetails?.Size?.Size}<br />
-                                        Barcode: {item?.ProductDetails?.barcode}<br />
                                         Category: {item?.category === 0 ? `Sunglass` : `OpticalFrame`} <br />
+                                        Barcode: {item?.ProductDetails?.barcode}<br />
                                         HSN: {item?.ProductDetails?.HSN}
                                     </TableCell>
                                     : item?.ProductDetails?.ProductType === 2 ?
@@ -421,9 +423,9 @@ export default function GRNDCStep2() {
                                                 : null
                                 }
 
-                                <TableCell>{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (item.GRNQty || 0)}</TableCell>
-                                <TableCell>{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (item.GRNPrice || 0)}</TableCell>
-                                <TableCell>{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (item.FittingPrice || 0)}</TableCell>
+                                <TableCell>{(item.GRNQty || 0)}</TableCell>
+                                <TableCell>{(item.GRNPrice || 0)}</TableCell>
+                                <TableCell>{(item.FittingPrice || 0)}</TableCell>
                                 {/* <TableCell>₹{" "}{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty) + parseFloat(item?.FittingPrice || 0) + ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0)).toFixed(2)}</TableCell> */}
                                 <TableCell>
                                     ₹{" "}

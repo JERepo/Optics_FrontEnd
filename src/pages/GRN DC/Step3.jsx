@@ -63,11 +63,13 @@ export default function GRNDCStep3() {
 
 
     const handleCompleteGRN = async () => {
-        
+
         if (filteredGrnViewDetails.length === 0) {
             toast.error("Please select at least one item to proceed");
             return;
         }
+
+        console.log("filteredGrnViewDetails ----------------- ", filteredGrnViewDetails);
 
         const payload = {
             // companyId: grnData.step1.selectedLocation,
@@ -76,7 +78,7 @@ export default function GRNDCStep3() {
                 GRNDetailID: item.GRNDetailId,
                 GRNSlNo: index + 1,
                 ProductType: item.ProductDetails?.ProductType,
-                detailId: item.ProductDetails?.Id,
+                detailId: item.ProductDetails?.Id || item.ProductDetails?.ProductDetailId || null,
                 BatchCode: item.BatchCode || null,
                 OrderDetailId: item.OrderDetailId || null,
                 VendorOrderNo: item.VendorOrderNo || null,
@@ -103,7 +105,8 @@ export default function GRNDCStep3() {
             // });
 
             toast.success("GRN saved successfully");
-            setCurrentStep(1);
+            // setCurrentStep(1);
+            navigate(`/grn-dc`);
         } catch (error) {
             console.error("Error saving GRN:", error);
             toast.error(`Failed to save GRN: ${error?.data?.message || error.message}`);
@@ -283,18 +286,16 @@ export default function GRNDCStep3() {
                                                 : null
                                 }
 
-                                <TableCell>{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (item.GRNQty || 0)}</TableCell>
-                                <TableCell>{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (item.GRNPrice || 0)}</TableCell>
-                                <TableCell>{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (item.FittingPrice || 0)}</TableCell>
+                                <TableCell>{(item.GRNQty || 0)}</TableCell>
+                                <TableCell>{(item.GRNPrice || 0)}</TableCell>
+                                <TableCell>{(item.FittingPrice || 0)}</TableCell>
                                 {/* <TableCell>₹{" "}{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty) + parseFloat(item?.FittingPrice || 0) + ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0)).toFixed(2)}</TableCell> */}
                                 <TableCell>
                                     ₹{" "}
-                                    {grnData?.step1?.vendorDetails?.DCGRNPrice === 1
-                                        ? ""
-                                        : (parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) +
-                                            parseFloat(item?.GRNPrice * item?.GRNQty) +
-                                            parseFloat(item?.FittingPrice || 0) +
-                                            ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0)).toFixed(2)}
+                                    {(parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) +
+                                        parseFloat(item?.GRNPrice * item?.GRNQty) +
+                                        parseFloat(item?.FittingPrice || 0) +
+                                        ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0)).toFixed(2)}
 
                                 </TableCell>
                             </TableRow>
@@ -304,7 +305,7 @@ export default function GRNDCStep3() {
 
 
                 {/* Calculation Summary Section */}
-                {grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? null : (
+                {(
                     <div className="flex mt-10 justify-between px-5 rounded-2xl shadow p-8">
                         {/* Total Quantity */}
                         <div className="flex justify-between gap-4">
