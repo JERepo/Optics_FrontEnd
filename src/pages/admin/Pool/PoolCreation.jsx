@@ -232,6 +232,7 @@ const PoolCreation = () => {
                   <FiEye
                     onClick={() => navigate(`view/${pool.id}`)}
                     className="text-xl cursor-pointer"
+                    title="View"
                   />
                 </HasPermission>
                 <HasPermission module="Pool" action="edit">

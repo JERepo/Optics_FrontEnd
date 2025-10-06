@@ -229,6 +229,7 @@ const Prescription = () => {
                     <FiEye
                       onClick={() => handleShowDetails(pool.item)}
                       className="text-xl cursor-pointer"
+                    title="View"
                     />
                   )}
                 </HasPermission>

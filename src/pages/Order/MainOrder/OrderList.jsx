@@ -298,10 +298,10 @@ const OrderList = () => {
                 <TableCell>
                   <button
                     onClick={() => handleViewOrder(order.order)}
-                    className="flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    className="flex items-center  text-lg font-medium rounded-md "
+                    title="View"
                   >
-                    <FiEye className="mr-1.5" />
-                    View
+                    <FiEye className="" />
                   </button>
                 </TableCell>
               </TableRow>

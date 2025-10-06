@@ -302,13 +302,12 @@ const StockTransferOut = () => {
                 <TableCell className="flex gap-2">
                   <button
                     onClick={() => handleViewSalesReturn(item.id)}
-                    className="flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    <FiEye className="mr-1.5" />
-                    View
+className="flex items-center  text-lg font-medium rounded-md "
+                    title="View"                  >
+                    <FiEye className="" />
                   </button>
                   <button
-                    className="flex items-center justify-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                    className="flex items-center justify-center  text-lg font-medium rounded-md text-green-600 "
                     onClick={() => handlePrint(item)}
                   >
                     {printingId === item?.id ? (
