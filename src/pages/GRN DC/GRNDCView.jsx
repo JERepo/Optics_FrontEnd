@@ -320,9 +320,9 @@ export function GRNDCViewPage() {
                             }
                             <TableCell>{item?.ProductDetails?.price?.MRP || null}</TableCell>
                             <TableCell>₹ {item.GRNPrice}</TableCell>
-                            <TableCell>₹{" "} {parseFloat(parseInt(item?.GRNPrice) * (parseInt(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) / 100)).toFixed(2)} {`(${item.TaxPercent || item?.ProductDetails?.GSTPercentage}%)`}</TableCell>
+                            <TableCell>₹{" "} {parseFloat(parseFloat(item?.GRNPrice) * (parseFloat(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) / 100)).toFixed(2)} {`(${item.TaxPercent || item?.ProductDetails?.GSTPercentage}%)`}</TableCell>
                             <TableCell>{item.GRNQty}</TableCell>
-                            <TableCell>₹{" "}{parseFloat(parseInt(item?.GRNPrice * item?.GRNQty) * (parseInt(item?.ProductDetails?.GSTPercentage) / 100)) + parseInt(item?.GRNPrice * item?.GRNQty)}
+                            <TableCell>₹{" "}{parseFloat((parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty) + parseFloat((item?.FittingPrice || 0) + ((item?.FittingPrice * item?.FittingGSTPercentage) || 0))).toFixed(2)}
                             </TableCell>
                         </TableRow>
                     )}
@@ -384,7 +384,7 @@ export function GRNDCViewPage() {
                             .reduce((total, item) => {
                                 const quantity = item.GRNQty || 0;
                                 const price = item.GRNPrice || 0;
-                                const gstPercentage = parseInt(item?.TaxPercent) || 0;
+                                const gstPercentage = parseFloat(item?.TaxPercent) || 0;
 
                                 if (price && !isNaN(price) && !isNaN(quantity)) {
                                     const subtotal = price * quantity;
