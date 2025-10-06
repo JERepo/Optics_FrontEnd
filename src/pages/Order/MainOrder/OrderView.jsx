@@ -350,7 +350,6 @@ const OrderView = () => {
       const res = await generateInvoice({ payload }).unwrap();
       // if()
       toast.success("Invoice Generated successfully!");
-
     } catch (error) {
       console.log(error);
 
@@ -594,15 +593,16 @@ const OrderView = () => {
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2 items-center">
-                    {customerDataById?.data.data?.Status !== 3 && 
-                    <HasPermission module="Order" action={["view"]}>
-                      <Button
-                        size="sm"
-                        icon={FiFileText}
-                        onClick={() => handleGenerateInvoice(order)}
-                        title="Generate Invoice"
-                      ></Button>
-                    </HasPermission>}
+                    {order.Status !== 3 && (
+                      <HasPermission module="Order" action={["create"]}>
+                        <Button
+                          size="sm"
+                          icon={FiFileText}
+                          onClick={() => handleGenerateInvoice(order)}
+                          title="Generate Invoice"
+                        ></Button>
+                      </HasPermission>
+                    )}
                     {order.Status !== 4 && (
                       <HasPermission module="Order" action="deactivate">
                         <Button

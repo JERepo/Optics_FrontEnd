@@ -409,7 +409,7 @@ export const orderApi = createApi({
       query: ({ id }) => ({
         url: `/api/v1/order/getorder/${id}`,
       }),
-      providesTags : ["Order"]
+      providesTags: ["Order"],
     }),
 
     // Get order for GRN OL dd (companyId and status 0, 2, 6)
@@ -426,7 +426,7 @@ export const orderApi = createApi({
         method: "PUT",
         body: payload,
       }),
-      invalidatesTags :["Order"]
+      invalidatesTags: ["Order"],
     }),
     cancelOrder: builder.mutation({
       query: ({ id, payload }) => ({
@@ -434,8 +434,7 @@ export const orderApi = createApi({
         method: "PUT",
         body: payload,
       }),
-            invalidatesTags :["Order"]
-
+      invalidatesTags: ["Order"],
     }),
     generateInvoiceFromOrder: builder.mutation({
       query: ({ payload }) => ({
@@ -443,6 +442,7 @@ export const orderApi = createApi({
         method: "POST",
         body: payload,
       }),
+      invalidatesTags: ["Order"],
     }),
     getAdvanceAmt: builder.query({
       query: ({ orderId }) => ({
