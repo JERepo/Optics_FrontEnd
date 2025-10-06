@@ -429,9 +429,7 @@ export default function GRNDCStep2() {
                                 {/* <TableCell>₹{" "}{grnData?.step1?.vendorDetails?.DCGRNPrice === 1 ? "" : (parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty) + parseFloat(item?.FittingPrice || 0) + ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0)).toFixed(2)}</TableCell> */}
                                 <TableCell>
                                     ₹{" "}
-                                    {grnData?.step1?.vendorDetails?.DCGRNPrice === 1
-                                        ? ""
-                                        : (parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) +
+                                    {(parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) +
                                             parseFloat(item?.GRNPrice * item?.GRNQty) +
                                             parseFloat(item?.FittingPrice || 0) +
                                             ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0)).toFixed(2)}
