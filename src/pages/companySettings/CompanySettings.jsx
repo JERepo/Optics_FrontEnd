@@ -28,14 +28,28 @@ import {
   FiMessageSquare,
   FiTool,
   FiBox,
-  FiPackage, // Replaces FiBuilding
+  FiPackage,
+  FiSliders,
+  FiBookOpen, // Replaces FiBuilding
 } from "react-icons/fi";
 import Loader from "../../components/ui/Loader";
 import Radio from "../../components/Form/Radio";
 import Button from "../../components/ui/Button";
 import { useGetCountriesQuery, useGetStatesQuery } from "../../api/customerApi";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { enGB } from "date-fns/locale";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { useGetAllCustomerGroupsQuery } from "../../api/customerGroup";
+import toast from "react-hot-toast";
 
 const API_BASE = import.meta.env.VITE_LOCAL;
+
+const EInvoiceGSTOptions = [
+  { value: 1, name: "PCS" },
+  { value: 2, name: "NOS" },
+  { value: 3, name: "BOX" },
+];
 
 const CompanySettings = () => {
   const [expandedSection, setExpandedSection] = useState("location"); // first accordion open
@@ -46,6 +60,7 @@ const CompanySettings = () => {
   const [qrCode, setQrCode] = useState(null);
   const [qrPreview, setQrPreview] = useState(null);
   const qrInputRef = useRef(null);
+  const [fromDate, setFromDate] = useState(new Date());
 
   const { data: allLocations, isLoading: isLocationsLoading } =
     useGetAllLocationsQuery();
@@ -58,6 +73,7 @@ const CompanySettings = () => {
   const { data: countries } = useGetCountriesQuery();
   const [updateSettings, { isLoading: isUpdating }] =
     useUpdateSettingsMutation();
+  const { data: customerGroups } = useGetAllCustomerGroupsQuery();
 
   const [formData, setFormData] = useState({
     customerPool: null,
@@ -70,6 +86,15 @@ const CompanySettings = () => {
     dlNo: "",
     msmeNo: "",
     billingAddress1: "",
+    billingAddress2: "",
+    zipcode: "",
+    olGstUnit: "",
+    clGstUnit: "",
+    fsGstUnit: "",
+    accGstUnit: "",
+    enableEIInvoice: "",
+    enableEICreditNote: "",
+    enableEIDebitNote: "",
     city: "",
     state: null,
     country: null,
@@ -121,6 +146,22 @@ const CompanySettings = () => {
     accessoryColumn1: "",
     accessoryColumn2: "",
     accessoryColumn3: "",
+    poApproval: "",
+    gvMultipleUse: "",
+    dcBilling: "",
+    creditBilling: "",
+    loyaltyEnable: "",
+    orderDiscountApproval: "",
+    discountPercentage: "",
+    prefixRollOff: "", // date
+    clMinExpPeriod: "",
+    clExpiryGracePeriod: "",
+    orderCancellationApproval: "",
+    invoiceCancellationApproval: "",
+    emailApproval: "",
+    mobileNoApproval: "",
+    countryCodeForMobileApproval: "",
+    defaultCustomerPool: "",
   });
   useEffect(() => {
     if (companySettingData?.data?.data) {
@@ -136,6 +177,8 @@ const CompanySettings = () => {
         dlNo: data.Company?.DlNo,
         msmeNo: data.Company?.MSMENo,
         billingAddress1: data.Company?.BillingAddress1,
+        billingAddress2: data.Company?.BillingAddress2,
+        zipcode: data?.Company.BillingZipCode,
         city: data.Company?.BillingCity,
         state: data?.Company?.BillingStateCode,
         country: data?.Company?.BillingCountryCode,
@@ -148,8 +191,8 @@ const CompanySettings = () => {
         orderPrefix: data.OrderPrefix,
         grnPrefix: data.GRNInvoicePrefix,
         grnDcPrefix: data.GRNDCPrefix,
-        invoicePrefix: "",
-        invoiceDcPrefix: "",
+        invoicePrefix: data.SalesInvoicePrefix,
+        invoiceDcPrefix: data.SalesDCPrefix,
         salesReturnPrefix: data.SalesReturnPrefix,
         purchaseReturnPrefix: data.PurchaseReturnPrefix,
         stockTransferOutPrefix: data.StockOutPrefix,
@@ -187,6 +230,26 @@ const CompanySettings = () => {
         accessoryColumn1: "",
         accessoryColumn2: "",
         accessoryColumn3: "",
+        olGstUnit: data.OLGSTINunit,
+        clGstUnit: data.CLGSTINunit,
+        accGstUnit: data.AccGSTINunit,
+        fsGstUnit: data.FSGSTINunit,
+        enableEICreditNote: data.CNEInvoiceEnable,
+        enableEIDebitNote: data.DNEInvoiceEnable,
+        poApproval: data.POApproval,
+        gvMultipleUse: data.GVMultipleUse,
+        dcBilling: data.DCBilling,
+        creditBilling: data.CreditBilling,
+        loyaltyEnable: data.LoyaltyEnable,
+        prefixRollOff: data.PrefixRollOff,
+        clMinExpPeriod: data.CLMinExpiryPeriod,
+        clExpiryGracePeriod: data.ClExpiryGracePeriod,
+        orderCancellationApproval: data.OrderCancellationAppr,
+        invoiceCancellationApproval: data.InvCancellationAppr,
+        emailApproval: data.ApprovalEmail,
+        countryCodeForMobileApproval: data.ApprovalMobCountryCode,
+        mobileNoApproval: data.AprrovalMobNo,
+        defaultCustomerPool: data.CustomerGroupDefault,
       });
       setLogoPreview(
         companySettingData?.data?.data?.Company?.Logo
@@ -317,7 +380,9 @@ const CompanySettings = () => {
         DlNo: formData.dlNo,
         MSMENo: formData.msmeNo,
         BillingAddress1: formData.billingAddress1,
+        BillingAddress2: formData.billingAddress2,
         BillingCity: formData.city,
+        BillingZipCode: formData.zipcode,
         Email: formData.companyEmail,
         ContactNumber: formData.contactNo,
         WhatsappNo: formData.whatsappNo,
@@ -331,8 +396,8 @@ const CompanySettings = () => {
       OrderPrefix: formData.orderPrefix,
       GRNInvoicePrefix: formData.grnPrefix,
       GRNDCPrefix: formData.grnDcPrefix,
-      InvoicePrefix: formData.invoicePrefix, // Was empty in initial setFormData
-      InvoiceDCPrefix: formData.invoiceDcPrefix, // Add if needed
+      SalesInvoicePrefix: formData.invoicePrefix, // Was empty in initial setFormData
+      SalesDCPrefix: formData.invoiceDcPrefix, // Add if needed
       SalesReturnPrefix: formData.salesReturnPrefix,
       PurchaseReturnPrefix: formData.purchaseReturnPrefix,
       StockOutPrefix: formData.stockTransferOutPrefix,
@@ -370,6 +435,26 @@ const CompanySettings = () => {
       AccessoryColumn1: formData.accessoryColumn1,
       AccessoryColumn2: formData.accessoryColumn2,
       AccessoryColumn3: formData.accessoryColumn3,
+      OLGSTINunit: formData.olGstUnit,
+      CLGSTINunit: formData.clGstUnit,
+      AccGSTINunit: formData.accGstUnit,
+      FSGSTINunit: formData.fsGstUnit,
+      CNEInvoiceEnable: formData.enableEICreditNote,
+      DNEInvoiceEnable: formData.enableEIDebitNote,
+      POApproval: formData.poApproval,
+      GVMultipleUse: formData.gvMultipleUse,
+      DCBilling: formData.dcBilling,
+      CreditBilling: formData.creditBilling,
+      LoyaltyEnable: formData.loyaltyEnable,
+      PrefixRollOff: formData.prefixRollOff,
+      CLMinExpiryPeriod: formData.clMinExpPeriod,
+      ClExpiryGracePeriod: formData.clExpiryGracePeriod,
+      OrderCancellationAppr: formData.orderCancellationApproval,
+      InvCancellationAppr: formData.invoiceCancellationApproval,
+      ApprovalEmail: formData.emailApproval,
+      ApprovalMobCountryCode: formData.countryCodeForMobileApproval,
+      AprrovalMobNo: formData.mobileNoApproval,
+      CustomerGroupDefault: formData.defaultCustomerPool,
     };
 
     // If logo/QR need uploading (assuming multipart form)
@@ -381,9 +466,13 @@ const CompanySettings = () => {
     try {
       //    api call
       await updateSettings({ payload: formDataPayload }).unwrap();
+      toast.success("Location settings successfully updated!");
     } catch (error) {
       //   alert("Update failed");
       console.log(error);
+      toast.error(
+        error?.data?.error?.message || "Looks like something went wrong!"
+      );
     }
   };
 
@@ -430,7 +519,7 @@ const CompanySettings = () => {
       content: (
         <Box className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Autocomplete
-            options={allPool?.data?.customer || []}
+            options={allPool?.data?.customer?.filter || []}
             getOptionLabel={(option) => option.PoolName || ""}
             value={
               allPool?.data?.customer?.find(
@@ -597,6 +686,18 @@ const CompanySettings = () => {
             </div>
             <div>
               <TextField
+                label="Billing Address2"
+                placeholder="Enter Address 2"
+                variant="outlined"
+                size="small"
+                fullWidth
+                value={formData.billingAddress2}
+                onChange={handleChange("billingAddress2")}
+              />
+            </div>
+
+            <div>
+              <TextField
                 label="City"
                 placeholder="Enter City"
                 variant="outlined"
@@ -651,6 +752,17 @@ const CompanySettings = () => {
                   />
                 )}
                 fullWidth
+              />
+            </div>
+            <div>
+              <TextField
+                label="PinCode"
+                placeholder="Enter PinCode"
+                variant="outlined"
+                size="small"
+                fullWidth
+                value={formData.zipcode}
+                onChange={handleChange("zipcode")}
               />
             </div>
             <div>
@@ -753,7 +865,7 @@ const CompanySettings = () => {
       title: "E-Invoice & GST Settings",
       icon: <FiFileText className="text-purple-600 text-xl" />,
       content: (
-        <Box className="flex items-center gap-4">
+        <Box className="flex gap-4 flex-col">
           <div className="flex items-center gap-5">
             <label> Enable E-Invoice </label>
             <Radio
@@ -771,23 +883,198 @@ const CompanySettings = () => {
               label="No"
             />
           </div>
-          <div className="flex items-center gap-5">
-            <label>Enable GST Verification </label>
-            <Radio
-              name="enableGstVerification"
-              value="1"
-              checked={formData.enableGstVerification === 1}
-              onChange={() => handleRadioChange("enableGstVerification", "1")}
-              label="Yes"
-            />
-            <Radio
-              name="enableGstVerification"
-              value="0"
-              checked={formData.enableGstVerification === 0}
-              onChange={() => handleRadioChange("enableGstVerification", "0")}
-              label="No"
-            />
-          </div>
+          {formData.enableEInvoice === 1 && (
+            <>
+              <div className="grid grid-cols-2 gap-5">
+                <div>
+                  <Autocomplete
+                    options={EInvoiceGSTOptions || []}
+                    getOptionLabel={(option) => option.name || ""}
+                    value={
+                      EInvoiceGSTOptions?.find(
+                        (pool) => pool.value == formData.olGstUnit
+                      ) || null
+                    }
+                    onChange={(_, newValue) =>
+                      setFormData({
+                        ...formData,
+                        olGstUnit: newValue?.value || null,
+                      })
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Optical Lens GSTIN Unit"
+                        placeholder="Select Optical Lens GSTIN Unit"
+                        size="small"
+                        variant="outlined"
+                      />
+                    )}
+                    fullWidth
+                  />
+                </div>
+                <div>
+                  <Autocomplete
+                    options={EInvoiceGSTOptions || []}
+                    getOptionLabel={(option) => option.name || ""}
+                    value={
+                      EInvoiceGSTOptions?.find(
+                        (pool) => pool.value == formData.clGstUnit
+                      ) || null
+                    }
+                    onChange={(_, newValue) =>
+                      setFormData({
+                        ...formData,
+                        clGstUnit: newValue?.value || null,
+                      })
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Contact Lens GSTIN Unit"
+                        placeholder="Select Contact Lens GSTIN Unit"
+                        size="small"
+                        variant="outlined"
+                      />
+                    )}
+                    fullWidth
+                  />
+                </div>
+                <div>
+                  <Autocomplete
+                    options={EInvoiceGSTOptions || []}
+                    getOptionLabel={(option) => option.name || ""}
+                    value={
+                      EInvoiceGSTOptions?.find(
+                        (pool) => pool.value == formData.fsGstUnit
+                      ) || null
+                    }
+                    onChange={(_, newValue) =>
+                      setFormData({
+                        ...formData,
+                        fsGstUnit: newValue?.value || null,
+                      })
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Frame/Sunglassess Lens GSTIN Unit"
+                        placeholder="Select Frame/Sunglassess Lens GSTIN Unit"
+                        size="small"
+                        variant="outlined"
+                      />
+                    )}
+                    fullWidth
+                  />
+                </div>
+                <div>
+                  <Autocomplete
+                    options={EInvoiceGSTOptions || []}
+                    getOptionLabel={(option) => option.name || ""}
+                    value={
+                      EInvoiceGSTOptions?.find(
+                        (pool) => pool.value == formData.accGstUnit
+                      ) || null
+                    }
+                    onChange={(_, newValue) =>
+                      setFormData({
+                        ...formData,
+                        accGstUnit: newValue?.value || null,
+                      })
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Accessory Lens GSTIN Unit"
+                        placeholder="Select Accessory Lens GSTIN Unit"
+                        size="small"
+                        variant="outlined"
+                      />
+                    )}
+                    fullWidth
+                  />
+                </div>
+              </div>
+              <div className="mt-5 grid grid-cols-4 gap-5">
+                <div className="flex items-center gap-3">
+                  <label>Enable E-Invoice for Invoice</label>
+                  <Radio
+                    name="E-1"
+                    value="1"
+                    checked={formData.enableEIInvoice === 1}
+                    onChange={() => handleRadioChange("enableEIInvoice", "1")}
+                    label="Yes"
+                  />
+                  <Radio
+                    name="E-1"
+                    value="0"
+                    checked={formData.enableEIInvoice === 0}
+                    onChange={() => handleRadioChange("enableEIInvoice", "0")}
+                    label="No"
+                  />
+                </div>
+                <div className="flex items-center gap-3">
+                  <label>Enable E-Invoice for Credit Note </label>
+                  <Radio
+                    name="E-2"
+                    value="1"
+                    checked={formData.enableEICreditNote === 1}
+                    onChange={() =>
+                      handleRadioChange("enableEICreditNote", "1")
+                    }
+                    label="Yes"
+                  />
+                  <Radio
+                    name="E-2"
+                    value="0"
+                    checked={formData.enableEICreditNote === 0}
+                    onChange={() =>
+                      handleRadioChange("enableEICreditNote", "0")
+                    }
+                    label="No"
+                  />
+                </div>
+                <div className="flex items-center gap-3">
+                  <label>Enable E-Invoice for Debit Note </label>
+                  <Radio
+                    name="E-3"
+                    value="1"
+                    checked={formData.enableEIDebitNote === 1}
+                    onChange={() => handleRadioChange("enableEIDebitNote", "1")}
+                    label="Yes"
+                  />
+                  <Radio
+                    name="E-3"
+                    value="0"
+                    checked={formData.enableEIDebitNote === 0}
+                    onChange={() => handleRadioChange("enableEIDebitNote", "0")}
+                    label="No"
+                  />
+                </div>
+                <div className="flex items-center gap-5">
+                  <label>Enable GST Verification </label>
+                  <Radio
+                    name="enableGstVerification"
+                    value="1"
+                    checked={formData.enableGstVerification === 1}
+                    onChange={() =>
+                      handleRadioChange("enableGstVerification", "1")
+                    }
+                    label="Yes"
+                  />
+                  <Radio
+                    name="enableGstVerification"
+                    value="0"
+                    checked={formData.enableGstVerification === 0}
+                    onChange={() =>
+                      handleRadioChange("enableGstVerification", "0")
+                    }
+                    label="No"
+                  />
+                </div>
+              </div>
+            </>
+          )}
           <div className="flex-grow flex">
             <TextField
               label="GST Search Instance ID"
@@ -1104,46 +1391,13 @@ const CompanySettings = () => {
               onChange={handleChange("whatsappClientId")}
             />
           </div>
-          <div className="">
-            <TextField
-              label="Whatsapp Module Alert"
-              placeholder="Enter Whatsapp Module Alert"
-              variant="outlined"
-              size="small"
-              fullWidth
-              value={formData.whatsappModuleAlert}
-              onChange={handleChange("whatsappModuleAlert")}
-            />
-          </div>
-          <div className="">
-            <TextField
-              label="Email Module Alert"
-              placeholder="Enter Email Module Alert"
-              variant="outlined"
-              size="small"
-              fullWidth
-              value={formData.emailModuleAlert}
-              onChange={handleChange("emailModuleAlert")}
-            />
-          </div>
-          <div className="">
-            <TextField
-              label="Email SMTP"
-              placeholder="Enter SMTP"
-              variant="outlined"
-              size="small"
-              fullWidth
-              value={formData.emailSmtp}
-              onChange={handleChange("emailSmtp")}
-            />
-          </div>
         </Box>
       ),
     },
     {
-      id: "otherSettings",
-      title: "Other Settings",
-      icon: <FiTool className="text-orange-600 text-xl" />,
+      id: "FittingCharges",
+      title: "Fitting Charges Settings",
+      icon: <FiSliders className="text-indigo-600 text-xl" />,
       content: (
         <Box className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center gap-5">
@@ -1185,7 +1439,7 @@ const CompanySettings = () => {
               onChange={handleChange("opticalLensFittingGst")}
             />
           </div>
-          <div className="">
+          {/* <div className="">
             <TextField
               label="Credit Note Return Period(in days)"
               placeholder="Enter Credit Note Return Period"
@@ -1195,7 +1449,7 @@ const CompanySettings = () => {
               value={formData.creditNoteReturnPeriod}
               onChange={handleChange("creditNoteReturnPeriod")}
             />
-          </div>
+          </div> */}
           <div className="flex items-center gap-5 flex-1/2">
             <label>Fitting Charges Purchase</label>
             <Radio
@@ -1230,6 +1484,15 @@ const CompanySettings = () => {
               label="No"
             />
           </div>
+        </Box>
+      ),
+    },
+    {
+      id: "tcs",
+      title: "T&C Settings",
+      icon: <FiBookOpen className="text-blue-600 text-xl" />,
+      content: (
+        <Box className="grid grid-cols-1 gap-4">
           <div className="col-span-3">
             <TextField
               label="Credit Note TC"
@@ -1266,64 +1529,137 @@ const CompanySettings = () => {
         </Box>
       ),
     },
+
     {
       id: "bf",
-      title: "Barcode Label (Frame)",
+      title: "Barcode Label Settings",
       icon: <FiBox className="text-pink-600 text-xl" />,
       content: (
-        <Box className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="col-span-3">
-            <Autocomplete
-              options={allLocations?.data || []} // perhaps change options to label templates if available
-              getOptionLabel={(option) => option.LocationName || ""}
-              value={formData.frameLabel}
-              onChange={handleAutoChange("frameLabel")}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Label"
-                  placeholder="Select Label"
-                  size="small"
-                  variant="outlined"
+        <Box className="flex flex-col gap-5">
+          <div>
+            <div className="mb-3">Barcode Label(Frame)</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="col-span-3">
+                <Autocomplete
+                  options={allLocations?.data || []} // perhaps change options to label templates if available
+                  getOptionLabel={(option) => option.LocationName || ""}
+                  value={formData.frameLabel}
+                  onChange={handleAutoChange("frameLabel")}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Label"
+                      placeholder="Select Label"
+                      size="small"
+                      variant="outlined"
+                    />
+                  )}
+                  loading={isLocationsLoading}
+                  fullWidth
                 />
-              )}
-              loading={isLocationsLoading}
-              fullWidth
-            />
+              </div>
+              <div className="">
+                <TextField
+                  label="Column 1"
+                  placeholder="Enter Column 1"
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                  value={formData.frameColumn1}
+                  onChange={handleChange("frameColumn1")}
+                />
+              </div>
+              <div className="">
+                <TextField
+                  label="Column 2"
+                  placeholder="Enter Column 2"
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                  value={formData.frameColumn2}
+                  onChange={handleChange("frameColumn2")}
+                />
+              </div>
+              <div className="">
+                <TextField
+                  label="Column 3"
+                  placeholder="Enter Column 3"
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                  value={formData.frameColumn3}
+                  onChange={handleChange("frameColumn3")}
+                />
+              </div>
+            </div>
           </div>
-          <div className="">
-            <TextField
-              label="Column 1"
-              placeholder="Enter Column 1"
-              variant="outlined"
-              size="small"
-              fullWidth
-              value={formData.frameColumn1}
-              onChange={handleChange("frameColumn1")}
-            />
+          <div>
+            <div className="mb-3">Barcode Label(Accessory)</div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="col-span-3">
+                <Autocomplete
+                  options={allLocations?.data || []}
+                  getOptionLabel={(option) => option.LocationName || ""}
+                  value={formData.accessoryLabel}
+                  onChange={handleAutoChange("accessoryLabel")}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Label"
+                      placeholder="Select Label"
+                      size="small"
+                      variant="outlined"
+                    />
+                  )}
+                  loading={isLocationsLoading}
+                  fullWidth
+                />
+              </div>
+              <div className="">
+                <TextField
+                  label="Column 1"
+                  placeholder="Enter Column 1"
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                  value={formData.accessoryColumn1}
+                  onChange={handleChange("accessoryColumn1")}
+                />
+              </div>
+              <div className="">
+                <TextField
+                  label="Column 2"
+                  placeholder="Enter Column 2"
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                  value={formData.accessoryColumn2}
+                  onChange={handleChange("accessoryColumn2")}
+                />
+              </div>
+              <div className="">
+                <TextField
+                  label="Column 3"
+                  placeholder="Enter Column 3"
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                  value={formData.accessoryColumn3}
+                  onChange={handleChange("accessoryColumn3")}
+                />
+              </div>
+            </div>
           </div>
-          <div className="">
-            <TextField
-              label="Column 2"
-              placeholder="Enter Column 2"
-              variant="outlined"
-              size="small"
-              fullWidth
-              value={formData.frameColumn2}
-              onChange={handleChange("frameColumn2")}
-            />
-          </div>
-          <div className="">
-            <TextField
-              label="Column 3"
-              placeholder="Enter Column 3"
-              variant="outlined"
-              size="small"
-              fullWidth
-              value={formData.frameColumn3}
-              onChange={handleChange("frameColumn3")}
-            />
-          </div>
+        </Box>
+      ),
+    },
+    {
+      id: "otherSettings",
+      title: "Other Settings",
+      icon: <FiTool className="text-orange-600 text-xl" />,
+      content: (
+        <Box className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center gap-5">
             <label>Show Buying Price for DC</label>
             <Radio
@@ -1396,65 +1732,296 @@ const CompanySettings = () => {
               label="No"
             />
           </div>
-        </Box>
-      ),
-    },
-    {
-      id: "ba",
-      title: "Barcode Label (Accessory)",
-      icon: <FiPackage className="text-red-600 text-xl" />,
-      content: (
-        <Box className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="">
+            <TextField
+              label="Credit Note Return Period(in days)"
+              placeholder="Enter Credit Note Return Period"
+              variant="outlined"
+              size="small"
+              fullWidth
+              value={formData.creditNoteReturnPeriod}
+              onChange={handleChange("creditNoteReturnPeriod")}
+            />
+          </div>
+          <div className="flex items-center gap-5">
+            <label>PO Approval Required</label>
+            <Radio
+              name="poApproval"
+              value="1"
+              checked={formData.poApproval === 1}
+              onChange={() => handleRadioChange("poApproval", "1")}
+              label="Yes"
+            />
+            <Radio
+              name="poApproval"
+              value="0"
+              checked={formData.poApproval === 0}
+              onChange={() => handleRadioChange("poApproval", "0")}
+              label="No"
+            />
+          </div>
+          <div className="flex items-center gap-5">
+            <label>GV Multiple Use</label>
+            <Radio
+              name="gvMultipleUse"
+              value="1"
+              checked={formData.gvMultipleUse === 1}
+              onChange={() => handleRadioChange("gvMultipleUse", "1")}
+              label="Yes"
+            />
+            <Radio
+              name="gvMultipleUse"
+              value="0"
+              checked={formData.gvMultipleUse === 0}
+              onChange={() => handleRadioChange("gvMultipleUse", "0")}
+              label="No"
+            />
+          </div>
+          <div className="flex items-center gap-5">
+            <label>Customer DC Billing</label>
+            <Radio
+              name="dcBilling"
+              value="1"
+              checked={formData.dcBilling === 1}
+              onChange={() => handleRadioChange("dcBilling", "1")}
+              label="Yes"
+            />
+            <Radio
+              name="dcBilling"
+              value="0"
+              checked={formData.dcBilling === 0}
+              onChange={() => handleRadioChange("dcBilling", "0")}
+              label="No"
+            />
+          </div>
+          <div className="flex items-center gap-5">
+            <label>Customer Credit Billing</label>
+            <Radio
+              name="creditBilling"
+              value="1"
+              checked={formData.creditBilling === 1}
+              onChange={() => handleRadioChange("creditBilling", "1")}
+              label="Yes"
+            />
+            <Radio
+              name="creditBilling"
+              value="0"
+              checked={formData.creditBilling === 0}
+              onChange={() => handleRadioChange("creditBilling", "0")}
+              label="No"
+            />
+          </div>
+          <div className="flex items-center gap-5">
+            <label>Customer Loyalty Enable</label>
+            <Radio
+              name="loyaltyEnable"
+              value="1"
+              checked={formData.loyaltyEnable === 1}
+              onChange={() => handleRadioChange("loyaltyEnable", "1")}
+              label="Yes"
+            />
+            <Radio
+              name="loyaltyEnable"
+              value="0"
+              checked={formData.loyaltyEnable === 0}
+              onChange={() => handleRadioChange("loyaltyEnable", "0")}
+              label="No"
+            />
+          </div>
+          <div className="flex items-center gap-5">
+            <label>Other Discount Approval</label>
+            <Radio
+              name="orderDiscountApproval"
+              value="1"
+              checked={formData.orderDiscountApproval === 1}
+              onChange={() => handleRadioChange("orderDiscountApproval", "1")}
+              label="Yes"
+            />
+            <Radio
+              name="orderDiscountApproval"
+              value="0"
+              checked={formData.orderDiscountApproval === 0}
+              onChange={() => handleRadioChange("orderDiscountApproval", "0")}
+              label="No"
+            />
+          </div>
+          <div className="flex items-center gap-5">
+            <label>Order Cancellation Approval</label>
+            <Radio
+              name="orderCancellationApproval"
+              value="1"
+              checked={formData.orderCancellationApproval === 1}
+              onChange={() =>
+                handleRadioChange("orderCancellationApproval", "1")
+              }
+              label="Yes"
+            />
+            <Radio
+              name="orderCancellationApproval"
+              value="0"
+              checked={formData.orderCancellationApproval === 0}
+              onChange={() =>
+                handleRadioChange("orderCancellationApproval", "0")
+              }
+              label="No"
+            />
+          </div>
+          <div className="flex items-center gap-5">
+            <label>Invoice Cancellation Approval</label>
+            <Radio
+              name="invoiceCancellationApproval"
+              value="1"
+              checked={formData.invoiceCancellationApproval === 1}
+              onChange={() =>
+                handleRadioChange("invoiceCancellationApproval", "1")
+              }
+              label="Yes"
+            />
+            <Radio
+              name="invoiceCancellationApproval"
+              value="0"
+              checked={formData.invoiceCancellationApproval === 0}
+              onChange={() =>
+                handleRadioChange("invoiceCancellationApproval", "0")
+              }
+              label="No"
+            />
+          </div>
           <div className="col-span-3">
+            <TextField
+              label="Discount %"
+              placeholder="Enter Discount %"
+              variant="outlined"
+              size="small"
+              fullWidth
+              value={formData.discountPercentage}
+              onChange={handleChange("discountPercentage")}
+            />
+          </div>
+          <div>
+            <LocalizationProvider
+              dateAdapter={AdapterDateFns}
+              adapterLocale={enGB}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <DatePicker
+                  label="Prefix Roll Off"
+                  value={fromDate}
+                  onChange={(newValue) => setFromDate(newValue)}
+                  inputFormat="dd/MM/yyyy"
+                  // maxDate={new Date()}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      inputProps={{
+                        ...params.inputProps,
+                        placeholder: "dd/MM/yyyy",
+                      }}
+                      size="small"
+                      fullWidth
+                      variant="outlined"
+                    />
+                  )}
+                />
+              </div>
+            </LocalizationProvider>
+          </div>
+          <div className="col-span-3">
+            <TextField
+              label="CL Min Expiry Period (in months)"
+              placeholder="Enter Period"
+              variant="outlined"
+              size="small"
+              fullWidth
+              value={formData.clMinExpPeriod}
+              onChange={handleChange("clMinExpPeriod")}
+            />
+          </div>
+          <div className="col-span-3">
+            <TextField
+              label="CL Expiry Grace Period (in days)"
+              placeholder="Enter days"
+              variant="outlined"
+              size="small"
+              fullWidth
+              value={formData.clExpiryGracePeriod}
+              onChange={handleChange("clExpiryGracePeriod")}
+            />
+          </div>
+          <div className="col-span-3">
+            <TextField
+              label="Email for Aprroval"
+              placeholder="Enter email"
+              variant="outlined"
+              size="small"
+              fullWidth
+              value={formData.emailApproval}
+              onChange={handleChange("emailApproval")}
+            />
+          </div>
+          <div className="flex">
             <Autocomplete
-              options={allLocations?.data || []}
-              getOptionLabel={(option) => option.LocationName || ""}
-              value={formData.accessoryLabel}
-              onChange={handleAutoChange("accessoryLabel")}
+              options={customerGroups?.data?.data || []}
+              getOptionLabel={(option) => option.GroupName || ""}
+              value={
+                customerGroups?.data?.data?.find(
+                  (pool) => pool.Id == formData.defaultCustomerPool
+                ) || null
+              }
+              onChange={(_, newValue) =>
+                setFormData({
+                  ...formData,
+                  defaultCustomerPool: newValue?.Id || null,
+                })
+              }
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  label="Label"
-                  placeholder="Select Label"
+                  label="Customer Group"
+                  placeholder="Select Customer Group"
                   size="small"
                   variant="outlined"
                 />
               )}
-              loading={isLocationsLoading}
               fullWidth
             />
           </div>
-          <div className="">
-            <TextField
-              label="Column 1"
-              placeholder="Enter Column 1"
-              variant="outlined"
-              size="small"
+          <div className="flex">
+            <Autocomplete
+              options={countries?.country || []}
+              getOptionLabel={(option) =>
+                `${option.CountryName}(${option.ISDCode})`
+              }
+              value={
+                countries?.country?.find(
+                  (pool) => pool.Id == formData.countryCodeForMobileApproval
+                ) || null
+              }
+              onChange={(_, newValue) =>
+                setFormData({
+                  ...formData,
+                  countryCodeForMobileApproval: newValue?.Id || null,
+                })
+              }
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Country"
+                  placeholder="Select Country"
+                  size="small"
+                  variant="outlined"
+                />
+              )}
               fullWidth
-              value={formData.accessoryColumn1}
-              onChange={handleChange("accessoryColumn1")}
             />
-          </div>
-          <div className="">
             <TextField
-              label="Column 2"
-              placeholder="Enter Column 2"
+              label="Mobile No For Approval"
+              placeholder="Enter Mobile No"
               variant="outlined"
               size="small"
               fullWidth
-              value={formData.accessoryColumn2}
-              onChange={handleChange("accessoryColumn2")}
-            />
-          </div>
-          <div className="">
-            <TextField
-              label="Column 3"
-              placeholder="Enter Column 3"
-              variant="outlined"
-              size="small"
-              fullWidth
-              value={formData.accessoryColumn3}
-              onChange={handleChange("accessoryColumn3")}
+              value={formData.mobileNoApproval}
+              onChange={handleChange("mobileNoApproval")}
             />
           </div>
         </Box>
@@ -1477,7 +2044,12 @@ const CompanySettings = () => {
           </div>
           {selectedLocation && (
             <div className="flex justify-end mt-5">
-              <Button color="primary" onClick={handleSubmit}>
+              <Button
+                color="primary"
+                onClick={handleSubmit}
+                isLoading={isUpdating}
+                disabled={isUpdating}
+              >
                 Update Settings
               </Button>
             </div>
@@ -1543,7 +2115,12 @@ const CompanySettings = () => {
       </Paper>
       {selectedLocation && (
         <div className="flex justify-end mt-5">
-          <Button color="primary" onClick={handleSubmit}>
+          <Button
+            color="primary"
+            onClick={handleSubmit}
+            isLoading={isUpdating}
+            disabled={isUpdating}
+          >
             Update Settings
           </Button>
         </div>

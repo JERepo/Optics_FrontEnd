@@ -305,6 +305,12 @@ export const menuItems = [
         icon: IoConstructOutline, // Suggests building/setup
       },
       {
+        name: "Sales Return Report",
+        path: "sales-return-report",
+        module: "Sales-Return-Report",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+      {
         name: "Purchase Return Report",
         path: "purchase-return-report",
         module: "Purchase-Return-Report",

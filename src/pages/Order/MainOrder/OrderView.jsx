@@ -342,13 +342,14 @@ const OrderView = () => {
       balanceAmount: 0,
       // bypassCreditCheck: false,
       creditBilling:
-        customerDataById?.data.data?.CustomerMaster?.CreditBilling === 0, // true or false
+        customerDataById?.data.data?.CustomerMaster?.CreditBilling === 1, // true or false
     };
 
     console.log(payload);
     try {
       const res = await generateInvoice({ payload }).unwrap();
       // if()
+      toast.success("Invoice Generated successfully!");
     } catch (error) {
       console.log(error);
 
@@ -592,14 +593,16 @@ const OrderView = () => {
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2 items-center">
-                    <HasPermission module="Order" action={["view"]}>
-                      <Button
-                        size="sm"
-                        icon={FiFileText}
-                        onClick={() => handleGenerateInvoice(order)}
-                        title="Generate Invoice"
-                      ></Button>
-                    </HasPermission>
+                    {order.Status !== 3 && (
+                      <HasPermission module="Order" action={["create"]}>
+                        <Button
+                          size="sm"
+                          icon={FiFileText}
+                          onClick={() => handleGenerateInvoice(order)}
+                          title="Generate Invoice"
+                        ></Button>
+                      </HasPermission>
+                    )}
                     {order.Status !== 4 && (
                       <HasPermission module="Order" action="deactivate">
                         <Button

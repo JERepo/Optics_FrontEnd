@@ -6,19 +6,15 @@ import { enGB } from "date-fns/locale";
 import React, { useState } from "react";
 import { format, subDays, subMonths, startOfDay, endOfDay } from "date-fns";
 import Button from "../../components/ui/Button";
-import { useLazyGetOrderReportQuery } from "../../api/reportApi";
+import { useLazyGetOrderReportQuery, useLazyGetSalesReportQuery, useLazyGetSalesReturnReportQuery } from "../../api/reportApi";
 import { useSelector } from "react-redux";
 import toast from "react-hot-toast";
 
 const reportTypes = [
-  { value: 0, label: "Detailed Order" },
-  { value: 1, label: "Detailed Draft Order" },
-  { value: 2, label: "Order Summary" },
-  { value: 3, label: "Draft Order Summary" },
-  { value: 4, label: "Order Pending Invoice" },
-  { value: 5, label: "Order Cancelled" },
-  { value: 6, label: "Job Order for GRN is Not done(Lens)" },
-  { value: 7, label: "Job Order for GRN is done but not Invoiced(Lens)" },
+  { value: 0, label: " Detailed Sales Return" },
+  { value: 1, label: "Tally Sales Return" },
+  { value: 2, label: "Sales Return by product Type" },
+ 
 ];
 
 const dateOptions = [
@@ -34,7 +30,7 @@ const dateOptions = [
 
 const formatDate = (date) => format(date, "yyyy-MM-dd");
 
-const OrderReport = () => {
+const SalesReturnReport = () => {
   const { user } = useSelector((state) => state.auth);
   const [reportType, setReportType] = useState(0);
   const [dateType, setDateType] = useState("today");
@@ -42,7 +38,7 @@ const OrderReport = () => {
   const [toDate, setToDate] = useState(new Date());
 
   const [getReport, { isFetching: isReportLoading }] =
-    useLazyGetOrderReportQuery();
+    useLazyGetSalesReturnReportQuery();
 
   const handleDateTypeChange = (_, newValue) => {
     if (!newValue) return;
@@ -113,10 +109,10 @@ const OrderReport = () => {
         fromDate: payload.fromDate,
         toDate: payload.toDate,
         userId: user.Id,
-        type: reportType,
+        type :reportType
       }).unwrap();
-      downloadFile(blob, "OrderReport.xlsx");
-      toast.success("Order Report Generated successfully!");
+      downloadFile(blob, "Sales Return Report.xlsx");
+      toast.success("Sales Return Report Generated successfully!");
       setFromDate(new Date())
       setToDate(new Date())
     } catch (error) {
@@ -126,7 +122,7 @@ const OrderReport = () => {
         error?.response?.data?.message ||
         error?.response?.data?.error ||
         error?.message ||
-        "Looks like there are no pending orders right now.";
+        "Looks like No sales return data found!";
 
       toast.error(errorMsg);
     }
@@ -138,7 +134,7 @@ const OrderReport = () => {
         <div className="bg-white rounded-xl shadow-sm overflow-hidden p-6">
           {/* Header */}
           <div className="mb-10">
-            <h2 className="text-2xl font-bold text-gray-900">Order Report</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Sales Return Report</h2>
           </div>
 
           <div className="grid grid-cols-4 gap-5 items-center">
@@ -242,4 +238,4 @@ const OrderReport = () => {
   );
 };
 
-export default OrderReport;
+export default SalesReturnReport;
