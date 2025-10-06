@@ -253,8 +253,8 @@ export function GRNDCViewPage() {
                             {item?.ProductDetails?.ProductType === 1 ?
                                 <TableCell>{item?.ProductDetails?.productName}<br />
                                     Size: {item?.ProductDetails?.Size?.Size}<br />
-                                    Barcode: {item?.ProductDetails?.barcode}<br />
                                     Category: {item?.category === 0 ? `Sunglass` : `OpticalFrame`} <br />
+                                    Barcode: {item?.ProductDetails?.barcode}<br />
                                     HSN: {item?.ProductDetails?.HSN}
                                 </TableCell>
                                 : item?.ProductDetails?.ProductType === 2 ?
