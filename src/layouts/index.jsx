@@ -104,6 +104,7 @@ import { GRNDCProvider } from "../features/GRNDcContext";
 import GRNDcMain from "../pages/GRN DC/GRNDcMain";
 import { GRNDCListPage } from "../pages/GRN DC/GRNListPage";
 import { GRNDCViewPage } from "../pages/GRN DC/GRNDCView";
+import SalesReturnReport from "../pages/Reports/SalesReturnReport";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -954,6 +955,10 @@ export const router = createBrowserRouter([
       {
         path: "sales-report",
         element: <SalesReport />,
+      },
+       {
+        path: "sales-return-report",
+        element: <SalesReturnReport />,
       },
       {
         path: "purchase-return-report",

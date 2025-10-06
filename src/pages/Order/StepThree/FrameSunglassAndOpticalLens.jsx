@@ -132,6 +132,7 @@ const FrameSunglassAndOpticalLens = () => {
     const newPayload = {
       products: items.map((item) => ({
         frameDetailId: item.Id,
+        PatientID: customerId.patientId,
         qty: item.Quantity,
         locationId: customerId.locationId,
         bypassWarnings: warnedIds.includes(item.Id),
@@ -380,20 +381,20 @@ const FrameSunglassAndOpticalLens = () => {
                       <TableCell>
                         {item.Category == 0 ? "Optical Frame" : "Sunglass"}
                       </TableCell>
-                       <TableCell className="w-[80px]">
-                                              <div className="grid grid-cols-2 gap-2 w-auto">
-                                                {[
-                                                  item.PO == 1 ? "PH" : null,
-                                                  item.Ph == 1 ? "PO" : null,
-                                                  item.Cl ? `CL: ${item.Cl}` : null,
-                                                  item.IsRxable === 1 ? "Rx" : null,
-                                                ]
-                                                  .filter(Boolean)
-                                                  .map((val, idx) => (
-                                                    <div key={idx}>{val}</div>
-                                                  ))}
-                                              </div>
-                                            </TableCell>
+                      <TableCell className="w-[80px]">
+                        <div className="grid grid-cols-2 gap-2 w-auto">
+                          {[
+                            item.PO == 1 ? "PH" : null,
+                            item.Ph == 1 ? "PO" : null,
+                            item.Cl ? `CL: ${item.Cl}` : null,
+                            item.IsRxable === 1 ? "Rx" : null,
+                          ]
+                            .filter(Boolean)
+                            .map((val, idx) => (
+                              <div key={idx}>{val}</div>
+                            ))}
+                        </div>
+                      </TableCell>
                       <TableCell>{item.MRP}</TableCell>
                       <TableCell>{item.SellingPrice}</TableCell>
                       <TableCell>{item.Quantity}</TableCell>
@@ -461,19 +462,19 @@ const FrameSunglassAndOpticalLens = () => {
                         {item.Category == 0 ? "Optical Frame" : "Sunglass"}
                       </TableCell>
                       <TableCell className="w-[80px]">
-                                             <div className="grid grid-cols-2 gap-2 w-auto">
-                                               {[
-                                                 item.PO == 1 ? "PH" : null,
-                                                 item.Ph == 1 ? "PO" : null,
-                                                 item.Cl ? `CL: ${item.Cl}` : null,
-                                                 item.IsRxable === 1 ? "Rx" : null,
-                                               ]
-                                                 .filter(Boolean)
-                                                 .map((val, idx) => (
-                                                   <div key={idx}>{val}</div>
-                                                 ))}
-                                             </div>
-                                           </TableCell>
+                        <div className="grid grid-cols-2 gap-2 w-auto">
+                          {[
+                            item.PO == 1 ? "PH" : null,
+                            item.Ph == 1 ? "PO" : null,
+                            item.Cl ? `CL: ${item.Cl}` : null,
+                            item.IsRxable === 1 ? "Rx" : null,
+                          ]
+                            .filter(Boolean)
+                            .map((val, idx) => (
+                              <div key={idx}>{val}</div>
+                            ))}
+                        </div>
+                      </TableCell>
                       <TableCell>{item.MRP}</TableCell>
                       <TableCell>{item.SellingPrice}</TableCell>
                     </TableRow>

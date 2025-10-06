@@ -101,16 +101,16 @@ const CLMaster = () => {
     if (id && clData?.data && !isCLLoading) {
       const data = clData?.data;
       setLensData({
-        powerType: data.PowerType || null,
+        powerType: data.Type || null,
         brandId: data.BrandID || null,
         modality: data.Modality || null,
         productCode: data.ProductCode || "",
         productName: data.ProductName || "",
         baseCurve: data.BaseCurve ? data.BaseCurve.toString() : "",
         diameter: data.Diameter ? data.Diameter.toString() : "",
-        inventory: data.StockType ? 1 : 0,
+        // inventory: data.StockType ? 1 : 0,
         material: data.MaterialID || null,
-        productType: data.Type || null,
+        productType: data.StockType ?? null,
         hsnCode: data.HSN || "",
         taxPercentage: data.TaxID || null,
         mrp: data.prices ? data.prices.MRP.toString() : "",
@@ -140,9 +140,13 @@ const CLMaster = () => {
           .filter((key) => key.startsWith("BuyingPrice"))
           .map((key) => {
             const index = parseInt(key.replace("BuyingPrice", ""), 10); // 1,2,3...
+            const location = allLocations?.data?.find(
+              (loc) => loc.Id === index
+            );
+
             return {
               id: index, // locationId
-              location: `Location ${index}`, // you can replace with real name from allLocations
+              location: location ? location.LocationName : `Location ${index}`, // fallback if not found
               buyingPrice: data.prices[`BuyingPrice${index}`] || "",
               sellingPrice: data.prices[`SellingPrice${index}`] || "",
             };
@@ -202,6 +206,7 @@ const CLMaster = () => {
 
   // Input change handler for lensData
   const handleInputChange = (field, value) => {
+    console.log(field,value)
     setLensData((prev) => ({
       ...prev,
       [field]: value,
@@ -220,7 +225,7 @@ const CLMaster = () => {
       setLensData((prev) => ({ ...prev, selectedFile: null }));
     }
   };
-
+  console.log(lensData);
   const handleCLChange = (e) => {
     const { name, value } = e.target;
     setClDetails((prev) => ({
@@ -331,10 +336,10 @@ const CLMaster = () => {
     }
 
     // Power Type
-    if (!lensData.powerType) {
-      newErrors.powerType = "Power type is required";
-    } else if (![1, 2, 3].includes(lensData.powerType)) {
-      newErrors.powerType = "Invalid power type";
+    if (lensData.productType === null || lensData.productType === undefined) {
+      newErrors.productType = "Stock type is required";
+    } else if (![0, 1].includes(Number(lensData.productType))) {
+      newErrors.productType = "Invalid stock type";
     }
 
     // Stock Type (ProductType in UI)
@@ -547,19 +552,19 @@ const CLMaster = () => {
 
       toast.success(`Contact lens ${id ? "updated" : "saved"} successfully!`);
       handleRefresh();
-      navigate("/contact-lens-master")
+      navigate("/contact-lens-master");
     } catch (error) {
       toast.error(error?.data?.message || "Failed to save Contact Lens Master");
     }
   };
 
-    if (isCLLoading) {
-      return (
-        <div className="flex justify-center items-center h-screen">
-          <Loader color="black" width="w-10" height="h-10" />
-        </div>
-      );
-    }
+  if (isCLLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader color="black" width="w-10" height="h-10" />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -570,7 +575,10 @@ const CLMaster = () => {
               Contact Lens Master
             </div>
             <div className="flex items-center gap-3">
-              <Button variant="outline" onClick={() => navigate("/contact-lens-master")}>
+              <Button
+                variant="outline"
+                onClick={() => navigate("/contact-lens-master")}
+              >
                 Back
               </Button>
             </div>
@@ -595,6 +603,7 @@ const CLMaster = () => {
                       {...params}
                       placeholder="Select Power Type"
                       size="small"
+                      label="Power Type"
                       error={!!errors.powerType}
                       helperText={errors.powerType}
                     />
@@ -619,6 +628,7 @@ const CLMaster = () => {
                       {...params}
                       placeholder="Select brand"
                       size="small"
+                      label="Brand"
                       error={!!errors.brandId}
                       helperText={errors.brandId}
                     />
@@ -640,6 +650,7 @@ const CLMaster = () => {
                     <TextField
                       {...params}
                       placeholder="Search or select modality"
+                      label="Modality"
                       size="small"
                       error={!!errors.modality}
                       helperText={errors.modality}
@@ -650,7 +661,7 @@ const CLMaster = () => {
               </div>
 
               {/* Product details */}
-              <div className="grid grid-cols-4 gap-5">
+              <div className="grid grid-cols-2 gap-5">
                 <Input
                   label="Product Code"
                   value={lensData.productCode}
@@ -669,6 +680,10 @@ const CLMaster = () => {
                   placeholder="Enter Product Name"
                   error={errors.productName}
                 />
+              </div>
+
+              {/* Inventory + material + product type */}
+              <div className="grid grid-cols-4 items-center gap-5">
                 <Input
                   label="Base Curve"
                   value={lensData.baseCurve}
@@ -687,27 +702,6 @@ const CLMaster = () => {
                   placeholder="Enter Diameter"
                   error={errors.diameter}
                 />
-              </div>
-
-              {/* Inventory + material + product type */}
-              <div className="flex gap-5">
-                <div className="flex items-center gap-5 flex-1/2">
-                  <label>Allow Negative Inventory </label>
-                  <Radio
-                    name="Inv"
-                    value="1"
-                    checked={lensData.inventory === 1}
-                    onChange={() => handleInputChange("inventory", 1)}
-                    label="Yes"
-                  />
-                  <Radio
-                    name="Inv"
-                    value="0"
-                    checked={lensData.inventory === 0}
-                    onChange={() => handleInputChange("inventory", 0)}
-                    label="No"
-                  />
-                </div>
                 <Autocomplete
                   className="flex-1/2"
                   options={materialsData?.data || []}
@@ -724,6 +718,7 @@ const CLMaster = () => {
                     <TextField
                       {...params}
                       placeholder="Search or select Material"
+                      label="Material"
                       size="small"
                       error={!!errors.material}
                       helperText={errors.material}
@@ -741,13 +736,14 @@ const CLMaster = () => {
                     ) || null
                   }
                   onChange={(_, newValue) =>
-                    handleInputChange("productType", newValue?.value || null)
+                    handleInputChange("productType", newValue?.value)
                   }
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      placeholder="Search or select product Type"
+                      placeholder="select product Type"
                       size="small"
+                      label="Product Type"
                       error={!!errors.productType}
                       helperText={errors.productType}
                     />
@@ -777,7 +773,8 @@ const CLMaster = () => {
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      placeholder="Search or select tax percentage"
+                      placeholder="Select tax percentage"
+                      label="Tax Percentage"
                       size="small"
                       error={!!errors.taxPercentage}
                       helperText={errors.taxPercentage}
@@ -1240,7 +1237,7 @@ const CLMaster = () => {
                 isLoading={isCLMasterCreating || isMasterUpdating}
                 disabled={isCLMasterCreating || isMasterUpdating}
               >
-                {id ? "Update" : "Submit"}
+                {id ? "Update CL Master" : "Create CL Master"}
               </Button>
             </div>
           </div>
