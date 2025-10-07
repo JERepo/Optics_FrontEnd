@@ -226,6 +226,18 @@ export default function GRNStep1() {
                     const grnDataResponse = await getGRNDetails(body);
                     console.log("grnDataResponse --------------- ", grnDataResponse.data.data);
 
+                    setGRNData(prev => ({
+                        ...prev,
+                        step1: {
+                            ...prev.step1,
+                            vendorDetails: formState.vendorDetails,
+                            documentNo: formState.documentNo,
+                            documentDate: formState.documentDate,
+                            billingMethod: formState.billingMethod,
+                            againstPO: formState?.againstPO
+                        }
+                    }));
+
                     if (grnDataResponse?.data?.data && grnDataResponse?.data?.data.length > 0) {
                         setCurrentStep(5);
                         return;
@@ -509,16 +521,16 @@ export default function GRNStep1() {
                                                 value={formState?.documentDate}
                                                 onChange={handleDateChange}
                                                 name="documentDate"
-                                                maxDate={new Date()} 
-                                                format="dd/MM/yyyy" 
-                                                // renderInput={(params) => (
-                                                //     <TextField
-                                                //         {...params}
-                                                //         size="small"
-                                                //         fullWidth
-                                                //         variant="outlined"
-                                                //     />
-                                                // )}
+                                                maxDate={new Date()}
+                                                format="dd/MM/yyyy"
+                                            // renderInput={(params) => (
+                                            //     <TextField
+                                            //         {...params}
+                                            //         size="small"
+                                            //         fullWidth
+                                            //         variant="outlined"
+                                            //     />
+                                            // )}
                                             />
                                         </LocalizationProvider>
                                     </div>

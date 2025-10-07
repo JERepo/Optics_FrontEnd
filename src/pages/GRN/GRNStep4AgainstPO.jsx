@@ -1029,8 +1029,8 @@ export default function GRNStep4AgainstPO() {
                     const payload = {
                         PODetailsId: item.PODetailsId,
                         GRNQty: alreadyScannedQty + Math.min(remainingQty, actualPendingQty),
-                        grnMainId: grnData?.step1?.GrnMainId,
-                        batchCode: selectedBatch?.CLBatchCode
+                        grnMainId: grnData?.step1?.GrnMainId
+                        // batchCode: selectedBatch?.CLBatchCode
                     };
 
                     const validationResult = await triggerGRNQtyValidationCheck(payload).unwrap();
@@ -1254,6 +1254,14 @@ export default function GRNStep4AgainstPO() {
             // }
 
             const result = await typeFunction(requestData).unwrap();
+
+            if (!result.data) {
+                toast.error(`${result.message}`);
+                setFormState(prev => ({
+                    ...prev,
+                    barcode: ""
+                }));
+            }
 
             if (result.data) {
                 // Handle both array and single object responses

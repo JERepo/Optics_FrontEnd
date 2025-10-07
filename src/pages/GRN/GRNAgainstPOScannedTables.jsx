@@ -62,7 +62,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                                     </div>
                                 </TableCell>
                                 <TableCell className="">₹ {item.MRP}</TableCell>
-                                {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                                {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
 
                                     <TableCell>₹{" "}
                                         <input
@@ -104,7 +104,6 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                             </TableRow>
                         )}
                     />
-
                     {/* Quantity Edit Modal */}
                     {isModalOpen && editingIndex !== null && (
                         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -176,7 +175,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                             {/* <TableCell>{item.Variation}</TableCell> */}
                             <TableCell>{item.SKU}</TableCell>
                             <TableCell>₹ {item.MRP}</TableCell>
-                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
 
                                 <TableCell>₹{" "}
                                     <input
@@ -189,7 +188,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                             }
                             <TableCell className=" ">{item.POQty}</TableCell>
                             {/* <TableCell>{item.POQty - (item.quantity || 1) - item.CancelledQty}</TableCell> */}
-                            <TableCell>{item.POQty - (item.quantity ?? 0) - item.CancelledQty - (item.ReceivedQty ?? 0)}</TableCell>
+                            <TableCell>{item.POQty - (item.quantity ?? 0) - item.CancelledQty - (item.ReceivedQty ?? 0) - (item.TotalGRNQty ?? 0)}</TableCell>
 
                             <TableCell>
                                 <input
@@ -243,7 +242,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                             </TableCell>
                             {/* <TableCell>{item.Expiry || 0}</TableCell> */}
                             <TableCell>₹{item.MRP || item.MRPMaster || 0}</TableCell>
-                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
 
                                 <TableCell>₹{" "}
                                     <input
@@ -257,7 +256,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                             {/* <TableCell>{item.OrderQty || 0}</TableCell> */}
                             <TableCell>{item.POQty || 0}</TableCell>
                             {/* <TableCell>{item.POQty - (item.quantity || 1) - item.CancelledQty}</TableCell> */}
-                            <TableCell>{item.POQty - (item.quantity ?? 0) - item.CancelledQty - (item.ReceivedQty ?? 0)}</TableCell>
+                            <TableCell>{item.POQty - (item.quantity ?? 0) - item.CancelledQty - (item.ReceivedQty ?? 0)  - (item.TotalGRNQty ?? 0)}</TableCell>
 
                             <TableCell>
                                 <input

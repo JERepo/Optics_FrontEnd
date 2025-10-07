@@ -30,7 +30,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                             <TableCell className="text-center">{item.Ph ? "Yes" : "No"}</TableCell>
                             <TableCell className="text-center">{item.Cl}</TableCell>
                             <TableCell>₹ {item.MRP}</TableCell>
-                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
                                 <TableCell>₹ {item.BuyingPrice}</TableCell>
                             }
                             <TableCell>
@@ -72,7 +72,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                             </TableCell>
                             {/* <TableCell className="text-center grid grid-cols-2">{item.IsRxable ? "Rx" : ""}<br />{item.Ph ? "PH" : ""}<br />{item.PO ? "PO" : ""}<br />{`CL - ${item.Cl || ""}`}</TableCell> */}
                             <TableCell className="">₹ {item.MRP}</TableCell>
-                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
                                 <TableCell>₹{item.price || 0}</TableCell>
                             }
                             <TableCell className=" ">{item.POQty}</TableCell>
@@ -118,7 +118,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                             </TableCell>
                             {/* <TableCell className="text-center flex">{item.IsRxable ? "Rx" : ""}<br />{item.Ph ? "PH" : ""}<br />{item.PO ? "PO" : ""}<br />{`CL - ${item.Cl || ""}`}</TableCell> */}
                             <TableCell className="">₹ {item.MRP}</TableCell>
-                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
                                 <TableCell>₹{item.price || 0}</TableCell>
                             }
                             <TableCell className=" ">{item.POQty}</TableCell>
@@ -163,7 +163,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                             </TableCell>
                             {/* <TableCell className="text-center flex">{item.IsRxable ? "Rx" : ""}<br />{item.Ph ? "PH" : ""}<br />{item.PO ? "PO" : ""}<br />{`CL - ${item.Cl || ""}`}</TableCell> */}
                             <TableCell className="">₹ {item.MRP}</TableCell>
-                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
 
                                 <TableCell>₹{item.price || 0}</TableCell>
                             }
@@ -195,7 +195,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                 {/* <TableCell>{item.Variation}</TableCell> */}
                                 <TableCell>{item.SKU}</TableCell>
                                 <TableCell>₹{item.MRP}</TableCell>
-                                {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                                {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
 
                                     <TableCell>₹{item.BuyingPrice}</TableCell>
                                 }
@@ -223,7 +223,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     <TableCell>{item.Variation}</TableCell>
                                     <TableCell>{item.SKU}</TableCell>
                                     <TableCell>₹{item.MRP}</TableCell>
-                                    {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                                    {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
 
                                         <TableCell>₹{item.BuyingPrice}</TableCell>
                                     }
@@ -258,7 +258,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                 <TableCell>{item.Variation}</TableCell>
                                 <TableCell>{item.SKU}</TableCell>
                                 <TableCell>₹{item.MRP}</TableCell>
-                                {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                                {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
 
                                     <TableCell>₹{item.BuyingPrice}</TableCell>
                                 }
@@ -293,7 +293,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     </TableCell> */}
                                     <TableCell>{item.SKU}</TableCell>
                                     <TableCell className="">₹ {item.MRP}</TableCell>
-                                    {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                                    {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
 
                                         <TableCell>₹{item.price || 0}</TableCell>
                                     }
@@ -344,7 +344,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                 <TableCell>{item.Variation}</TableCell>
                                 <TableCell>{item.SKU}</TableCell>
                                 <TableCell>₹{item.MRP}</TableCell>
-                                {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                                {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
 
                                     <TableCell>₹{item.BuyingPrice}</TableCell>
                                 }
@@ -384,7 +384,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     {item.HSN && <br />}{`HSN: ${item.HSN}`}
                                 </TableCell>
                                 <TableCell>₹{item.MRP}</TableCell>
-                                {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                                {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
 
                                     <TableCell>₹{item.BuyingPrice}</TableCell>
                                 }
@@ -416,7 +416,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     <TableCell>{item.Axis}</TableCell>
                                     <TableCell>{item.Additional}</TableCell>
                                     <TableCell>₹{item.MRPMaster}</TableCell>
-                                    {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                                    {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
 
                                         <TableCell>₹{item.BuyingPriceMaster}</TableCell>
                                     }
@@ -453,7 +453,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     <TableCell>{item.Variation}</TableCell>
                                     <TableCell>{item.SKU}</TableCell>
                                     <TableCell>₹{item.MRP}</TableCell>
-                                    {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                                    {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
 
                                         <TableCell>₹{item.BuyingPrice}</TableCell>
                                     }
@@ -491,7 +491,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     {item.HSN && <br />}{`HSN: ${item.HSN}`}
                                 </TableCell>
                                 <TableCell>₹{item.MRP}</TableCell>
-                                {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                                {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
 
                                     <TableCell>₹{item.BuyingPrice}</TableCell>
                                 }
@@ -513,7 +513,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     <TableCell>{item.Axis}</TableCell>
                                     <TableCell>{item.Additional}</TableCell>
                                     <TableCell>₹{item.MRPMaster}</TableCell>
-                                    {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                                    {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
 
                                         <TableCell>₹{item.BuyingPriceMaster}</TableCell>
                                     }
@@ -550,7 +550,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     <TableCell>{item.Variation}</TableCell>
                                     <TableCell>{item.SKU}</TableCell>
                                     <TableCell>₹{item.MRP}</TableCell>
-                                    {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                                    {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
 
                                         <TableCell>₹{item.BuyingPrice}</TableCell>
                                     }
@@ -582,7 +582,7 @@ export function GRNCLSearchTable({ clSearchItems }) {
                         <TableCell className="text-center">{item.Ph ? "Yes" : "No"}</TableCell>
                         <TableCell className="text-center">{item.Cl}</TableCell>
                         <TableCell>₹{item.MRP}</TableCell>
-                        {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                        {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
 
                             <TableCell>₹{item.BuyingPrice}</TableCell>
                         }

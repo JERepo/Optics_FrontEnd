@@ -259,7 +259,7 @@ export default function GRNStep4() {
 
 
                 {/* Vendor Details */}
-                <div className="flex justify-start gap-12 mb-6">
+                {/* <div className="flex gap-12 mb-6">
                     {grnData?.step1?.vendorDetails && (
                         <div key={grnData?.step1?.vendorDetails.Id} className="mb-4">
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -283,11 +283,13 @@ export default function GRNStep4() {
                             </div>
                         </div>
                     )}
-                </div>
+                </div> */}
 
 
                 <div className="mt-6">
                     <h3 className="text-lg font-semibold mb-4">GRN Items</h3>
+                    {console.log("grnViewDetails", grnViewDetails)}
+
                     {grnData?.step1?.againstPO === "0" ? (
                         <Table
                             columns={["Sl No.", "Order No.", "Supplier Order No.", "Type", "Product Details", "GST", "QTY", "Buying Price", "Total Amount", "Action"]}
@@ -386,9 +388,9 @@ export default function GRNStep4() {
                                                     : null
                                     }
                                     <TableCell>₹{" "} {parseFloat(parseInt(item?.GRNPrice) * ((parseInt(item?.TaxPercent) / 100) || 0)).toFixed(2)}{`(` + item?.TaxPercent + `%)`}</TableCell>
-                                    <TableCell>{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnViewDetails?.GRNType === 1) ? "" : (item.GRNQty || 0)}</TableCell>
-                                    <TableCell>{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnViewDetails?.GRNType === 1) ? "" : (item.GRNPrice || 0)}</TableCell>
-                                    <TableCell>₹{" "}{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnViewDetails?.GRNType === 1) ? "" : (parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty) + parseFloat(item?.FittingPrice || 0) + ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0)).toFixed(2)}</TableCell>
+                                    <TableCell>{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && item?.GRNType === 1) ? "" : (item.GRNQty || 0)}</TableCell>
+                                    <TableCell>{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && item?.GRNType === 1) ? "" : (item.GRNPrice || 0)}</TableCell>
+                                    <TableCell>₹{" "}{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && item?.GRNType === 1) ? "" : (parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty) + parseFloat(item?.FittingPrice || 0) + ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0)).toFixed(2)}</TableCell>
 
                                     <TableCell className="px-6 py-4 whitespace-nowrap">
                                         <button
@@ -406,7 +408,6 @@ export default function GRNStep4() {
                             )}
                         />
                     ) : (
-
                         <Table
                             columns={[
                                 "PO No. (Order No.)",
@@ -424,7 +425,7 @@ export default function GRNStep4() {
                             renderRow={(item, index) => (
                                 <TableRow key={index}>
                                     <TableCell>
-                                        {item.PONo}{" "} <br/>
+                                        {item.PONo}{" "} <br />
                                         {(item.OrderNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}
                                     </TableCell>
                                     <TableCell>
@@ -521,10 +522,10 @@ export default function GRNStep4() {
                                     <TableCell>{item.POQty}</TableCell>
                                     <TableCell>{item.PendingQty}</TableCell>
                                     <TableCell>{item.GRNQty}</TableCell>
-                                    <TableCell>{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnViewDetails?.GRNType === 1) ? "" : (item.GRNPrice || 0)}</TableCell>
+                                    <TableCell>{(grnData?.step1?.vendorDetails?.DCGRNPrice && item?.GRNType) ? "" : (item.GRNPrice || 0)}</TableCell>
                                     <TableCell>
                                         ₹{" "}
-                                        {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnViewDetails?.GRNType === 1) && grnData?.step1?.billingMethod === "dc"
+                                        {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && item?.GRNType === 1)
                                             ? ""
                                             : (
                                                 parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) +
@@ -562,7 +563,7 @@ export default function GRNStep4() {
                     </div>
 
                     {/* Conditional rendering for other totals */}
-                    {!(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnViewDetails?.GRNType === 1) && (
+                    {!(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnViewDetails[0]?.GRNType === 1) && (
                         <>
                             {/* Total Gross Value */}
                             <div className="flex justify-between gap-4">
