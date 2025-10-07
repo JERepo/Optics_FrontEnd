@@ -105,6 +105,9 @@ import GRNDcMain from "../pages/GRN DC/GRNDcMain";
 import { GRNDCListPage } from "../pages/GRN DC/GRNListPage";
 import { GRNDCViewPage } from "../pages/GRN DC/GRNDCView";
 import SalesReturnReport from "../pages/Reports/SalesReturnReport";
+import AuditReport from "../pages/Reports/AuditReport";
+import ProfitReport from "../pages/Reports/ProfileReport";
+import LoyaltySummary from "../pages/Reports/LoyaltySummary";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -956,7 +959,7 @@ export const router = createBrowserRouter([
         path: "sales-report",
         element: <SalesReport />,
       },
-       {
+      {
         path: "sales-return-report",
         element: <SalesReturnReport />,
       },
@@ -969,20 +972,32 @@ export const router = createBrowserRouter([
         element: <PurchaseReport />,
       },
       {
-        path :"contact-lens-master",
-        element : <CLMain />
+        path: "audit-report",
+        element: <AuditReport />,
       },
       {
-        path : "contact-lens-master/create",
-        element : <CLMaster />
+        path: "profit-report",
+        element: <ProfitReport />,
       },
       {
-        path : "contact-lens-master/:id",
-        element : <CLMaster />
+        path: "contact-lens-master",
+        element: <CLMain />,
       },
       {
-        path : "company-settings",
-        element : <CompanySettings />
+        path: "contact-lens-master/create",
+        element: <CLMaster />,
+      },
+      {
+        path: "contact-lens-master/:id",
+        element: <CLMaster />,
+      },
+      {
+        path: "company-settings",
+        element: <CompanySettings />,
+      },
+      {
+        path : "loyalty-summary",
+        element : <LoyaltySummary />
       }
     ],
   },

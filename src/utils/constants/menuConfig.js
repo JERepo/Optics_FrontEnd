@@ -322,6 +322,18 @@ export const menuItems = [
         module: "Purchase-Report",
         icon: IoConstructOutline, // Suggests building/setup
       },
+       {
+        name: "Audit Report",
+        path: "audit-report",
+        module: "Audit",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+       {
+        name: "Profit Report",
+        path: "profit-report",
+        module: "Profit",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
     ],
   },
 

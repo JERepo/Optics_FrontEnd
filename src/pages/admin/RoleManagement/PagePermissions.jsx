@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react"; // Added useMemo
 import {
   FiSearch,
   FiUser,
@@ -31,6 +31,7 @@ const PagePermissions = () => {
   const isNew = !id;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
+  const [searchTerm, setSearchTerm] = useState(""); 
 
   const { isLoading, data } = useGetPageByIdQuery(id, { skip: isNew });
   const { data: pageNames, isLoading: pageNamesLoading } =
@@ -45,6 +46,13 @@ const PagePermissions = () => {
     name: "",
     permissions: {},
   });
+
+  const filteredPageNames = useMemo(() => {
+    if (!pageNames?.data) return [];
+    return pageNames.data.filter((page) =>
+      page.PageName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [pageNames?.data, searchTerm]);
 
   useEffect(() => {
     if (!isNew && data?.data && pageNames?.data) {
@@ -184,8 +192,10 @@ const PagePermissions = () => {
             <FiSearch className="text-neutral-500 text-lg" />
             <input
               type="text"
-              placeholder="Search..."
+              placeholder="Search pages..."
               className="w-full text-sm text-neutral-700 placeholder-neutral-400 bg-transparent outline-none"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)} // New: Handle search
             />
           </div>
         )}
@@ -212,7 +222,7 @@ const PagePermissions = () => {
           Page Permissions
         </h3>
         <PermissionTable
-          data={pageNames?.data.map((page) => ({
+          data={filteredPageNames.map((page) => ({ // New: Pass filtered data
             Id: page.Id,
             Name: page.PageName,
             PageId: page.Id,
@@ -222,6 +232,7 @@ const PagePermissions = () => {
           onPermissionToggle={handlePermissionChange}
           isNew={isNew}
           isEnabled={isEnabled}
+          searchTerm={searchTerm} // New: Pass searchTerm for empty state
         />
       </div>
 
@@ -253,8 +264,8 @@ const PagePermissions = () => {
                   ? "Creating..."
                   : "Create Role"
                 : isUpdatingRole
-                ? "Updating..."
-                : "Update Role"}
+                  ? "Updating..."
+                  : "Update Role"}
             </Button>
           </HasPermission>
         )}
@@ -290,6 +301,7 @@ const PermissionTable = ({
   onPermissionToggle,
   isNew,
   isEnabled,
+  searchTerm, // New: Prop for searchTerm
 }) => {
   const headers = [
     { key: "create", label: "Create", icon: <FiPlus /> },
@@ -298,9 +310,13 @@ const PermissionTable = ({
     { key: "deactivate", label: "Deactivate", icon: <FiShield /> },
   ];
   const access = useSelector((state) => state.auth?.access);
+  
+  // New: Updated empty state based on search
   if (!data || data.length === 0) {
     return (
-      <div className="text-center py-4 text-gray-500">No pages available</div>
+      <div className="text-center py-4 text-gray-500">
+        {searchTerm ? `No pages found for "${searchTerm}"` : "No pages available"}
+      </div>
     );
   }
 

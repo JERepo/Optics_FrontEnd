@@ -127,13 +127,15 @@ const BankMaster = () => {
                   <FiEye
                     onClick={() => navigate(`view/${pool.id}`)}
                     className="text-xl cursor-pointer"
+                    title="View"
                   />
                 </HasPermission>
                 <HasPermission module="Brand group" action="edit">
-                  <button
+                 <button
                     onClick={() => handleEdit(pool.id)}
                     className="text-neutral-600 hover:text-primary transition-colors"
                     aria-label="Edit"
+                    title="Edit"
                   >
                     <FiEdit2 size={18} />
                   </button>
