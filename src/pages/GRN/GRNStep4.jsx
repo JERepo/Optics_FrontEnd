@@ -309,8 +309,8 @@ export default function GRNStep4() {
                                     {item?.ProductDetails?.ProductType === 1 ?
                                         <TableCell>{item?.ProductDetails?.productName}<br />
                                             Size: {item?.ProductDetails?.Size?.Size}<br />
-                                            Barcode: {item?.ProductDetails?.barcode}<br />
                                             Category: {item?.category === 0 ? `Sunglass` : `OpticalFrame`} <br />
+                                            Barcode: {item?.ProductDetails?.barcode}<br />
                                             HSN: {item?.ProductDetails?.HSN}
                                         </TableCell>
                                         : item?.ProductDetails?.ProductType === 2 ?
@@ -389,8 +389,8 @@ export default function GRNStep4() {
                                     }
                                     <TableCell>₹{" "} {parseFloat(parseInt(item?.GRNPrice) * ((parseInt(item?.TaxPercent) / 100) || 0)).toFixed(2)}{`(` + item?.TaxPercent + `%)`}</TableCell>
                                     <TableCell>{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && item?.GRNType === 1) ? "" : (item.GRNQty || 0)}</TableCell>
-                                    <TableCell>{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && item?.GRNType === 1) ? "" : (item.GRNPrice || 0)}</TableCell>
-                                    <TableCell>₹{" "}{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && item?.GRNType === 1) ? "" : (parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty) + parseFloat(item?.FittingPrice || 0) + ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0)).toFixed(2)}</TableCell>
+                                    <TableCell>{((grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc")) ? "" : (item.GRNPrice || 0)}</TableCell>
+                                    <TableCell>₹{" "}{((grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc")) ? "" : (parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty) + parseFloat(item?.FittingPrice || 0) + ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0)).toFixed(2)}</TableCell>
 
                                     <TableCell className="px-6 py-4 whitespace-nowrap">
                                         <button
@@ -443,9 +443,9 @@ export default function GRNStep4() {
                                             <br />
                                             Size: {item?.ProductDetails?.Size?.Size}
                                             <br />
-                                            Barcode: {item?.ProductDetails?.barcode}
-                                            <br />
                                             Category: {item?.category === 0 ? `Sunglass` : `OpticalFrame`}
+                                            <br />
+                                            Barcode: {item?.ProductDetails?.barcode}
                                             <br />
                                             HSN: {item?.ProductDetails?.HSN}
                                         </TableCell>
@@ -568,9 +568,10 @@ export default function GRNStep4() {
                             {/* Total Gross Value */}
                             <div className="flex justify-between gap-4">
                                 <span className="text-gray-600 font-bold text-lg">Total Gross Value :</span>
-                                <span className="font-bold text-lg">
-                                    ₹{
-                                        grnViewDetails
+                                <span className="font-bold text-lg">{
+                                    (grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? '' :
+
+                                        `₹ ${grnViewDetails
                                             .reduce((total, order) => {
                                                 const quantity = order.GRNQty;
                                                 const price = parseFloat(order.GRNPrice) || 0;
@@ -581,46 +582,53 @@ export default function GRNStep4() {
                                                 return total;
                                             }, 0)
                                             ?.toFixed?.(2) ?? '0.00'
-                                    }
+                                        }`
+                                }
                                 </span>
                             </div>
 
                             {/* Total GST */}
                             <div className="flex justify-between gap-4">
                                 <span className="text-gray-600 font-bold text-lg">Total GST :</span>
-                                <span className="font-bold text-lg">
-                                    ₹{grnViewDetails
-                                        .reduce((total, order) => {
-                                            const quantity = order.GRNQty;
-                                            const price = parseFloat(order.GRNPrice + order.FittingPrice) || 0;
-                                            const taxPercentage = parseFloat((order?.TaxPercent || order?.ProductDetails?.GSTPercentage) / 100) || 0;
-                                            if (price && !isNaN(price) && !isNaN(quantity)) {
-                                                return total + (price * quantity * taxPercentage) + Number(order?.FittingGSTPercentage || 0);
-                                            }
-                                            return total;
-                                        }, 0)
-                                        ?.toFixed?.(2) ?? '0.00'}
+                                <span className="font-bold text-lg">{
+
+                                    (grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? '' :
+                                        `₹ ${grnViewDetails
+                                            .reduce((total, order) => {
+                                                const quantity = order.GRNQty;
+                                                const price = parseFloat(order.GRNPrice + order.FittingPrice) || 0;
+                                                const taxPercentage = parseFloat((order?.TaxPercent || order?.ProductDetails?.GSTPercentage) / 100) || 0;
+                                                if (price && !isNaN(price) && !isNaN(quantity)) {
+                                                    return total + (price * quantity * taxPercentage) + Number(order?.FittingGSTPercentage || 0);
+                                                }
+                                                return total;
+                                            }, 0)
+                                            ?.toFixed?.(2) ?? '0.00'}`
+                                }
                                 </span>
                             </div>
 
                             {/* Total Net Value */}
                             <div className="flex justify-between gap-4">
                                 <span className="text-gray-600 font-bold text-lg">Total Net Value :</span>
-                                <span className="font-bold text-lg">
-                                    ₹{grnViewDetails
-                                        .reduce((total, item) => {
-                                            const quantity = item.GRNQty || 0;
-                                            const price = (item.GRNPrice) || 0;
-                                            const gstPercentage = parseInt(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) || 0;
+                                <span className="font-bold text-lg">{
 
-                                            if (price && !isNaN(price) && !isNaN(quantity)) {
-                                                const subtotal = price * quantity;
-                                                const gstAmount = subtotal * (gstPercentage / 100);
-                                                return total + subtotal + gstAmount + Number(item?.FittingPrice) + ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0);
-                                            }
-                                            return total;
-                                        }, 0)
-                                        ?.toFixed?.(2) ?? '0.00'}
+                                    (grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? '' :
+                                        `₹ ${grnViewDetails
+                                            .reduce((total, item) => {
+                                                const quantity = item.GRNQty || 0;
+                                                const price = (item.GRNPrice) || 0;
+                                                const gstPercentage = parseInt(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) || 0;
+
+                                                if (price && !isNaN(price) && !isNaN(quantity)) {
+                                                    const subtotal = price * quantity;
+                                                    const gstAmount = subtotal * (gstPercentage / 100);
+                                                    return total + subtotal + gstAmount + Number(item?.FittingPrice) + ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0);
+                                                }
+                                                return total;
+                                            }, 0)
+                                            ?.toFixed?.(2) ?? '0.00'}`
+                                }
                                 </span>
                             </div>
                         </>

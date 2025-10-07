@@ -404,7 +404,14 @@ export default function GRNStep3() {
         });
 
         toast.success(`Added ${selectedRows.length} item(s) to GRN`);
+        setSearchResults([]);
+        setBrandId(null);
+        setBrandInput("");
+        setModelNo("");
         setSelectedRows([]);
+        setProductInput("");
+        setProductId(null);
+        setProductName("");
     };
 
     const handleSearchByBarcode = async (type) => {
@@ -1497,7 +1504,7 @@ export default function GRNStep3() {
                                             id="rate"
                                             name="rate"
                                             type="number"
-                                            value={formState.rate ?? ''}
+                                            value={((grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` : (formState.rate ?? ''))}
                                             onChange={handleInputChange}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                         // disabled={true}
@@ -1509,7 +1516,7 @@ export default function GRNStep3() {
                                             id="gst"
                                             name="gst"
                                             type="text"
-                                            value={`₹ ${(
+                                            value={(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? '' : `₹ ${(
                                                 (parseFloat(formState.rate))
                                                 * (GRNOrderPowerDetails?.TaxPercentage / 100)
                                             ).toFixed(2)} (${Number(GRNOrderPowerDetails?.TaxPercentage || 0)}%)`}
@@ -1527,7 +1534,7 @@ export default function GRNStep3() {
                                                 id="fittingCharge"
                                                 name="fittingCharge"
                                                 type="number"
-                                                value={`${formState.fittingCharge}`}
+                                                value={(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? '' : `${formState.fittingCharge}`}
                                                 onChange={handleInputChange}
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                             // disabled={true}
@@ -1539,7 +1546,7 @@ export default function GRNStep3() {
                                                 id="fittingGst"
                                                 name="fittingGst"
                                                 type="text"
-                                                value={`₹ ${(
+                                                value={(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? '' : `₹ ${(
                                                     Number(formState.fittingCharge || 0) *
                                                     (Number(GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST || 0) / 100)
                                                 ).toFixed(2)} (${Number(GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST || 0)}%)`}
@@ -1554,13 +1561,13 @@ export default function GRNStep3() {
                                     <div className="flex flex-col flex-1">
                                         <label htmlFor="totalBasicAmt" className="text-sm font-medium text-gray-700 mb-1">Total Basic Amt</label>
                                         <div className="w-full px-3 py-2 text-sm">
-                                            {`₹ ${(((formState.rate || 0) * GRNOrderPowerDetails?.OrderQuantity) + Number(formState.fittingCharge || 0)).toFixed(2)}`}
+                                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? '' : `₹ ${(((formState.rate || 0) * GRNOrderPowerDetails?.OrderQuantity) + Number(formState.fittingCharge || 0)).toFixed(2)}`}
                                         </div>
                                     </div>
                                     <div className="flex flex-col flex-1">
                                         <label htmlFor="totalGst" className="text-sm font-medium text-gray-700 mb-1">Total GST *</label>
                                         <div className="w-full px-3 py-2 text-sm">
-                                            {`₹ ${(((formState.rate || 0) * (GRNOrderPowerDetails?.TaxPercentage / 100) * GRNOrderPowerDetails?.OrderQuantity) + (Number(formState.fittingCharge || 0) * (Number(GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST || 0) / 100))).toFixed(2)}`}
+                                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? '' : `₹ ${(((formState.rate || 0) * (GRNOrderPowerDetails?.TaxPercentage / 100) * GRNOrderPowerDetails?.OrderQuantity) + (Number(formState.fittingCharge || 0) * (Number(GRNOrderPowerDetails?.FittingChargeDetails?.FittingGST || 0) / 100))).toFixed(2)}`}
                                         </div>
                                     </div>
                                     <div className="flex flex-col flex-1">

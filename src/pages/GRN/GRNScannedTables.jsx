@@ -26,7 +26,7 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                             <TableCell className="text-center">{item.Ph ? "Yes" : "No"}</TableCell>
                             <TableCell className="text-center">{item.Cl}</TableCell>
                             <TableCell>₹{item.MRP}</TableCell>
-                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
                                 <TableCell>₹{" "}
                                     <input
                                         type="number"
@@ -97,7 +97,7 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                                     className="w-20 px-2 py-1 border rounded"
                                 />
                             </TableCell> */}
-                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
                                 <TableCell>₹{" "}
                                     <input
                                         type="number"
@@ -168,7 +168,7 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                                 {item.HSN && <br />}{item.HSN && `HSN: ` + item.HSN}
                             </TableCell>
                             <TableCell>₹{item.MRP || item.MRPMaster || 0}</TableCell>
-                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` :
+                            {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
                                 <TableCell>₹{" "}
                                     <input
                                         type="number"

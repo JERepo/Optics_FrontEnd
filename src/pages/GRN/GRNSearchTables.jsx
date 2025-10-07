@@ -32,7 +32,7 @@ export function GRNSearchTable({ searchResults, selectedRows, handleCheckboxChan
                             <TableCell className="text-center">{item.Cl}</TableCell>
                             <TableCell>₹{item.MRP}</TableCell>
                             {/* <TableCell>₹{item.BuyingPrice}</TableCell> */}
-                            <TableCell>{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` : `₹${item.BuyingPrice}`}</TableCell>
+                            <TableCell>{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> : `₹${item.BuyingPrice}`}</TableCell>
 
                         </TableRow>
                     )}
@@ -60,7 +60,7 @@ export function GRNSearchTable({ searchResults, selectedRows, handleCheckboxChan
                             <TableCell>{item.SKU}</TableCell>
                             <TableCell>₹{item.MRP}</TableCell>
                             {/* <TableCell>₹{item.BuyingPrice}</TableCell> */}
-                            <TableCell>{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` : `₹${item.BuyingPrice}`}</TableCell>
+                            <TableCell>{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> : `₹${item.BuyingPrice}`}</TableCell>
                         </TableRow>
                     )}
                 />
@@ -86,7 +86,7 @@ export function GRNSearchTable({ searchResults, selectedRows, handleCheckboxChan
                             <TableCell>{item.Variation}</TableCell>
                             <TableCell>{item.SKU}</TableCell>
                             <TableCell>₹{item.MRP}</TableCell>
-                            <TableCell>{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` : `₹${item.BuyingPrice}`}</TableCell>
+                            <TableCell>{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> : `₹${item.BuyingPrice}`}</TableCell>
                         </TableRow>
                     )}
                 />
@@ -115,7 +115,7 @@ export function GRNCLSearchTable({ clSearchItems, grnData }) {
                         <TableCell className="text-center">{item.Cl}</TableCell>
                         <TableCell>₹{item.MRP}</TableCell>
                         {/* <TableCell>₹{item.BuyingPrice}</TableCell> */}
-                        <TableCell>{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? `` : `₹${item.BuyingPrice}`}</TableCell>
+                        <TableCell>{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> : `₹${item.BuyingPrice}`}</TableCell>
 
                     </TableRow>
                 )}
