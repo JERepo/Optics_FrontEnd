@@ -591,10 +591,11 @@ export default function GRNStep4AgainstPO() {
                 // Calculate already scanned quantity for this PO and batch (if applicable)
                 const alreadyScannedQty = scannedItems.reduce((sum, scannedItem) => {
                     if (
-                        scannedItem.PODetailsId === currentItem.PODetailsId &&
-                        (formState.productType !== "Contact Lens" ||
-                            currentItem.CLBatchCode !== 1 ||
-                            scannedItem.BatchCode === batch?.CLBatchCode)
+                        // scannedItem.PODetailsId === currentItem.PODetailsId &&
+                        // (formState.productType !== "Contact Lens" ||
+                        //     currentItem.CLBatchCode !== 1 ||
+                        //     scannedItem.BatchCode === batch?.CLBatchCode)
+                        scannedItem.PODetailsId === currentItem.PODetailsId
                     ) {
                         return sum + (scannedItem.quantity || 0);
                     }
@@ -633,6 +634,7 @@ export default function GRNStep4AgainstPO() {
                     Id: Date.now() + Math.random(),
                     detailId: currentItem.Id,
                     timestamp: Date.now(),
+                    CLMRP: batch.CLMRP,
                     existingGRNQty: validationResult.existingGRNQty
                 };
 
@@ -653,7 +655,6 @@ export default function GRNStep4AgainstPO() {
                 return;
             }
 
-            // Add validated items to scannedItems
             setScannedItems(prevItems => {
                 let updatedItems = [...prevItems];
 
@@ -668,12 +669,32 @@ export default function GRNStep4AgainstPO() {
                         );
 
                         if (existingItemIndex >= 0) {
+                            // Update existing item's quantity by adding new quantity
                             updatedItems[existingItemIndex] = {
                                 ...updatedItems[existingItemIndex],
-                                quantity: updatedItems[existingItemIndex].quantity + itemToAdd.quantity
+                                quantity: updatedItems[existingItemIndex].quantity + itemToAdd.quantity,
+                                timestamp: Date.now() // Update timestamp to reflect latest change
                             };
                         } else {
-                            updatedItems.push(itemToAdd);
+
+                            const existingItemIndex = updatedItems.findIndex(
+                                existingItem =>
+                                    existingItem.PODetailsId === itemToAdd.PODetailsId
+                            );
+                            let existingQuantity = 0;
+                            if (existingItemIndex >= 0) {
+                                // Update existing item's quantity by adding new quantity
+                                existingQuantity = updatedItems[existingItemIndex].quantity;
+                            }
+                            // Add new item with provided quantity
+                            updatedItems.push({
+                                ...itemToAdd,
+                                Id: Date.now() + Math.random(),
+                                detailId: itemToAdd.Id,
+                                scannedQty: existingQuantity,
+                                quantity: itemToAdd.quantity,
+                                timestamp: Date.now()
+                            });
                         }
                     } else {
                         // Separate entry: always add new row with unique ID
@@ -681,6 +702,7 @@ export default function GRNStep4AgainstPO() {
                             ...itemToAdd,
                             Id: Date.now() + Math.random(),
                             detailId: itemToAdd.Id,
+                            quantity: itemToAdd.quantity,
                             timestamp: Date.now()
                         });
                     }

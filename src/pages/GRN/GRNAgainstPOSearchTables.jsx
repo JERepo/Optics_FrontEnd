@@ -48,7 +48,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
 
             {(productType === 1 && poDetailsItem === 2 && GRNAgainstPOorderType === "Specific Order") && (
                 <Table
-                    columns={["PO No. (Order No.)", "Product Details", "Others", "MRP", "Buying Price", "PO QTY", "Pending Qty", "Action"]}
+                    columns={[<>PO No.<br />(Order No.)</>, "Product Details", "Others", "MRP", "Buying Price", "PO QTY", "Pending Qty", "Action"]}
                     data={searchResults}
                     renderRow={(item, index) => (
                         <TableRow key={item.Barcode || index}>
@@ -94,7 +94,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
 
             {(productType === 1 && poDetailsItem === 2 && GRNAgainstPOorderType === "Auto Processing") && (
                 <Table
-                    columns={["PO No. (Order No.)", "Product Details", "Others", "MRP", "Buying Price", "PO QTY"]}
+                    columns={[<>PO No.<br />(Order No.)</>, "Product Details", "Others", "MRP", "Buying Price", "PO QTY"]}
                     data={searchResults}
                     renderRow={(item, index) => (
                         <TableRow key={item.Barcode || index}>
@@ -130,7 +130,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
 
             {(productType === 1 && poDetailsItem === 3) && (
                 <Table
-                    columns={["PO No. (Order No.)", "Product Details", "Others", "MRP", "Buying Price", "PO QTY"]}
+                    columns={[<>PO No.<br />(Order No.)</>, "Product Details", "Others", "MRP", "Buying Price", "PO QTY"]}
                     data={searchResults}
                     renderRow={(item, index) => (
                         <TableRow key={item.Barcode || index}>
@@ -181,7 +181,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                 // Accessory -> Auto processing -> Enter barcode 
                 poDetailsItem === 2 ? (
                     <Table
-                        columns={["PO No. (Order No.)", "Product Details", "SKU Code", "MRP", "Buying Price", "PO Qty"]}
+                        columns={[<>PO No.<br />(Order No.)</>, "Product Details", "SKU Code", "MRP", "Buying Price", "PO Qty"]}
                         data={searchResults}
                         renderRow={(item, index) => (
                             <TableRow key={index}>
@@ -277,7 +277,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                     // Accessory -> Specific Order -> barcode
                     poDetailsItem === 2 ? (
                         <Table
-                            columns={["PO No. (Order No.)", "Product Details", "SKU Code", "MRP", "Buying Price", "PO QTY", "Pending Qty", "Action"]}
+                            columns={[<>PO No.<br />(Order No.)</>, "Product Details", "SKU Code", "MRP", "Buying Price", "PO QTY", "Pending Qty", "Action"]}
                             data={searchResults}
                             renderRow={(item, index) => (
                                 <TableRow key={item.Barcode || index}>
@@ -358,7 +358,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                 // CL -> Specific Order -> Barcode && product search
                 poDetailsItem === 2 ? (
                     <Table
-                        columns={["PO No. (Order No.)", "Product Details", "MRP", "Buying Price", "PO Qty", "Action"]}
+                        columns={[<>PO No.<br />(Order No.)</>, "Product Details", "MRP", "Buying Price", "PO Qty", "Action"]}
                         data={searchResults}
                         renderRow={(item, index) => (
                             <TableRow key={item.index}>
@@ -373,10 +373,10 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     {item.Additional ? ` Add: ${item.Additional > 0 ? `+` : ``}${item.Additional}` : ` Add: `}
                                     {item.Size && <br />}{item.Size}
                                     {item?.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : null}
-                                    {item?.BatchCode && <br />}{item.BatchCode ? `BatchCode: ${item.BatchCode}` : null}
+                                    {(item?.CLBatchCode && item?.BatchCode) && <br />}{(item?.CLBatchCode && item.BatchCode) ? `BatchCode: ${item.BatchCode}` : null}
                                     {/* {item?.Expiry && <br />}{item.Expiry ? `Expiry: ${item.Expiry}` : null} */}
-                                    {item?.Expiry && <br />}
-                                    {item.Expiry ? (() => {
+                                    {(item?.CLBatchCode && item?.Expiry) && <br />}
+                                    {(item?.CLBatchCode && item.Expiry) ? (() => {
                                         const [year, month, day] = item.Expiry.split('-');
                                         const formattedExpiry = `${day}-${month}-${year}`;
                                         return ` Expiry: ${formattedExpiry}`;
@@ -467,7 +467,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                 // CL -> Specific Order -> Barcode && product search
                 poDetailsItem === 2 ? (
                     <Table
-                        columns={["PO No. (Order No.)", "Product Details", "MRP", "Buying Price", "PO Qty"]}
+                        columns={[<>PO No.<br />(Order No.)</>, "Product Details", "MRP", "Buying Price", "PO Qty"]}
                         data={searchResults}
                         renderRow={(item, index) => (
                             <TableRow key={item.index}>
@@ -480,10 +480,10 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     {item.Additional ? ` Add: ${item.Additional > 0 ? `+` : ``}${item.Additional}` : ` Add: `}
                                     {item.Size && <br />}{item.Size}
                                     {item?.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : null}
-                                    {item?.BatchCode && <br />}{item.BatchCode ? `BatchCode: ${item.BatchCode}` : null}
+                                    {(item?.CLBatchCode && item?.BatchCode) && <br />}{(item?.CLBatchCode && item.BatchCode) ? `BatchCode: ${item.BatchCode}` : null}
                                     {/* {item?.Expiry && <br />}{item.Expiry ? `Expiry: ${item.Expiry}` : null} */}
-                                    {item?.Expiry && <br />}
-                                    {item.Expiry ? (() => {
+                                    {(item?.CLBatchCode && item?.Expiry) && <br />}
+                                    {(item?.CLBatchCode && item.Expiry) ? (() => {
                                         const [year, month, day] = item.Expiry.split('-');
                                         const formattedExpiry = `${day}-${month}-${year}`;
                                         return ` Expiry: ${formattedExpiry}`;

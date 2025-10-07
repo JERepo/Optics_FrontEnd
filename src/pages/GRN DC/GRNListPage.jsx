@@ -13,7 +13,7 @@ import Loader from "../../components/ui/Loader";
 import { useGetPOviewQuery } from "../../api/purchaseOrderApi";
 import { Plus, PlusCircle, Search } from "lucide-react";
 import { useSelector } from "react-redux";
-import { useGetAllGRNmainQuery } from "../../api/grnApi";
+// import { useGetAllGRNmainQuery } from "../../api/grnApi";
 import { useGetAllGRNDCMainQuery } from "../../api/grnDcApi";
 import HasPermission from "../../components/HasPermission";
 

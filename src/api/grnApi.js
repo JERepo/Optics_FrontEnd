@@ -42,8 +42,8 @@ export const grnApi = createApi({
             })
         }),
         getAllGRNmain: builder.query({
-            query: () => ({
-                url: `/api/v1/grn/get-all-grn`,
+            query: ({companyId}) => ({
+                url: `/api/v1/grn/get-all-grn?companyId=${companyId}`,
                 method: 'GET'
             })
         }),
@@ -141,7 +141,7 @@ export const {
     useSaveGRNDetailsMutation,
     useGetGRNDetailsMutation,
     useSaveCompleteGRNMutation,
-    useGetAllGRNmainQuery,
+    useLazyGetAllGRNmainQuery,
     useGetOrderDetailsByorderDetasilIdMutation,
     useCheckSupplierOrderNoQuery,
     useGetGRNMainMutation,

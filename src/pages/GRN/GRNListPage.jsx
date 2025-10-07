@@ -13,7 +13,7 @@ import Loader from "../../components/ui/Loader";
 import { useGetPOviewQuery } from "../../api/purchaseOrderApi";
 import { Plus, PlusCircle, Search } from "lucide-react";
 import { useSelector } from "react-redux";
-import { useGetAllGRNmainQuery } from "../../api/grnApi";
+import { useLazyGetAllGRNmainQuery } from "../../api/grnApi";
 import HasPermission from "../../components/HasPermission";
 
 export function GRNListPage() {
@@ -25,14 +25,24 @@ export function GRNListPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+    console.log("user -------- ", user);
+    console.log("hasMultipleLocations -------- ", hasMultipleLocations);
 
-    const { data: grnResponse, isLoading: isAllGrnLoading } = useGetAllGRNmainQuery();
+
+    const [getAll, { data: grnResponse, isLoading: isAllGrnLoading }] = useLazyGetAllGRNmainQuery();
     const allGrn = grnResponse?.data?.data || [];
     console.log("grnResponse -------- ", grnResponse);
 
     useEffect(() => {
         setCurrentPage(1);
     }, [fromDate, toDate, searchQuery]);
+
+    useEffect(() => {
+        const getAllList = async () => {
+            await getAll({ companyId: hasMultipleLocations });
+        }
+        getAllList();
+    }, [hasMultipleLocations]);
 
     const getOrderStatus = (status) => {
         const types = {
@@ -285,8 +295,8 @@ export function GRNListPage() {
                                 <TableCell>
                                     <button
                                         onClick={() => handleViewGRN(grn.id, grn)}
-                    className="flex items-center  text-lg font-medium rounded-md "
-                    title="View"                                    >
+                                        className="flex items-center  text-lg font-medium rounded-md "
+                                        title="View"                                    >
                                         <FiEye className="mr-1.5" />
                                         View
                                     </button>

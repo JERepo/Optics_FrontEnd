@@ -496,8 +496,8 @@ export default function GRNStep4() {
                                                     BatchCode: {item.BatchCode}
                                                 </>
                                             )}
-                                            {item?.Expiry && <br />}
-                                            {item.Expiry
+                                            {(item?.Expiry && item?.CLBatchCode) && <br />}
+                                            {(item.Expiry && item?.CLBatchCode)
                                                 ? (() => {
                                                     const [year, month, day] = item.Expiry.split("-");
                                                     const formattedExpiry = `${day}-${month}-${year}`;
