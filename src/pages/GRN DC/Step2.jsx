@@ -296,36 +296,42 @@ export default function GRNDCStep2() {
                                 onChange={handleSelectAll}
                                 className="h-5 w-5"
                             />,
-                            <><input
-                                type="text"
-                                name="GRNNo"
-                                value={searchFilters.GRNNo}
-                                onChange={handleSearchChange}
-                                placeholder="Search GRN No."
-                                className="w-full px-2 py-1 text-xs border rounded"
-                            />
+                            <div className="flex-col justify-end">
                                 GRN No.
-                            </>,
-                            <><input
-                                type="text"
-                                name="VendorDocNo"
-                                value={searchFilters.VendorDocNo}
-                                onChange={handleSearchChange}
-                                placeholder="Search Supplier Doc No."
-                                className="w-full px-2 py-1 text-xs border rounded"
-                            />
+                                <div className="h-8"></div>
+                                <input
+                                    type="text"
+                                    name="GRNNo"
+                                    value={searchFilters.GRNNo}
+                                    onChange={handleSearchChange}
+                                    placeholder="Search GRN No."
+                                    className="w-full px-2 py-1 text-xs border rounded"
+                                />
+                            </div>,
+                            <>
                                 Supplier Document No
+                                <input
+                                    type="text"
+                                    name="VendorDocNo"
+                                    value={searchFilters.VendorDocNo}
+                                    onChange={handleSearchChange}
+                                    placeholder="Search Supplier Doc No."
+                                    className="w-full px-2 py-1 text-xs border rounded"
+                                />
                             </>,
                             <>
                                 Supplier Document Date
-                            </>, <><input
-                                type="text"
-                                name="VendorOrderNo"
-                                value={searchFilters.VendorOrderNo}
-                                onChange={handleSearchChange}
-                                placeholder="Search Supplier Order No."
-                                className="w-full px-2 py-1 text-xs border rounded"
-                            />Supplier Order No.
+                            </>,
+                            <>
+                                Supplier Order No.
+                                <input
+                                    type="text"
+                                    name="VendorOrderNo"
+                                    value={searchFilters.VendorOrderNo}
+                                    onChange={handleSearchChange}
+                                    placeholder="Search Supplier Order No."
+                                    className="w-full px-2 py-1 text-xs border rounded"
+                                />
                             </>, "Product Details", "QTY", "GRN Price", "Fitting Price", "Total Amount"]}
                         data={filteredGrnViewDetails}
                         renderRow={(item, index) => (
@@ -430,9 +436,9 @@ export default function GRNDCStep2() {
                                 <TableCell>
                                     ₹{" "}
                                     {(parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) +
-                                            parseFloat(item?.GRNPrice * item?.GRNQty) +
-                                            parseFloat(item?.FittingPrice || 0) +
-                                            ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0)).toFixed(2)}
+                                        parseFloat(item?.GRNPrice * item?.GRNQty) +
+                                        parseFloat(item?.FittingPrice || 0) +
+                                        ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0)).toFixed(2)}
                                     <button
                                         onClick={() => openPriceEditModal(index, item.GRNDetailId, item.GRNPrice, item.FittingPrice)}
                                         className="ml-2 inline-flex items-center"

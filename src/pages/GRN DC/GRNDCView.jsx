@@ -318,12 +318,18 @@ export function GRNDCViewPage() {
                                             </TableCell>
                                             : null
                             }
-                            <TableCell>{item?.ProductDetails?.price?.MRP || null}</TableCell>
-                            <TableCell>₹ {item.GRNPrice}</TableCell>
+                            <TableCell>{item?.ProductDetails?.price?.MRP || item?.ProductDetails?.Stock?.MRP || item?.ProductDetails?.Stock?.OPMRP || null}</TableCell>
+                            <TableCell>₹{" "} {item.GRNPrice}</TableCell>
                             <TableCell>₹{" "} {parseFloat(parseFloat(item?.GRNPrice) * (parseFloat(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) / 100)).toFixed(2)} {`(${item.TaxPercent || item?.ProductDetails?.GSTPercentage}%)`}</TableCell>
                             <TableCell>{item.GRNQty}</TableCell>
-                            <TableCell>₹{" "}{parseFloat((parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty) + parseFloat((item?.FittingPrice || 0) + ((item?.FittingPrice * item?.FittingGSTPercentage) || 0))).toFixed(2)}
+                            <TableCell>
+                                ₹{" "}
+                                {(parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) / 100)) +
+                                    parseFloat(item?.GRNPrice * item?.GRNQty) +
+                                    parseFloat(item?.FittingPrice || 0) +
+                                    ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0)).toFixed(2)}
                             </TableCell>
+
                         </TableRow>
                     )}
                 />
@@ -346,14 +352,10 @@ export function GRNDCViewPage() {
                         ₹{
                             grnViewDetails
                                 .reduce((total, order) => {
-                                    const quantity = order.GRNQty;
-                                    const price = parseFloat(order.GRNPrice) || 0;
-
-                                    // Ensure both price and quantity are valid numbers
-                                    if (price && !isNaN(price) && !isNaN(quantity)) {
-                                        return total + (price * quantity);
-                                    }
-                                    return total;
+                                    const quantity = Number(order.GRNQty) || 0;
+                                    const price = Number(order.GRNPrice) || 0;
+                                    const fittingPrice = Number(order.FittingPrice) || 0;
+                                    return total + (price * quantity) + fittingPrice;
                                 }, 0)
                                 ?.toFixed?.(2) ?? '0.00'
                         }
@@ -365,13 +367,12 @@ export function GRNDCViewPage() {
                     <span className="font-bold text-lg">
                         ₹{grnViewDetails
                             .reduce((total, order) => {
-                                const quantity = order.GRNQty;
-                                const price = parseFloat(order.GRNPrice) || 0;
-                                const taxPercentage = parseFloat(order?.TaxPercent / 100) || 0;
-                                if (price && !isNaN(price) && !isNaN(quantity)) {
-                                    return total + (price * quantity * taxPercentage);
-                                }
-                                return total;
+                                const quantity = Number(order.GRNQty) || 0;
+                                const price = Number(order.GRNPrice) || 0;
+                                const fittingPrice = Number(order.FittingPrice) || 0;
+                                const taxPercentage = Number(order.TaxPercent || order?.ProductDetails?.GSTPercentage) / 100 || 0;
+                                const fittingTaxPercentage = Number(order.FittingGSTPercentage) / 100 || 0;
+                                return total + (price * quantity * taxPercentage) + (fittingPrice * fittingTaxPercentage);
                             }, 0)
                             ?.toFixed?.(2) ?? '0.00'}
                     </span>
@@ -382,16 +383,15 @@ export function GRNDCViewPage() {
                     <span className="font-bold text-lg">
                         ₹{grnViewDetails
                             .reduce((total, item) => {
-                                const quantity = item.GRNQty || 0;
-                                const price = item.GRNPrice || 0;
-                                const gstPercentage = parseFloat(item?.TaxPercent) || 0;
-
-                                if (price && !isNaN(price) && !isNaN(quantity)) {
-                                    const subtotal = price * quantity;
-                                    const gstAmount = subtotal * (gstPercentage / 100);
-                                    return total + subtotal + gstAmount;
-                                }
-                                return total;
+                                const quantity = Number(item.GRNQty) || 0;
+                                const price = Number(item.GRNPrice) || 0;
+                                const fittingPrice = Number(item.FittingPrice) || 0;
+                                const taxPercentage = Number(item.TaxPercent || item?.ProductDetails?.GSTPercentage) / 100 || 0;
+                                const fittingTaxPercentage = Number(item.FittingGSTPercentage) / 100 || 0;
+                                const subtotal = price * quantity;
+                                const gstAmount = subtotal * taxPercentage;
+                                const fittingGstAmount = fittingPrice * fittingTaxPercentage;
+                                return total + subtotal + gstAmount + fittingPrice + fittingGstAmount;
                             }, 0)
                             ?.toFixed?.(2) ?? '0.00'}
 
