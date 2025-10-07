@@ -297,8 +297,7 @@ export default function GRNDCStep2() {
                                 className="h-5 w-5"
                             />,
                             <div className="flex-col justify-end">
-                                GRN No.
-                                <div className="h-8"></div>
+                                {/* <div className="h-8"></div> */}
                                 <input
                                     type="text"
                                     name="GRNNo"
@@ -307,9 +306,9 @@ export default function GRNDCStep2() {
                                     placeholder="Search GRN No."
                                     className="w-full px-2 py-1 text-xs border rounded"
                                 />
+                                GRN No.
                             </div>,
                             <>
-                                Supplier Document No
                                 <input
                                     type="text"
                                     name="VendorDocNo"
@@ -318,12 +317,12 @@ export default function GRNDCStep2() {
                                     placeholder="Search Supplier Doc No."
                                     className="w-full px-2 py-1 text-xs border rounded"
                                 />
+                                Supplier Document No
                             </>,
                             <>
                                 Supplier Document Date
                             </>,
                             <>
-                                Supplier Order No.
                                 <input
                                     type="text"
                                     name="VendorOrderNo"
@@ -332,6 +331,7 @@ export default function GRNDCStep2() {
                                     placeholder="Search Supplier Order No."
                                     className="w-full px-2 py-1 text-xs border rounded"
                                 />
+                                Supplier Order No.
                             </>, "Product Details", "QTY", "GRN Price", "Fitting Price", "Total Amount"]}
                         data={filteredGrnViewDetails}
                         renderRow={(item, index) => (

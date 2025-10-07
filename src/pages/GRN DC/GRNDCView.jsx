@@ -318,7 +318,7 @@ export function GRNDCViewPage() {
                                             </TableCell>
                                             : null
                             }
-                            <TableCell>{item?.ProductDetails?.price?.MRP || item?.ProductDetails?.Stock?.MRP || item?.ProductDetails?.Stock?.OPMRP || null}</TableCell>
+                            <TableCell>{item?.ProductDetails?.ProductType === 3 ? item?.ProductDetails?.Stock?.find(stock => stock.BatchCode === item.BatchCode)?.MRP : (item?.ProductDetails?.price?.MRP || item?.ProductDetails?.Stock?.MRP || item?.ProductDetails?.Stock?.OPMRP || null)}</TableCell>
                             <TableCell>₹{" "} {item.GRNPrice}</TableCell>
                             <TableCell>₹{" "} {parseFloat(parseFloat(item?.GRNPrice) * (parseFloat(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) / 100)).toFixed(2)} {`(${item.TaxPercent || item?.ProductDetails?.GSTPercentage}%)`}</TableCell>
                             <TableCell>{item.GRNQty}</TableCell>
