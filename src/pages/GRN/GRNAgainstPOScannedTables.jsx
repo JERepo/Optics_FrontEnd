@@ -39,7 +39,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
             {productType === 1 && (
                 <>
                     <Table
-                        columns={[<>PO No.<br/>(Order No.)</>, "Product Details", "Others", "MRP", "Buying Price", "PO QTY", "Pending Qty", "GRN Qty", "Action"]}
+                        columns={[<>PO No.<br />(Order No.)</>, "Product Details", "Others", "MRP", "Buying Price", "PO QTY", "Pending Qty", "GRN Qty", "Action"]}
                         data={scannedItems}
                         renderRow={(item, index) => (
                             <TableRow key={index}>
@@ -74,7 +74,17 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                                     </TableCell>
                                 }
                                 <TableCell className=" ">{item.POQty}</TableCell>
-                                <TableCell>{item.POQty - (item.quantity ?? 0) - item.CancelledQty - (item.ReceivedQty ?? 0) - (item.TotalGRNQty ?? 0)}</TableCell>
+                                {/* <TableCell>{item.POQty - (item.quantity ?? 0) - item.CancelledQty - (item.ReceivedQty ?? 0) - (item.TotalGRNQty ?? 0)}</TableCell> */}
+                                <TableCell>{
+                                    item.POQty -
+                                    (item.quantity ?? 0) -
+                                    (item.CancelledQty ?? 0) -
+                                    (item.ReceivedQty ?? 0) -
+                                    (item.TotalGRNQty ?? 0) -
+                                    scannedItems
+                                        .filter((si, siIndex) => si.PODetailsId === item.PODetailsId && siIndex !== index)
+                                        .reduce((sum, si) => sum + (si.quantity ?? 0), 0)
+                                }</TableCell>
                                 {/* <TableCell>
                                     <button
                                         onClick={() => openModal(index, item.quantity || 1)}
@@ -161,7 +171,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
             {/* ACCESSORY FINAL GRN DATA */}
             {productType === 2 && (
                 <Table
-                    columns={[<>PO No.<br/>(Order No.)</>, "Product Details", "SKU Code", "MRP", "Buying Price", "PO QTY", "Pending Qty", "GRN Qty", "Action"]}
+                    columns={[<>PO No.<br />(Order No.)</>, "Product Details", "SKU Code", "MRP", "Buying Price", "PO QTY", "Pending Qty", "GRN Qty", "Action"]}
                     data={scannedItems}
                     renderRow={(item, index) => (
                         <TableRow key={item.Id || index}>
@@ -188,8 +198,17 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                             }
                             <TableCell className=" ">{item.POQty}</TableCell>
                             {/* <TableCell>{item.POQty - (item.quantity || 1) - item.CancelledQty}</TableCell> */}
-                            <TableCell>{item.POQty - (item.quantity ?? 0) - item.CancelledQty - (item.ReceivedQty ?? 0) - (item.TotalGRNQty ?? 0)}</TableCell>
-
+                            {/* <TableCell>{item.POQty - (item.quantity ?? 0) - item.CancelledQty - (item.ReceivedQty ?? 0) - (item.TotalGRNQty ?? 0)}</TableCell> */}
+                            <TableCell>{
+                                item.POQty -
+                                (item.quantity ?? 0) -
+                                (item.CancelledQty ?? 0) -
+                                (item.ReceivedQty ?? 0) -
+                                (item.TotalGRNQty ?? 0) -
+                                scannedItems
+                                    .filter((si, siIndex) => si.PODetailsId === item.PODetailsId && siIndex !== index)
+                                    .reduce((sum, si) => sum + (si.quantity ?? 0), 0)
+                            }</TableCell>
                             <TableCell>
                                 <input
                                     type="number"
@@ -216,7 +235,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
             {console.log("jahdbakjhbd", scannedItems)}
             {productType === 3 && (
                 <Table
-                    columns={[<>PO No.<br/>(Order No.)</>, "Product Details", "MRP", "Buying Price", "PO Qty", "Pending Qty", "GRN Qty", "Action"]}
+                    columns={[<>PO No.<br />(Order No.)</>, "Product Details", "MRP", "Buying Price", "PO Qty", "Pending Qty", "GRN Qty", "Action"]}
                     data={scannedItems}
                     renderRow={(item, index) => (
                         <TableRow key={item.index}>
@@ -231,7 +250,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                                 {item.Additional ? ` Add: ${item.Additional > 0 ? `+` : ``}${item.Additional}` : ` Add: `}
                                 {item.Size && <br />}{item.Size}
                                 {item?.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : null}
-                                {(item?.CLBatchCode && item?.BatchCode) && <br />}{item.BatchCode ? `BatchCode: ${item.BatchCode} - ` : null}
+                                {(item?.CLBatchCode && item?.BatchCode) && <br />}{(item?.CLBatchCode && item.BatchCode) ? `BatchCode: ${item.BatchCode} - ` : null}
                                 {(item?.CLBatchCode && item.Expiry) ? (() => {
                                     const [year, month, day] = item.Expiry.split('-');
                                     const formattedExpiry = `${day}-${month}-${year}`;
@@ -242,6 +261,8 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                             </TableCell>
                             {/* <TableCell>{item.Expiry || 0}</TableCell> */}
                             <TableCell>₹{item.CLMRP || item.MRP || item.MRPMaster || 0}</TableCell>
+                            {/* <TableCell>₹ {item?.ProductDetails?.Stock?.find(stock => stock.BatchCode === item.BatchCode)?.MRP || (item?.ProductDetails?.price?.MRP || item?.ProductDetails?.Stock?.MRP || item?.ProductDetails?.Stock?.OPMRP || null)}</TableCell> */}
+
                             {(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? <TableCell></TableCell> :
 
                                 <TableCell>₹{" "}

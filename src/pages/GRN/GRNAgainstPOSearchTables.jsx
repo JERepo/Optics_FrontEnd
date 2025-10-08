@@ -480,7 +480,7 @@ export function GRNAgainstPOSearchTable({ searchResults, selectedRows, handleGet
                                     {item.Additional ? ` Add: ${item.Additional > 0 ? `+` : ``}${item.Additional}` : ` Add: `}
                                     {item.Size && <br />}{item.Size}
                                     {item?.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : null}
-                                    {(item?.CLBatchCode && item?.BatchCode) && <br />}{(item?.CLBatchCode && item.BatchCode) ? `BatchCode: ${item.BatchCode}` : null}
+                                    {(item?.CLBatchCode && item?.BatchCode) && <br />}{(item?.CLBatchCode && item?.BatchCode) ? ` BatchCode: ${item.BatchCode}` : null}
                                     {/* {item?.Expiry && <br />}{item.Expiry ? `Expiry: ${item.Expiry}` : null} */}
                                     {(item?.CLBatchCode && item?.Expiry) && <br />}
                                     {(item?.CLBatchCode && item.Expiry) ? (() => {
@@ -578,7 +578,7 @@ export function GRNCLSearchTable({ clSearchItems }) {
                         <TableCell>
                             {item.Category === 0 ? 'Sunglass' : 'Optical Frame'}
                         </TableCell>
-                        <TableCell className="text-center">{item.PO ? "Yes" : "No"}</TableCell>
+                        <TableCell className="text-center">{item.PO ? "Yes" : "No"}</TableCell> 
                         <TableCell className="text-center">{item.Ph ? "Yes" : "No"}</TableCell>
                         <TableCell className="text-center">{item.Cl}</TableCell>
                         <TableCell>₹{item.MRP}</TableCell>

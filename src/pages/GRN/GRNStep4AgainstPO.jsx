@@ -472,7 +472,7 @@ export default function GRNStep4AgainstPO() {
                 .reduce((total, scannedItem) => total + (scannedItem.quantity || 0), 0);
 
             const newTotalGRNQty = existingGRNQtyForPO + 1; // Adding 1 for the new item
-            const pendingQty = item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty;
+            const pendingQty = item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty - item.TotalGRNQty;
 
             console.log("newTotalGRNQty ---------- ", newTotalGRNQty);
             console.log("pendingQty ---------- ", pendingQty);
@@ -602,7 +602,7 @@ export default function GRNStep4AgainstPO() {
                     return sum;
                 }, 0);
 
-                const pendingQty = currentItem.POQty - (currentItem.ReceivedQty ?? 0) - currentItem.CancelledQty;
+                const pendingQty = currentItem.POQty - (currentItem.ReceivedQty ?? 0) - currentItem.CancelledQty - currentItem.TotalGRNQty;
 
                 // API validation
                 const payload = {
@@ -625,6 +625,8 @@ export default function GRNStep4AgainstPO() {
                     // If no available quantity, move to the next PO
                     continue;
                 }
+
+                console.log("currentItem --------------- ", currentItem);
 
                 // Prepare item to add
                 const itemToAdd = {
@@ -686,11 +688,12 @@ export default function GRNStep4AgainstPO() {
                                 // Update existing item's quantity by adding new quantity
                                 existingQuantity = updatedItems[existingItemIndex].quantity;
                             }
+
+                            console.log("!! itemToAdd -", itemToAdd);
                             // Add new item with provided quantity
                             updatedItems.push({
                                 ...itemToAdd,
                                 Id: Date.now() + Math.random(),
-                                detailId: itemToAdd.Id,
                                 scannedQty: existingQuantity,
                                 quantity: itemToAdd.quantity,
                                 timestamp: Date.now()
@@ -701,7 +704,6 @@ export default function GRNStep4AgainstPO() {
                         updatedItems.push({
                             ...itemToAdd,
                             Id: Date.now() + Math.random(),
-                            detailId: itemToAdd.Id,
                             quantity: itemToAdd.quantity,
                             timestamp: Date.now()
                         });
@@ -710,6 +712,7 @@ export default function GRNStep4AgainstPO() {
 
                 // Sort by timestamp in descending order (latest first)
                 updatedItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                console.log("updatedItems -------- ", updatedItems);
                 return updatedItems;
             });
 
@@ -1031,7 +1034,7 @@ export default function GRNStep4AgainstPO() {
                     }, 0);
 
                     // FIXED: Calculate actual pending quantity considering already scanned items
-                    const basePendingQty = item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty;
+                    const basePendingQty = item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty - item?.TotalGRNQty;
                     const actualPendingQty = basePendingQty - alreadyScannedQty;
 
                     console.log("basePendingQty", basePendingQty);
@@ -1081,12 +1084,14 @@ export default function GRNStep4AgainstPO() {
                                     validationMessage: validationResult.message // Store validation message for reference
                                 };
 
+                                // console.log("selectedBatch ----", selectedBatch);
                                 // Add batch information for Contact Lens with CLBatchCode === 1
                                 if (formState.productType === "Contact Lens" && item.CLBatchCode === 1 && selectedBatch) {
                                     itemToAdd.BatchCode = selectedBatch.CLBatchCode;
                                     itemToAdd.CLBatchBarCode = selectedBatch.CLBatchBarCode;
                                     itemToAdd.Expiry = selectedBatch.CLBatchExpiry;
                                     itemToAdd.price = selectedBatch.BuyingPrice || item.BuyingPrice || 0;
+                                    itemToAdd.MRP = selectedBatch.CLMRP || selectedBatch.MRP;
                                 }
 
                                 itemsToAdd.push(itemToAdd);
@@ -1126,6 +1131,7 @@ export default function GRNStep4AgainstPO() {
                             timestamp: Date.now(),
                             existingGRNQty: validationResult.existingGRNQty
                         };
+                        // console.log("selectedBatch ----", selectedBatch);
 
                         // Add batch information for Contact Lens with CLBatchCode === 1
                         if (formState.productType === "Contact Lens" && item.CLBatchCode === 1 && selectedBatch) {
@@ -1133,6 +1139,7 @@ export default function GRNStep4AgainstPO() {
                             itemToAdd.CLBatchBarCode = selectedBatch.CLBatchBarCode;
                             itemToAdd.Expiry = selectedBatch.CLBatchExpiry;
                             itemToAdd.price = selectedBatch.BuyingPrice || item.BuyingPrice || 0;
+                            itemToAdd.MRP = selectedBatch.CLMRP || selectedBatch.MRP;
                         }
 
                         itemsToAdd.push(itemToAdd);
@@ -1622,7 +1629,9 @@ export default function GRNStep4AgainstPO() {
         }
 
         const currentItem = scannedItems[index];
-        const pendingQty = currentItem.POQty - (currentItem.ReceivedQty ?? 0) - currentItem.CancelledQty;
+
+        console.log("currentItem --------- ", currentItem);
+        const pendingQty = currentItem.POQty - (currentItem.ReceivedQty ?? 0) - currentItem.CancelledQty - currentItem.TotalGRNQty;
 
         console.log("scannedItems --------------- ", scannedItems);
 
@@ -1638,12 +1647,12 @@ export default function GRNStep4AgainstPO() {
         const newTotalGRNQty = totalGRNQtyForOtherItems + quantity;
 
         // Check if new total exceeds pending quantity
-        if (grnData?.step2?.productType !== "Contact Lens") {
-            if (newTotalGRNQty > pendingQty) {
-                toast.error(`Total GRN quantity (${newTotalGRNQty}) cannot exceed pending quantity (${pendingQty}) for this PO`);
-                return false;
-            }
+        // if (grnData?.step2?.productType !== "Contact Lens") {
+        if (newTotalGRNQty > pendingQty) {
+            toast.error(`Total GRN quantity (${newTotalGRNQty}) cannot exceed pending quantity (${pendingQty}) for this PO`);
+            return false;
         }
+        // }
 
         console.log("newTotalGRNQty", newTotalGRNQty);
 
@@ -1654,7 +1663,7 @@ export default function GRNStep4AgainstPO() {
                 PODetailsId: currentItem.PODetailsId,
                 GRNQty: newTotalGRNQty,
                 grnMainId: grnData?.step1?.GrnMainId,
-                batchCode: batchCode ? batchCode : null
+                // batchCode: batchCode ? batchCode : null
                 // CurrentGRNQty: totalGRNQtyForOtherItems,
                 // NewItemGRNQty: quantity,
                 // PendingQty: pendingQty

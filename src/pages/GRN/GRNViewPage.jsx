@@ -330,14 +330,14 @@ export function GRNViewPage() {
                             ) : item?.ProductDetails?.ProductType === 2 ? (
                                 <TableCell>₹ {item?.ProductDetails?.Stock?.OPMRP}</TableCell>
                             ) : item?.ProductDetails?.ProductType === 3 ? (
-                                <TableCell>₹ {item?.ProductDetails?.Stock?.find(stock => stock.BatchCode === item.BatchCode)?.MRP}</TableCell>
+                                <TableCell>₹ {item?.ProductDetails?.Stock?.find(stock => stock.BatchCode === item.BatchCode)?.MRP || (item?.ProductDetails?.price?.MRP || item?.ProductDetails?.Stock?.MRP || item?.ProductDetails?.Stock?.OPMRP || null)}</TableCell>
                             ) : <TableCell></TableCell>}
                             {/* <TableCell>₹ {item?.ProductDetails?.price?.MRP || item?.ProductDetails?.Stock?.MRP || item?.ProductDetails?.Stock?.OPMRP || null}</TableCell> */}
                             <TableCell>₹{" "} {parseFloat(parseInt(item?.GRNPrice) * (parseInt(item?.ProductDetails?.GSTPercentage || item?.TaxPercent) / 100)).toFixed(2)}<br />{`(${item?.ProductDetails?.GSTPercentage || item?.TaxPercent}%)`}</TableCell>
                             <TableCell>{item.GRNQty}</TableCell>
-                            <TableCell>₹ {item.GRNPrice}</TableCell>
+                            <TableCell>{(grnViewDetails[0]?.GRNType === 1 && grnViewDetails[0]?.DCGRNPrice === 1) ? '' : `₹ ${item.GRNPrice}`}</TableCell>
                             {/* <TableCell>₹{" "}{parseFloat(parseInt(item?.GRNPrice * item?.GRNQty) * (parseInt(item?.TaxPercent) / 100)) + parseInt(item?.GRNPrice * item?.GRNQty)} </TableCell>*/}
-                            <TableCell>₹{" "}{(parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty) + parseFloat(item?.FittingPrice || 0) + ((parseFloat(item?.FittingPrice) * (parseFloat(item?.FittingGSTPercentage) / 100)) || 0)).toFixed(2)}</TableCell>
+                            <TableCell>{(grnViewDetails[0]?.GRNType === 1 && grnViewDetails[0]?.DCGRNPrice === 1) ? '' : `₹ ${(parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty) + parseFloat(item?.FittingPrice || 0) + ((parseFloat(item?.FittingPrice) * (parseFloat(item?.FittingGSTPercentage) / 100)) || 0)).toFixed(2)}`}</TableCell>
 
                         </TableRow>
                     )}
@@ -358,17 +358,21 @@ export function GRNViewPage() {
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total Gross Value :</span>
                     <span className="font-bold text-lg">
-                        ₹ {grnViewDetails
-                            .reduce((total, order) => {
-                                const quantity = order.GRNQty;
-                                const price = parseFloat(order.GRNPrice) || 0;
+                        {
+                            (grnViewDetails[0]?.GRNType === 1 && grnViewDetails[0]?.DCGRNPrice === 1) ? '' :
 
-                                if (price && !isNaN(price) && !isNaN(quantity)) {
-                                    return total + (price * quantity) + parseFloat(order?.FittingPrice || 0);
-                                }
-                                return total;
-                            }, 0)
-                            ?.toFixed?.(2) ?? '0.00'
+                                `₹ ${grnViewDetails
+                                    .reduce((total, order) => {
+                                        const quantity = order.GRNQty;
+                                        const price = parseFloat(order.GRNPrice) || 0;
+
+                                        if (price && !isNaN(price) && !isNaN(quantity)) {
+                                            return total + (price * quantity) + parseFloat(order?.FittingPrice || 0);
+                                        }
+                                        return total;
+                                    }, 0)
+                                    ?.toFixed?.(2) ?? '0.00'
+                                }`
                         }
                     </span>
                 </div>
@@ -376,38 +380,45 @@ export function GRNViewPage() {
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total GST :</span>
                     <span className="font-bold text-lg">
-                        ₹ {grnViewDetails
-                            .reduce((total, order) => {
-                                const quantity = order.GRNQty;
-                                const price = parseFloat(order.GRNPrice + order.FittingPrice) || 0;
-                                const taxPercentage = parseFloat((order?.TaxPercent || order?.ProductDetails?.GSTPercentage) / 100) || 0;
-                                if (price && !isNaN(price) && !isNaN(quantity)) {
-                                    return total + (price * quantity * taxPercentage) + parseFloat(order?.FittingGSTPercentage || 0);
-                                }
-                                return total;
-                            }, 0)
-                            ?.toFixed?.(2) ?? '0.00'}
+                        {
+                            (grnViewDetails[0]?.GRNType === 1 && grnViewDetails[0]?.DCGRNPrice === 1) ? '' :
+
+                                `₹ ${grnViewDetails
+                                    .reduce((total, order) => {
+                                        const quantity = order.GRNQty;
+                                        const price = parseFloat(order.GRNPrice + order.FittingPrice) || 0;
+                                        const taxPercentage = parseFloat((order?.TaxPercent || order?.ProductDetails?.GSTPercentage) / 100) || 0;
+                                        if (price && !isNaN(price) && !isNaN(quantity)) {
+                                            return total + (price * quantity * taxPercentage) + parseFloat(order?.FittingGSTPercentage || 0);
+                                        }
+                                        return total;
+                                    }, 0)
+                                    ?.toFixed?.(2) ?? '0.00'}`
+                        }
                     </span>
                 </div>
 
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total Net Value :</span>
                     <span className="font-bold text-lg">
-                        ₹ {grnViewDetails
-                            .reduce((total, item) => {
-                                const quantity = item.GRNQty || 0;
-                                const price = (item.GRNPrice) || 0;
-                                const gstPercentage = parseFloat(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) || 0;
+                        {
+                            (grnViewDetails[0]?.GRNType === 1 && grnViewDetails[0]?.DCGRNPrice === 1) ? '' :
 
-                                if (price && !isNaN(price) && !isNaN(quantity)) {
-                                    const subtotal = price * quantity;
-                                    const gstAmount = subtotal * (gstPercentage / 100);
-                                    return total + subtotal + gstAmount + parseFloat(item?.FittingPrice) + ((parseFloat(item?.FittingPrice) * (parseFloat(item?.FittingGSTPercentage) / 100)) || 0);
-                                }
-                                return total;
-                            }, 0)
-                            ?.toFixed?.(2) ?? '0.00'}
+                                `₹ ${grnViewDetails
+                                    .reduce((total, item) => {
+                                        const quantity = item.GRNQty || 0;
+                                        const price = (item.GRNPrice) || 0;
+                                        const gstPercentage = parseFloat(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) || 0;
 
+                                        if (price && !isNaN(price) && !isNaN(quantity)) {
+                                            const subtotal = price * quantity;
+                                            const gstAmount = subtotal * (gstPercentage / 100);
+                                            return total + subtotal + gstAmount + parseFloat(item?.FittingPrice || 0) + ((parseFloat(item?.FittingPrice || 0) * (parseFloat(item?.FittingGSTPercentage || 0) / 100)) || 0);
+                                        }
+                                        return total;
+                                    }, 0)
+                                    ?.toFixed?.(2) ?? '0.00'}`
+                        }
                     </span>
                 </div>
             </div>

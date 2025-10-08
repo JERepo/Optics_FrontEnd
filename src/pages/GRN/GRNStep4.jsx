@@ -220,7 +220,7 @@ export default function GRNStep4() {
                 // setCurrentStep(1); // Or navigate to GRN list
                 navigate("/grn");
             } else {
-                toast.error("Failed to complete GRN");
+                toast.error(response.error || "Failed to complete GRN 1");
             }
 
         } catch (error) {
@@ -410,7 +410,7 @@ export default function GRNStep4() {
                     ) : (
                         <Table
                             columns={[
-                                "PO No. (Order No.)",
+                                <>PO No.<br/>(Order No.)</>,
                                 "Product type",
                                 "Product Details",
                                 "MRP",
@@ -490,16 +490,17 @@ export default function GRNStep4() {
                                                     Barcode: {item.ProductDetails.barcode}
                                                 </>
                                             )}
-                                            {(item?.BatchCode && item?.CLBatchCode) && (
+                                            {(item?.BatchCode && item?.ProductDetails?.CLBatchCode) && (
                                                 <>
                                                     <br />
                                                     BatchCode: {item.BatchCode}
                                                 </>
                                             )}
-                                            {(item?.Expiry && item?.CLBatchCode) && <br />}
-                                            {(item.Expiry && item?.CLBatchCode)
+                                            {/* {(item?.Expiry && item?.ProductDetails?.CLBatchCode) && <br />} */}
+                                            {((item?.ProductDetails?.Stock?.find(stock => stock.BatchCode === item.BatchCode)?.Expiry) && item?.ProductDetails?.CLBatchCode)
                                                 ? (() => {
-                                                    const [year, month, day] = item.Expiry.split("-");
+                                                    const exp = (item?.ProductDetails?.Stock?.find(stock => stock.BatchCode === item.BatchCode)?.Expiry);
+                                                    const [year, month, day] = exp.split("-");
                                                     const formattedExpiry = `${day}-${month}-${year}`;
                                                     return ` Expiry: ${formattedExpiry}`;
                                                 })()
@@ -517,7 +518,7 @@ export default function GRNStep4() {
                                     ) : item?.ProductDetails?.ProductType === 2 ? (
                                         <TableCell>₹ {item?.ProductDetails?.Stock?.OPMRP}</TableCell>
                                     ) : item?.ProductDetails?.ProductType === 3 ? (
-                                        <TableCell>₹ {item?.ProductDetails?.price?.MRP}</TableCell>
+                                        <TableCell>₹ {item?.ProductDetails?.Stock?.find(stock => stock.BatchCode === item.BatchCode)?.MRP || (item?.ProductDetails?.price?.MRP || item?.ProductDetails?.Stock?.MRP || item?.ProductDetails?.Stock?.OPMRP || null)}</TableCell>
                                     ) : null}
                                     <TableCell>{item.POQty}</TableCell>
                                     <TableCell>{item.PendingQty}</TableCell>
