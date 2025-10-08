@@ -153,6 +153,12 @@ export default function GRNDCStep1() {
                     documentNo: "",
                     documentDate: new Date()
                 }));
+                updateStep1Data({
+                    GrnMainId: null,
+                    selectedLocation: parseInt(selectedLocation),
+                    selectedVendor: parseInt(selectedVendor),
+                    againstPO: null
+                });
             }
         }
 
@@ -514,14 +520,14 @@ export default function GRNDCStep1() {
                                                 // minDate={fromDate}
                                                 maxDate={new Date()}
                                                 inputFormat="dd/MM/yyyy"
-                                                // renderInput={(params) => (
-                                                //     <TextField
-                                                //         {...params}
-                                                //         size="small"
-                                                //         fullWidth
-                                                //         variant="outlined"
-                                                //     />
-                                                // )}
+                                            // renderInput={(params) => (
+                                            //     <TextField
+                                            //         {...params}
+                                            //         size="small"
+                                            //         fullWidth
+                                            //         variant="outlined"
+                                            //     />
+                                            // )}
                                             />
                                         </LocalizationProvider>
                                     </div>

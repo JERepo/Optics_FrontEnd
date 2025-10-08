@@ -121,6 +121,8 @@ export default function GRNStep1() {
                 applicationUserId: user?.Id
             }
 
+            console.log(" payload ", payload);
+
             const GRNMainResponse = await grnMainData(payload).unwrap();
 
             if (GRNMainResponse.data.length > 0) {
@@ -150,6 +152,12 @@ export default function GRNStep1() {
                     documentNo: "",
                     documentDate: new Date()
                 }));
+                updateStep1Data({
+                    GrnMainId: null,
+                    selectedLocation: parseInt(selectedLocation),
+                    selectedVendor: parseInt(selectedVendor),
+                    againstPO: null
+                });
             }
         }
 
