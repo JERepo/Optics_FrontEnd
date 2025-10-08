@@ -862,7 +862,7 @@ export default function GRNStep3() {
             }
         } catch (error) {
             console.error("Error saving GRN details:", error);
-            toast.error("Failed to save GRN details. Please try again.");
+            toast.error(error.data.message || "Failed to save GRN details. Please try again.1");
         } finally {
             setIsLoading(false);
         }

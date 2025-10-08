@@ -308,11 +308,15 @@ export default function GRNDCStep1() {
             documentDate: formState.documentDate
         });
 
+        // console.log("No 1 state vendor", formState?.vendorDetails?.StateID);
+        // console.log("No 2 state company", companySettingsData?.data?.data?.Company?.State?.Id);
+        // console.log("companySettingsData ------- ", companySettingsData);
+
         // 3. Save the GRN main entry in db
         const payload = {
             companyId: parseInt(selectedLocation),
             vendorId: formState.vendorDetails?.Id,
-            inState: formState?.vendorDetails?.StateID === companySettingsData?.data?.data?.State?.Id ? 0 : 1,
+            inState: formState?.vendorDetails?.StateID === companySettingsData?.data?.data?.Company?.State?.Id ? 0 : 1,
             vendorDocNo: formState.documentNo,
             vendorDocDate: formState.documentDate,
             grnType: 0,             // GRN Type 0 : Invoice and 1 : DC

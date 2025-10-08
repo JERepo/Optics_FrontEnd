@@ -388,7 +388,7 @@ export default function GRNStep4() {
                                                     : null
                                     }
                                     <TableCell>₹{" "} {parseFloat(parseInt(item?.GRNPrice) * ((parseInt(item?.TaxPercent) / 100) || 0)).toFixed(2)}{`(` + item?.TaxPercent + `%)`}</TableCell>
-                                    <TableCell>{(grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && item?.GRNType === 1) ? "" : (item.GRNQty || 0)}</TableCell>
+                                    <TableCell>{(item.GRNQty || 0)}</TableCell>
                                     <TableCell>{((grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc")) ? "" : (item.GRNPrice || 0)}</TableCell>
                                     <TableCell>₹{" "}{((grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc")) ? "" : (parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty) + parseFloat(item?.FittingPrice || 0) + ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0)).toFixed(2)}</TableCell>
 

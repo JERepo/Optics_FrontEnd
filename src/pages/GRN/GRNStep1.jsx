@@ -323,7 +323,7 @@ export default function GRNStep1() {
         const payload = {
             companyId: parseInt(selectedLocation),
             vendorId: formState.vendorDetails?.Id,
-            inState: formState?.vendorDetails?.StateID === companySettingsData?.data?.data?.State?.Id ? 0 : 1,
+            inState: formState?.vendorDetails?.StateID === companySettingsData?.data?.data?.Company?.State?.Id ? 0 : 1,
             vendorDocNo: formState.documentNo,
             vendorDocDate: formState.documentDate,
             grnByMethod: 1,         // GRN by Order 1 : 0 (DC)
