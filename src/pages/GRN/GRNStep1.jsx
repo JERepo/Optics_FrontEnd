@@ -554,6 +554,7 @@ export default function GRNStep1() {
                                                     checked={formState.billingMethod === "invoice"}
                                                     onChange={handleInputChange}
                                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    disabled={grnData.step1.GrnMainId}
                                                 />
                                                 <span className="text-gray-700 font-medium">Invoice</span>
                                             </label>
@@ -566,6 +567,7 @@ export default function GRNStep1() {
                                                     checked={formState.billingMethod === "dc"}
                                                     onChange={handleInputChange}
                                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    disabled={grnData.step1.GrnMainId}
                                                 />
                                                 <span className="text-gray-700 font-medium">DC</span>
                                             </label>
