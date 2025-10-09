@@ -21,13 +21,13 @@ const AdminNavbar = () => {
   const [selectedLocation, setSelectedLocation] = useState(null);
  useEffect(() => {
   if (allLocations?.data?.length && hasMultipleLocations?.length) {
-    const firstAllowed = allLocations.data.find((loc) =>
-      hasMultipleLocations.includes(String(loc.Id))
+    const firstAllowed = allLocations?.data.find((loc) =>
+      hasMultipleLocations.includes(Number(loc.Id))
     );
     setSelectedLocation(firstAllowed || null);
   }
-}, [allLocations, hasMultipleLocations]);
-console.log(selectedLocation)
+}, [allLocations?.data, hasMultipleLocations]);
+console.log("ss",selectedLocation)
 
 
   const handleLogout = () => {
@@ -78,9 +78,9 @@ console.log(selectedLocation)
 
           {/* Dropdown Menu */}
           {isLocationOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg overflow-hidden z-10 border border-gray-100 animate-fadeIn">
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg overflow-hidden z-999 border border-gray-100 animate-fadeIn ">
               <div className="py-1">
-                {allLocations?.data?.filter((loc) => hasMultipleLocations?.includes(String(loc.Id))).map((location) => (
+                {allLocations?.data?.filter((loc) => hasMultipleLocations?.includes(Number(loc.Id))).map((location) => (
                   <button
                     key={location.Id}
                     onClick={() => handleLocationSelect(location)}

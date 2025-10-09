@@ -35,6 +35,7 @@ const OrderView = () => {
   const [isWarningOpen, setIsWarningOpen] = useState(false);
   const [warningMessage, setWarningMessage] = useState(null);
   const [isCancelOrder, setIsCancelOrder] = useState(false);
+  const [generalWarning,setGeneralWarning] = useState(false)
 
   const [printingId, setPrintingId] = useState(null);
   const [selectedItemId, setSelectedItemId] = useState(null);
@@ -299,7 +300,72 @@ const OrderView = () => {
       toast.error(error?.data?.message || "Order already cancelled");
     }
   };
+  const handleGenerateInvoiceConfirm = async (order) => {
+   
+    const payload = {
+      invoiceItems: [
+        {
+          orderDetailId: order.OrderDetailId,
+          batchCode: null,
+          toBillQty: order.OrderQty,
+          srp: 0,
+          discountedSellingPrice: order.DiscountedSellingPrice,
+          invoicePrice: order.DiscountedSellingPrice,
+          AdvanceAmountused: order.AdvanceAmount || 0,
+        },
+      ],
+      locationId: parseInt(hasMultipleLocations[0]),
+      customerId: customerDataById?.data.data?.CustomerMaster?.Id,
+      patientId: customerDataById?.data.data?.PatientID,
 
+      invoiceByMethod: 1,
+      invoiceName: 0,
+      invoiceRemarks: null,
+      totalQty: order.OrderQty,
+      totalGSTValue: parseFloat(
+        calculateGST(
+          parseFloat(order.DiscountedSellingPrice),
+          parseFloat(order.TaxPercentage)
+        ).gstAmount
+      ),
+      totalValue:
+        order?.DiscountedSellingPrice * order.OrderQty +
+        parseFloat(order.FittingPrice || 0) *
+          (parseFloat(order.FittingGSTPercentage || 0) / 100) +
+        parseFloat(order.FittingPrice || 0) -
+        (order.AdvanceAmount || 0),
+      // roundOff: 0.0,
+
+      applicationUserId: user.Id,
+      balanceAmount: 0,
+      bypassCreditCheck: true,
+      creditBilling:
+        customerDataById?.data.data?.CustomerMaster?.CreditBilling === 1, // true or false
+    };
+
+    console.log(payload);
+    try {
+      const res = await generateInvoice({ payload }).unwrap();
+      // if()
+      toast.success("Invoice Generated successfully!");
+    } catch (error) {
+      console.log(error);
+
+      // if(error?.data?.warning){
+
+      // }
+      setErrors(
+        Array.isArray(error?.data?.validationErrors)
+          ? error?.data?.validationErrors
+          : typeof errors === "string"
+          ? [error?.data?.validationErrors]
+          : []
+      );
+      setErrorModalOpen(true);
+
+      return;
+    }
+  };
   const handleGenerateInvoice = async (order) => {
     const advance = await getAdvanceAmt({
       orderId: order.OrderDetailId,
@@ -340,7 +406,7 @@ const OrderView = () => {
 
       applicationUserId: user.Id,
       balanceAmount: 0,
-      // bypassCreditCheck: false,
+      bypassCreditCheck: false,
       creditBilling:
         customerDataById?.data.data?.CustomerMaster?.CreditBilling === 1, // true or false
     };
@@ -353,17 +419,6 @@ const OrderView = () => {
     } catch (error) {
       console.log(error);
 
-      // if(error?.data?.warning){
-
-      // }
-      setErrors(
-        Array.isArray(error?.data?.validationErrors)
-          ? error?.data?.validationErrors
-          : typeof errors === "string"
-          ? [error?.data?.validationErrors]
-          : []
-      );
-      setErrorModalOpen(true);
 
       return;
     }
@@ -733,6 +788,17 @@ const OrderView = () => {
         onClose={() => setIsCancelOrder(false)}
         onConfirm={handleConfirmWarningsForOrder}
         title="Cancel Order Warning!"
+        message={warningMessage}
+        confirmText="Yes, Proceed"
+        cancelText="Cancel"
+        danger={false}
+        isLoading={isOrderCancelling}
+      />
+       <ConfirmationModal
+        isOpen={generalWarning}
+        onClose={() => setGeneralWarning(false)}
+        onConfirm={handleConfirmWarningsForOrder}
+        title="Warning!"
         message={warningMessage}
         confirmText="Yes, Proceed"
         cancelText="Cancel"

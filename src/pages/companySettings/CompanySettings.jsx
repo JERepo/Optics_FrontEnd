@@ -35,13 +35,18 @@ import {
 import Loader from "../../components/ui/Loader";
 import Radio from "../../components/Form/Radio";
 import Button from "../../components/ui/Button";
-import { useGetCountriesQuery, useGetStatesQuery } from "../../api/customerApi";
+import {
+  useGetCountriesQuery,
+  useGetStatesQuery,
+  useLazyGetPinCodeQuery,
+} from "../../api/customerApi";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { enGB } from "date-fns/locale";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { useGetAllCustomerGroupsQuery } from "../../api/customerGroup";
 import toast from "react-hot-toast";
+import { isValidNumericInput } from "../../utils/isValidNumericInput";
 
 const API_BASE = import.meta.env.VITE_LOCAL;
 
@@ -74,6 +79,8 @@ const CompanySettings = () => {
   const [updateSettings, { isLoading: isUpdating }] =
     useUpdateSettingsMutation();
   const { data: customerGroups } = useGetAllCustomerGroupsQuery();
+  const [getPinCodeData, { isFetching: isPinCodeFetching }] =
+    useLazyGetPinCodeQuery();
 
   const [formData, setFormData] = useState({
     customerPool: null,
@@ -263,6 +270,23 @@ const CompanySettings = () => {
       );
     }
   }, [companySettingData]);
+  const fetchLocationDetails = async (pincode) => {
+    try {
+      const response = await getPinCodeData({ pincode }).unwrap();
+
+      if (response?.success && response.data.length > 0) {
+        const location = response.data[0];
+        setFormData((prev) => ({
+          ...prev,
+          state: location?.StateId,
+          country: location?.CountryId,
+          city: location?.CityName,
+        }));
+      }
+    } catch (error) {
+      toast.error("Entered Pincode not valid!")
+    }
+  };
   const handleChange = (field) => (e) => {
     setFormData({ ...formData, [field]: e.target.value });
   };
@@ -435,10 +459,18 @@ const CompanySettings = () => {
       AccessoryColumn1: formData.accessoryColumn1,
       AccessoryColumn2: formData.accessoryColumn2,
       AccessoryColumn3: formData.accessoryColumn3,
-      OLGSTINunit: formData.olGstUnit,
-      CLGSTINunit: formData.clGstUnit,
-      AccGSTINunit: formData.accGstUnit,
-      FSGSTINunit: formData.fsGstUnit,
+      OLGSTINunit: EInvoiceGSTOptions?.find(
+        (item) => item.value === formData.olGstUnit
+      ).name,
+      CLGSTINunit: EInvoiceGSTOptions?.find(
+        (item) => item.value === formData.clGstUnit
+      ).name,
+      AccGSTINunit: EInvoiceGSTOptions?.find(
+        (item) => item.value === formData.accGstUnit
+      ).name,
+      FSGSTINunit: EInvoiceGSTOptions?.find(
+        (item) => item.value === formData.fsGstUnit
+      ).name,
       CNEInvoiceEnable: formData.enableEICreditNote,
       DNEInvoiceEnable: formData.enableEIDebitNote,
       POApproval: formData.poApproval,
@@ -475,7 +507,7 @@ const CompanySettings = () => {
       );
     }
   };
-
+console.log(formData)
   if (isLocationsLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -754,7 +786,7 @@ const CompanySettings = () => {
                 fullWidth
               />
             </div>
-            <div>
+            <div className="flex gap-2">
               <TextField
                 label="PinCode"
                 placeholder="Enter PinCode"
@@ -762,8 +794,23 @@ const CompanySettings = () => {
                 size="small"
                 fullWidth
                 value={formData.zipcode}
-                onChange={handleChange("zipcode")}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  // Allow only digits and max 6 characters
+                  if (/^\d{0,6}$/.test(val)) {
+                    setFormData((prev) => ({ ...prev, zipcode: val }));
+                  }
+                }}
               />
+
+              <Button
+                variant="primary"
+                onClick={() => fetchLocationDetails(formData?.zipcode)}
+                isLoading={isPinCodeFetching}
+                disabled={isPinCodeFetching}
+              >
+                Search
+              </Button>
             </div>
             <div>
               <TextField
@@ -885,7 +932,7 @@ const CompanySettings = () => {
           </div>
           {formData.enableEInvoice === 1 && (
             <>
-              <div className="grid grid-cols-2 gap-5">
+              <div className="grid grid-cols-4 gap-5">
                 <div>
                   <Autocomplete
                     options={EInvoiceGSTOptions || []}
@@ -995,7 +1042,7 @@ const CompanySettings = () => {
                   />
                 </div>
               </div>
-              <div className="mt-5 grid grid-cols-4 gap-5">
+              <div className="mt-5 grid grid-cols-3 gap-5">
                 <div className="flex items-center gap-3">
                   <label>Enable E-Invoice for Invoice</label>
                   <Radio
@@ -1034,23 +1081,7 @@ const CompanySettings = () => {
                     label="No"
                   />
                 </div>
-                <div className="flex items-center gap-3">
-                  <label>Enable E-Invoice for Debit Note </label>
-                  <Radio
-                    name="E-3"
-                    value="1"
-                    checked={formData.enableEIDebitNote === 1}
-                    onChange={() => handleRadioChange("enableEIDebitNote", "1")}
-                    label="Yes"
-                  />
-                  <Radio
-                    name="E-3"
-                    value="0"
-                    checked={formData.enableEIDebitNote === 0}
-                    onChange={() => handleRadioChange("enableEIDebitNote", "0")}
-                    label="No"
-                  />
-                </div>
+               
                 <div className="flex items-center gap-5">
                   <label>Enable GST Verification </label>
                   <Radio
@@ -1075,6 +1106,23 @@ const CompanySettings = () => {
               </div>
             </>
           )}
+           <div className="flex items-center gap-3">
+                  <label>Enable E-Invoice for Debit Note </label>
+                  <Radio
+                    name="E-3"
+                    value="1"
+                    checked={formData.enableEIDebitNote === 1}
+                    onChange={() => handleRadioChange("enableEIDebitNote", "1")}
+                    label="Yes"
+                  />
+                  <Radio
+                    name="E-3"
+                    value="0"
+                    checked={formData.enableEIDebitNote === 0}
+                    onChange={() => handleRadioChange("enableEIDebitNote", "0")}
+                    label="No"
+                  />
+                </div>
           <div className="flex-grow flex">
             <TextField
               label="GST Search Instance ID"
@@ -1659,24 +1707,7 @@ const CompanySettings = () => {
       title: "Other Settings",
       icon: <FiTool className="text-orange-600 text-xl" />,
       content: (
-        <Box className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-center gap-5">
-            <label>Show Buying Price for DC</label>
-            <Radio
-              name="showBuyingPriceDc"
-              value="1"
-              checked={formData.showBuyingPriceDc === 1}
-              onChange={() => handleRadioChange("showBuyingPriceDc", "1")}
-              label="Yes"
-            />
-            <Radio
-              name="showBuyingPriceDc"
-              value="0"
-              checked={formData.showBuyingPriceDc === 0}
-              onChange={() => handleRadioChange("showBuyingPriceDc", "0")}
-              label="No"
-            />
-          </div>
+        <Box className="grid grid-cols-1 md:grid-cols-3 gap-7">
           <div className="flex items-center gap-5">
             <label>Invoice DC PDF</label>
             <Radio
@@ -1829,7 +1860,7 @@ const CompanySettings = () => {
             />
           </div>
           <div className="flex items-center gap-5">
-            <label>Other Discount Approval</label>
+            <label>Order Discount Approval</label>
             <Radio
               name="orderDiscountApproval"
               value="1"
@@ -1889,7 +1920,7 @@ const CompanySettings = () => {
           </div>
           <div className="col-span-3">
             <TextField
-              label="Discount %"
+              label="Discount % above which Approval is Required"
               placeholder="Enter Discount %"
               variant="outlined"
               size="small"

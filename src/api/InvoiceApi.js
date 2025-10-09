@@ -106,6 +106,13 @@ export const InvoiceApi = createApi({
       }),
       invalidatesTags: ["CancelInvoice"],
     }),
+     printPdf: builder.query({
+      query: ({ id }) => ({
+        url: `/api/v1/pdf/generate-invoice/${id}`,
+        responseHandler: (response) => response.blob(),
+      }),
+      transformResponse: (response) => response,
+    }),
   }),
 });
 
@@ -123,4 +130,5 @@ export const {
   useGetEInvoiceDataQuery,
   useGetPaymentDetailsQuery,
   useCancelInvoiceMutation,
+  useLazyPrintPdfQuery
 } = InvoiceApi;

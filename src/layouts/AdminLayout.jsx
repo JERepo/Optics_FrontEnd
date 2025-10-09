@@ -11,12 +11,12 @@ export default function AdminLayout() {
       <AdminSidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
       <main
         className={`flex-1 transition-all duration-500 ${
-          isCollapsed ? "ml-20" : "ml-64"
+          isCollapsed ? "ml-18" : "ml-62"
         }`}
       >
         <div className="flex flex-col">
           <AdminNavbar />
-          <div className="p-6">
+          <div className="p-4">
             <Outlet />
           </div>
         </div>

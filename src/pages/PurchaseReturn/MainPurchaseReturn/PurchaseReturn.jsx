@@ -291,8 +291,9 @@ const PurchaseReturn = () => {
                 <TableCell className="flex gap-2">
                   <button
                     onClick={() => handleViewSalesReturn(item.id)}
-className="flex items-center  text-lg font-medium rounded-md "
-                    title="View"                  >
+                    className="flex items-center  text-lg font-medium rounded-md "
+                    title="View"
+                  >
                     <FiEye className="" />
                   </button>
                   <button
