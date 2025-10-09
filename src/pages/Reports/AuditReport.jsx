@@ -6,53 +6,66 @@ import { enGB } from "date-fns/locale";
 import React, { useState } from "react";
 import { format, subDays, subMonths, startOfDay, endOfDay } from "date-fns";
 import Button from "../../components/ui/Button";
-import { useLazyGetOrderReportQuery } from "../../api/reportApi";
+import { useLazyGetAuditReportQuery } from "../../api/reportApi";
 import { useSelector } from "react-redux";
 import toast from "react-hot-toast";
 
 const reportTypes = [
   { value: 0, label: "All Pages" },
-  { value: 1, label: "Brand Group" },
-  { value: 2, label: "Frame Master" },
-  { value: 3, label: "Contact Lens Master" },
-  { value: 4, label: "Customer Group" },
-  { value: 5, label: "Sales Person" },
-  { value: 6, label: "Bank Master" },
-  { value: 7, label: "Bank Account Details" },
-  { value: 8, label: "Payment Machine" },
-  { value: 9, label: "User Management" },
-  { value: 10, label: "Role Management" },
-  { value: 11, label: "Pool Creation" },
-  { value: 12, label: "Brand Category" },
-  { value: 13, label: "Brand" },
-  { value: 14, label: "Variation Master" },
-  { value: 15, label: "Frame Shape Master" },
-  { value: 16, label: "Season Master" },
-  { value: 17, label: "Material Master" },
-  { value: 18, label: "Location Settings" },
-  { value: 19, label: "Customer" },
-  { value: 20, label: "Vendor" },
-  { value: 21, label: "Order" },
-  { value: 22, label: "Prescription" },
-  { value: 23, label: "Invoice" },
-  { value: 24, label: "SR" },
-  { value: 25, label: "PO" },
-  { value: 26, label: "STOut" },
-  { value: 27, label: "STIn" },
-  { value: 28, label: "GRN From Order" },
-  { value: 29, label: "GRN DC" },
-  { value: 30, label: "PR" },
-  { value: 31, label: "New GV" },
-  { value: 32, label: "Activate GV" },
-  { value: 33, label: "Order Report" },
-  { value: 34, label: "Sales Report" },
-  { value: 35, label: "PR Report" },
-  { value: 36, label: "Profit Report" },
-  { value: 37, label: "Daily Payment Collection Report" },
-  { value: 38, label: "Offer" },
-  { value: 39, label: "Customer Payment" },
-  { value: 40, label: "Customer Refund" },
+  { value: 1, label: "Accessory Master" },
+  { value: 2, label: "Audit" },
+  { value: 3, label: "Bank Account Details" },
+  { value: 4, label: "Bank Master" },
+  { value: 5, label: "Brand" },
+  { value: 6, label: "Brand Category" },
+  { value: 7, label: "Brand Group" },
+  { value: 8, label: "Communication" },
+  { value: 9, label: "Companies" },
+  { value: 10, label: "Contact-Lens" },
+  { value: 11, label: "Contact-Lens-Details" },
+  { value: 12, label: "Customer" },
+  { value: 13, label: "Customer Group" },
+  { value: 14, label: "Customer-Payment" },
+  { value: 15, label: "Customer-Refund" },
+  { value: 16, label: "Dashboard" },
+  { value: 17, label: "Frame Master" },
+  { value: 18, label: "Frame Rim Type" },
+  { value: 19, label: "Gift-Voucher" },
+  { value: 20, label: "GRN" },
+  { value: 21, label: "GRN DC" },
+  { value: 22, label: "Invoice" },
+  { value: 23, label: "Location-setting" },
+  { value: 24, label: "Material Master" },
+  { value: 25, label: "Offer" },
+  { value: 26, label: "OLFitting Standard Charges" },
+  { value: 27, label: "Optical-lens" },
+  { value: 28, label: "Order" },
+  { value: 29, label: "Order-Report" },
+  { value: 30, label: "Page Management" },
+  { value: 31, label: "Payment Machine" },
+  { value: 32, label: "Pool" },
+  { value: 33, label: "Prescription" },
+  { value: 34, label: "Profit" },
+  { value: 35, label: "Purchase Order" },
+  { value: 36, label: "Purchase-Report" },
+  { value: 37, label: "Purchase-Return" },
+  { value: 38, label: "Purchase-Return-Report" },
+  { value: 39, label: "Role Management" },
+  { value: 40, label: "Sales Person" },
+  { value: 41, label: "Sales-Report" },
+  { value: 42, label: "Sales-Return-Report" },
+  { value: 43, label: "SalesReturn" },
+  { value: 44, label: "Season Master" },
+  { value: 45, label: "Shape Master" },
+  { value: 46, label: "StockTranserIn" },
+  { value: 47, label: "StockTransfer" },
+  { value: 48, label: "User Management" },
+  { value: 49, label: "Variation Master" },
+  { value: 50, label: "Vendor" },
 ];
+
+
+
 
 const dateOptions = [
   { value: "today", label: "Today" },
@@ -75,7 +88,7 @@ const AuditReport = () => {
   const [toDate, setToDate] = useState(new Date());
 
   const [getReport, { isFetching: isReportLoading }] =
-    useLazyGetOrderReportQuery();
+    useLazyGetAuditReportQuery();
 
   const handleReportChange = (_, newValue) => {
     if (!newValue || newValue.length === 0) {
@@ -159,7 +172,7 @@ const AuditReport = () => {
     link.remove();
     window.URL.revokeObjectURL(url);
   };
-
+console.log("se",selectedReports)
   const handleSubmit = async () => {
     const payload = {
       reportType: selectedReports.includes(0) ? 0 : selectedReports, // Send 0 for "All Pages" or array of selected types
@@ -170,11 +183,11 @@ const AuditReport = () => {
       const blob = await getReport({
         fromDate: payload.fromDate,
         toDate: payload.toDate,
-        userId: user.Id,
+        page:  reportTypes?.find(item => item.value == payload.reportType)?.label,
         type: payload.reportType,
       }).unwrap();
-      downloadFile(blob, "OrderReport.xlsx");
-      toast.success("Order Report Generated successfully!");
+      downloadFile(blob, "AuditReport.xlsx");
+      toast.success("Audit Report Generated successfully!");
       setFromDate(new Date());
       setToDate(new Date());
     } catch (error) {
@@ -184,7 +197,7 @@ const AuditReport = () => {
         error?.response?.data?.message ||
         error?.response?.data?.error ||
         error?.message ||
-        "Looks like there are no pending orders right now.";
+        "Looks like there are no AuditReports right now.";
 
       toast.error(errorMsg);
     }

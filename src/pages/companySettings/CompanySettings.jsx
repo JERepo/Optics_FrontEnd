@@ -3,6 +3,7 @@ import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
 import {
   useGetAllPoolsQuery,
   useGetCompanySettingsQuery,
+  useGetTaxesQuery,
   useUpdateSettingsMutation,
 } from "../../api/companySettingsApi";
 import {
@@ -57,7 +58,7 @@ const EInvoiceGSTOptions = [
 ];
 
 const CompanySettings = () => {
-  const [expandedSection, setExpandedSection] = useState("location"); // first accordion open
+  const [expandedSection, setExpandedSection] = useState(null); // first accordion open
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [logo, setLogo] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
@@ -81,6 +82,7 @@ const CompanySettings = () => {
   const { data: customerGroups } = useGetAllCustomerGroupsQuery();
   const [getPinCodeData, { isFetching: isPinCodeFetching }] =
     useLazyGetPinCodeQuery();
+  const { data: alltaxes } = useGetTaxesQuery();
 
   const [formData, setFormData] = useState({
     customerPool: null,
@@ -284,7 +286,7 @@ const CompanySettings = () => {
         }));
       }
     } catch (error) {
-      toast.error("Entered Pincode not valid!")
+      toast.error("Entered Pincode not valid!");
     }
   };
   const handleChange = (field) => (e) => {
@@ -507,7 +509,7 @@ const CompanySettings = () => {
       );
     }
   };
-console.log(formData)
+
   if (isLocationsLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -517,111 +519,6 @@ console.log(formData)
   }
 
   const accordionSections = [
-    {
-      id: "location",
-      title: "Location Settings",
-      icon: <FiMapPin className="text-blue-600 text-xl" />,
-      content: (
-        <Autocomplete
-          options={allLocations?.data || []}
-          getOptionLabel={(option) => option.LocationName || ""}
-          value={
-            allLocations?.data?.find((loc) => loc.Id === selectedLocation) ||
-            null
-          }
-          onChange={(_, newValue) => setSelectedLocation(newValue?.Id)}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Location"
-              placeholder="Select Location"
-              size="small"
-              variant="outlined"
-            />
-          )}
-          loading={isLocationsLoading}
-          fullWidth
-        />
-      ),
-    },
-    {
-      id: "standard",
-      title: "Standard Settings",
-      icon: <FiSettings className="text-green-600 text-xl" />,
-      content: (
-        <Box className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Autocomplete
-            options={allPool?.data?.customer?.filter || []}
-            getOptionLabel={(option) => option.PoolName || ""}
-            value={
-              allPool?.data?.customer?.find(
-                (pool) => pool.Id === formData.customerPool
-              ) || null
-            }
-            onChange={(_, newValue) =>
-              setFormData({ ...formData, customerPool: newValue?.Id || null })
-            }
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Customer Pool"
-                placeholder="Select Customer Pool"
-                size="small"
-                variant="outlined"
-              />
-            )}
-            loading={isPoolsLoading}
-            fullWidth
-          />
-          <Autocomplete
-            options={allPool?.data?.vendor || []}
-            getOptionLabel={(option) => option.PoolName || ""}
-            value={
-              allPool?.data?.vendor?.find(
-                (pool) => pool.Id === formData.vendorPool
-              ) || null
-            }
-            onChange={(_, newValue) =>
-              setFormData({ ...formData, vendorPool: newValue?.Id || null })
-            }
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Vendor Pool"
-                placeholder="Select Vendor Pool"
-                size="small"
-                variant="outlined"
-              />
-            )}
-            loading={isPoolsLoading}
-            fullWidth
-          />
-          <Autocomplete
-            options={allPool?.data?.stock || []}
-            getOptionLabel={(option) => option.PoolName || ""}
-            value={
-              allPool?.data?.vendor?.find(
-                (pool) => pool.Id === formData.stockPool
-              ) || null
-            }
-            onChange={(_, newValue) =>
-              setFormData({ ...formData, stockPool: newValue?.Id || null })
-            }
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Stock Pool"
-                placeholder="Select Stock Pool"
-                size="small"
-                variant="outlined"
-              />
-            )}
-            loading={isPoolsLoading}
-            fullWidth
-          />
-        </Box>
-      ),
-    },
     {
       id: "company",
       title: "Company Details",
@@ -641,7 +538,9 @@ console.log(formData)
               />
             </div>
             <div className="flex items-center gap-5 flex-1/2">
-              <label>GST Register </label>
+              <label className="text-neutral-800 font-semibold text-base">
+                GST Register{" "}
+              </label>
               <Radio
                 name="gstRegister"
                 value="1"
@@ -908,13 +807,125 @@ console.log(formData)
       ),
     },
     {
+      id: "standard",
+      title: "Pool Settings",
+      icon: <FiSettings className="text-green-600 text-xl" />,
+      content: (
+        <Box className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Autocomplete
+            options={allPool?.data?.customer?.filter || []}
+            getOptionLabel={(option) => option.PoolName || ""}
+            value={
+              allPool?.data?.customer?.find(
+                (pool) => pool.Id === formData.customerPool
+              ) || null
+            }
+            onChange={(_, newValue) =>
+              setFormData({ ...formData, customerPool: newValue?.Id || null })
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Customer Pool"
+                placeholder="Select Customer Pool"
+                size="small"
+                variant="outlined"
+              />
+            )}
+            loading={isPoolsLoading}
+            fullWidth
+          />
+          <Autocomplete
+            options={allPool?.data?.vendor || []}
+            getOptionLabel={(option) => option.PoolName || ""}
+            value={
+              allPool?.data?.vendor?.find(
+                (pool) => pool.Id === formData.vendorPool
+              ) || null
+            }
+            onChange={(_, newValue) =>
+              setFormData({ ...formData, vendorPool: newValue?.Id || null })
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Vendor Pool"
+                placeholder="Select Vendor Pool"
+                size="small"
+                variant="outlined"
+              />
+            )}
+            loading={isPoolsLoading}
+            fullWidth
+          />
+          <Autocomplete
+            options={allPool?.data?.stock || []}
+            getOptionLabel={(option) => option.PoolName || ""}
+            value={
+              allPool?.data?.vendor?.find(
+                (pool) => pool.Id === formData.stockPool
+              ) || null
+            }
+            onChange={(_, newValue) =>
+              setFormData({ ...formData, stockPool: newValue?.Id || null })
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Stock Pool"
+                placeholder="Select Stock Pool"
+                size="small"
+                variant="outlined"
+              />
+            )}
+            loading={isPoolsLoading}
+            fullWidth
+          />
+        </Box>
+      ),
+    },
+
+    {
       id: "invoice",
       title: "E-Invoice & GST Settings",
       icon: <FiFileText className="text-purple-600 text-xl" />,
       content: (
         <Box className="flex gap-4 flex-col">
           <div className="flex items-center gap-5">
-            <label> Enable E-Invoice </label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Enable GST Verification{" "}
+            </label>
+            <Radio
+              name="enableGstVerification"
+              value="1"
+              checked={formData.enableGstVerification === 1}
+              onChange={() => handleRadioChange("enableGstVerification", "1")}
+              label="Yes"
+            />
+            <Radio
+              name="enableGstVerification"
+              value="0"
+              checked={formData.enableGstVerification === 0}
+              onChange={() => handleRadioChange("enableGstVerification", "0")}
+              label="No"
+            />
+          </div>
+          <div className="flex-grow flex">
+            <TextField
+              label="GST Search Instance ID"
+              placeholder="Enter GST Search Instance ID"
+              variant="outlined"
+              size="small"
+              fullWidth
+              value={formData.gstSearchInstanceId}
+              onChange={handleChange("gstSearchInstanceId")}
+            />
+          </div>
+          <div className="flex items-center gap-5">
+            <label className="text-neutral-800 font-semibold text-base">
+              {" "}
+              Enable E-Invoice{" "}
+            </label>
             <Radio
               name="enableEInvoice"
               value="1"
@@ -1044,7 +1055,9 @@ console.log(formData)
               </div>
               <div className="mt-5 grid grid-cols-3 gap-5">
                 <div className="flex items-center gap-3">
-                  <label>Enable E-Invoice for Invoice</label>
+                  <label className="text-neutral-800 font-semibold text-base">
+                    Enable E-Invoice for Invoice
+                  </label>
                   <Radio
                     name="E-1"
                     value="1"
@@ -1061,7 +1074,9 @@ console.log(formData)
                   />
                 </div>
                 <div className="flex items-center gap-3">
-                  <label>Enable E-Invoice for Credit Note </label>
+                  <label className="text-neutral-800 font-semibold text-base">
+                    Enable E-Invoice for Credit Note{" "}
+                  </label>
                   <Radio
                     name="E-2"
                     value="1"
@@ -1081,57 +1096,26 @@ console.log(formData)
                     label="No"
                   />
                 </div>
-               
-                <div className="flex items-center gap-5">
-                  <label>Enable GST Verification </label>
-                  <Radio
-                    name="enableGstVerification"
-                    value="1"
-                    checked={formData.enableGstVerification === 1}
-                    onChange={() =>
-                      handleRadioChange("enableGstVerification", "1")
-                    }
-                    label="Yes"
-                  />
-                  <Radio
-                    name="enableGstVerification"
-                    value="0"
-                    checked={formData.enableGstVerification === 0}
-                    onChange={() =>
-                      handleRadioChange("enableGstVerification", "0")
-                    }
-                    label="No"
-                  />
-                </div>
               </div>
             </>
           )}
-           <div className="flex items-center gap-3">
-                  <label>Enable E-Invoice for Debit Note </label>
-                  <Radio
-                    name="E-3"
-                    value="1"
-                    checked={formData.enableEIDebitNote === 1}
-                    onChange={() => handleRadioChange("enableEIDebitNote", "1")}
-                    label="Yes"
-                  />
-                  <Radio
-                    name="E-3"
-                    value="0"
-                    checked={formData.enableEIDebitNote === 0}
-                    onChange={() => handleRadioChange("enableEIDebitNote", "0")}
-                    label="No"
-                  />
-                </div>
-          <div className="flex-grow flex">
-            <TextField
-              label="GST Search Instance ID"
-              placeholder="Enter GST Search Instance ID"
-              variant="outlined"
-              size="small"
-              fullWidth
-              value={formData.gstSearchInstanceId}
-              onChange={handleChange("gstSearchInstanceId")}
+          <div className="flex items-center gap-3">
+            <label className="text-neutral-800 font-semibold text-base">
+              Enable E-Invoice for Debit Note{" "}
+            </label>
+            <Radio
+              name="E-3"
+              value="1"
+              checked={formData.enableEIDebitNote === 1}
+              onChange={() => handleRadioChange("enableEIDebitNote", "1")}
+              label="Yes"
+            />
+            <Radio
+              name="E-3"
+              value="0"
+              checked={formData.enableEIDebitNote === 0}
+              onChange={() => handleRadioChange("enableEIDebitNote", "0")}
+              label="No"
             />
           </div>
         </Box>
@@ -1449,7 +1433,9 @@ console.log(formData)
       content: (
         <Box className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center gap-5">
-            <label>Optical Lens Fitting Label</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Optical Lens Fitting Label
+            </label>
             <Radio
               name="opticalLensFittingLabel"
               value="1"
@@ -1476,47 +1462,65 @@ console.log(formData)
               onChange={handleChange("opticalLensFittingHsn")}
             />
           </div>
-          <div className="">
-            <TextField
-              label="Optical Lens Fitting GST"
-              placeholder="Enter Optical Lens Fitting GST"
-              variant="outlined"
-              size="small"
+
+          <div>
+            <Autocomplete
+              options={alltaxes?.data || []}
+              getOptionLabel={(option) => option.Name || ""}
+              value={
+                alltaxes?.data?.find(
+                  (pool) => pool.Id === formData.opticalLensFittingGst
+                ) || null
+              }
+              onChange={(_, newValue) =>
+                setFormData({
+                  ...formData,
+                  opticalLensFittingGst: newValue?.Id || null,
+                })
+              }
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Tax Percentage"
+                  placeholder="Select TaxPercentage"
+                  size="small"
+                  variant="outlined"
+                />
+              )}
               fullWidth
-              value={formData.opticalLensFittingGst}
-              onChange={handleChange("opticalLensFittingGst")}
             />
           </div>
-          {/* <div className="">
-            <TextField
-              label="Credit Note Return Period(in days)"
-              placeholder="Enter Credit Note Return Period"
-              variant="outlined"
-              size="small"
-              fullWidth
-              value={formData.creditNoteReturnPeriod}
-              onChange={handleChange("creditNoteReturnPeriod")}
-            />
-          </div> */}
-          <div className="flex items-center gap-5 flex-1/2">
-            <label>Fitting Charges Purchase</label>
-            <Radio
-              name="fittingChargesPurchase"
-              value="1"
-              checked={formData.fittingChargesPurchase === 1}
-              onChange={() => handleRadioChange("fittingChargesPurchase", "1")}
-              label="Yes"
-            />
-            <Radio
-              name="fittingChargesPurchase"
-              value="0"
-              checked={formData.fittingChargesPurchase === 0}
-              onChange={() => handleRadioChange("fittingChargesPurchase", "0")}
-              label="No"
-            />
+          <div className="flex items-center gap-5 ">
+            <label className="text-neutral-800 font-semibold text-base">
+              Fitting Charges Purchase
+            </label>
+
+            <div className="flex items-center gap-6">
+              <Radio
+                name="fittingChargesPurchase"
+                value="1"
+                checked={formData.fittingChargesPurchase === 1}
+                onChange={() =>
+                  handleRadioChange("fittingChargesPurchase", "1")
+                }
+                className="accent-blue-600 w-5 h-5 cursor-pointer"
+              />
+              <Radio
+                name="fittingChargesPurchase"
+                value="0"
+                checked={formData.fittingChargesPurchase === 0}
+                onChange={() =>
+                  handleRadioChange("fittingChargesPurchase", "0")
+                }
+                className="accent-blue-600 w-5 h-5 cursor-pointer"
+              />
+            </div>
           </div>
+
           <div className="flex items-center gap-5 flex-1/2">
-            <label>Fitting Charges Sales</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Fitting Charges Sales
+            </label>
             <Radio
               name="fittingChargesSales"
               value="1"
@@ -1709,7 +1713,9 @@ console.log(formData)
       content: (
         <Box className="grid grid-cols-1 md:grid-cols-3 gap-7">
           <div className="flex items-center gap-5">
-            <label>Invoice DC PDF</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Invoice DC PDF
+            </label>
             <Radio
               name="invoiceDcPdf"
               value="1"
@@ -1726,7 +1732,9 @@ console.log(formData)
             />
           </div>
           <div className="flex items-center gap-5">
-            <label>Edit Invoice Price</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Edit Invoice Price
+            </label>
             <Radio
               name="editInvoicePrice"
               value="1"
@@ -1743,7 +1751,9 @@ console.log(formData)
             />
           </div>
           <div className="flex items-center gap-5">
-            <label>Sales Return Against Invoice Only</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Sales Return Against Invoice Only
+            </label>
             <Radio
               name="salesReturnAgainstInvoiceOnly"
               value="1"
@@ -1775,7 +1785,9 @@ console.log(formData)
             />
           </div>
           <div className="flex items-center gap-5">
-            <label>PO Approval Required</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              PO Approval Required
+            </label>
             <Radio
               name="poApproval"
               value="1"
@@ -1792,7 +1804,9 @@ console.log(formData)
             />
           </div>
           <div className="flex items-center gap-5">
-            <label>GV Multiple Use</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              GV Multiple Use
+            </label>
             <Radio
               name="gvMultipleUse"
               value="1"
@@ -1809,7 +1823,9 @@ console.log(formData)
             />
           </div>
           <div className="flex items-center gap-5">
-            <label>Customer DC Billing</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Customer DC Billing
+            </label>
             <Radio
               name="dcBilling"
               value="1"
@@ -1826,7 +1842,9 @@ console.log(formData)
             />
           </div>
           <div className="flex items-center gap-5">
-            <label>Customer Credit Billing</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Customer Credit Billing
+            </label>
             <Radio
               name="creditBilling"
               value="1"
@@ -1843,7 +1861,9 @@ console.log(formData)
             />
           </div>
           <div className="flex items-center gap-5">
-            <label>Customer Loyalty Enable</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Customer Loyalty Enable
+            </label>
             <Radio
               name="loyaltyEnable"
               value="1"
@@ -1860,7 +1880,9 @@ console.log(formData)
             />
           </div>
           <div className="flex items-center gap-5">
-            <label>Order Discount Approval</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Order Discount Approval
+            </label>
             <Radio
               name="orderDiscountApproval"
               value="1"
@@ -1877,7 +1899,9 @@ console.log(formData)
             />
           </div>
           <div className="flex items-center gap-5">
-            <label>Order Cancellation Approval</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Order Cancellation Approval
+            </label>
             <Radio
               name="orderCancellationApproval"
               value="1"
@@ -1898,7 +1922,9 @@ console.log(formData)
             />
           </div>
           <div className="flex items-center gap-5">
-            <label>Invoice Cancellation Approval</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Invoice Cancellation Approval
+            </label>
             <Radio
               name="invoiceCancellationApproval"
               value="1"
@@ -2067,12 +2093,13 @@ console.log(formData)
         <div className="flex justify-between items-center">
           <div>
             <Typography variant="h5" className="font-bold text-gray-900 mb-1">
-              Company Settings
+              Location Settings
             </Typography>
             <Typography variant="body1" color="textSecondary">
               Manage your company locations, pools, and configuration settings
             </Typography>
           </div>
+
           {selectedLocation && (
             <div className="flex justify-end mt-5">
               <Button
@@ -2090,7 +2117,28 @@ console.log(formData)
 
       {/* Accordion Sections */}
       <Paper elevation={0} className="">
-        <Box className="">
+        <Autocomplete
+          options={allLocations?.data || []}
+          getOptionLabel={(option) => option.LocationName || ""}
+          value={
+            allLocations?.data?.find((loc) => loc.Id === selectedLocation) ||
+            null
+          }
+          onChange={(_, newValue) => setSelectedLocation(newValue?.Id)}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Location"
+              placeholder="Select Location"
+              size="small"
+              variant="outlined"
+            />
+          )}
+          loading={isLocationsLoading}
+          fullWidth
+        />
+
+        <Box className="mt-5">
           {accordionSections.map((section, index) => {
             if (section.id !== "location" && !selectedLocation) return null;
             return (

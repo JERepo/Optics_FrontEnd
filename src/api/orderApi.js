@@ -369,6 +369,14 @@ export const orderApi = createApi({
 
       transformResponse: (response) => response,
     }),
+    printPdf: builder.query({
+      query: ({ orderId }) => ({
+        url: `/api/v1/pdf/generate-order/${orderId}`,
+        responseHandler: (response) => response.blob(),
+      }),
+
+      transformResponse: (response) => response,
+    }),
 
     generateOpticalLensReceipt: builder.query({
       query: ({ orderDetailid, companyId }) => ({
@@ -376,6 +384,16 @@ export const orderApi = createApi({
         responseHandler: (response) => response.blob(),
       }),
       transformResponse: (response) => response,
+    }),
+    generateOrder: builder.query({
+      query: ({ orderId }) => ({
+        url: `/api/v1/pdf/generate-order/${orderId}`,
+        method: "GET",
+        responseHandler: async (response) => {
+          const blob = await response.blob();
+          return blob;
+        },
+      }),
     }),
 
     saveFinalPayment: builder.mutation({
@@ -493,6 +511,15 @@ export const orderApi = createApi({
       }),
       invalidatesTags: ["Order"],
     }),
+
+    // order confirm for Email and Whatsapp
+    orderConfirm: builder.mutation({
+      query: (formData) => ({
+        url: `/api/v1/emailwa/orderconfrim`,
+        method: "POST",
+        body: formData,
+      }),
+    }),
   }),
 });
 
@@ -505,6 +532,9 @@ export const {
   useGenerateInvoiceFromOrderMutation,
   useLazyGetAdvanceAmtQuery,
   useLazyGenerateOpticalLensReceiptQuery,
+  useLazyGenerateOrderQuery,
+  useOrderConfirmMutation,
+  useLazyPrintPdfQuery,
 
   // Offer
   useGetOfferCodeDetailsMutation,

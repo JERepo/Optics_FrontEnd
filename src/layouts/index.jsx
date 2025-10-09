@@ -109,6 +109,10 @@ import AuditReport from "../pages/Reports/AuditReport";
 import ProfitReport from "../pages/Reports/ProfileReport";
 import LoyaltySummary from "../pages/Reports/LoyaltySummary";
 import EmailTemplates from "../pages/EmailTemplates/EmailTemplates";
+import WhatsappTemplates from "../pages/EmailTemplates/WhatsappTemplates";
+import PurchaseOrderReport from "../pages/Reports/PurchaseOrderReport";
+import STINReport from "../pages/Reports/STINReport";
+import STOUTReport from "../pages/Reports/STOUTReport";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -981,6 +985,18 @@ export const router = createBrowserRouter([
         element: <ProfitReport />,
       },
       {
+        path: "purchase-order-report",
+        element: <PurchaseOrderReport />,
+      },
+      {
+        path: "stin-report",
+        element: <STINReport />,
+      },
+       {
+        path: "stout-report",
+        element: <STOUTReport />,
+      },
+      {
         path: "contact-lens-master",
         element: <CLMain />,
       },
@@ -993,7 +1009,7 @@ export const router = createBrowserRouter([
         element: <CLMaster />,
       },
       {
-        path: "company-settings",
+        path: "location-settings",
         element: <CompanySettings />,
       },
       {
@@ -1003,6 +1019,10 @@ export const router = createBrowserRouter([
       {
         path: "email-templates",
         element: <EmailTemplates />,
+      },
+      {
+        path: "whatsapp-templates",
+        element: <WhatsappTemplates />,
       },
     ],
   },

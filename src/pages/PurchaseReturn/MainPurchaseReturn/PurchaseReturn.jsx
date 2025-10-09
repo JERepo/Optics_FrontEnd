@@ -119,6 +119,7 @@ const PurchaseReturn = () => {
   };
   const handlePrint = async (item) => {
     setPrintingId(item.id);
+    console.log("ite",item)
 
     try {
       const blob = await generatePrint({
@@ -129,13 +130,14 @@ const PurchaseReturn = () => {
       const url = window.URL.createObjectURL(
         new Blob([blob], { type: "application/pdf" })
       );
-      const newWindow = window.open(url);
-      if (newWindow) {
-        newWindow.onload = () => {
-          newWindow.focus();
-          newWindow.print();
-        };
-      }
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `DebittNote_${item.p.DNNo} (${item.p.DNPrefix}${item.p.DNNo}).pdf`
+      document.body.appendChild(link);
+      link.click();
+      // clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.log(error);
       toast.error(

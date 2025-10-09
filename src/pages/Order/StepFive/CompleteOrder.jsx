@@ -15,11 +15,14 @@ import { Table, TableCell, TableRow } from "../../../components/Table";
 import {
   useCompleteOrderFinalMutation,
   useGetSavedOrderDetailsQuery,
+  useLazyGenerateOrderQuery,
+  useOrderConfirmMutation,
 } from "../../../api/orderApi";
 import Loader from "../../../components/ui/Loader";
 import Input from "../../../components/Form/Input";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import toast from "react-hot-toast";
+import { useCreateEmailMutation } from "../../../api/emailAndWhatsappApi";
 
 // Helper functions
 const formatNumber = (num) => {
@@ -303,6 +306,9 @@ const CompleteOrder = () => {
   const [updateFinalOrder, { isLoading: isFinalOrderLoading }] =
     useCompleteOrderFinalMutation();
 
+  const [generateOrderPDF,{isLoading:isPDfGenerating}] = useLazyGenerateOrderQuery();
+  const [orderConfirm,{isLoading:isOrderConfirming}] = useOrderConfirmMutation();
+
   const handleBack = () => goToStep(currentStep - 1);
   const handleAddProduct = () => goToStep(2);
 
@@ -415,6 +421,28 @@ const CompleteOrder = () => {
         TotalValue: totalAmount,
       };
       await updateFinalOrder({ orderId: customerId.orderId, payload }).unwrap();
+        //  after updating the final order we have to generate the pdf and need to send it in the order confirm
+
+        (async () => {
+          try {
+            const pdfBlob = await generateOrderPDF({
+              orderId: customerId.orderId,
+            }).unwrap();
+
+            const formData = new FormData();
+            formData.append("orderId", customerId.orderId);
+            formData.append(
+              "EmailAttachment",
+              pdfBlob,
+              "OrderConfirmation.pdf"
+            );
+
+            await orderConfirm(formData).unwrap();
+          } catch (err) {
+            console.warn("order confirm flow failed:", err);
+          }
+        })();
+
 
       toast.success("Order successfully saved");
 
@@ -446,6 +474,28 @@ const CompleteOrder = () => {
           orderId: customerId.orderId,
           payload,
         }).unwrap();
+
+        //  after updating the final order we have to generate the pdf and need to send it in the order confirm
+
+        (async () => {
+          try {
+            const pdfBlob = await generateOrderPDF({
+              orderId: customerId.orderId,
+            }).unwrap();
+
+            const formData = new FormData();
+            formData.append("orderId", customerId.orderId);
+            formData.append(
+              "EmailAttachment",
+              pdfBlob,
+              "OrderConfirmation.pdf"
+            );
+
+            await orderConfirm(formData).unwrap();
+          } catch (err) {
+            console.warn("order confirm flow failed:", err);
+          }
+        })();
 
         toast.success("Order successfully saved");
 
@@ -479,7 +529,6 @@ const CompleteOrder = () => {
       goToStep(6);
     }
   };
-  console.log(savedOrders);
   if (savedOrdersLoading) return <Loader />;
 
   return (
@@ -593,10 +642,7 @@ const CompleteOrder = () => {
                     <TableCell>{item.SlNo}</TableCell>
                     <TableCell>{getShortTypeName(item.typeid)}</TableCell>
                     <TableCell>
-                      <div
-                        className="whitespace-pre-wrap"
-                        
-                      >
+                      <div className="whitespace-pre-wrap">
                         {getProductName(item)}
                       </div>
                     </TableCell>
@@ -667,8 +713,8 @@ const CompleteOrder = () => {
               {/* Action Button */}
               <div className="flex justify-end mt-6">
                 <Button
-                  isLoading={isFinalOrderLoading}
-                  disabled={isFinalOrderLoading}
+                  isLoading={isFinalOrderLoading || isPDfGenerating || isOrderConfirming}
+                  disabled={isFinalOrderLoading || isPDfGenerating || isOrderConfirming}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 text-lg"
                   onClick={handleCompleteOrder}
                 >
