@@ -279,8 +279,8 @@ export function GRNViewPage() {
                                             {item.PowerSpecsAdditional ? ` Add: ${item.Additional > 0 ? `+` : ``}${item.Additional}` : ` Add: `}
                                             {item.Size && <br />}{item.Size}
                                             {item?.ProductDetails?.barcode && <br />}{item?.ProductDetails?.barcode ? `Barcode: ${item?.ProductDetails?.barcode}` : null}
-                                            {item?.BatchCode && <br />}{item.BatchCode ? `BatchCode: ${item.BatchCode}` : null}
-                                            {(() => {
+                                            {(item?.ProductDetails?.CLBatchCode && item?.BatchCode) && <br />}{(item?.ProductDetails?.CLBatchCode && item.BatchCode) ? `BatchCode: ${item.BatchCode}` : null}
+                                            {(item?.ProductDetails?.CLBatchCode) && (() => {
                                                 console.log("Iteme ajnd", item);
                                                 const stock = item?.ProductDetails?.Stock?.find(stock => stock.BatchCode === item.BatchCode);
                                                 console.log("item.BatchCode:", item.BatchCode);
