@@ -21,7 +21,11 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { isBefore, isAfter, subDays, startOfDay, format } from "date-fns";
-import { useSaveFinalPaymentMutation } from "../../../api/orderApi";
+import {
+  useLazyGenerateOrderQuery,
+  useOrderConfirmMutation,
+  useSaveFinalPaymentMutation,
+} from "../../../api/orderApi";
 import { useNavigate } from "react-router";
 import { useGetAdvanceDataForInvoiceQuery } from "../../../api/customerRefund";
 import { useLazyValidateGiftVoucherQuery } from "../../../api/giftVoucher";
@@ -130,6 +134,11 @@ const PaymentFlow = ({
       : customerId.customerId,
     companyId: collectPayment ? InvoiceCompanyId : customerId?.companyId,
   });
+
+  const [generateOrderPDF, { isLoading: isPDfGenerating }] =
+    useLazyGenerateOrderQuery();
+  const [orderConfirm, { isLoading: isOrderConfirming }] =
+    useOrderConfirmMutation();
 
   const filteredCardPaymentMachines = paymentMachine?.data.data.filter(
     (p) =>
@@ -285,6 +294,25 @@ const PaymentFlow = ({
         orderId: customerId.orderId,
         payload: finalStructure,
       }).unwrap();
+
+      //  after updating the final order we have to generate the pdf and need to send it in the order confirm
+
+      (async () => {
+        try {
+          const pdfBlob = await generateOrderPDF({
+            orderId: customerId.orderId,
+          }).unwrap();
+
+          const formData = new FormData();
+          formData.append("orderId", customerId.orderId);
+          formData.append("EmailAttachment", pdfBlob, "OrderConfirmation.pdf");
+
+          await orderConfirm(formData).unwrap();
+        } catch (err) {
+          console.warn("order confirm flow failed:", err);
+        }
+      })();
+
       toast.success("Order created Successfully");
       resetOrderContext();
       updatePaymentDetails([]);
@@ -296,7 +324,7 @@ const PaymentFlow = ({
       toast.error("Please try again!");
     }
   };
-  console.log("pp", fullPayments);
+
   const handleAddPayment = () => {
     const validationErrors = {};
 

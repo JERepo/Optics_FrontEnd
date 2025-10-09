@@ -306,37 +306,39 @@ const DisplayMainData = ({
   );
   const totalPages = Math.ceil(allPrescriptionData?.length / pageSize);
 
-  const handlePrint = async (item) => {
-    const { Id, PatientID } = item;
-    setPrintingId(Id);
+const handlePrint = async (item) => {
+  const { Id, PatientID } = item;
+  setPrintingId(Id);
 
-    try {
-      const blob = await getPrescriptionPrint({
-        id: Id,
-        patientId: PatientID,
-        companyId: locationId,
-      }).unwrap();
+  try {
+    const blob = await getPrescriptionPrint({
+      id: Id,
+      patientId: PatientID,
+      companyId: locationId,
+    }).unwrap();
 
-      const url = window.URL.createObjectURL(
-        new Blob([blob], { type: "application/pdf" })
-      );
-      const newWindow = window.open(url);
-      if (newWindow) {
-        newWindow.onload = () => {
-          newWindow.focus();
-          newWindow.print();
-        };
-      }
-    } catch (error) {
-      setSelectedId(null);
-      console.log(error);
-      toast.error(
-        "Unable to print the prescription please try again after some time!"
-      );
-    } finally {
+    const url = window.URL.createObjectURL(new Blob([blob], { type: "application/pdf" }));
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${selectedPrescription?.name}_Prescription.pdf`; 
+    document.body.appendChild(link);
+    link.click();
+    
+    // Clean up
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    setSelectedId(null);
+    console.log(error);
+    toast.error(
+      "Unable to print the prescription. Please try again after some time!"
+    );
+  } finally {
     setPrintingId(null);
   }
-  };
+};
+
 
   console.log(selectedPrescription)
   return (

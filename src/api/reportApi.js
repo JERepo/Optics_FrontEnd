@@ -33,9 +33,37 @@ export const reportApi = createApi({
         responseHandler: (response) => response.blob(),
       }),
     }),
-     getPurchaseReport: builder.query({
+    getPurchaseReport: builder.query({
       query: ({ fromDate, toDate, userId, type }) => ({
         url: `/api/v1/report/purchasereport?fromDate=${fromDate}&toDate=${toDate}&userId=${userId}&type=${type}`,
+        method: "GET",
+        responseHandler: (response) => response.blob(),
+      }),
+    }),
+    getProfitReport: builder.query({
+      query: ({ fromDate, toDate, userId, type }) => ({
+        url: `/api/v1/report/profitreport?fromDate=${fromDate}&toDate=${toDate}&userId=${userId}&type=${type}`,
+        method: "GET",
+        responseHandler: (response) => response.blob(),
+      }),
+    }),
+    getPurchaseOrderReport: builder.query({
+      query: ({ fromDate, toDate, userId, type }) => ({
+        url: `/api/v1/report/purchaseorderreport?fromDate=${fromDate}&toDate=${toDate}&userId=${userId}&type=${type}`,
+        method: "GET",
+        responseHandler: (response) => response.blob(),
+      }),
+    }),
+    getStockInReport: builder.query({
+      query: ({ fromDate, toDate, userId, type }) => ({
+        url: `/api/v1/report/stinreport?fromDate=${fromDate}&toDate=${toDate}&userId=${userId}&type=${type}`,
+        method: "GET",
+        responseHandler: (response) => response.blob(),
+      }),
+    }),
+     getAuditReport: builder.query({
+      query: ({ fromDate, toDate, page, type }) => ({
+        url: `/api/v1/report/audit?fromDate=${fromDate}&toDate=${toDate}&page=${page}&type=${type}`,
         method: "GET",
         responseHandler: (response) => response.blob(),
       }),
@@ -48,5 +76,9 @@ export const {
   useLazyGetSalesReportQuery,
   useLazyGetSalesReturnReportQuery,
   useLazyGetPurchaseReturnReportQuery,
-  useLazyGetPurchaseReportQuery
+  useLazyGetPurchaseReportQuery,
+  useLazyGetProfitReportQuery,
+  useLazyGetPurchaseOrderReportQuery,
+  useLazyGetStockInReportQuery,
+  useLazyGetAuditReportQuery
 } = reportApi;

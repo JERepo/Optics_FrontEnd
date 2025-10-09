@@ -34,7 +34,7 @@ const modules = [
   { value: 3, label: "SalesReturn" },
 ];
 
-const EmailTemplates = () => {
+const WhatsappTemplates = () => {
   const { hasMultipleLocations } = useSelector((state) => state.auth);
   const [selectedModule, setSelectedModule] = useState("Order");
   const [subject, setSubject] = useState("");
@@ -45,7 +45,10 @@ const EmailTemplates = () => {
   const subjectInputRef = useRef(null);
 
   const { data: templateData, isLoading: isTemplateLoading } =
-    useGetEmailByModuleQuery({ module: selectedModule, companyId: parseInt(hasMultipleLocations[0]) });
+    useGetEmailByModuleQuery({
+      module: selectedModule,
+      companyId: parseInt(hasMultipleLocations[0]),
+    });
 
   const editor = useEditor({
     extensions: [
@@ -60,7 +63,7 @@ const EmailTemplates = () => {
       TextAlign.configure({ types: ["heading", "paragraph"] }),
     ],
     content:
-      templateData?.data?.EmailTemplate ||
+      templateData?.data?.WATemplate ||
       "<p>Start composing your email template...</p>",
     onFocus: () => setActiveField("editor"),
     onUpdate: ({ editor }) => {
@@ -80,15 +83,12 @@ const EmailTemplates = () => {
   const [createEmail, { isLoading: isEmailCreating }] =
     useCreateEmailMutation();
   const [updateEmail, { isLoading: isUpdating }] = useUpdateEmailMutation();
+  
   // Prefill state with template data
   useEffect(() => {
     if (templateData?.data[0]) {
-      console.log("coing");
-      // Set subject
-      setSubject(templateData?.data[0].EmailSubject || "");
-
       // Set attachment
-      setIncludeAttachment(!!templateData?.data[0].EmailAttachment);
+      setIncludeAttachment(!!templateData?.data[0].WATemplate);
 
       // Parse ParamID (string like "3,2" to array [3, 2])
       if (templateData?.data[0].ParamID) {
@@ -99,8 +99,8 @@ const EmailTemplates = () => {
       }
 
       // Update editor content (already set in useEditor, but ensure it's updated)
-      if (editor && templateData?.data[0].EmailTemplate) {
-        editor.commands.setContent(templateData?.data[0].EmailTemplate);
+      if (editor && templateData?.data[0].WATemplate) {
+        editor.commands.setContent(templateData?.data[0].WATemplate);
         setEditorCharCount(editor.getText().length);
       }
 
@@ -159,14 +159,6 @@ const EmailTemplates = () => {
     }
   };
 
-  const handleSubjectChange = (e) => {
-    const newValue = e.target.value;
-    if (newValue.length <= 255) {
-      setSubject(newValue);
-      updateSelectedParamIds(editor?.getText() || "", newValue);
-    }
-  };
-
   const handleSave = async () => {
     const editorText = editor?.getText() || "";
     if (subject.length > 255) {
@@ -182,22 +174,22 @@ const EmailTemplates = () => {
         CompanyID: parseInt(hasMultipleLocations[0]),
         ModuleType: selectedModule,
         ParamIDs: selectedParamIds,
-        EmailTemplate: editor.getHTML(),
-        EmailSubject: subject,
+        WATemplate: editor.getHTML(),
+        // EmailSubject: subject,
         Status: 1,
         IsActive: 1,
-        IncludeAttachment: includeAttachment,
+        WAAttachment: includeAttachment,
       };
       console.log("Payload:", payload);
       if (templateData?.data[0]?.CompanyID) {
         await updateEmail({ payload }).unwrap();
-        toast.success("Email successfully updated!");
+        toast.success("Whatsapp successfully updated!");
       } else {
         await createEmail(payload).unwrap();
-        toast.success("Email successfully created!");
+        toast.success("Whatsapp successfully created!");
       }
     } catch (error) {
-      console.error("Error saving email template:", error);
+      console.error("Error saving Whatsapp template:", error);
     }
   };
 
@@ -215,10 +207,10 @@ const EmailTemplates = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                Email Templates
+                Whatsapp Templates
               </h1>
               <p className="text-gray-600 mt-2">
-                Create and manage professional email templates for different
+                Create and manage professional whatsapp templates for different
                 modules
               </p>
             </div>
@@ -250,30 +242,6 @@ const EmailTemplates = () => {
 
         {/* Editor Container */}
         <div className="py-5">
-          {/* Subject Line */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Subject Line
-            </label>
-            <input
-              type="text"
-              placeholder="Enter email subject..."
-              value={subject}
-              onChange={handleSubjectChange}
-              onFocus={() => setActiveField("subject")}
-              ref={subjectInputRef}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-blue-500"
-            />
-            <div
-              className={`text-sm mt-1 ${
-                subjectCharCount > 255 ? "text-red-600" : "text-gray-600"
-              }`}
-              aria-live="polite"
-            >
-              {subjectCharCount} / 255 characters
-            </div>
-          </div>
-
           {/* Toolbar */}
           <div className="border border-gray-300 rounded-t-lg bg-white">
             <div className="flex flex-wrap items-center gap-1 p-3 border-b border-gray-300">
@@ -466,7 +434,7 @@ const EmailTemplates = () => {
                 onChange={(e) => setIncludeAttachment(e.target.checked)}
                 className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
-              Include Attachment
+              Group Attachment
             </label>
           </div>
           {/* Parameters */}
@@ -489,7 +457,7 @@ const EmailTemplates = () => {
           {/* Save Button */}
           <div className="mt-5 flex justify-end">
             <Button
-            className="w-50"
+              className="w-50"
               onClick={handleSave}
               isLoading={isUpdating || isEmailCreating}
               disabled={
@@ -498,7 +466,7 @@ const EmailTemplates = () => {
                 editorCharCount > 1000
               }
             >
-             {templateData?.data[0]?.CompanyID ? "Update" : "Save"}
+              {templateData?.data[0]?.CompanyID ? "Update" : "Save"}
             </Button>
           </div>
         </div>
@@ -507,4 +475,4 @@ const EmailTemplates = () => {
   );
 };
 
-export default EmailTemplates;
+export default WhatsappTemplates;

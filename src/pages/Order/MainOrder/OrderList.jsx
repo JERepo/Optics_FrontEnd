@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { FiEye, FiPlus, FiSearch } from "react-icons/fi";
+import { FiEye, FiPlus, FiPrinter, FiSearch } from "react-icons/fi";
 import { TextField } from "@mui/material";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -9,11 +9,12 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import Button from "../../../components/ui/Button";
 import { useOrder } from "../../../features/OrderContext";
 import { Table, TableCell, TableRow } from "../../../components/Table";
-import { useGetAllOrdersQuery } from "../../../api/orderApi";
+import { useGetAllOrdersQuery, useLazyPrintPdfQuery } from "../../../api/orderApi";
 import { enGB } from "date-fns/locale";
 import Loader from "../../../components/ui/Loader";
 import { useSelector } from "react-redux";
 import HasPermission from "../../../components/HasPermission";
+import toast from "react-hot-toast";
 
 const OrderList = () => {
   const navigate = useNavigate();
@@ -25,9 +26,11 @@ const OrderList = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [printingId, setPrintingId] = useState(null);
 
   const { data: allOrders, isLoading: isAllOrdersLoading } =
     useGetAllOrdersQuery();
+  const [generatePrint, { isFetching: isPrinting }] = useLazyPrintPdfQuery();
 
   useEffect(() => {
     setCurrentPage(1);
@@ -118,6 +121,35 @@ const OrderList = () => {
     return types[status] || "Draft";
   };
 
+  const handlePrint = async (item) => {
+    setPrintingId(item.id);
+    console.log("ite", item);
+
+    try {
+      const blob = await generatePrint({
+       orderId : item.id
+      }).unwrap();
+
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "application/pdf" })
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `OrderConfirmation_${item.order.OrderNo} (${item.order.OrderPrefix}/${item.order.OrderNo}).pdf`;
+      document.body.appendChild(link);
+      link.click();
+      // clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.log(error);
+      toast.error(
+        "Unable to print the order please try again after some time!"
+      );
+    } finally {
+      setPrintingId(null);
+    }
+  };
   if (isAllOrdersLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -295,13 +327,25 @@ const OrderList = () => {
                 <TableCell>{order.totalQty}</TableCell>
                 <TableCell>{order.orderValue}</TableCell>
                 <TableCell>{getOrderStatus(order.Status)}</TableCell>
-                <TableCell>
+                <TableCell className="flex gap-2">
                   <button
                     onClick={() => handleViewOrder(order.order)}
                     className="flex items-center  text-lg font-medium rounded-md "
                     title="View"
                   >
                     <FiEye className="" />
+                  </button>
+                  <button
+                    className="flex items-center justify-center  text-lg font-medium rounded-md text-green-600 "
+                    onClick={() => handlePrint(order)}
+                  >
+                    {printingId === order?.id ? (
+                      <Loader color="black" />
+                    ) : (
+                      <div className="flex items-center">
+                        <FiPrinter title="Print" />
+                      </div>
+                    )}
                   </button>
                 </TableCell>
               </TableRow>

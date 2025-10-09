@@ -8,6 +8,7 @@ import {
   useItemCancelMutation,
   useLazyGenerateOpticalLensReceiptQuery,
   useLazyGetAdvanceAmtQuery,
+  useLazyPrintPdfQuery,
 } from "../../../api/orderApi";
 import { useOrder } from "../../../features/OrderContext";
 import { Table, TableCell, TableRow } from "../../../components/Table";
@@ -35,7 +36,7 @@ const OrderView = () => {
   const [isWarningOpen, setIsWarningOpen] = useState(false);
   const [warningMessage, setWarningMessage] = useState(null);
   const [isCancelOrder, setIsCancelOrder] = useState(false);
-  const [generalWarning,setGeneralWarning] = useState(false)
+  const [generalWarning, setGeneralWarning] = useState(false);
 
   const [printingId, setPrintingId] = useState(null);
   const [selectedItemId, setSelectedItemId] = useState(null);
@@ -56,6 +57,8 @@ const OrderView = () => {
     useLazyGetAdvanceAmtQuery();
   const [generateOLPrint, { isFetching: isPrinting }] =
     useLazyGenerateOpticalLensReceiptQuery();
+
+  const [generatePrint, { isFetching: isPrintingPdf }] = useLazyPrintPdfQuery();
 
   const getTypeName = (id) => {
     const types = { 1: "F/S", 2: "ACC", 3: "CL" };
@@ -301,7 +304,6 @@ const OrderView = () => {
     }
   };
   const handleGenerateInvoiceConfirm = async (order) => {
-   
     const payload = {
       invoiceItems: [
         {
@@ -419,7 +421,6 @@ const OrderView = () => {
     } catch (error) {
       console.log(error);
 
-
       return;
     }
   };
@@ -451,8 +452,38 @@ const OrderView = () => {
   }
 
   columns.push("Total", "Action");
+  const handlePrintPdf = async (item) => {
+    setPrintingId(item.id);
+    console.log("ite", item);
+
+    try {
+      const blob = await generatePrint({
+        orderId: item.Id,
+      }).unwrap();
+
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "application/pdf" })
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `OrderConfirmation_${item.OrderNo} (${item.OrderPrefix}/${item.OrderNo}).pdf`;
+      document.body.appendChild(link);
+      link.click();
+      // clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.log(error);
+      toast.error(
+        "Unable to print the order please try again after some time!"
+      );
+    } finally {
+      setPrintingId(null);
+    }
+  };
 
   const handlePrint = async (item) => {
+    console.log("ite", item);
     setPrintingId(item.OrderDetailId);
 
     try {
@@ -464,13 +495,15 @@ const OrderView = () => {
       const url = window.URL.createObjectURL(
         new Blob([blob], { type: "application/pdf" })
       );
-      const newWindow = window.open(url);
-      if (newWindow) {
-        newWindow.onload = () => {
-          newWindow.focus();
-          newWindow.print();
-        };
-      }
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `JobOrder_${item.SlNo} (${customerDataById?.data.data?.OrderPrefix}/${customerDataById?.data.data?.OrderNo}/OrderDEtailSlNo).pdf`;
+      document.body.appendChild(link);
+      link.click();
+      // clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.log(error);
       toast.error(
@@ -487,7 +520,7 @@ const OrderView = () => {
       </div>
     );
   }
-
+  console.log("ord", customerDataById?.data.data, orderDetails);
   return (
     <div className="max-w-8xl">
       <div className="bg-white rounded-sm shadow-sm overflow-hidden p-6">
@@ -515,6 +548,11 @@ const OrderView = () => {
             <Button variant="outline" onClick={() => navigate("/order-list")}>
               Back
             </Button>
+            <Button
+              onClick={() => handlePrintPdf(customerDataById?.data.data)}
+              icon={FiPrinter}
+              isLoading={printingId == customerDataById?.data.data.Id}
+            ></Button>
           </div>
         </div>
         {/* Order Details */}
@@ -794,7 +832,7 @@ const OrderView = () => {
         danger={false}
         isLoading={isOrderCancelling}
       />
-       <ConfirmationModal
+      <ConfirmationModal
         isOpen={generalWarning}
         onClose={() => setGeneralWarning(false)}
         onConfirm={handleConfirmWarningsForOrder}

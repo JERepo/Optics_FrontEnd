@@ -245,13 +245,14 @@ const PurchaseReturnView = () => {
       const url = window.URL.createObjectURL(
         new Blob([blob], { type: "application/pdf" })
       );
-      const newWindow = window.open(url);
-      if (newWindow) {
-        newWindow.onload = () => {
-          newWindow.focus();
-          newWindow.print();
-        };
-      }
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `DebittNote_${item.DNNo} (${item.DNPrefix}${item.DNNo}).pdf`
+      document.body.appendChild(link);
+      link.click();
+      // clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.log(error);
       toast.error(

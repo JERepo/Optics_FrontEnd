@@ -17,6 +17,8 @@ import {
   FiTag,
   FiBook,
   FiBarChart2,
+  FiMapPin,
+  FiGrid,
 } from "react-icons/fi";
 import {
   IoPeopleOutline,
@@ -32,6 +34,13 @@ import {
 import { MdOutlineAdminPanelSettings } from "react-icons/md";
 
 export const menuItems = [
+   {
+    name: "Dashboard",
+    icon: FiGrid,
+    module: "Dashboard",
+    path: "/dashboard",
+  },
+  
   {
     name: "Product Master",
     icon: IoOptionsSharp,
@@ -155,6 +164,19 @@ export const menuItems = [
         module: "Material Master",
         icon: IoConstructOutline, // Suggests building/setup
       },
+       {
+        name: "Email Templates",
+        path: "/email-templates",
+        module: "communication",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+       {
+        name: "Whatsapp Templates",
+        path: "/whatsapp-templates",
+        module: "communication",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+
     ],
   },
 
@@ -334,6 +356,24 @@ export const menuItems = [
         module: "Profit",
         icon: IoConstructOutline, // Suggests building/setup
       },
+        {
+        name: "Purchase Order Report",
+        path: "purchase-order-report",
+        module: "Purchase-Order-Report",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+        {
+        name: "Profit Report",
+        path: "stin-report",
+        module: "stin-report",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+        {
+        name: "stout-report",
+        path: "profit-report",
+        module: "stout-report",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
     ],
   },
 
@@ -361,5 +401,11 @@ export const menuItems = [
         path: "/customer-refund",
       },
     ],
+  },
+   {
+    name: "Location Settings",
+    icon: FiMapPin,
+    module: "Location-setting",
+    path: "/location-settings",
   },
 ];
