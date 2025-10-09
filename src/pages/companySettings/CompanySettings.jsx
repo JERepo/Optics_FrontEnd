@@ -538,7 +538,9 @@ const CompanySettings = () => {
               />
             </div>
             <div className="flex items-center gap-5 flex-1/2">
-              <label className="text-neutral-800 font-semibold text-base">GST Register </label>
+              <label className="text-neutral-800 font-semibold text-base">
+                GST Register{" "}
+              </label>
               <Radio
                 name="gstRegister"
                 value="1"
@@ -890,7 +892,9 @@ const CompanySettings = () => {
       content: (
         <Box className="flex gap-4 flex-col">
           <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">Enable GST Verification </label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Enable GST Verification{" "}
+            </label>
             <Radio
               name="enableGstVerification"
               value="1"
@@ -918,7 +922,10 @@ const CompanySettings = () => {
             />
           </div>
           <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base"> Enable E-Invoice </label>
+            <label className="text-neutral-800 font-semibold text-base">
+              {" "}
+              Enable E-Invoice{" "}
+            </label>
             <Radio
               name="enableEInvoice"
               value="1"
@@ -1048,7 +1055,9 @@ const CompanySettings = () => {
               </div>
               <div className="mt-5 grid grid-cols-3 gap-5">
                 <div className="flex items-center gap-3">
-                  <label className="text-neutral-800 font-semibold text-base">Enable E-Invoice for Invoice</label>
+                  <label className="text-neutral-800 font-semibold text-base">
+                    Enable E-Invoice for Invoice
+                  </label>
                   <Radio
                     name="E-1"
                     value="1"
@@ -1065,7 +1074,9 @@ const CompanySettings = () => {
                   />
                 </div>
                 <div className="flex items-center gap-3">
-                  <label className="text-neutral-800 font-semibold text-base">Enable E-Invoice for Credit Note </label>
+                  <label className="text-neutral-800 font-semibold text-base">
+                    Enable E-Invoice for Credit Note{" "}
+                  </label>
                   <Radio
                     name="E-2"
                     value="1"
@@ -1089,7 +1100,9 @@ const CompanySettings = () => {
             </>
           )}
           <div className="flex items-center gap-3">
-            <label className="text-neutral-800 font-semibold text-base">Enable E-Invoice for Debit Note </label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Enable E-Invoice for Debit Note{" "}
+            </label>
             <Radio
               name="E-3"
               value="1"
@@ -1420,7 +1433,9 @@ const CompanySettings = () => {
       content: (
         <Box className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">Optical Lens Fitting Label</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Optical Lens Fitting Label
+            </label>
             <Radio
               name="opticalLensFittingLabel"
               value="1"
@@ -1503,7 +1518,9 @@ const CompanySettings = () => {
           </div>
 
           <div className="flex items-center gap-5 flex-1/2">
-            <label className="text-neutral-800 font-semibold text-base">Fitting Charges Sales</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Fitting Charges Sales
+            </label>
             <Radio
               name="fittingChargesSales"
               value="1"
@@ -1695,10 +1712,10 @@ const CompanySettings = () => {
       icon: <FiTool className="text-orange-600 text-xl" />,
       content: (
         <Box className="grid grid-cols-1 md:grid-cols-3 gap-7">
-
-          
           <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">Invoice DC PDF</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Invoice DC PDF
+            </label>
             <Radio
               name="invoiceDcPdf"
               value="1"
@@ -1715,7 +1732,9 @@ const CompanySettings = () => {
             />
           </div>
           <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">Edit Invoice Price</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Edit Invoice Price
+            </label>
             <Radio
               name="editInvoicePrice"
               value="1"
@@ -1732,7 +1751,9 @@ const CompanySettings = () => {
             />
           </div>
           <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">Sales Return Against Invoice Only</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Sales Return Against Invoice Only
+            </label>
             <Radio
               name="salesReturnAgainstInvoiceOnly"
               value="1"
@@ -1764,7 +1785,9 @@ const CompanySettings = () => {
             />
           </div>
           <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">PO Approval Required</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              PO Approval Required
+            </label>
             <Radio
               name="poApproval"
               value="1"
@@ -1781,7 +1804,9 @@ const CompanySettings = () => {
             />
           </div>
           <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">GV Multiple Use</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              GV Multiple Use
+            </label>
             <Radio
               name="gvMultipleUse"
               value="1"
@@ -1798,7 +1823,9 @@ const CompanySettings = () => {
             />
           </div>
           <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">Customer DC Billing</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Customer DC Billing
+            </label>
             <Radio
               name="dcBilling"
               value="1"
@@ -1815,7 +1842,9 @@ const CompanySettings = () => {
             />
           </div>
           <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">Customer Credit Billing</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Customer Credit Billing
+            </label>
             <Radio
               name="creditBilling"
               value="1"
@@ -1832,7 +1861,9 @@ const CompanySettings = () => {
             />
           </div>
           <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">Customer Loyalty Enable</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Customer Loyalty Enable
+            </label>
             <Radio
               name="loyaltyEnable"
               value="1"
@@ -1849,7 +1880,9 @@ const CompanySettings = () => {
             />
           </div>
           <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">Order Discount Approval</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Order Discount Approval
+            </label>
             <Radio
               name="orderDiscountApproval"
               value="1"
@@ -1866,7 +1899,9 @@ const CompanySettings = () => {
             />
           </div>
           <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">Order Cancellation Approval</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Order Cancellation Approval
+            </label>
             <Radio
               name="orderCancellationApproval"
               value="1"
@@ -1887,7 +1922,9 @@ const CompanySettings = () => {
             />
           </div>
           <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">Invoice Cancellation Approval</label>
+            <label className="text-neutral-800 font-semibold text-base">
+              Invoice Cancellation Approval
+            </label>
             <Radio
               name="invoiceCancellationApproval"
               value="1"

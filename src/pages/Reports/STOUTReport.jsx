@@ -6,14 +6,11 @@ import { enGB } from "date-fns/locale";
 import React, { useState } from "react";
 import { format, subDays, subMonths, startOfDay, endOfDay } from "date-fns";
 import Button from "../../components/ui/Button";
-import {  useLazyGetPurchaseOrderReportQuery } from "../../api/reportApi";
+import { useLazyGetStockOutReportQuery } from "../../api/reportApi";
 import { useSelector } from "react-redux";
 import toast from "react-hot-toast";
 
-const reportTypes = [
-  { value: 0, label: "Purchase Order Details" },
- 
-];
+const reportTypes = [{ value: 0, label: "Stock Transfer Out Details" }];
 
 const dateOptions = [
   { value: "today", label: "Today" },
@@ -36,7 +33,7 @@ const STOUTReport = () => {
   const [toDate, setToDate] = useState(new Date());
 
   const [getReport, { isFetching: isReportLoading }] =
-    useLazyGetPurchaseOrderReportQuery();
+    useLazyGetStockOutReportQuery();
 
   const handleDateTypeChange = (_, newValue) => {
     if (!newValue) return;
@@ -109,8 +106,8 @@ const STOUTReport = () => {
         userId: user.Id,
         type: reportType,
       }).unwrap();
-      downloadFile(blob, "Purchase Order.xlsx");
-      toast.success("Purchase Order Generated successfully!");
+      downloadFile(blob, "Stock Transfer Out.xlsx");
+      toast.success("Stock Transfer Out Generated successfully!");
       setFromDate(new Date());
       setToDate(new Date());
     } catch (error) {
@@ -120,7 +117,7 @@ const STOUTReport = () => {
         error?.response?.data?.message ||
         error?.response?.data?.error ||
         error?.message ||
-        "Looks like there are no pending Purchase Orders right now.";
+        "Looks like there are no pending Stock Transfer Outs right now.";
 
       toast.error(errorMsg);
     }
@@ -132,7 +129,9 @@ const STOUTReport = () => {
         <div className="bg-white rounded-xl shadow-sm overflow-hidden p-6">
           {/* Header */}
           <div className="mb-10">
-            <h2 className="text-2xl font-bold text-gray-900">Purchase Order Report</h2>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Stock Transfer Out Report
+            </h2>
           </div>
 
           <div className="grid grid-cols-4 gap-5 items-center">

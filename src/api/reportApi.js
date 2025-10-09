@@ -61,7 +61,14 @@ export const reportApi = createApi({
         responseHandler: (response) => response.blob(),
       }),
     }),
-     getAuditReport: builder.query({
+    getStockOutReport: builder.query({
+      query: ({ fromDate, toDate, userId, type }) => ({
+        url: `/api/v1/report/stout-report?fromDate=${fromDate}&toDate=${toDate}&userId=${userId}&type=${type}`,
+        method: "GET",
+        responseHandler: (response) => response.blob(),
+      }),
+    }),
+    getAuditReport: builder.query({
       query: ({ fromDate, toDate, page, type }) => ({
         url: `/api/v1/report/audit?fromDate=${fromDate}&toDate=${toDate}&page=${page}&type=${type}`,
         method: "GET",
@@ -80,5 +87,6 @@ export const {
   useLazyGetProfitReportQuery,
   useLazyGetPurchaseOrderReportQuery,
   useLazyGetStockInReportQuery,
-  useLazyGetAuditReportQuery
+  useLazyGetAuditReportQuery,
+  useLazyGetStockOutReportQuery
 } = reportApi;

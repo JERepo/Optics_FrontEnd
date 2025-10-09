@@ -34,13 +34,13 @@ import {
 import { MdOutlineAdminPanelSettings } from "react-icons/md";
 
 export const menuItems = [
-   {
+  {
     name: "Dashboard",
     icon: FiGrid,
     module: "Dashboard",
     path: "/dashboard",
   },
-  
+
   {
     name: "Product Master",
     icon: IoOptionsSharp,
@@ -164,19 +164,18 @@ export const menuItems = [
         module: "Material Master",
         icon: IoConstructOutline, // Suggests building/setup
       },
-       {
+      {
         name: "Email Templates",
         path: "/email-templates",
         module: "communication",
         icon: IoConstructOutline, // Suggests building/setup
       },
-       {
+      {
         name: "Whatsapp Templates",
         path: "/whatsapp-templates",
         module: "communication",
         icon: IoConstructOutline, // Suggests building/setup
       },
-
     ],
   },
 
@@ -344,36 +343,36 @@ export const menuItems = [
         module: "Purchase-Report",
         icon: IoConstructOutline, // Suggests building/setup
       },
-       {
+      {
         name: "Audit Report",
         path: "audit-report",
         module: "Audit",
         icon: IoConstructOutline, // Suggests building/setup
       },
-       {
+      {
         name: "Profit Report",
         path: "profit-report",
         module: "Profit",
         icon: IoConstructOutline, // Suggests building/setup
       },
-        {
+      {
         name: "Purchase Order Report",
         path: "purchase-order-report",
         module: "Purchase-Order-Report",
         icon: IoConstructOutline, // Suggests building/setup
       },
-        {
-        name: "Profit Report",
+      {
+        name: "Stock Transfer In Report",
         path: "stin-report",
         module: "stin-report",
         icon: IoConstructOutline, // Suggests building/setup
       },
-        {
-        name: "stout-report",
-        path: "profit-report",
-        module: "stout-report",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
+      // {
+      //   name: "Stock Transfer Out Report",
+      //   path: "profit-report",
+      //   module: "stout-report",
+      //   icon: IoConstructOutline, // Suggests building/setup
+      // },
     ],
   },
 
@@ -402,7 +401,7 @@ export const menuItems = [
       },
     ],
   },
-   {
+  {
     name: "Location Settings",
     icon: FiMapPin,
     module: "Location-setting",
