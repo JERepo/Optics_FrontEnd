@@ -135,7 +135,7 @@ export default function GRNStep4() {
     const updateGRNItemQuantity = (index, newQuantity) => {
         setGrnViewDetails(prevItems =>
             prevItems.map((item, i) =>
-                i === index ? { ...item, GRNQty: parseInt(newQuantity) } : item
+                i === index ? { ...item, GRNQty: parseFloat(newQuantity) } : item
             )
         );
     };
@@ -387,7 +387,7 @@ export default function GRNStep4() {
                                                     </TableCell>
                                                     : null
                                     }
-                                    <TableCell>₹{" "} {parseFloat(parseInt(item?.GRNPrice) * ((parseInt(item?.TaxPercent) / 100) || 0)).toFixed(2)}{`(` + item?.TaxPercent + `%)`}</TableCell>
+                                    <TableCell>₹{" "} {parseFloat(parseFloat(item?.GRNPrice) * ((parseFloat(item?.TaxPercent) / 100) || 0)).toFixed(2)}{`(` + item?.TaxPercent + `%)`}</TableCell>
                                     <TableCell>{(item.GRNQty || 0)}</TableCell>
                                     <TableCell>{((grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc")) ? "" : (item.GRNPrice || 0)}</TableCell>
                                     <TableCell>₹{" "}{((grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc")) ? "" : (parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty) + parseFloat(item?.FittingPrice || 0) + ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0)).toFixed(2)}</TableCell>
@@ -619,7 +619,7 @@ export default function GRNStep4() {
                                             .reduce((total, item) => {
                                                 const quantity = item.GRNQty || 0;
                                                 const price = (item.GRNPrice) || 0;
-                                                const gstPercentage = parseInt(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) || 0;
+                                                const gstPercentage = parseFloat(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) || 0;
 
                                                 if (price && !isNaN(price) && !isNaN(quantity)) {
                                                     const subtotal = price * quantity;

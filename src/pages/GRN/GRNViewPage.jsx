@@ -333,7 +333,7 @@ export function GRNViewPage() {
                                 <TableCell>₹ {item?.ProductDetails?.Stock?.find(stock => stock.BatchCode === item.BatchCode)?.MRP || (item?.ProductDetails?.price?.MRP || item?.ProductDetails?.Stock?.MRP || item?.ProductDetails?.Stock?.OPMRP || null)}</TableCell>
                             ) : <TableCell></TableCell>}
                             {/* <TableCell>₹ {item?.ProductDetails?.price?.MRP || item?.ProductDetails?.Stock?.MRP || item?.ProductDetails?.Stock?.OPMRP || null}</TableCell> */}
-                            <TableCell>₹{" "} {parseFloat(parseInt(item?.GRNPrice) * (parseInt(item?.ProductDetails?.GSTPercentage || item?.TaxPercent) / 100)).toFixed(2)}<br />{`(${item?.ProductDetails?.GSTPercentage || item?.TaxPercent}%)`}</TableCell>
+                            <TableCell>₹{" "} {parseFloat(parseFloat(item?.GRNPrice) * (parseFloat(item?.ProductDetails?.GSTPercentage || item?.TaxPercent) / 100)).toFixed(2)}<br />{`(${item?.ProductDetails?.GSTPercentage || item?.TaxPercent}%)`}</TableCell>
                             <TableCell>{item.GRNQty}</TableCell>
                             <TableCell>{(grnViewDetails[0]?.GRNType === 1 && grnViewDetails[0]?.DCGRNPrice === 1) ? '' : `₹ ${item.GRNPrice}`}</TableCell>
                             {/* <TableCell>₹{" "}{parseFloat(parseInt(item?.GRNPrice * item?.GRNQty) * (parseInt(item?.TaxPercent) / 100)) + parseInt(item?.GRNPrice * item?.GRNQty)} </TableCell>*/}

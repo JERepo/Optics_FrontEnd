@@ -142,7 +142,8 @@ export default function GRNStep1() {
                 setFormState((prev) => ({
                     ...prev,
                     documentNo: GRNMainResponse.data[0]?.VendorDocNo,
-                    documentDate: dateObj
+                    documentDate: dateObj,
+                    billingMethod: GRNMainResponse.data[0]?.GRNType === 0 ? "invoice" : "dc"
                 }));
                 return;
 
@@ -213,7 +214,8 @@ export default function GRNStep1() {
                 const grnMainPayload = {
                     grnMain: grnData.step1.GrnMainId,
                     docNo: formState.documentNo,
-                    docDate: formState.documentDate
+                    docDate: formState.documentDate,
+                    grnType: formState.billingMethod === "invoice" ? 0 : 1
                 }
 
                 const grnResponse = await updateGRNMain(grnMainPayload);
