@@ -9,6 +9,7 @@ export default function GRNStep2() {
 
     // Context 
     const { grnData, updateStep2Data, nextStep, prevStep } = useGRN();
+    const [productArray, setProductArray] = useState([]);
 
     const [formState, setFormState] = useState({
         selectedGRNOptions: "order",
@@ -34,6 +35,15 @@ export default function GRNStep2() {
         prevStep();
     };
 
+    useEffect(() => {
+        console.log("formState.againstPO -----", formState.againstPO);
+        if (formState.againstPO === "0") {
+            setProductArray(['Frame/Sunglass', 'Lens', 'Contact Lens', 'Accessories']);
+        } else if(formState.againstPO === "1") {
+            setProductArray(['Frame/Sunglass', 'Contact Lens', 'Accessories']);
+        }
+    }, [formState]);
+
     return (
         <>
             <motion.div
@@ -43,9 +53,9 @@ export default function GRNStep2() {
                 className="bg-white rounded-2xl shadow-xl p-6"
             >
                 <h2 className="text-xl font-bold text-[#000060] mb-6">Step 2</h2>
-
+                {console.log(productArray)}
                 <div className="flex justify-start gap-12">
-                    {['Frame/Sunglass', 'Lens', 'Contact Lens', 'Accessories'].map((option) => (
+                    {productArray.map((option) => (
                         <label
                             key={option}
                             htmlFor={`option-${option}`}
