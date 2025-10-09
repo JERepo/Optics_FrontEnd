@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { FiEye, FiPlus, FiSearch } from "react-icons/fi";
+import { FiEye, FiPlus, FiPrinter, FiSearch } from "react-icons/fi";
 import { TextField } from "@mui/material";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -12,8 +12,12 @@ import { Table, TableCell, TableRow } from "../../components/Table";
 import { enGB } from "date-fns/locale";
 import Loader from "../../components/ui/Loader";
 import { useSelector } from "react-redux";
-import { useGetAllInvoiceQuery } from "../../api/InvoiceApi";
+import {
+  useGetAllInvoiceQuery,
+  useLazyPrintPdfQuery,
+} from "../../api/InvoiceApi";
 import HasPermission from "../../components/HasPermission";
+import toast from "react-hot-toast";
 
 const getOrderStatus = (status) => {
   const types = {
@@ -34,9 +38,11 @@ const InvoiceList = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [printingId, setPrintingId] = useState(null);
 
   const { data: allOrders, isLoading: isAllOrdersLoading } =
     useGetAllInvoiceQuery();
+  const [generatePrint, { isFetching: isPrinting }] = useLazyPrintPdfQuery();
 
   useEffect(() => {
     setCurrentPage(1);
@@ -110,6 +116,34 @@ const InvoiceList = () => {
   const handleViewinvoice = (invoice) => {
     updateSelectedOrderDetails(invoice);
     navigate(`/invoice/view?invoiceId=${invoice}`);
+  };
+
+  const handlePrint = async (item) => {
+    setPrintingId(item.Id);
+
+    try {
+      const blob = await generatePrint({
+        id: item.Id,
+      }).unwrap();
+
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "application/pdf" })
+      );
+      const newWindow = window.open(url);
+      if (newWindow) {
+        newWindow.onload = () => {
+          newWindow.focus();
+          newWindow.print();
+        };
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(
+        "Unable to print the stock transfer out please try again after some time!"
+      );
+    } finally {
+      setPrintingId(null);
+    }
   };
 
   if (isAllOrdersLoading) {
@@ -276,12 +310,25 @@ const InvoiceList = () => {
                 <TableCell>{invoice.qty}</TableCell>
                 <TableCell>₹{invoice.amount}</TableCell>
                 <TableCell>{invoice.status}</TableCell>
-                <TableCell>
+                <TableCell className="flex gap-2">
                   <button
                     onClick={() => handleViewinvoice(invoice.id)}
-className="flex items-center  text-lg font-medium rounded-md "
-                    title="View"                  >
+                    className="flex items-center  text-lg font-medium rounded-md "
+                    title="View"
+                  >
                     <FiEye className="" />
+                  </button>
+                  <button
+                    className="flex items-center justify-center  text-lg font-medium rounded-md text-green-600 "
+                    onClick={() => handlePrint(invoice.invoice)}
+                  >
+                    {printingId === invoice?.id ? (
+                      <Loader color="black" />
+                    ) : (
+                      <div className="flex items-center">
+                        <FiPrinter title="Print" />
+                      </div>
+                    )}
                   </button>
                 </TableCell>
               </TableRow>

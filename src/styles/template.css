@@ -1,0 +1,15 @@
+.tiptap ul {
+  list-style-type: disc; /* bullet */
+  margin-left: 1.5rem; /* spacing for bullets */
+  padding-left: 0;
+}
+
+.tiptap ol {
+  list-style-type: decimal; /* numbers */
+  margin-left: 1.5rem; /* spacing for numbers */
+  padding-left: 0;
+}
+
+.tiptap li p {
+  margin: 0.25em 0; /* keep paragraph spacing inside li */
+}

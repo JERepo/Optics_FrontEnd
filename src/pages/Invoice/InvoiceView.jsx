@@ -11,6 +11,7 @@ import {
   useGetInvoiceByIdQuery,
   useGetInvoiceDetailsQuery,
   useGetPaymentDetailsQuery,
+  useLazyPrintPdfQuery,
 } from "../../api/InvoiceApi";
 import { formatINR } from "../../utils/formatINR";
 import { useSelector } from "react-redux";
@@ -20,6 +21,7 @@ import toast from "react-hot-toast";
 import Modal from "../../components/ui/Modal";
 import Radio from "../../components/Form/Radio";
 import HasPermission from "../../components/HasPermission";
+import { FiPrinter } from "react-icons/fi";
 
 const getProductName = (order) => {
   const product = order?.productDetails?.[0];
@@ -209,6 +211,8 @@ const InvoiceView = () => {
   const [isCancelOpen, setIsCancelOpen] = useState(false);
   const [cancelDisabled, setIsCancelDisabled] = useState(false);
   const [carry, setCarry] = useState(null);
+    const [printingId, setPrintingId] = useState(null);
+  
 
   const { data: invoiceDetails, isLoading } = useGetInvoiceByIdQuery(
     { id: invoiceId },
@@ -244,6 +248,7 @@ const InvoiceView = () => {
   });
   const [cancelInvoice, { isLoading: isCancelling }] =
     useCancelInvoiceMutation();
+  const [generatePrint, { isFetching: isPrinting }] = useLazyPrintPdfQuery();
 
   const getTypeName = (id) => {
     const types = { 1: "F/S", 2: "ACC", 3: "CL" };
@@ -412,7 +417,7 @@ const InvoiceView = () => {
       CustomerMasterID: invoiceDetails?.CustomerMaster?.Id ?? null,
 
       locationId: parseInt(hasMultipleLocations[0]),
-      ApplicationUserId :user.Id
+      ApplicationUserId: user.Id,
     };
 
     if (carry === 0) {
@@ -433,6 +438,33 @@ const InvoiceView = () => {
       setIsCancelOpen(false);
     } catch (error) {
       console.log(error);
+    }
+  };
+  const handlePrint = async (item) => {
+    setPrintingId(item.Id);
+
+    try {
+      const blob = await generatePrint({
+       id :item.Id
+      }).unwrap();
+
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "application/pdf" })
+      );
+      const newWindow = window.open(url);
+      if (newWindow) {
+        newWindow.onload = () => {
+          newWindow.focus();
+          newWindow.print();
+        };
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(
+        "Unable to print the stock transfer out please try again after some time!"
+      );
+    } finally {
+      setPrintingId(null);
     }
   };
   if (isViewLoading || isLoading) {
@@ -468,6 +500,11 @@ const InvoiceView = () => {
                   </Button>
                 </HasPermission>
               )}
+                <Button
+              onClick={() => handlePrint(invoiceDetails)}
+              icon={FiPrinter}
+              isLoading={printingId == invoiceDetails.Id}
+            ></Button>
           </div>
         </div>
         {/* Order Details */}

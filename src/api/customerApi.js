@@ -104,6 +104,11 @@ export const customerApi = createApi({
         body: payload,
       }),
     }),
+    getLoyaltySummary: builder.query({
+      query: ({ customerId }) => ({
+        url: `/api/v1/customer/loyalty-summary/${customerId}`,
+      }),
+    }),
   }),
 });
 
@@ -123,5 +128,6 @@ export const {
   useUpdateCreditLimitMutation,
   useGetInvoiceDataQuery,
   useUpdateCustomerMutation,
-  useUpdatePatientMutation
+  useUpdatePatientMutation,
+  useGetLoyaltySummaryQuery
 } = customerApi;

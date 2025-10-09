@@ -108,6 +108,7 @@ import SalesReturnReport from "../pages/Reports/SalesReturnReport";
 import AuditReport from "../pages/Reports/AuditReport";
 import ProfitReport from "../pages/Reports/ProfileReport";
 import LoyaltySummary from "../pages/Reports/LoyaltySummary";
+import EmailTemplates from "../pages/EmailTemplates/EmailTemplates";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -996,9 +997,13 @@ export const router = createBrowserRouter([
         element: <CompanySettings />,
       },
       {
-        path : "loyalty-summary",
-        element : <LoyaltySummary />
-      }
+        path: "loyalty-summary",
+        element: <LoyaltySummary />,
+      },
+      {
+        path: "email-templates",
+        element: <EmailTemplates />,
+      },
     ],
   },
   {
