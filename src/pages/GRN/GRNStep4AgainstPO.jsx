@@ -619,7 +619,7 @@ export default function GRNStep4AgainstPO() {
                 }
 
                 // Calculate available quantity after validation
-                const availableQty = pendingQty - validationResult.existingGRNQty - alreadyScannedQty;
+                const availableQty = pendingQty - alreadyScannedQty;
 
                 if (availableQty < remainingQty) {
                     // If no available quantity, move to the next PO
@@ -740,230 +740,6 @@ export default function GRNStep4AgainstPO() {
     };
 
 
-    // const handleAddBarcodeSearchItemsToScannedTable = async () => {
-    //     if (!grnQtyAgainstPOForBarcode || grnQtyAgainstPOForBarcode <= 0) {
-    //         toast.error("Please enter a valid GRN quantity");
-    //         return;
-    //     }
-
-    //     console.log("poDetailsItems for scanned item", poDetailsItems);
-
-    //     if (poDetailsItems.length === 0) {
-    //         toast.error("No items available to add");
-    //         return;
-    //     }
-
-    //     // Validate batch code only for Contact Lens with CLBatchCode === 1
-    //     if (formState.productType === "Contact Lens" && poDetailsItems[0]?.CLBatchCode === 1) {
-    //         if (formState.clBatchInputType === "select" && !selectedBatchCode) {
-    //             toast.error("Please select a batch code for Contact Lens");
-    //             return;
-    //         }
-    //         if (formState.clBatchInputType === "enter" && !batchCodeInput) {
-    //             toast.error("Please enter a batch barcode for Contact Lens");
-    //             return;
-    //         }
-    //     }
-
-    //     try {
-    //         setIsLoading(true);
-
-    //         let remainingQty = parseInt(grnQtyAgainstPOForBarcode);
-    //         const itemsToAdd = [];
-
-    //         // For Contact Lens with batch code
-    //         let selectedBatch = null;
-    //         if (formState.productType === "Contact Lens" && poDetailsItems[0]?.CLBatchCode === 1) {
-    //             if (formState.clBatchInputType === "select" && selectedBatchCode) {
-    //                 selectedBatch = selectedBatchCode;
-    //             } else if (formState.clBatchInputType === "enter" && batchCodeInput) {
-    //                 selectedBatch = CLBatches?.data?.find(
-    //                     (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
-    //                 );
-    //                 if (!selectedBatch) {
-    //                     toast.error("Invalid batch barcode");
-    //                     setIsLoading(false);
-    //                     return;
-    //                 }
-    //             }
-    //         }
-
-    //         // Validate each PO item and prepare items to add
-    //         for (let i = poDetailsItems.length - 1; i >= 0 && remainingQty > 0; i--) {
-    //             const item = poDetailsItems[i];
-
-    //             // Skip if item requires batch code but none is provided
-    //             if (formState.productType === "Contact Lens" && item.CLBatchCode === 1 && !selectedBatch) {
-    //                 continue;
-    //             }
-
-    //             try {
-    //                 console.log("scannedItems ------------", scannedItems);
-    //                 console.log("item ------------", item);
-
-    //                 // Calculate already scanned quantity for this PO and batch (if applicable)
-    //                 const alreadyScannedQty = scannedItems.reduce((sum, scanned) => {
-    //                     if (scanned.PODetailsId === item.PODetailsId) {
-    //                         return sum + (scanned.quantity || 0);
-    //                     }
-    //                     return sum;
-    //                 }, 0);
-
-    //                 // FIXED: Calculate actual pending quantity considering already scanned items
-    //                 const basePendingQty = item.POQty - (item.ReceivedQty ?? 0) - item.CancelledQty;
-    //                 const actualPendingQty = basePendingQty - alreadyScannedQty;
-
-    //                 console.log("basePendingQty", basePendingQty);
-    //                 console.log("actualPendingQty", actualPendingQty);
-    //                 console.log("enteredQty", remainingQty);
-    //                 console.log("alreadyScannedQty", alreadyScannedQty);
-
-    //                 // FIXED: Skip this PO item if it's already fully fulfilled
-    //                 if (actualPendingQty <= 0) {
-    //                     console.log(`Skipping PO ${item.PONo} - already fulfilled (actualPendingQty: ${actualPendingQty})`);
-    //                     continue;
-    //                 }
-
-    //                 console.log("selectedBatch dadad", selectedBatch);
-
-    //                 // API validation - only validate if there's pending quantity
-    //                 const payload = {
-    //                     PODetailsId: item.PODetailsId,
-    //                     GRNQty: alreadyScannedQty + Math.min(remainingQty, actualPendingQty),
-    //                     grnMainId: grnData?.step1?.GrnMainId,
-    //                     batchCode: selectedBatch?.CLBatchCode
-    //                 };
-
-    //                 const validationResult = await triggerGRNQtyValidationCheck(payload).unwrap();
-
-    //                 // FIXED: If validation is not valid, skip this item entirely and continue to next
-    //                 if (!validationResult.isValid) {
-    //                     console.log(`Validation failed for PO ${item.PONo}: ${validationResult.message}`);
-    //                     toast.error(`${validationResult.message}, Skipping to next item.` || `Validation failed for PO ${item.PONo}. Skipping this item.`);
-    //                     continue; // Skip to next item without adding to itemsToAdd
-    //                 }
-
-    //                 // FIXED: Use actualPendingQty instead of calculating availableQty separately
-    //                 const availableQty = Math.min(actualPendingQty, basePendingQty - validationResult.existingGRNQty);
-
-    //                 if (availableQty <= 0) {
-    //                     console.log(`Skipping PO ${item.PONo} - no available quantity (availableQty: ${availableQty})`);
-    //                     continue;
-    //                 }
-
-    //                 const qtyToAdd = Math.min(remainingQty, availableQty);
-
-    //                 if (qtyToAdd > 0) {
-    //                     const itemToAdd = {
-    //                         ...item,
-    //                         quantity: qtyToAdd,
-    //                         price: item.BuyingPrice || 0,
-    //                         Id: Date.now() + Math.random(),
-    //                         detailId: item.Id,
-    //                         timestamp: Date.now(),
-    //                         existingGRNQty: validationResult.existingGRNQty
-    //                     };
-
-    //                     // Add batch information for Contact Lens with CLBatchCode === 1
-    //                     if (formState.productType === "Contact Lens" && item.CLBatchCode === 1 && selectedBatch) {
-    //                         itemToAdd.BatchCode = selectedBatch.CLBatchCode;
-    //                         itemToAdd.CLBatchBarCode = selectedBatch.CLBatchBarCode;
-    //                         itemToAdd.Expiry = selectedBatch.CLBatchExpiry;
-    //                         itemToAdd.price = selectedBatch.BuyingPrice || item.BuyingPrice || 0;
-    //                     }
-
-    //                     itemsToAdd.push(itemToAdd);
-    //                     remainingQty -= qtyToAdd;
-
-    //                     console.log(`Added ${qtyToAdd} items from PO ${item.PONo}, remaining: ${remainingQty}`);
-    //                 }
-    //             } catch (error) {
-    //                 console.error(`API validation failed for PO ${item.PONo}:`, error);
-    //                 toast.error(`Validation failed for PO ${item.PONo}. Skipping this item.`);
-    //                 continue; // Ensure we continue to next item on API error
-    //             }
-    //         }
-
-    //         if (itemsToAdd.length === 0) {
-    //             toast.error("No available quantity remaining in any PO items");
-    //             setIsLoading(false);
-    //             return;
-    //         }
-
-    //         // If there's still remaining quantity after processing all items
-    //         if (remainingQty > 0) {
-    //             toast.warning(`Only ${grnQtyAgainstPOForBarcode - remainingQty} items could be added. ${remainingQty} items exceed available quantities.`);
-    //         }
-
-    //         // Add validated items to scannedItems
-    //         setScannedItems(prevItems => {
-    //             let updatedItems = [...prevItems];
-
-    //             for (const itemToAdd of itemsToAdd) {
-    //                 if (formState.EntryType === "combined") {
-    //                     const existingItemIndex = updatedItems.findIndex(
-    //                         existingItem =>
-    //                             existingItem.uniqueId === itemToAdd.uniqueId &&
-    //                             (formState.productType !== "Contact Lens" ||
-    //                                 itemToAdd.CLBatchCode !== 1 ||
-    //                                 existingItem.BatchCode === itemToAdd.BatchCode)
-    //                     );
-
-    //                     if (existingItemIndex >= 0) {
-    //                         updatedItems[existingItemIndex] = {
-    //                             ...updatedItems[existingItemIndex],
-    //                             quantity: updatedItems[existingItemIndex].quantity + itemToAdd.quantity
-    //                         };
-    //                     } else {
-    //                         updatedItems.push(itemToAdd);
-    //                     }
-    //                 } else {
-    //                     // Separate entry: always add new row with unique ID
-    //                     updatedItems.push({
-    //                         ...itemToAdd,
-    //                         Id: Date.now() + Math.random(),
-    //                         detailId: itemToAdd.Id,
-    //                         timestamp: Date.now()
-    //                     });
-    //                 }
-    //             }
-
-    //             // Sort by timestamp in descending order (latest first)
-    //             updatedItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-    //             return updatedItems;
-    //         });
-
-    //         console.log("itemsToAdd Items to add in detail table ------------- ", itemsToAdd);
-
-    //         const totalAdded = itemsToAdd.reduce((total, item) => total + item.quantity, 0);
-    //         toast.success(`Added ${totalAdded} item(s) to GRN`);
-
-    //         // Clear inputs
-    //         setGrnQtyAgainstPOForBarcode('');
-    //         setPODetailsItems([]);
-    //         setSearchResults([]);
-    //         setModelNo("");
-    //         setBrandId(null);
-    //         setBrandInput("");
-    //         setSelectedBatchCode(null);
-    //         setbatchCodeInput("");
-    //         setClSearchItems([]);
-    //         setProductId(null);
-    //         setProductInput("");
-    //         setModalityId(null);
-    //         setModalityInput("");
-    //         handleRefresh();
-    //         setSelectedBatchCode(null);
-    //     } catch (error) {
-    //         console.error("Failed to add items to GRN:", error);
-    //         toast.error("Failed to add items. Please try again.");
-    //     } finally {
-    //         setIsLoading(false);
-    //     }
-    // };
-
-
-
     const handleAddBarcodeSearchItemsToScannedTable = async () => {
         if (!grnQtyAgainstPOForBarcode || grnQtyAgainstPOForBarcode <= 0) {
             toast.error("Please enter a valid GRN quantity");
@@ -1065,7 +841,7 @@ export default function GRNStep4AgainstPO() {
                         console.log(`Validation failed for PO ${item.PONo}: ${validationResult.message}`);
 
                         // Check if there's pending quantity that can be fulfilled (partially fulfilled case)
-                        const remainingPendingQty = actualPendingQty - validationResult.existingGRNQty;
+                        const remainingPendingQty = actualPendingQty;
 
                         if (remainingPendingQty > 0) {
                             console.log(`PO ${item.PONo} has ${remainingPendingQty} remaining pending quantity that can be fulfilled`);
@@ -1112,7 +888,7 @@ export default function GRNStep4AgainstPO() {
                     }
 
                     // Original logic for valid validation result
-                    const availableQty = Math.min(actualPendingQty, basePendingQty - validationResult.existingGRNQty);
+                    const availableQty = Math.min(actualPendingQty, basePendingQty);
 
                     if (availableQty <= 0) {
                         console.log(`Skipping PO ${item.PONo} - no available quantity (availableQty: ${availableQty})`);
@@ -1169,11 +945,14 @@ export default function GRNStep4AgainstPO() {
             setScannedItems(prevItems => {
                 let updatedItems = [...prevItems];
 
+                console.log("itemsToAdd ---- ", itemsToAdd);
+                // console.log("existingItem ---- ", existingItem);
+
                 for (const itemToAdd of itemsToAdd) {
                     if (formState.EntryType === "combined") {
                         const existingItemIndex = updatedItems.findIndex(
                             existingItem =>
-                                existingItem.uniqueId === itemToAdd.uniqueId &&
+                                existingItem.PODetailsId === itemToAdd.PODetailsId && 
                                 (formState.productType !== "Contact Lens" ||
                                     itemToAdd.CLBatchCode !== 1 ||
                                     existingItem.BatchCode === itemToAdd.BatchCode)
