@@ -1074,7 +1074,7 @@ export default function GRNStep3() {
 
                 {formState.productType !== 'Lens' ? (
 
-                    <div className="flex justify-start gap-12 mb-6">
+                    <div className="flex justify-center gap-12 mb-6">
                         <div className="flex space-x-4">
                             <label className="flex items-center space-x-2 cursor-pointer">
                                 <input

@@ -14,7 +14,7 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                     columns={["Barcode", "Name", "S/O", "Polarised", "Photochromatic", "Clip No", "MRP", "Buying Price", "GRN QTY", "Action"]}
                     data={scannedItems}
                     renderRow={(item, index) => (
-                        <TableRow key={item.Id || index}>
+                        <TableRow key={index}>
                             <TableCell>{item.Barcode}</TableCell>
                             <TableCell>{item.BrandName ?? ''} {item.Name}
                                 {item.Size && <br />}{`Size: ${item.Size}`}
@@ -83,7 +83,7 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                     columns={["Barcode", "Name", "Variation", "SKU Code", "MRP", "Buying Price", "GRN QTY", "Action"]}
                     data={scannedItems}
                     renderRow={(item, index) => (
-                        <TableRow key={item.Barcode || index}>
+                        <TableRow key={index}>
                             <TableCell>{item.Barcode}</TableCell>
                             <TableCell>{item.BrandName ?? ''} {item.Name}{item.Size && <br />}{item.Size}</TableCell>
                             <TableCell>{item.Variation}</TableCell>
@@ -145,7 +145,7 @@ export function GRNScannedTable({ scannedItems, updateScannedItemPrice, updateSc
                     columns={["SL No.", "Order No.", "Supplier Order No.", "Barcode", "Product Details", "MRP", "Buying Price", "GRN QTY", "Action"]}
                     data={scannedItems}
                     renderRow={(item, index) => (
-                        <TableRow key={item.Barcode || index}>
+                        <TableRow key={index}>
                             <TableCell>{index + 1}</TableCell>
                             <TableCell>{ }</TableCell>
                             <TableCell>{ }</TableCell>
