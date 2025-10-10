@@ -792,7 +792,7 @@ export default function GRNStep4() {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="fixed inset-0 bg-red-200/50 backdrop-blur-xs flex items-center justify-center z-50"
+                        className="fixed inset-0 bg-neutral-200/50 backdrop-blur-xs flex items-center justify-center z-50"
                     >
                         <motion.div
                             initial={{ scale: 0.9, y: 20 }}
@@ -816,9 +816,9 @@ export default function GRNStep4() {
                                 className="mb-4"
                             >
                                 {errorMessage.length > 1 ? (
-                                    <ul className="list-disc pl-5">
+                                    <ul className="list-disc pl-5 space-y-2">
                                         {errorMessage.map((msg, index) => (
-                                            <li key={index} className="text-gray-700">{msg}</li>
+                                            <li key={index} className="text-gray-700 bg-red-100 rounded-lg p-2">{msg}</li>
                                         ))}
                                     </ul>
                                 ) : (
