@@ -953,7 +953,19 @@ export default function SavePurchaseOrder() {
 
             const entryType = formState.EntryType === "seperate" ? "separate" : "combined";
             toast.success(`Added as ${entryType} entry`);
-            setSearchFetched(true);
+
+            // Reset state after adding item
+            handleRefresh();
+            setProductId(null);
+            setProductInput("");
+            setProductName("");
+            setModalityId(null);
+            setModalityInput("");
+            setBrandId(null);
+            setBrandInput("");
+            setShowSearchInputs(false);
+            setSelectedLocation("");
+            setSearchFetched(false);
 
         } catch (error) {
             console.error("Search error:", error);
@@ -1038,8 +1050,13 @@ export default function SavePurchaseOrder() {
                 }
             }
 
-            setSearchFetched(true);
-
+            setOlItemStack({ olDetailId: "" }); // Reset olItemsStack
+            setBrandId(null);
+            setBrandInput("");
+            setSelectedLocation(""); // Reset selectedLocation
+            setSearchFetched(false);
+            setShowSearchInputs(false);
+            handleRefresh();
         } catch (error) {
             console.error("Search error:", error);
             toast.error(error.message || "Failed to search power details");
@@ -1149,6 +1166,7 @@ export default function SavePurchaseOrder() {
         setBrandId(null);
         setBrandInput("");
         setModelNo("");
+        setShowSearchInputs(false);
     };
 
     const handleRefresh = () => {

@@ -441,8 +441,8 @@ export function POViewPage() {
                                     <td className="px-6 py-4 whitespace-nowrap">{order.orderPrefix}/{order.orderNo}/{order.slNo}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {order.productType === 0 ? "OL" :
-                                            order.productType === 1 ? "F" :
-                                                order.productType === 2 ? "Acc" :
+                                            order.productType === 1 ? "F/S" :
+                                                order.productType === 2 ? "ACC" :
                                                     order.productType === 3 ? "CL" : "N/A"}
                                     </td>
                                     {renderProductDetails(order)}
@@ -537,8 +537,8 @@ export function POViewPage() {
                                     <td className="px-6 py-4 whitespace-nowrap">{index + 1}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {order?.ProductDetails?.ProductType === 0 ? "OL" :
-                                            order?.ProductDetails?.ProductType === 1 ? "F" :
-                                                order?.ProductDetails?.ProductType === 2 ? "Acc" :
+                                            order?.ProductDetails?.ProductType === 1 ? "F/S" :
+                                                order?.ProductDetails?.ProductType === 2 ? "ACC" :
                                                     order?.ProductDetails?.ProductType === 3 ? "CL" : "N/A"}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">

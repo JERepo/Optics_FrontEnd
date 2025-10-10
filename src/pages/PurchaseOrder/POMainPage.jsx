@@ -36,8 +36,8 @@ export function PurchaseOrderMainPage() {
     const getOrderStatus = (status) => {
         const types = {
             // 0: "Draft",
-            1: "Approval Pending",
-            2: "PO Confirmed",
+            1: "Pending",
+            2: "Approved",
             // 3: "Completed",
             // 4: "Cancelled",
         };
