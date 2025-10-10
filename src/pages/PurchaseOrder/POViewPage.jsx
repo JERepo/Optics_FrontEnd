@@ -381,7 +381,7 @@ export function POViewPage() {
                     </button>
                     <h1 className="text-3xl lg:text-4xl font-bold text-[#000060] mb-2">Purchase Order</h1>
                 </div>
-                {poMainStatus === 1 && (
+                {(poMainStatus === 1 && poData?.vendor?.POApproval === 1) && (
                     <HasPermission module="Purchase Order" action={["edit"]}>
                         <div>
                             <button
@@ -395,7 +395,7 @@ export function POViewPage() {
                     </HasPermission>
                 )}
             </div>
-
+            {console.log("PODATA ----", poData)}
             <div key={poData.vendor?.Id || "vendor"} className="gap-12 my-10">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <p className="text-gray-700">

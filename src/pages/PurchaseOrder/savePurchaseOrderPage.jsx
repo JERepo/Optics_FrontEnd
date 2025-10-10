@@ -1145,6 +1145,10 @@ export default function SavePurchaseOrder() {
 
         toast.success(`Added ${selectedRows.length} item(s) to GRN`);
         setSelectedRows([]);
+        setSearchResults([]);
+        setBrandId(null);
+        setBrandInput("");
+        setModelNo("");
     };
 
     const handleRefresh = () => {
@@ -1442,7 +1446,7 @@ export default function SavePurchaseOrder() {
                 companyId: parseInt(selectedLocation),
                 vendorId: parseInt(selectedVendor),
                 poPrefix: companySettingsData?.data?.data?.POPrefix || "",
-                inState: formState?.vendorDetails?.StateID === companySettingsData?.data?.data?.State?.Id ? 0 : 1,
+                inState: formState?.vendorDetails?.StateID === companySettingsData?.data?.data?.Company?.State?.Id ? 0 : 1,
                 againstOrder: formState.shiptoAddress === "against" ? 1 : 0,
                 shiptoCompanyId: formState?.vendorDetails?.MultiDelivery === 1 ? parseInt(selectedLocation) : formState?.vendorDetails?.DeliveryLocationId,
                 poReferenceNo: formState.referenceNo || "",
@@ -2935,7 +2939,7 @@ export default function SavePurchaseOrder() {
                                                 <tr key={order.id}>
                                                     <td className="px-6 py-4 whitespace-nowrap">{index + 1}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap">{order.orderPrefix}/{order.orderNo}/{order.slNo}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">{order.productType == 0 && `OL` || order.productType == 1 && `F` || order.productType == 2 && `Acc` || order.productType == 3 && `CL`}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">{order.productType == 0 && `OL` || order.productType == 1 && `F/S` || order.productType == 2 && `ACC` || order.productType == 3 && `CL`}</td>
                                                     {order.productType == 0 &&
                                                         <td className="px-6 py-4 whitespace-wrap min-w-72">{order?.productDescName}
                                                             {/* R Row */}
