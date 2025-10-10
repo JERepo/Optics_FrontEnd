@@ -108,7 +108,7 @@ export default function GRNDCStep2() {
 
     const handleSelectAll = (e) => {
         if (e.target.checked) {
-            const allIndices = new Set(grnViewDetails.map((_, index) => index));
+            const allIndices = new Set(filteredGrnViewDetails.map((_, index) => index));
             setSelectedRows(allIndices);
         } else {
             setSelectedRows(new Set());
@@ -220,7 +220,7 @@ export default function GRNDCStep2() {
 
     // Handler for Save and Preview
     const handleSaveAndPreview = () => {
-        const selectedItems = grnViewDetails.filter((_, index) => selectedRows.has(index));
+        const selectedItems = filteredGrnViewDetails.filter((_, index) => selectedRows.has(index));
         if (selectedItems.length === 0) {
             toast.error("Please select at least one item to proceed");
             return;
