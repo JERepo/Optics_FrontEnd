@@ -23,7 +23,8 @@ export default function GRNStep4() {
     const [newQuantity, setNewQuantity] = useState('');
     const [showRemoveModal, setShowRemoveModal] = useState(false);
     const [orderToRemove, setOrderToRemove] = useState(null);
-
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [errorMessage, setErrorMessage] = useState([]);
 
     const [triggerDeleteGRNDetails] = useLazyDeleteGRNDetailQuery();
 
@@ -173,18 +174,74 @@ export default function GRNStep4() {
     const processedData = calculateTotalGRNQty(grnViewDetails);
 
 
+    // const handleCompleteGRN = async () => {
+    //     try {
+    //         if (grnViewDetails.length === 0) {
+    //             toast.error("Please add at least one item to complete GRN");
+    //             return;
+    //         }
+
+    //         console.log("grnViewDetails in save --------------- ", grnViewDetails);
+
+    //         // Prepare GRN details for API
+    //         const grnDetails = grnViewDetails.map(item => ({
+    //             GRNDetailId: item.GRNDetailId || item.Id, // Adjust based on your actual ID field
+    //             GRNQty: item.GRNQty || 1,
+    //             GRNPrice: item.GRNPrice || 0,
+    //             ProductType: item?.ProductDetails?.ProductType,
+    //             detailId: item?.ProductDetails?.ProductDetailId,
+    //             PODetailsId: item?.PODetailsId || null,
+    //             AgainstPO: item?.AgainstPO ?? 0,
+    //             CLBatchCode: item?.ProductDetails?.CLBatchCode ?? 0,
+    //             BatchCode: item?.BatchCode || null,
+    //             OrderDetailsId: item?.OrderDetailId || null,
+    //             GRNType: item?.GRNType
+    //         }));
+
+    //         console.log("grnDetails in save --------------- ", grnDetails);
+    //         // return;
+
+    //         const payload = {
+    //             remarks: formState.remarks,
+    //             grnDetails: grnDetails
+    //         };
+
+    //         // const response = null;
+
+    //         const response = await saveCompleteGRN({
+    //             grnMainId: grnData?.step1?.GrnMainId,
+    //             companyId: grnData.step1.selectedLocation,
+    //             payload
+    //         }).unwrap();
+
+    //         if (response.status === "success") {
+    //             toast.success("GRN completed successfully!");
+    //             resetGRN(); // Reset the GRN context
+    //             // Navigate to GRN list or next step as needed
+    //             // setCurrentStep(1); // Or navigate to GRN list
+    //             navigate("/grn");
+    //         } else {
+    //             toast.error(response.error || "Failed to complete GRN 1");
+    //         }
+
+    //     } catch (error) {
+    //         console.error("Error completing GRN:", error);
+    //         toast.error(error.data?.message || "Failed to complete GRN");
+    //     }
+    // };
+
     const handleCompleteGRN = async () => {
         try {
             if (grnViewDetails.length === 0) {
-                toast.error("Please add at least one item to complete GRN");
+                setErrorMessage(["Please add at least one item to complete GRN"]);
+                setShowErrorModal(true);
                 return;
             }
 
             console.log("grnViewDetails in save --------------- ", grnViewDetails);
 
-            // Prepare GRN details for API
             const grnDetails = grnViewDetails.map(item => ({
-                GRNDetailId: item.GRNDetailId || item.Id, // Adjust based on your actual ID field
+                GRNDetailId: item.GRNDetailId || item.Id,
                 GRNQty: item.GRNQty || 1,
                 GRNPrice: item.GRNPrice || 0,
                 ProductType: item?.ProductDetails?.ProductType,
@@ -198,14 +255,11 @@ export default function GRNStep4() {
             }));
 
             console.log("grnDetails in save --------------- ", grnDetails);
-            // return;
 
             const payload = {
                 remarks: formState.remarks,
                 grnDetails: grnDetails
             };
-
-            // const response = null;
 
             const response = await saveCompleteGRN({
                 grnMainId: grnData?.step1?.GrnMainId,
@@ -215,17 +269,20 @@ export default function GRNStep4() {
 
             if (response.status === "success") {
                 toast.success("GRN completed successfully!");
-                resetGRN(); // Reset the GRN context
-                // Navigate to GRN list or next step as needed
-                // setCurrentStep(1); // Or navigate to GRN list
+                resetGRN();
                 navigate("/grn");
             } else {
-                toast.error(response.error || "Failed to complete GRN 1");
+                setErrorMessage([response.error || "Failed to complete GRNs"]);
+                setShowErrorModal(true);
             }
-
         } catch (error) {
             console.error("Error completing GRN:", error);
-            toast.error(error.data?.message || "Failed to complete GRN");
+            // Handle array of validation errors or single error message
+            const errorMessages = Array.isArray(error.data?.message)
+                ? error.data.message
+                : [error.data?.message || "Failed to complete GRN"];
+            setErrorMessage(errorMessages);
+            setShowErrorModal(true);
         }
     };
 
@@ -410,7 +467,8 @@ export default function GRNStep4() {
                     ) : (
                         <Table
                             columns={[
-                                <>PO No.<br/>(Order No.)</>,
+                                "Sl No.",
+                                <>PO No.<br />(Order No.)</>,
                                 "Product type",
                                 "Product Details",
                                 "MRP",
@@ -424,6 +482,7 @@ export default function GRNStep4() {
                             data={processedData}
                             renderRow={(item, index) => (
                                 <TableRow key={index}>
+                                    <TableCell>{index + 1}</TableCell>
                                     <TableCell>
                                         {item.PONo}{" "} <br />
                                         {(item.OrderNo) && `(${item.OrderNo}${item.OrderDetailSlNo ? `/${item.OrderDetailSlNo}` : ""})`}
@@ -725,6 +784,66 @@ export default function GRNStep4() {
                     </AnimatePresence>
                 )
             }
+
+            {showErrorModal && (
+                <AnimatePresence>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="fixed inset-0 bg-red-200/50 backdrop-blur-xs flex items-center justify-center z-50"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                            className="bg-white p-6 rounded-lg shadow-xl w-96"
+                        >
+                            <motion.h3
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 }}
+                                className="text-lg font-bold mb-4 text-red-600"
+                            >
+                                Error
+                            </motion.h3>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.2 }}
+                                className="mb-4"
+                            >
+                                {errorMessage.length > 1 ? (
+                                    <ul className="list-disc pl-5">
+                                        {errorMessage.map((msg, index) => (
+                                            <li key={index} className="text-gray-700">{msg}</li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <p className="text-gray-700">{errorMessage[0]}</p>
+                                )}
+                            </motion.div>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.3 }}
+                                className="flex justify-end"
+                            >
+                                <button
+                                    onClick={() => setShowErrorModal(false)}
+                                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                >
+                                    Close
+                                </button>
+                            </motion.div>
+                        </motion.div>
+                    </motion.div>
+                </AnimatePresence>
+            )}
         </>
     )
 }
