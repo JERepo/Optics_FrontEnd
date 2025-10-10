@@ -167,36 +167,41 @@ export default function GRNDCStep3() {
                     <h3 className="text-lg font-semibold mb-4">GRN Items</h3>
                     <Table
                         columns={[
-                            <><input
+                            <>
+                            {/* <input
                                 type="text"
                                 name="GRNNo"
                                 value={searchFilters.GRNNo}
                                 onChange={handleSearchChange}
                                 placeholder="Search GRN No."
                                 className="w-full px-2 py-1 text-xs border rounded"
-                            />
+                            /> */}
                                 GRN No.
                             </>,
-                            <><input
+                            <>
+                            {/* <input
                                 type="text"
                                 name="VendorDocNo"
                                 value={searchFilters.VendorDocNo}
                                 onChange={handleSearchChange}
                                 placeholder="Search Supplier Doc No."
                                 className="w-full px-2 py-1 text-xs border rounded"
-                            />
+                            /> */}
                                 Supplier Document No
                             </>,
                             <>
                                 Supplier Document Date
-                            </>, <><input
+                            </>, 
+                            <>
+                            {/* <input
                                 type="text"
                                 name="VendorOrderNo"
                                 value={searchFilters.VendorOrderNo}
                                 onChange={handleSearchChange}
                                 placeholder="Search Supplier Order No."
                                 className="w-full px-2 py-1 text-xs border rounded"
-                            />Supplier Order No.
+                            /> */}
+                            Supplier Order No.
                             </>, "Product Details", "QTY", "GRN Price", "Fitting Price", "Total Amount"]}
                         data={filteredGrnViewDetails}
                         renderRow={(item, index) => (
