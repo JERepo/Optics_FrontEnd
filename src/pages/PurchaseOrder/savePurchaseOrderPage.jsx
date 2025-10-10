@@ -3116,7 +3116,7 @@ export default function SavePurchaseOrder() {
                                             .map((order, index) => (
                                                 <tr key={index}>
                                                     <td className="px-6 py-4 whitespace-nowrap">{index + 1}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.ProductType == 0 && `OL` || order?.ProductDetails?.ProductType == 1 && `F` || order?.ProductDetails?.ProductType == 2 && `Acc` || order?.ProductDetails?.ProductType == 3 && `CL`}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.ProductType == 0 && `OL` || order?.ProductDetails?.ProductType == 1 && `F/S` || order?.ProductDetails?.ProductType == 2 && `ACC` || order?.ProductDetails?.ProductType == 3 && `CL`}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.ProductType == 0 ? "" : order?.ProductDetails?.barcode}</td>
                                                     {/* <td className="px-6 py-4 whitespace-nowrap">{order?.ProductDetails?.productName}
                                                         <br />{order?.ProductDetails?.hsncode ? `HSN: ` + order?.ProductDetails?.hsncode : null}
