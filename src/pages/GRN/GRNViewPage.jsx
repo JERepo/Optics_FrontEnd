@@ -381,17 +381,29 @@ export function GRNViewPage() {
                     <span className="text-gray-600 font-bold text-lg">Total GST :</span>
                     <span className="font-bold text-lg">
                         {
-                            (grnViewDetails[0]?.GRNType === 1 && grnViewDetails[0]?.DCGRNPrice === 1) ? '' :
+                            // (grnViewDetails[0]?.GRNType === 1 && grnViewDetails[0]?.DCGRNPrice === 1) ? '' :
 
+                            //     `₹ ${grnViewDetails
+                            //         .reduce((total, order) => {
+                            //             const quantity = order.GRNQty;
+                            //             const price = parseFloat(order.GRNPrice + order.FittingPrice) || 0;
+                            //             const taxPercentage = parseFloat((order?.TaxPercent || order?.ProductDetails?.GSTPercentage) / 100) || 0;
+                            //             if (price && !isNaN(price) && !isNaN(quantity)) {
+                            //                 return total + (price * quantity * taxPercentage) + parseFloat(order?.FittingGSTPercentage || 0);
+                            //             }
+                            //             return total;
+                            //         }, 0)
+                            //         ?.toFixed?.(2) ?? '0.00'}`
+                            (grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc") ? '' :
                                 `₹ ${grnViewDetails
                                     .reduce((total, order) => {
                                         const quantity = order.GRNQty;
-                                        const price = parseFloat(order.GRNPrice + order.FittingPrice) || 0;
+                                        const price = parseFloat(order.GRNPrice) || 0;
                                         const taxPercentage = parseFloat((order?.TaxPercent || order?.ProductDetails?.GSTPercentage) / 100) || 0;
                                         if (price && !isNaN(price) && !isNaN(quantity)) {
-                                            return total + (price * quantity * taxPercentage) + parseFloat(order?.FittingGSTPercentage || 0);
+                                            return parseFloat(total + (price * quantity * taxPercentage) + (order.FittingPrice * ((order?.FittingGSTPercentage / 100) || 0)));
                                         }
-                                        return total;
+                                        return parseFloat(total);
                                     }, 0)
                                     ?.toFixed?.(2) ?? '0.00'}`
                         }
