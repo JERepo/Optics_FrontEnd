@@ -12,7 +12,9 @@ import {
   useGetAllOrderMasterQuery,
   useGetPatientsQuery,
   useGetProductDetailsMutation,
+  useInvoiceConfirmMutation,
   useLazyGetBatchDetailsQuery,
+  useLazyPrintPdfQuery,
   useSaveBatchDetailsMutation,
 } from "../../api/InvoiceApi";
 import { useSelector } from "react-redux";
@@ -329,6 +331,8 @@ const CustomerSelect = () => {
   ] = useGetProductDetailsMutation();
   const [createInvoice, { isLoading: isInvoiceCreating }] =
     useCreateEInvoiceMutation();
+  const [generatePrint, { isFetching: isPrinting }] = useLazyPrintPdfQuery();
+  const [invoiceConfirm] = useInvoiceConfirmMutation();
 
   // Memoized filtered products
   const filteredProducts = useMemo(() => {
@@ -842,7 +846,7 @@ const CustomerSelect = () => {
       TotalValue: totalAmount,
       totalAdvance: totalBalance,
       advance: totalAdvance,
-      customerId :selectedPatient.CustomerMaster?.Id || null
+      customerId: selectedPatient.CustomerMaster?.Id || null,
     };
     updatePaymentDetails(payload);
     if (totalBalance > 0) {
@@ -894,7 +898,7 @@ const CustomerSelect = () => {
         payments.cash = (payments.cash || 0) + amount;
         return;
       }
-       if (typeKey === "advance") {
+      if (typeKey === "advance") {
         if (!payments.advance) payments.advance = [];
         payments.advance.push({
           advanceId: payment.advanceId,
@@ -970,7 +974,6 @@ const CustomerSelect = () => {
   };
 
   const handleByPassCheck = () => {};
-console.log(selectedPatient)
   const handleGenerateInvoice = async () => {
     if (!validateBatchCodes()) {
       toast.error(
@@ -1088,6 +1091,23 @@ console.log(selectedPatient)
           console.log(error);
         }
       }
+      (async () => {
+        try {
+          const blob = await generatePrint({
+            id: response?.invoicemainid,
+          }).unwrap();
+          const pdfFile = new File([blob], `Invoice.pdf`, {
+            type: "application/pdf",
+          });
+          const formData = new FormData();
+          formData.append("invoiceId", response?.invoicemainid);
+          formData.append("file", pdfFile);
+
+          await invoiceConfirm(formData).unwrap();
+        } catch (err) {
+          console.warn("order confirm flow failed:", err);
+        }
+      })();
       toast.success(response?.message);
       setFullPayments([]);
       updatePaymentDetails(null);

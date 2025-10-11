@@ -306,8 +306,10 @@ const CompleteOrder = () => {
   const [updateFinalOrder, { isLoading: isFinalOrderLoading }] =
     useCompleteOrderFinalMutation();
 
-  const [generateOrderPDF,{isLoading:isPDfGenerating}] = useLazyGenerateOrderQuery();
-  const [orderConfirm,{isLoading:isOrderConfirming}] = useOrderConfirmMutation();
+  const [generateOrderPDF, { isLoading: isPDfGenerating }] =
+    useLazyGenerateOrderQuery();
+  const [orderConfirm, { isLoading: isOrderConfirming }] =
+    useOrderConfirmMutation();
 
   const handleBack = () => goToStep(currentStep - 1);
   const handleAddProduct = () => goToStep(2);
@@ -420,29 +422,37 @@ const CompleteOrder = () => {
         TotalGSTValue: totalGST,
         TotalValue: totalAmount,
       };
-      await updateFinalOrder({ orderId: customerId.orderId, payload }).unwrap();
-        //  after updating the final order we have to generate the pdf and need to send it in the order confirm
+      const res = await updateFinalOrder({ orderId: customerId.orderId, payload }).unwrap();
+          
 
-        (async () => {
-          try {
-            const pdfBlob = await generateOrderPDF({
-              orderId: customerId.orderId,
-            }).unwrap();
+      (async () => {
+        try {
+        
+          const pdfBlob = await generateOrderPDF({
+            orderId: customerId.orderId,
+          }).unwrap();
 
-            const formData = new FormData();
-            formData.append("orderId", customerId.orderId);
-            formData.append(
-              "EmailAttachment",
-              pdfBlob,
-              "OrderConfirmation.pdf"
-            );
+        
+          const pdfFile = new File(
+            [pdfBlob],
+            `OrderConfirmation_${res?.OrderNo}.pdf`,
+            {
+              type: "application/pdf",
+            }
+          );
 
-            await orderConfirm(formData).unwrap();
-          } catch (err) {
-            console.warn("order confirm flow failed:", err);
-          }
-        })();
+          const formData = new FormData();
+          formData.append("orderId", customerId.orderId);
+          formData.append("file", pdfFile);
 
+          
+          await orderConfirm(formData).unwrap();
+
+          console.info("✅ Order PDF uploaded and confirmation completed.");
+        } catch (err) {
+          console.warn("⚠️ Order confirm flow failed:", err);
+        }
+      })();
 
       toast.success("Order successfully saved");
 
@@ -713,8 +723,12 @@ const CompleteOrder = () => {
               {/* Action Button */}
               <div className="flex justify-end mt-6">
                 <Button
-                  isLoading={isFinalOrderLoading || isPDfGenerating || isOrderConfirming}
-                  disabled={isFinalOrderLoading || isPDfGenerating || isOrderConfirming}
+                  isLoading={
+                    isFinalOrderLoading || isPDfGenerating || isOrderConfirming
+                  }
+                  disabled={
+                    isFinalOrderLoading || isPDfGenerating || isOrderConfirming
+                  }
                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 text-lg"
                   onClick={handleCompleteOrder}
                 >

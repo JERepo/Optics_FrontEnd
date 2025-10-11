@@ -106,12 +106,19 @@ export const InvoiceApi = createApi({
       }),
       invalidatesTags: ["CancelInvoice"],
     }),
-     printPdf: builder.query({
+    printPdf: builder.query({
       query: ({ id }) => ({
         url: `/api/v1/pdf/generate-invoice/${id}`,
         responseHandler: (response) => response.blob(),
       }),
       transformResponse: (response) => response,
+    }),
+    invoiceConfirm: builder.mutation({
+      query: (formData) => ({
+        url: `/api/v1/emailwa/invoice`,
+        method: "POST",
+        body: formData,
+      }),
     }),
   }),
 });
@@ -130,5 +137,6 @@ export const {
   useGetEInvoiceDataQuery,
   useGetPaymentDetailsQuery,
   useCancelInvoiceMutation,
-  useLazyPrintPdfQuery
+  useLazyPrintPdfQuery,
+  useInvoiceConfirmMutation
 } = InvoiceApi;

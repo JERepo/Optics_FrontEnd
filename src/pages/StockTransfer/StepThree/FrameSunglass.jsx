@@ -338,7 +338,7 @@ const FrameSunglass = () => {
 
   const calculateStockGST = (item) => {
     if (!item) return 0;
-    if (stockDraftData.InState === 0) {
+    if (stockDraftData.DiffGST === 0) {
       const detail = item.Tax.Details[0];
       return { gstAmount: 0, slabNo: detail.Id, gstPercent: 0 }; // no GST for out of state
     }

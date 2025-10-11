@@ -290,7 +290,7 @@ const PaymentFlow = ({
       payments: preparePaymentsStructure(),
     };
     try {
-      await saveFinalPayment({
+      const res = await saveFinalPayment({
         orderId: customerId.orderId,
         payload: finalStructure,
       }).unwrap();
@@ -302,10 +302,16 @@ const PaymentFlow = ({
           const pdfBlob = await generateOrderPDF({
             orderId: customerId.orderId,
           }).unwrap();
-
+          const pdfFile = new File(
+            [pdfBlob],
+            `OrderConfirmation_${res?.OrderNo || ""}.pdf`,
+            {
+              type: "application/pdf",
+            }
+          );
           const formData = new FormData();
           formData.append("orderId", customerId.orderId);
-          formData.append("EmailAttachment", pdfBlob, "OrderConfirmation.pdf");
+          formData.append("file", pdfFile);
 
           await orderConfirm(formData).unwrap();
         } catch (err) {
