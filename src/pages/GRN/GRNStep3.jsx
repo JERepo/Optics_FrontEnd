@@ -412,6 +412,7 @@ export default function GRNStep3() {
         setProductInput("");
         setProductId(null);
         setProductName("");
+        setShowSearchInputs(false);
     };
 
     const handleSearchByBarcode = async (type) => {
@@ -724,6 +725,13 @@ export default function GRNStep3() {
             ...prev,
             barcode: ""
         }));
+        setShowSearchInputs(false);
+        setProductId(null);
+        setProductName("");
+        setModalityId(null);
+        setModalityInput("");
+        setBrandId(null);
+        setBrandInput("");
     };
 
     const handleSubmitGRNDetails = async () => {

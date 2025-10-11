@@ -196,9 +196,18 @@ export default function GRNDCStep2() {
                 return;
             }
 
-            setGrnViewDetails(prevItems =>
+            setFilteredGrnViewDetails(prevItems =>
                 prevItems.map((item, i) =>
                     i === editingIndex
+                        ? { ...item, GRNPrice: grnPrice, FittingPrice: fittingPrice }
+                        : item
+                )
+            );
+
+            // Update grnViewDetails to ensure changes persist after filter reset
+            setGrnViewDetails((prevItems) =>
+                prevItems.map((item) =>
+                    item.GRNDetailId === editingGRNDetailId
                         ? { ...item, GRNPrice: grnPrice, FittingPrice: fittingPrice }
                         : item
                 )
