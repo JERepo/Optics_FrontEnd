@@ -56,7 +56,7 @@ export function POViewPage() {
                     ApplicationUserId: poData.applicationUser,
                     vendorId: poData.vendor.Id,
                     againstOrder: String(poData.againstOrder),
-                    status: 1,
+                    status: poData.status==="Approved" ? 2 : 1,
                     poMainId: poData.id,
                     poMain: poData.id,
                 };
@@ -65,10 +65,12 @@ export function POViewPage() {
                 let poDetailsResponse;
                 if (poData.againstOrder === 1) {
                     poDetailsResponse = await getAllPoDetails(payload);
+                    console.log("poDetailsResponse-----", poDetailsResponse);
                     setPoreviewDetails(poDetailsResponse.data || []);
-                    setPoMainStatus(poDetailsResponse.data[0]?.Status || null);
+                    setPoMainStatus(poDetailsResponse?.data[0]?.Status || null);
                 } else if (poData.againstOrder === 0) {
                     poDetailsResponse = await getAllPoDetailsForNewOrder(payload);
+                    console.log("poDetailsResponse-----", poDetailsResponse);
                     setPoreviewDetails(poDetailsResponse.data?.data || []);
                     setPoMainStatus(poDetailsResponse.data?.data[0]?.Status || null);
                 }
@@ -381,6 +383,8 @@ export function POViewPage() {
                     </button>
                     <h1 className="text-3xl lg:text-4xl font-bold text-[#000060] mb-2">Purchase Order</h1>
                 </div>
+                {console.log(poData?.vendor?.POApproval)}
+                {console.log(poMainStatus)}
                 {(poMainStatus === 1 && poData?.vendor?.POApproval === 1) && (
                     <HasPermission module="Purchase Order" action={["edit"]}>
                         <div>
