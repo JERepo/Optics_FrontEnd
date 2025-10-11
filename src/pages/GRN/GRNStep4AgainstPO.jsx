@@ -537,7 +537,8 @@ export default function GRNStep4AgainstPO() {
             });
 
             toast.success("Item added to GRN successfully");
-
+            setPODetailsItems([]);
+            setShowSearchInputs(false);
         } catch (error) {
             console.error("Failed to add item to GRN:", error);
             if (error.data?.message) {
@@ -952,7 +953,7 @@ export default function GRNStep4AgainstPO() {
                     if (formState.EntryType === "combined") {
                         const existingItemIndex = updatedItems.findIndex(
                             existingItem =>
-                                existingItem.PODetailsId === itemToAdd.PODetailsId && 
+                                existingItem.PODetailsId === itemToAdd.PODetailsId &&
                                 (formState.productType !== "Contact Lens" ||
                                     itemToAdd.CLBatchCode !== 1 ||
                                     existingItem.BatchCode === itemToAdd.BatchCode)
@@ -1003,6 +1004,7 @@ export default function GRNStep4AgainstPO() {
             setModalityInput("");
             handleRefresh();
             setSelectedBatchCode(null);
+            setShowSearchInputs(false);
         } catch (error) {
             console.error("Failed to add items to GRN:", error);
             toast.error("Failed to add items. Please try again.");
