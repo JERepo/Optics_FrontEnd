@@ -656,15 +656,30 @@ export default function GRNStep4() {
                                         `₹ ${grnViewDetails
                                             .reduce((total, order) => {
                                                 const quantity = order.GRNQty;
-                                                const price = parseFloat(order.GRNPrice + order.FittingPrice) || 0;
+                                                const price = parseFloat(order.GRNPrice) || 0;
                                                 const taxPercentage = parseFloat((order?.TaxPercent || order?.ProductDetails?.GSTPercentage) / 100) || 0;
                                                 if (price && !isNaN(price) && !isNaN(quantity)) {
-                                                    return total + (price * quantity * taxPercentage) + Number(order?.FittingGSTPercentage || 0);
+                                                    return parseFloat(total + (price * quantity * taxPercentage) + (order.FittingPrice * ((order?.FittingGSTPercentage/100) || 0)));
                                                 }
-                                                return total;
+                                                return parseFloat(total);
                                             }, 0)
                                             ?.toFixed?.(2) ?? '0.00'}`
                                 }
+
+                                {/* {console.log(`${grnViewDetails
+                                            .reduce((total, order) => {
+                                                const quantity = order.GRNQty;
+                                                const price = parseFloat(order.GRNPrice) || 0;
+                                                console.log("price", price);
+                                                console.log("FittingGSTPercentage", order?.FittingGSTPercentage);
+                                                console.log("FittingPrice", order.FittingPrice);
+                                                const taxPercentage = parseFloat((order?.TaxPercent || order?.ProductDetails?.GSTPercentage) / 100) || 0;
+                                                if (price && !isNaN(price) && !isNaN(quantity)) {
+                                                    return parseFloat(total + (price * quantity * taxPercentage) + parseFloat(order.FittingPrice * ((order?.FittingGSTPercentage/100) || 0)));
+                                                }
+                                                return parseFloat(total);
+                                            }, 0)
+                                            ?.toFixed?.(2)}`)} */}
                                 </span>
                             </div>
 
