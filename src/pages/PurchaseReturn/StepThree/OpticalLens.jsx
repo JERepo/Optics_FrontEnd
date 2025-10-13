@@ -26,6 +26,7 @@ const getProductName = (order) => {
     Cylinder,
     Diameter,
     AddOnData,
+    returnFittingPrice
   } = order;
 
   const detail = Array.isArray(productDetails)
@@ -73,7 +74,7 @@ const getProductName = (order) => {
     ]);
 
     let fittingLine = "";
-    const fitPrice = parseFloat(fittingPrice);
+    const fitPrice = parseFloat(returnFittingPrice);
     const gstPerc = parseFloat(fittingGSTPercentage);
     if (!isNaN(fitPrice) && !isNaN(gstPerc) && fitPrice > 0) {
       fittingLine = `Fitting Price: ₹${(fitPrice * (1 + gstPerc / 100)).toFixed(
@@ -376,6 +377,8 @@ const formatProductDetails = (product) => {
       toast.error(error?.data.error);
     }
   };
+
+  console.log(selectedVendor,lensData)
   return (
     <div>
       <div className="max-w-8xl h-auto">
@@ -424,7 +427,7 @@ const formatProductDetails = (product) => {
                         <TableCell className="whitespace-pre-wrap">
                           {getProductName(item)}
                         </TableCell>
-                        <TableCell>₹{formatINR(item.GRNPrice)}</TableCell>
+                        <TableCell>₹0</TableCell>
                         <TableCell>
                           {editMode[index]?.qty ? (
                             <div className="flex items-center gap-2">
@@ -526,8 +529,7 @@ const formatProductDetails = (product) => {
                         <TableCell>
                           ₹
                           {formatINR(
-                            (item.returnPrice * (item.TaxPercent / 100)) /
-                              item.returnQty
+                            (item.returnPrice * (item.TaxPercent / 100)) 
                           )}
                         </TableCell>
                         <TableCell>
@@ -610,7 +612,7 @@ const formatProductDetails = (product) => {
                 />
                 <Input
                   label="Total Product Price"
-                  value={selectedVendor?.GRNPrice || ""}
+                  value={(selectedVendor?.GRNPrice * selectedVendor.GRNQty) || ""}
                   readOnly
                   disabled
                 />
@@ -628,7 +630,7 @@ const formatProductDetails = (product) => {
                 />
                 <Input
                   label="Return Product Price"
-                  value={lensData.returnProductPrice}
+                  value={lensData.returnProductPrice * lensData.returnQty }
                   onChange={(e) =>
                     setLensData((prev) => ({
                       ...prev,
@@ -664,10 +666,10 @@ const formatProductDetails = (product) => {
                   value={
                     selectedVendor
                       ? (
-                          parseFloat(lensData.returnProductPrice || 0) *
-                          (parseFloat(selectedVendor?.TaxPercent) / 100)
+                          (parseFloat(lensData.returnProductPrice || 0) * parseInt(lensData.returnQty)) *
+                          (parseFloat(selectedVendor?.TaxPercent || 0) / 100)
                         ).toFixed(2)
-                      : ""
+                      : 0
                   }
                   readOnly
                   disabled

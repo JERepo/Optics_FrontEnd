@@ -25,8 +25,7 @@ const CustomerPaymentList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const { data: allCp, isLoading: isAllOrdersLoading } =
-    useGetAllCPQuery();
+  const { data: allCp, isLoading: isAllOrdersLoading } = useGetAllCPQuery();
 
   useEffect(() => {
     setCurrentPage(1);
@@ -70,16 +69,20 @@ const CustomerPaymentList = () => {
     // }
 
     return filtered.map((c) => ({
-        id:c.Id,
-        customerName:c.CustomerMaster?.CustomerName,
-        mobile:c?.CustomerMaster?.MobNumber,
-        amount :c.Amount
+      id: c.Id,
+      date: c.ReceiptDate?.split("-").reverse().join("/"),
+      customerName: c.CustomerMaster?.CustomerName,
+      mobile: c?.CustomerMaster?.MobNumber,
+      amount: c.Amount,
     }));
     // .filter((order) => order.CompanyID === parseInt(hasMultipleLocations[0]));
   }, [allCp, fromDate, toDate, searchQuery]);
 
   const startIndex = (currentPage - 1) * pageSize;
-  const paginatedOrders = customerPayments.slice(startIndex, startIndex + pageSize);
+  const paginatedOrders = customerPayments.slice(
+    startIndex,
+    startIndex + pageSize
+  );
   const totalPages = Math.ceil(customerPayments.length / pageSize);
 
   const totalOrders = customerPayments.length || 0;
@@ -90,7 +93,6 @@ const CustomerPaymentList = () => {
     // updateSelectedOrderDetails(invoice);
     navigate(`/customer-payment/view?cpId=${id}`);
   };
-
 
   if (isAllOrdersLoading) {
     return (
@@ -105,7 +107,9 @@ const CustomerPaymentList = () => {
         {/* Header */}
         <div className="px-6 py-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Customer Payment</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Customer Payment
+            </h1>
             {/* <p className="text-sm text-gray-500 mt-1">
               Manage and track all your invoices
             </p> */}
@@ -211,13 +215,13 @@ const CustomerPaymentList = () => {
               >
                 Add Customer payment
               </Button>
-             
             </div>
           </div>
 
           <Table
             columns={[
               "S.No",
+              "date",
               "customer name",
               "mobile",
               "amount",
@@ -227,14 +231,16 @@ const CustomerPaymentList = () => {
             renderRow={(item, index) => (
               <TableRow key={item.id}>
                 <TableCell>{startIndex + index + 1}</TableCell>
+                <TableCell>{item.date}</TableCell>
                 <TableCell>{item.customerName}</TableCell>
                 <TableCell>{item.mobile}</TableCell>
                 <TableCell>₹{Math.abs(parseFloat(item.amount))}</TableCell>
                 <TableCell>
                   <button
                     onClick={() => handleViewinvoice(item.id)}
-className="flex items-center  text-lg font-medium rounded-md "
-                    title="View"                  >
+                    className="flex items-center  text-lg font-medium rounded-md "
+                    title="View"
+                  >
                     <FiEye className="" />
                   </button>
                 </TableCell>

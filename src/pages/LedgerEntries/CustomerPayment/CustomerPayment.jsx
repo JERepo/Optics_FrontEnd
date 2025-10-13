@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router";
 import {
+  useGetAllCompanyLocationsQuery,
   useGetAllCustomersQuery,
   useGetCompanyIdQuery,
 } from "../../../api/customerApi";
@@ -35,6 +36,7 @@ const CustomerPayment = () => {
     isLoading,
     isFetching,
   } = useGetAllCustomersQuery();
+  const { data: allCompanies } = useGetAllCompanyLocationsQuery();
   const { data: locationById } = useGetLocationByIdQuery(
     { id: parseInt(hasMultipleLocations[0]) },
     { skip: !parseInt(hasMultipleLocations[0]) }
@@ -46,6 +48,9 @@ const CustomerPayment = () => {
     { skip: !companyId }
   );
   const CustomerPoolID = companySettings?.data?.data.CustomerPoolID;
+  const allCompanyIds = allCompanies?.data?.data
+    .filter((item) => item.CustomerPoolID === CustomerPoolID)
+    .map((item) => item.CompanyId);
 
   const [getPayments, { isFetching: isPaymentsLoading }] =
     useLazyGetCustomerPaymentQuery();
@@ -85,7 +90,7 @@ const CustomerPayment = () => {
             : -(item.AmountToPay ?? item.Amount),
         }));
         setItems(updatedItems);
-        setCollectPayment(false)
+        setCollectPayment(false);
 
         toast.success("Payment Details Fetched Successfully!");
       } else {
@@ -197,10 +202,10 @@ const CustomerPayment = () => {
   const handleCollectPayment = () => {
     setNextClicked(true);
   };
-  const handleCollectAdvance = (e) =>{
-    setCollectPayment(e.target.checked)
-    setItems([])
-  }
+  const handleCollectAdvance = (e) => {
+    setCollectPayment(e.target.checked);
+    setItems([]);
+  };
   const totalReceivable = items.reduce((sum, item) => {
     if (selectedProducts.includes(item.Id)) {
       const amount = item.Invoice
@@ -226,8 +231,8 @@ const CustomerPayment = () => {
           <div className="w-1/2">
             <Autocomplete
               options={
-                customersResp?.data?.data.filter(
-                  (item) => item.Company?.Id === CustomerPoolID
+                customersResp?.data?.data.filter((item) =>
+                  allCompanyIds.includes(item.Company?.Id)
                 ) || []
               }
               getOptionLabel={(option) =>
@@ -254,7 +259,10 @@ const CustomerPayment = () => {
             />
           </div>
           <div>
-            <Button variant="outline" onClick={() => navigate("/customer-payment")}>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/customer-payment")}
+            >
               Back
             </Button>
           </div>

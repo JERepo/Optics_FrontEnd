@@ -258,7 +258,7 @@ const CompanySettings = () => {
         creditNoteTc: data.CreditNoteTc,
         debitNoteTc: data.DebitNoteTc,
         invoiceTc: data.InvoiceTc,
-        frameLabel: data?.BarcodeLabelId,
+        frameLabel: data?.BarcodeLabelId, 
         frameColumn1: data.FSBL1,
         frameColumn2: data.FSBL2,
         frameColumn3: data.FSBL3,
@@ -297,6 +297,7 @@ const CompanySettings = () => {
         discountValue: data?.DiscountMaxValue,
         ClientEmail: data?.ClientEmail,
         EInvoiceInstanceID: data?.EInvoiceInstanceID,
+        discountPercentage :data?.DiscountMaxSlabPerct,
       });
       setLogoPreview(
         companySettingData?.data?.data?.Company?.Logo
@@ -487,7 +488,7 @@ const CompanySettings = () => {
       CreditNoteTc: formData.creditNoteTc,
       DebitNoteTc: formData.debitNoteTc,
       InvoiceTc: formData.invoiceTc,
-      BarcodeLabelId: formData.frameLabel || formData.accessoryLabel, // Assuming it's an ID
+      BarcodeLabelId: formData.frameLabel , // Assuming it's an ID
       FSBL1: formData.frameColumn1,
       FSBL2: formData.frameColumn2,
       FSBL3: formData.frameColumn3,
@@ -534,6 +535,7 @@ const CompanySettings = () => {
       DiscountMaxValue: formData.discountValue,
       EInvoiceInstanceID: formData.EInvoiceInstanceID,
       ClientEmail: formData.ClientEmail,
+      DiscountMaxSlabPerct :formData?.discountPercentage
     };
 
     // If logo/QR need uploading (assuming multipart form)
@@ -1097,17 +1099,7 @@ const CompanySettings = () => {
                     fullWidth
                   />
                 </div>
-                <div className="flex-grow flex">
-                  <TextField
-                    label="E-Invoice Instance ID"
-                    placeholder="Enter E-Invoice Instance ID"
-                    variant="outlined"
-                    size="small"
-                    fullWidth
-                    value={formData.EInvoiceInstanceID}
-                    onChange={handleChange("EInvoiceInstanceID")}
-                  />
-                </div>
+               
               </div>
               <div className="mt-5 grid grid-cols-3 gap-5">
                 <div className="flex items-center gap-3">
@@ -1172,6 +1164,17 @@ const CompanySettings = () => {
                   />
                 </div>
               </div>
+               <div className="flex-grow flex">
+                  <TextField
+                    label="E-Invoice Instance ID"
+                    placeholder="Enter E-Invoice Instance ID"
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                    value={formData.EInvoiceInstanceID}
+                    onChange={handleChange("EInvoiceInstanceID")}
+                  />
+                </div>
             </>
           )}
         </Box>
@@ -1692,7 +1695,7 @@ const CompanySettings = () => {
                   options={allLabels?.data || []} // perhaps change options to label templates if available
                   getOptionLabel={(option) => option.LabelName || ""}
                   value={allLabels?.data.find(
-                    (item) => item.Id === formData.frameLabel
+                    (item) => item.Id == formData.frameLabel
                   )}
                   onChange={(_, newValue) =>
                     setFormData({
@@ -1711,6 +1714,7 @@ const CompanySettings = () => {
                     />
                   )}
                   fullWidth
+                  
                 />
               </div>
               {formData?.frameLabel && (
@@ -1834,7 +1838,7 @@ const CompanySettings = () => {
         <Box className="">
           {/* Approval Section */}
           <section className="mb-8">
-            <h3 className="text-lg font-semibold text-neutral-800 mb-4">
+            <h3 className="text-xl font-semibold text-neutral-800 mb-4 underline">
               Approval
             </h3>
             <div className="space-y-6">
@@ -1938,8 +1942,8 @@ const CompanySettings = () => {
                   variant="outlined"
                   size="small"
                   fullWidth
-                  value={formData.approvalEmail}
-                  onChange={handleChange("approvalEmail")}
+                  value={formData.emailApproval}
+                  onChange={handleChange("emailApproval")}
                 />
                 <div className="flex gap-4">
                   <Autocomplete
@@ -1950,7 +1954,7 @@ const CompanySettings = () => {
                     value={
                       countries?.country?.find(
                         (pool) =>
-                          pool.Id === formData.countryCodeForMobileApproval
+                          pool.Id == formData.countryCodeForMobileApproval
                       ) || null
                     }
                     onChange={(_, newValue) =>
@@ -1986,8 +1990,8 @@ const CompanySettings = () => {
 
           {/* CreditNote Section */}
           <section className="mb-8">
-            <h3 className="text-lg font-semibold text-neutral-800 mb-4">
-              CreditNote
+            <h3 className="text-xl underline font-semibold text-neutral-800 mb-4">
+              Credit Note
             </h3>
             <div className="space-y-6">
               <div className="flex items-center gap-5">
@@ -2027,7 +2031,7 @@ const CompanySettings = () => {
 
           {/* Customer Section */}
           <section className="mb-8">
-            <h3 className="text-lg font-semibold text-neutral-800 mb-4">
+            <h3 className="text-xl underline font-semibold text-neutral-800 mb-4">
               Customer
             </h3>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
@@ -2118,7 +2122,7 @@ const CompanySettings = () => {
 
           {/* Invoice Section */}
           <section className="mb-8">
-            <h3 className="text-lg font-semibold text-neutral-800 mb-4">
+            <h3 className="text-xl underline font-semibold text-neutral-800 mb-4">
               Invoice
             </h3>
             <div className="grid grid-cols-2 lg:grid-cols-2">
@@ -2165,29 +2169,11 @@ const CompanySettings = () => {
 
           {/* Others Section */}
           <section className="mb-8">
-            <h3 className="text-lg font-semibold text-neutral-800 mb-4">
+            <h3 className="text-xl underline font-semibold text-neutral-800 mb-4">
               Others
             </h3>
             <div className="grid grid-cols-3 gap-5">
-              <div className="flex items-center gap-5">
-                <label className="text-neutral-800 font-semibold text-base">
-                  PO Approval Required
-                </label>
-                <Radio
-                  name="poApproval"
-                  value="1"
-                  checked={formData.poApproval === 1}
-                  onChange={() => handleRadioChange("poApproval", "1")}
-                  label="Yes"
-                />
-                <Radio
-                  name="poApproval"
-                  value="0"
-                  checked={formData.poApproval === 0}
-                  onChange={() => handleRadioChange("poApproval", "0")}
-                  label="No"
-                />
-              </div>
+            
               <div className="flex items-center gap-5">
                 <label className="text-neutral-800 font-semibold text-base">
                   GV Multiple Use

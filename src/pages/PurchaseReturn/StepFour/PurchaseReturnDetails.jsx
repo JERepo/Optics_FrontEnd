@@ -116,8 +116,8 @@ const getProductName = (item) => {
     const lines = [
       productName && `${productName}`,
       specs ? `${specs}` : "",
-      clean(colour) ? `Colour: ${clean(colour)}` : "",
-      barcode ? `Barcode: ${barcode}` : "",
+      // clean(colour) ? `Colour: ${clean(colour)}` : "",
+      // barcode ? `Barcode: ${barcode}` : "",
       clean(hsncode) ? `HSN: ${hsncode}` : "",
     ];
 
@@ -337,7 +337,7 @@ const CompleteStockTransfer = () => {
               <TableRow key={item.ID}>
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>{getShortTypeName(item.ProductType)}</TableCell>
-                <TableCell></TableCell>
+                <TableCell>{item.VendorOrderNo}</TableCell>
                 <TableCell className="whitespace-pre-wrap">
                   {getProductName(item)}
                 </TableCell>
