@@ -288,6 +288,7 @@ export const OrderProvider = ({ children, initialStep = 1 }) => {
     mobileNo: null,
     customerData: null,
     vendorPoolId: null,
+    vendorId :null
   });
 
   const [purchaseDraftData, setPurchaseDraftData] = useState(null);
