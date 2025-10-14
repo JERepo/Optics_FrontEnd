@@ -475,7 +475,7 @@ const InvoiceView = () => {
       </div>
     );
   }
-  console.log("ni", invoiceDetails);
+ 
 
   return (
     <div className="max-w-8xl">

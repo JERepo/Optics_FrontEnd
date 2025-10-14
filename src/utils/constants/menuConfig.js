@@ -176,6 +176,13 @@ export const menuItems = [
         module: "communication",
         icon: IoConstructOutline, // Suggests building/setup
       },
+      {
+        name: "Location Settings",
+        icon: IoConstructOutline,
+        module: "Location-setting",
+        path: "/location-settings",
+      },
+      
     ],
   },
 
@@ -381,12 +388,18 @@ export const menuItems = [
         module: "stin-report",
         icon: IoConstructOutline, // Suggests building/setup
       },
-      // {
-      //   name: "Stock Transfer Out Report",
-      //   path: "profit-report",
-      //   module: "stout-report",
-      //   icon: IoConstructOutline, // Suggests building/setup
-      // },
+      {
+        name: "Stock Transfer Out Report",
+        path: "stout-report",
+        module: "stout-report",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+       {
+        name: "Loyalty Summary",
+        icon: IoConstructOutline,
+        module: "loyalty-summary",
+        path: "/loyalty-summary",
+      },
     ],
   },
 
@@ -414,11 +427,5 @@ export const menuItems = [
         path: "/customer-refund",
       },
     ],
-  },
-  {
-    name: "Location Settings",
-    icon: FiMapPin,
-    module: "Location-setting",
-    path: "/location-settings",
   },
 ];

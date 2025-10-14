@@ -111,6 +111,13 @@ export const salesReturnApi = createApi({
       }),
       transformResponse: (response) => response,
     }),
+     salesReturnConfirm: builder.mutation({
+      query: (formData) => ({
+        url: `/api/v1/emailwa/Sr`,
+        method: "POST",
+        body: formData,
+      }),
+    }),
   }),
 });
 
@@ -131,5 +138,6 @@ export const {
   useLazyGetBatchesForCLQuery,
   useGetOlInvoiceDetailsQuery,
   useLazyGetDraftDetailsQuery,
-  useLazyPrintPdfQuery
+  useLazyPrintPdfQuery,
+  useSalesReturnConfirmMutation
 } = salesReturnApi;

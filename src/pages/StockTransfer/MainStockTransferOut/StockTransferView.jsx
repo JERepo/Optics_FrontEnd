@@ -464,9 +464,10 @@ const StockTransferView = () => {
             </div>
           </div>
         )}
-        {EInvoiceEnable === 1 &&
+        {stockDetails?.data?.result?.FromCompany?.TaxRegistration === 1 &&
+          EInvoiceEnable === 1 &&
           InvInvoiceEnable === 1 &&
-          stockDetails?.data?.result?.InState === 1 && (
+          stockDetails?.data?.result?.DiffGST === 1 && (
             <div className="mt-10">
               <div className="bg-white rounded-sm shadow-sm p-4">
                 <div className="flex justify-between items-center mb-5">

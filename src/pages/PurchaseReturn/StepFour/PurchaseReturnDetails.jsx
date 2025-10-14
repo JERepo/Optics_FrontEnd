@@ -88,16 +88,26 @@ const getProductName = (item) => {
   }
 
   // For Contact Lens (type = 3)
-  if (type === 3) {
-    const batchCode = detail.Stock[0]?.BatchCode;
+  if (type === 0) {
+    const productName = clean(detail.productName);
+    const colour = detail.colour || detail.ProductDetails?.colour;
+    const barcode = detail.barcode || detail.ProductDetails?.barcode;
+    const hsncode = detail.HSN || detail.ProductDetails?.HSN;
 
-    const expiry = detail.Stock[0]?.Expiry;
-    const specs = PowerSpecs
+    const stock = detail.Stock || detail.ProductDetails?.Stock || {};
+   
+
+    const specs = detail.Specs
       ? [
-          PowerSpecs.Sph ? `Sph: ${formatPowerValue(PowerSpecs.Sph)}` : "",
-          PowerSpecs.Cyl ? `Cyl: ${formatPowerValue(PowerSpecs.Cyl)}` : "",
-          PowerSpecs.Axis ? `Axis: ${formatPowerValue(PowerSpecs.Axis)}` : "",
-          PowerSpecs.Add ? `Add: ${formatPowerValue(PowerSpecs.Add)}` : "",
+          detail.Specs.Spherical
+            ? `Sph: ${formatPowerValue(detail.Specs.Spherical)}`
+            : "",
+          detail.Specs.Cylinder
+            ? `Cyl: ${formatPowerValue(detail.Specs.Cylinder)}`
+            : "",
+          detail.Specs.Diameter
+            ? `Dia: ${formatPowerValue(detail.Specs.Diameter)}`
+            : "",
         ]
           .filter(Boolean)
           .join(", ")
@@ -106,12 +116,9 @@ const getProductName = (item) => {
     const lines = [
       productName && `${productName}`,
       specs ? `${specs}` : "",
-      clean(colour) ? `Colour: ${clean(colour)}` : "",
-      barcode ? `Barcode: ${barcode}` : "",
-      clean(batchCode) ? `BatchCode: ${batchCode}` : "",
-      clean(expiry) ? `Expiry: ${expiry.split("-").reverse().join("/")}` : "",
-
-      clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
+      // clean(colour) ? `Colour: ${clean(colour)}` : "",
+      // barcode ? `Barcode: ${barcode}` : "",
+      clean(hsncode) ? `HSN: ${hsncode}` : "",
     ];
 
     return lines.filter(Boolean).join("\n");
@@ -330,7 +337,7 @@ const CompleteStockTransfer = () => {
               <TableRow key={item.ID}>
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>{getShortTypeName(item.ProductType)}</TableCell>
-                <TableCell></TableCell>
+                <TableCell>{item.VendorOrderNo}</TableCell>
                 <TableCell className="whitespace-pre-wrap">
                   {getProductName(item)}
                 </TableCell>
@@ -352,10 +359,10 @@ const CompleteStockTransfer = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    parseFloat(item.DNPrice) * item.DNQty +
+                   ( parseFloat(item.DNPrice) * item.DNQty +
                       parseFloat(item.DNPrice) *
                         item.DNQty *
-                        (parseFloat(item.ProductTaxPercentage) / 100)
+                        (parseFloat(item.ProductTaxPercentage) / 100) + parseFloat(item.FittingReturnPrice || 0)* (parseFloat(item.FittingTaxPercentage || 0)/100) )
                   )}
                 </TableCell>
 

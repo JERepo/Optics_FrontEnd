@@ -1020,6 +1020,7 @@ const ContactLens = () => {
           FittingTaxPercentage: detail.FittingTaxPercentage ?? null,
           InvoiceDetailId: detail.Id ?? null,
           ApplicationUserId: user.Id,
+          companyId :parseInt(hasMultipleLocations[0])
         };
         await saveFinalProducts({ payload }).unwrap();
       }

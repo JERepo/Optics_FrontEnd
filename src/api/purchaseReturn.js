@@ -68,6 +68,12 @@ export const purchaseReturnApi = createApi({
       }),
       transformResponse: (response) => response,
     }),
+
+    getOlSupplierNo: builder.query({
+      query: ({ vendorId, companyId }) => ({
+        url: `/api/v1/purchase-Return/orderno?vendorId=${vendorId}&companyId=${companyId}`,
+      }),
+    }),
   }),
 });
 
@@ -81,5 +87,6 @@ export const {
   useGetAllPRQuery,
   useGetPRByIdQuery,
   useGetPRDataForViewQuery,
-  useLazyPrintPdfQuery
+  useLazyPrintPdfQuery,
+  useGetOlSupplierNoQuery
 } = purchaseReturnApi;

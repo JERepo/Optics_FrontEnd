@@ -335,6 +335,7 @@ const CompleteStockTransfer = () => {
     totalBasicValue: formatINR(totals.totalBasicValue),
     totalReturnValue: formatINR(totals.totalReturnValue),
   };
+  console.log(",sss",stockDraftData);
   const handleSaveStockTransferOut = async () => {
     try {
       const payload = {
@@ -355,7 +356,8 @@ const CompleteStockTransfer = () => {
       if (
         stockDraftData?.FromCompany?.TaxRegistration === 1 &&
         EInvoiceEnable === 1 &&
-        InvInvoiceEnable === 1
+        InvInvoiceEnable === 1 &&
+        stockDraftData?.DiffGST === 1
       ) {
         try {
           await createInvoice({
@@ -504,7 +506,7 @@ const CompleteStockTransfer = () => {
               <Button
                 className="bg-blue-600 hover:bg-blue-700 text-white"
                 onClick={handleSaveStockTransferOut}
-                isLoading={isUpdating ||isInvoiceCreating}
+                isLoading={isUpdating || isInvoiceCreating}
                 disabled={isUpdating || isInvoiceCreating}
               >
                 Complete Stock Out Transfter

@@ -101,7 +101,7 @@ const SelectVendor = () => {
               Select Vendor
             </label>
             <Autocomplete
-              options={vendorsData?.data?.data?.filter((item) => item.CompanyID == customerPurchase.locationId)}
+              options={vendorsData?.data?.data?.filter((item) => item.CompanyID == customerPurchase.locationId) || []}
               getOptionLabel={(option) => option.VendorName}
               value={
                 vendorsData?.data?.data?.find(
@@ -110,6 +110,7 @@ const SelectVendor = () => {
               }
               onChange={(_, newValue) => {
                 setSelectedVendor(newValue);
+                
               }}
               renderInput={(params) => (
                 <TextField

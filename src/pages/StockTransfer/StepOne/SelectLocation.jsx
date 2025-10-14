@@ -57,6 +57,7 @@ const SelectLocation = () => {
         setCustomerStockOut((prev) => ({
           ...prev,
           inState: draft?.InState,
+          DiffGST :draft?.DiffGST
         }));
         setStockDraftData(draft);
         goToStockStep(4);
@@ -77,6 +78,7 @@ const SelectLocation = () => {
       setCustomerStockOut((prev) => ({
         ...prev,
         inState: response?.data.draft.InState,
+        DiffGST :response?.data.draft.DiffGST
       }));
       // setStockDraftData(response?.data.data);
         setStockDraftData(response?.data?.draft);

@@ -813,6 +813,7 @@ const OpticalLens = () => {
               : detail.ProductDetails[0]?.fittingGSTPercentage ?? null,
           InvoiceDetailId: detail.Id ?? null,
           ApplicationUserId: user.Id,
+          companyId :parseInt(hasMultipleLocations[0])
         };
         await saveFinalProducts({ payload }).unwrap();
       }

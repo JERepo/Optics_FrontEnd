@@ -62,13 +62,14 @@ const CRView = () => {
           </div>
           <div className="mt-10">
             <Table
-              columns={["S.No", "Type", "amount"]}
+              columns={["S.No", "date","Type", "amount"]}
               data={details?.data.refund || []}
               renderRow={(c, index) => (
                 <TableRow key={index}>
                   <TableCell>{index + 1}</TableCell>
+                   <TableCell>{c.CustomerReceiptMain?.ReceiptDate?.split("-").reverse().join("/")}</TableCell>
                   <TableCell>{paymentTypes[c.Type]}</TableCell>
-
+               
                   {/* <TableCell>
                     {c.typeNum === 7 ? c.extra.GVCode : "-"}
                   </TableCell>

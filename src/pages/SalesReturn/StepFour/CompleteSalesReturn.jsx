@@ -4,6 +4,8 @@ import { Table, TableCell, TableRow } from "../../../components/Table";
 import {
   useCompleteSaleReturnMutation,
   useGetSavedSalesReturnQuery,
+  useLazyPrintPdfQuery,
+  useSalesReturnConfirmMutation,
 } from "../../../api/salesReturnApi";
 import Button from "../../../components/ui/Button";
 import Textarea from "../../../components/Form/Textarea";
@@ -395,6 +397,8 @@ const CompleteSalesReturn = () => {
     { id: companyId },
     { skip: !companyId }
   );
+  const [generatePrint, { isFetching: isPrinting }] = useLazyPrintPdfQuery();
+  const [salesConfirm] = useSalesReturnConfirmMutation();
   const EInvoiceEnable = companySettings?.data?.data.EInvoiceEnable;
   const InvInvoiceEnable = companySettings?.data?.data.CNEInvoiceEnable;
   // Calculate totals
@@ -486,7 +490,7 @@ const CompleteSalesReturn = () => {
         InvInvoiceEnable === 1
       ) {
         try {
-          await createInvoice({
+          const res = await createInvoice({
             companyId: parseInt(hasMultipleLocations[0]),
             userId: user.Id,
             payload: eInvoicePayload,
@@ -495,6 +499,24 @@ const CompleteSalesReturn = () => {
           console.log(error);
         }
       }
+      (async () => {
+        try {
+          const blob = await generatePrint({
+            returnId: salesDraftData.Id,
+            companyId: parseInt(hasMultipleLocations[0]),
+          }).unwrap();
+          const pdfFile = new File([blob], `SalesReturn.pdf`, {
+            type: "application/pdf",
+          });
+          const formData = new FormData();
+          formData.append("salesReturnId", salesDraftData.Id);
+          formData.append("file", pdfFile);
+
+          await salesConfirm(formData).unwrap();
+        } catch (err) {
+          console.warn("order confirm flow failed:", err);
+        }
+      })();
       setItemsToDelete([]);
       setComment("");
       navigate("/sales-return");
@@ -569,7 +591,7 @@ const CompleteSalesReturn = () => {
 
               return (
                 <TableRow key={item.SalesReturnDetailId || index}>
-                  <TableCell >{index + 1}</TableCell>
+                  <TableCell>{index + 1}</TableCell>
                   <TableCell>
                     {item.InvoiceMain && (
                       <div>
@@ -579,9 +601,7 @@ const CompleteSalesReturn = () => {
                       </div>
                     )}
                   </TableCell>
-                  <TableCell >
-                    {getShortTypeName(item.ProductType)}
-                  </TableCell>
+                  <TableCell>{getShortTypeName(item.ProductType)}</TableCell>
                   <TableCell>
                     <div className="whitespace-pre-wrap">
                       {referenceApplicable === 0
@@ -613,9 +633,7 @@ const CompleteSalesReturn = () => {
                     }
                     % )
                   </TableCell>
-                  <TableCell >
-                    {item.ReturnQty || 0}
-                  </TableCell>
+                  <TableCell>{item.ReturnQty || 0}</TableCell>
                   <TableCell>
                     ₹
                     {formatINR(

@@ -3,6 +3,7 @@ import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
 import {
   useGetAllPoolsQuery,
   useGetCompanySettingsQuery,
+  useGetLabelsQuery,
   useGetTaxesQuery,
   useUpdateSettingsMutation,
 } from "../../api/companySettingsApi";
@@ -57,6 +58,27 @@ const EInvoiceGSTOptions = [
   { value: 3, name: "BOX" },
 ];
 
+const FrameOptions = [
+  { value: "BrandID", label: "Brand" },
+  { value: "ModelNo", label: "ModelNo" },
+  { value: "FrameSRP", label: "MRP" },
+  { value: "SellingPrice", label: "Selling Price" },
+  { value: "Barcode", label: "Barcode" },
+  { value: "Size", label: "Size" },
+  { value: "DBL", label: "DBL" },
+  { value: "TempleLength", label: "Temple Length" },
+  { value: "ColourCode", label: "Colour Code" },
+];
+
+const AccOptions = [
+  { value: "BrandID", label: "Brand" },
+  { value: "SKUCode", label: "SKU Code" },
+  { value: "VariationName", label: "Variation" },
+  { value: "Barcode", label: "Barcode" },
+  { value: "OPMRP", label: "MRP" },
+  { value: "SellingPrice", label: "Selling Price" },
+];
+
 const CompanySettings = () => {
   const [expandedSection, setExpandedSection] = useState(null); // first accordion open
   const [selectedLocation, setSelectedLocation] = useState(null);
@@ -83,6 +105,7 @@ const CompanySettings = () => {
   const [getPinCodeData, { isFetching: isPinCodeFetching }] =
     useLazyGetPinCodeQuery();
   const { data: alltaxes } = useGetTaxesQuery();
+  const { data: allLabels } = useGetLabelsQuery();
 
   const [formData, setFormData] = useState({
     customerPool: null,
@@ -143,10 +166,13 @@ const CompanySettings = () => {
     creditNoteTc: "",
     debitNoteTc: "",
     invoiceTc: "",
+    NoOfColumns: null,
     frameLabel: null,
     frameColumn1: "",
     frameColumn2: "",
     frameColumn3: "",
+    frameColumn4: "",
+    frameColumn5: "",
     showBuyingPriceDc: 0,
     invoiceDcPdf: 0, // 0 show MRP, 1 selling
     editInvoicePrice: 0,
@@ -155,6 +181,8 @@ const CompanySettings = () => {
     accessoryColumn1: "",
     accessoryColumn2: "",
     accessoryColumn3: "",
+    accessoryColumn4: "",
+    accessoryColumn5: "",
     poApproval: "",
     gvMultipleUse: "",
     dcBilling: "",
@@ -171,6 +199,9 @@ const CompanySettings = () => {
     mobileNoApproval: "",
     countryCodeForMobileApproval: "",
     defaultCustomerPool: "",
+    discountValue: "",
+    ClientEmail: "",
+    EInvoiceInstanceID: "",
   });
   useEffect(() => {
     if (companySettingData?.data?.data) {
@@ -227,18 +258,22 @@ const CompanySettings = () => {
         creditNoteTc: data.CreditNoteTc,
         debitNoteTc: data.DebitNoteTc,
         invoiceTc: data.InvoiceTc,
-        frameLabel: null,
-        frameColumn1: "",
-        frameColumn2: "",
-        frameColumn3: "",
+        frameLabel: data?.BarcodeLabelId, 
+        frameColumn1: data.FSBL1,
+        frameColumn2: data.FSBL2,
+        frameColumn3: data.FSBL3,
+        frameColumn4: data.FSBL4,
+        frameColumn5: data.FSBL5,
         showBuyingPriceDc: 0,
         invoiceDcPdf: 0, // 0 show MRP, 1 selling
         editInvoicePrice: 0,
         salesReturnAgainstInvoiceOnly: 0,
-        accessoryLabel: null,
-        accessoryColumn1: "",
-        accessoryColumn2: "",
-        accessoryColumn3: "",
+        accessoryLabel: data?.BarcodeLabelId,
+        accessoryColumn1: data.AccBL1,
+        accessoryColumn2: data.AccBL2,
+        accessoryColumn3: data.AccBL3,
+        accessoryColumn4: data.AccBL4,
+        accessoryColumn5: data.AccBL5,
         olGstUnit: data.OLGSTINunit,
         clGstUnit: data.CLGSTINunit,
         accGstUnit: data.AccGSTINunit,
@@ -259,6 +294,10 @@ const CompanySettings = () => {
         countryCodeForMobileApproval: data.ApprovalMobCountryCode,
         mobileNoApproval: data.AprrovalMobNo,
         defaultCustomerPool: data.CustomerGroupDefault,
+        discountValue: data?.DiscountMaxValue,
+        ClientEmail: data?.ClientEmail,
+        EInvoiceInstanceID: data?.EInvoiceInstanceID,
+        discountPercentage :data?.DiscountMaxSlabPerct,
       });
       setLogoPreview(
         companySettingData?.data?.data?.Company?.Logo
@@ -449,30 +488,34 @@ const CompanySettings = () => {
       CreditNoteTc: formData.creditNoteTc,
       DebitNoteTc: formData.debitNoteTc,
       InvoiceTc: formData.invoiceTc,
-      FrameLabelId: formData.frameLabel, // Assuming it's an ID
-      FrameColumn1: formData.frameColumn1,
-      FrameColumn2: formData.frameColumn2,
-      FrameColumn3: formData.frameColumn3,
+      BarcodeLabelId: formData.frameLabel , // Assuming it's an ID
+      FSBL1: formData.frameColumn1,
+      FSBL2: formData.frameColumn2,
+      FSBL3: formData.frameColumn3,
+      FSBL4: formData.frameColumn4,
+      FSBL5: formData.frameColumn5,
       ShowBuyingPriceDc: formData.showBuyingPriceDc,
       InvoiceDcPdf: formData.invoiceDcPdf, // 0=MRP, 1=selling
       EditInvoicePrice: formData.editInvoicePrice,
       SalesReturnAgainstInvoiceOnly: formData.salesReturnAgainstInvoiceOnly,
       AccessoryLabelId: formData.accessoryLabel, // Assuming ID
-      AccessoryColumn1: formData.accessoryColumn1,
-      AccessoryColumn2: formData.accessoryColumn2,
-      AccessoryColumn3: formData.accessoryColumn3,
+      AccBL1: formData.accessoryColumn1,
+      AccBL2: formData.accessoryColumn2,
+      AccBL3: formData.accessoryColumn3,
+      AccBL4: formData.accessoryColumn4,
+      AccBL5: formData.accessoryColumn5,
       OLGSTINunit: EInvoiceGSTOptions?.find(
         (item) => item.value === formData.olGstUnit
-      ).name,
+      )?.name,
       CLGSTINunit: EInvoiceGSTOptions?.find(
         (item) => item.value === formData.clGstUnit
-      ).name,
+      )?.name,
       AccGSTINunit: EInvoiceGSTOptions?.find(
         (item) => item.value === formData.accGstUnit
-      ).name,
+      )?.name,
       FSGSTINunit: EInvoiceGSTOptions?.find(
         (item) => item.value === formData.fsGstUnit
-      ).name,
+      )?.name,
       CNEInvoiceEnable: formData.enableEICreditNote,
       DNEInvoiceEnable: formData.enableEIDebitNote,
       POApproval: formData.poApproval,
@@ -489,6 +532,10 @@ const CompanySettings = () => {
       ApprovalMobCountryCode: formData.countryCodeForMobileApproval,
       AprrovalMobNo: formData.mobileNoApproval,
       CustomerGroupDefault: formData.defaultCustomerPool,
+      DiscountMaxValue: formData.discountValue,
+      EInvoiceInstanceID: formData.EInvoiceInstanceID,
+      ClientEmail: formData.ClientEmail,
+      DiscountMaxSlabPerct :formData?.discountPercentage
     };
 
     // If logo/QR need uploading (assuming multipart form)
@@ -509,7 +556,7 @@ const CompanySettings = () => {
       );
     }
   };
-
+  console.log(formData);
   if (isLocationsLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -1052,6 +1099,7 @@ const CompanySettings = () => {
                     fullWidth
                   />
                 </div>
+               
               </div>
               <div className="mt-5 grid grid-cols-3 gap-5">
                 <div className="flex items-center gap-3">
@@ -1096,28 +1144,39 @@ const CompanySettings = () => {
                     label="No"
                   />
                 </div>
+                <div className="flex items-center gap-3">
+                  <label className="text-neutral-800 font-semibold text-base">
+                    Enable E-Invoice for Debit Note{" "}
+                  </label>
+                  <Radio
+                    name="E-3"
+                    value="1"
+                    checked={formData.enableEIDebitNote === 1}
+                    onChange={() => handleRadioChange("enableEIDebitNote", "1")}
+                    label="Yes"
+                  />
+                  <Radio
+                    name="E-3"
+                    value="0"
+                    checked={formData.enableEIDebitNote === 0}
+                    onChange={() => handleRadioChange("enableEIDebitNote", "0")}
+                    label="No"
+                  />
+                </div>
               </div>
+               <div className="flex-grow flex">
+                  <TextField
+                    label="E-Invoice Instance ID"
+                    placeholder="Enter E-Invoice Instance ID"
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                    value={formData.EInvoiceInstanceID}
+                    onChange={handleChange("EInvoiceInstanceID")}
+                  />
+                </div>
             </>
           )}
-          <div className="flex items-center gap-3">
-            <label className="text-neutral-800 font-semibold text-base">
-              Enable E-Invoice for Debit Note{" "}
-            </label>
-            <Radio
-              name="E-3"
-              value="1"
-              checked={formData.enableEIDebitNote === 1}
-              onChange={() => handleRadioChange("enableEIDebitNote", "1")}
-              label="Yes"
-            />
-            <Radio
-              name="E-3"
-              value="0"
-              checked={formData.enableEIDebitNote === 0}
-              onChange={() => handleRadioChange("enableEIDebitNote", "0")}
-              label="No"
-            />
-          </div>
         </Box>
       ),
     },
@@ -1258,6 +1317,35 @@ const CompanySettings = () => {
               //   onChange={handleChange("journalPrefix")}
               onChange={handlePrefixChange("journalPrefix")}
             />
+          </div>
+          <div className="w-full">
+            <LocalizationProvider
+              dateAdapter={AdapterDateFns}
+              adapterLocale={enGB}
+            >
+              <div className="w-full">
+                <DatePicker
+                  className="w-full"
+                  label="Prefix Roll Off"
+                  value={fromDate}
+                  onChange={(newValue) => setFromDate(newValue)}
+                  inputFormat="dd/MM/yyyy"
+                  // maxDate={new Date()}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      inputProps={{
+                        ...params.inputProps,
+                        placeholder: "dd/MM/yyyy",
+                      }}
+                      size="small"
+                      fullWidth
+                      variant="outlined"
+                    />
+                  )}
+                />
+              </div>
+            </LocalizationProvider>
           </div>
         </Box>
       ),
@@ -1400,7 +1488,7 @@ const CompanySettings = () => {
       title: "WhatsApp and Email Settings",
       icon: <FiMessageSquare className="text-teal-600 text-xl" />,
       content: (
-        <Box className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Box className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div className="">
             <TextField
               label="Whatsapp Instance ID"
@@ -1421,6 +1509,17 @@ const CompanySettings = () => {
               fullWidth
               value={formData.whatsappClientId}
               onChange={handleChange("whatsappClientId")}
+            />
+          </div>
+          <div className="">
+            <TextField
+              label="Email Address for Mail notifications"
+              placeholder="Enter Email Address for Mail notifications"
+              variant="outlined"
+              size="small"
+              fullWidth
+              value={formData.ClientEmail}
+              onChange={handleChange("ClientEmail")}
             />
           </div>
         </Box>
@@ -1590,13 +1689,21 @@ const CompanySettings = () => {
         <Box className="flex flex-col gap-5">
           <div>
             <div className="mb-3">Barcode Label(Frame)</div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="">
               <div className="col-span-3">
                 <Autocomplete
-                  options={allLocations?.data || []} // perhaps change options to label templates if available
-                  getOptionLabel={(option) => option.LocationName || ""}
-                  value={formData.frameLabel}
-                  onChange={handleAutoChange("frameLabel")}
+                  options={allLabels?.data || []} // perhaps change options to label templates if available
+                  getOptionLabel={(option) => option.LabelName || ""}
+                  value={allLabels?.data.find(
+                    (item) => item.Id == formData.frameLabel
+                  )}
+                  onChange={(_, newValue) =>
+                    setFormData({
+                      ...formData,
+                      frameLabel: newValue?.Id || null,
+                      NoOfColumns: newValue?.NoOfColumns,
+                    })
+                  }
                   renderInput={(params) => (
                     <TextField
                       {...params}
@@ -1606,55 +1713,68 @@ const CompanySettings = () => {
                       variant="outlined"
                     />
                   )}
-                  loading={isLocationsLoading}
                   fullWidth
+                  
                 />
               </div>
-              <div className="">
-                <TextField
-                  label="Column 1"
-                  placeholder="Enter Column 1"
-                  variant="outlined"
-                  size="small"
-                  fullWidth
-                  value={formData.frameColumn1}
-                  onChange={handleChange("frameColumn1")}
-                />
-              </div>
-              <div className="">
-                <TextField
-                  label="Column 2"
-                  placeholder="Enter Column 2"
-                  variant="outlined"
-                  size="small"
-                  fullWidth
-                  value={formData.frameColumn2}
-                  onChange={handleChange("frameColumn2")}
-                />
-              </div>
-              <div className="">
-                <TextField
-                  label="Column 3"
-                  placeholder="Enter Column 3"
-                  variant="outlined"
-                  size="small"
-                  fullWidth
-                  value={formData.frameColumn3}
-                  onChange={handleChange("frameColumn3")}
-                />
-              </div>
+              {formData?.frameLabel && (
+                <div className="grid grid-cols-3 gap-5 w-full mt-5">
+                  {Array.from({ length: formData.NoOfColumns }).map(
+                    (_, index) => (
+                      <div key={index}>
+                        <Autocomplete
+                          multiple
+                          options={FrameOptions || []}
+                          getOptionLabel={(option) => option.label || ""}
+                          value={FrameOptions.filter((item) =>
+                            (formData[`frameColumn${index + 1}`] || "")
+                              .split(",")
+                              .includes(item.label)
+                          )}
+                          onChange={(_, newValue) => {
+                            const concatenated = newValue
+                              .map((item) => item.label)
+                              .join(",");
+                            handleChange(`frameColumn${index + 1}`)({
+                              target: { value: concatenated },
+                            });
+                          }}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label={`Column ${index + 1}`}
+                              placeholder={`Select Column ${index + 1}`}
+                              size="small"
+                              variant="outlined"
+                            />
+                          )}
+                          fullWidth
+                        />
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
             </div>
           </div>
           <div>
             <div className="mb-3">Barcode Label(Accessory)</div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="">
               <div className="col-span-3">
                 <Autocomplete
-                  options={allLocations?.data || []}
-                  getOptionLabel={(option) => option.LocationName || ""}
-                  value={formData.accessoryLabel}
-                  onChange={handleAutoChange("accessoryLabel")}
+                  options={allLabels?.data || []} // perhaps change options to label templates if available
+                  getOptionLabel={(option) => option.LabelName || ""}
+                  value={allLabels?.data.find(
+                    (item) => item.Id === formData.frameLabel
+                  )}
+                  onChange={(_, newValue) =>
+                    setFormData({
+                      ...formData,
+                      frameLabel: newValue?.Id || null,
+                      NoOfColumns: newValue?.NoOfColumns,
+                    })
+                  }
                   renderInput={(params) => (
                     <TextField
                       {...params}
@@ -1664,43 +1784,47 @@ const CompanySettings = () => {
                       variant="outlined"
                     />
                   )}
-                  loading={isLocationsLoading}
                   fullWidth
                 />
               </div>
-              <div className="">
-                <TextField
-                  label="Column 1"
-                  placeholder="Enter Column 1"
-                  variant="outlined"
-                  size="small"
-                  fullWidth
-                  value={formData.accessoryColumn1}
-                  onChange={handleChange("accessoryColumn1")}
-                />
-              </div>
-              <div className="">
-                <TextField
-                  label="Column 2"
-                  placeholder="Enter Column 2"
-                  variant="outlined"
-                  size="small"
-                  fullWidth
-                  value={formData.accessoryColumn2}
-                  onChange={handleChange("accessoryColumn2")}
-                />
-              </div>
-              <div className="">
-                <TextField
-                  label="Column 3"
-                  placeholder="Enter Column 3"
-                  variant="outlined"
-                  size="small"
-                  fullWidth
-                  value={formData.accessoryColumn3}
-                  onChange={handleChange("accessoryColumn3")}
-                />
-              </div>
+              {formData?.frameLabel && (
+                <div className="grid grid-cols-3 gap-5 w-full mt-5">
+                  {Array.from({ length: formData.NoOfColumns }).map(
+                    (_, index) => (
+                      <div key={index}>
+                        <Autocomplete
+                          multiple
+                          options={AccOptions || []}
+                          getOptionLabel={(option) => option.label || ""}
+                          value={AccOptions.filter((item) =>
+                            (formData[`accessoryColumn${index + 1}`] || "")
+                              .split(",")
+                              .includes(item.label)
+                          )}
+                          onChange={(_, newValue) => {
+                            const concatenated = newValue
+                              .map((item) => item.label)
+                              .join(",");
+                            handleChange(`accessoryColumn${index + 1}`)({
+                              target: { value: concatenated },
+                            });
+                          }}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label={`Column ${index + 1}`}
+                              placeholder={`Select Column ${index + 1}`}
+                              size="small"
+                              variant="outlined"
+                            />
+                          )}
+                          fullWidth
+                        />
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </Box>
@@ -1711,376 +1835,432 @@ const CompanySettings = () => {
       title: "Other Settings",
       icon: <FiTool className="text-orange-600 text-xl" />,
       content: (
-        <Box className="grid grid-cols-1 md:grid-cols-3 gap-7">
-          <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">
-              Invoice DC PDF
-            </label>
-            <Radio
-              name="invoiceDcPdf"
-              value="1"
-              checked={formData.invoiceDcPdf === 1}
-              onChange={() => handleRadioChange("invoiceDcPdf", "1")}
-              label="Show Selling Price"
-            />
-            <Radio
-              name="invoiceDcPdf"
-              value="0"
-              checked={formData.invoiceDcPdf === 0}
-              onChange={() => handleRadioChange("invoiceDcPdf", "0")}
-              label="Show MRP"
-            />
-          </div>
-          <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">
-              Edit Invoice Price
-            </label>
-            <Radio
-              name="editInvoicePrice"
-              value="1"
-              checked={formData.editInvoicePrice === 1}
-              onChange={() => handleRadioChange("editInvoicePrice", "1")}
-              label="Yes"
-            />
-            <Radio
-              name="editInvoicePrice"
-              value="0"
-              checked={formData.editInvoicePrice === 0}
-              onChange={() => handleRadioChange("editInvoicePrice", "0")}
-              label="No"
-            />
-          </div>
-          <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">
-              Sales Return Against Invoice Only
-            </label>
-            <Radio
-              name="salesReturnAgainstInvoiceOnly"
-              value="1"
-              checked={formData.salesReturnAgainstInvoiceOnly === 1}
-              onChange={() =>
-                handleRadioChange("salesReturnAgainstInvoiceOnly", "1")
-              }
-              label="Yes"
-            />
-            <Radio
-              name="salesReturnAgainstInvoiceOnly"
-              value="0"
-              checked={formData.salesReturnAgainstInvoiceOnly === 0}
-              onChange={() =>
-                handleRadioChange("salesReturnAgainstInvoiceOnly", "0")
-              }
-              label="No"
-            />
-          </div>
-          <div className="">
-            <TextField
-              label="Credit Note Return Period(in days)"
-              placeholder="Enter Credit Note Return Period"
-              variant="outlined"
-              size="small"
-              fullWidth
-              value={formData.creditNoteReturnPeriod}
-              onChange={handleChange("creditNoteReturnPeriod")}
-            />
-          </div>
-          <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">
-              PO Approval Required
-            </label>
-            <Radio
-              name="poApproval"
-              value="1"
-              checked={formData.poApproval === 1}
-              onChange={() => handleRadioChange("poApproval", "1")}
-              label="Yes"
-            />
-            <Radio
-              name="poApproval"
-              value="0"
-              checked={formData.poApproval === 0}
-              onChange={() => handleRadioChange("poApproval", "0")}
-              label="No"
-            />
-          </div>
-          <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">
-              GV Multiple Use
-            </label>
-            <Radio
-              name="gvMultipleUse"
-              value="1"
-              checked={formData.gvMultipleUse === 1}
-              onChange={() => handleRadioChange("gvMultipleUse", "1")}
-              label="Yes"
-            />
-            <Radio
-              name="gvMultipleUse"
-              value="0"
-              checked={formData.gvMultipleUse === 0}
-              onChange={() => handleRadioChange("gvMultipleUse", "0")}
-              label="No"
-            />
-          </div>
-          <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">
-              Customer DC Billing
-            </label>
-            <Radio
-              name="dcBilling"
-              value="1"
-              checked={formData.dcBilling === 1}
-              onChange={() => handleRadioChange("dcBilling", "1")}
-              label="Yes"
-            />
-            <Radio
-              name="dcBilling"
-              value="0"
-              checked={formData.dcBilling === 0}
-              onChange={() => handleRadioChange("dcBilling", "0")}
-              label="No"
-            />
-          </div>
-          <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">
-              Customer Credit Billing
-            </label>
-            <Radio
-              name="creditBilling"
-              value="1"
-              checked={formData.creditBilling === 1}
-              onChange={() => handleRadioChange("creditBilling", "1")}
-              label="Yes"
-            />
-            <Radio
-              name="creditBilling"
-              value="0"
-              checked={formData.creditBilling === 0}
-              onChange={() => handleRadioChange("creditBilling", "0")}
-              label="No"
-            />
-          </div>
-          <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">
-              Customer Loyalty Enable
-            </label>
-            <Radio
-              name="loyaltyEnable"
-              value="1"
-              checked={formData.loyaltyEnable === 1}
-              onChange={() => handleRadioChange("loyaltyEnable", "1")}
-              label="Yes"
-            />
-            <Radio
-              name="loyaltyEnable"
-              value="0"
-              checked={formData.loyaltyEnable === 0}
-              onChange={() => handleRadioChange("loyaltyEnable", "0")}
-              label="No"
-            />
-          </div>
-          <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">
-              Order Discount Approval
-            </label>
-            <Radio
-              name="orderDiscountApproval"
-              value="1"
-              checked={formData.orderDiscountApproval === 1}
-              onChange={() => handleRadioChange("orderDiscountApproval", "1")}
-              label="Yes"
-            />
-            <Radio
-              name="orderDiscountApproval"
-              value="0"
-              checked={formData.orderDiscountApproval === 0}
-              onChange={() => handleRadioChange("orderDiscountApproval", "0")}
-              label="No"
-            />
-          </div>
-          <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">
-              Order Cancellation Approval
-            </label>
-            <Radio
-              name="orderCancellationApproval"
-              value="1"
-              checked={formData.orderCancellationApproval === 1}
-              onChange={() =>
-                handleRadioChange("orderCancellationApproval", "1")
-              }
-              label="Yes"
-            />
-            <Radio
-              name="orderCancellationApproval"
-              value="0"
-              checked={formData.orderCancellationApproval === 0}
-              onChange={() =>
-                handleRadioChange("orderCancellationApproval", "0")
-              }
-              label="No"
-            />
-          </div>
-          <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">
-              Invoice Cancellation Approval
-            </label>
-            <Radio
-              name="invoiceCancellationApproval"
-              value="1"
-              checked={formData.invoiceCancellationApproval === 1}
-              onChange={() =>
-                handleRadioChange("invoiceCancellationApproval", "1")
-              }
-              label="Yes"
-            />
-            <Radio
-              name="invoiceCancellationApproval"
-              value="0"
-              checked={formData.invoiceCancellationApproval === 0}
-              onChange={() =>
-                handleRadioChange("invoiceCancellationApproval", "0")
-              }
-              label="No"
-            />
-          </div>
-          <div className="col-span-3">
-            <TextField
-              label="Discount % above which Approval is Required"
-              placeholder="Enter Discount %"
-              variant="outlined"
-              size="small"
-              fullWidth
-              value={formData.discountPercentage}
-              onChange={handleChange("discountPercentage")}
-            />
-          </div>
-          <div>
-            <LocalizationProvider
-              dateAdapter={AdapterDateFns}
-              adapterLocale={enGB}
-            >
+        <Box className="">
+          {/* Approval Section */}
+          <section className="mb-8">
+            <h3 className="text-xl font-semibold text-neutral-800 mb-4 underline">
+              Approval
+            </h3>
+            <div className="space-y-6">
+              <div>
+                <label className="text-neutral-800 font-semibold text-base">
+                  Order Discount Approval Required
+                </label>
+                <div className="flex items-center gap-5 mt-2">
+                  <Radio
+                    name="orderDiscountApproval"
+                    value="1"
+                    checked={formData.orderDiscountApproval === 1}
+                    onChange={() =>
+                      handleRadioChange("orderDiscountApproval", "1")
+                    }
+                    label="Yes"
+                  />
+                  <Radio
+                    name="orderDiscountApproval"
+                    value="0"
+                    checked={formData.orderDiscountApproval === 0}
+                    onChange={() =>
+                      handleRadioChange("orderDiscountApproval", "0")
+                    }
+                    label="No"
+                  />
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DatePicker
-                  label="Prefix Roll Off"
-                  value={fromDate}
-                  onChange={(newValue) => setFromDate(newValue)}
-                  inputFormat="dd/MM/yyyy"
-                  // maxDate={new Date()}
+                <TextField
+                  label="Discount % above which Approval is Required"
+                  placeholder="Enter Discount %"
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                  value={formData.discountPercentage}
+                  onChange={handleChange("discountPercentage")}
+                />
+                <TextField
+                  label="Discount Value above which Approval is Required"
+                  placeholder="Enter Discount Value"
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                  value={formData.discountValue}
+                  onChange={handleChange("discountValue")}
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center gap-5">
+                  <label className="text-neutral-800 font-semibold text-base">
+                    Order Cancellation Approval
+                  </label>
+                  <Radio
+                    name="orderCancellationApproval"
+                    value="1"
+                    checked={formData.orderCancellationApproval === 1}
+                    onChange={() =>
+                      handleRadioChange("orderCancellationApproval", "1")
+                    }
+                    label="Yes"
+                  />
+                  <Radio
+                    name="orderCancellationApproval"
+                    value="0"
+                    checked={formData.orderCancellationApproval === 0}
+                    onChange={() =>
+                      handleRadioChange("orderCancellationApproval", "0")
+                    }
+                    label="No"
+                  />
+                </div>
+                <div className="flex items-center gap-5">
+                  <label className="text-neutral-800 font-semibold text-base">
+                    Invoice Cancellation Approval
+                  </label>
+                  <Radio
+                    name="invoiceCancellationApproval"
+                    value="1"
+                    checked={formData.invoiceCancellationApproval === 1}
+                    onChange={() =>
+                      handleRadioChange("invoiceCancellationApproval", "1")
+                    }
+                    label="Yes"
+                  />
+                  <Radio
+                    name="invoiceCancellationApproval"
+                    value="0"
+                    checked={formData.invoiceCancellationApproval === 0}
+                    onChange={() =>
+                      handleRadioChange("invoiceCancellationApproval", "0")
+                    }
+                    label="No"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <TextField
+                  label="Approval Email"
+                  placeholder="Enter Approval Email"
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                  value={formData.emailApproval}
+                  onChange={handleChange("emailApproval")}
+                />
+                <div className="flex gap-4">
+                  <Autocomplete
+                    options={countries?.country || []}
+                    getOptionLabel={(option) =>
+                      `${option.CountryName}(${option.ISDCode})`
+                    }
+                    value={
+                      countries?.country?.find(
+                        (pool) =>
+                          pool.Id == formData.countryCodeForMobileApproval
+                      ) || null
+                    }
+                    onChange={(_, newValue) =>
+                      setFormData({
+                        ...formData,
+                        countryCodeForMobileApproval: newValue?.Id || null,
+                      })
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Country"
+                        placeholder="Select Country Code"
+                        size="small"
+                        variant="outlined"
+                      />
+                    )}
+                    fullWidth
+                  />
+                  <TextField
+                    label="Mobile No For Whatsapp Approval"
+                    placeholder="Enter Mobile No"
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                    value={formData.mobileNoApproval}
+                    onChange={handleChange("mobileNoApproval")}
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* CreditNote Section */}
+          <section className="mb-8">
+            <h3 className="text-xl underline font-semibold text-neutral-800 mb-4">
+              Credit Note
+            </h3>
+            <div className="space-y-6">
+              <div className="flex items-center gap-5">
+                <label className="text-neutral-800 font-semibold text-base">
+                  Sales Return Against Invoice Only
+                </label>
+                <Radio
+                  name="salesReturnAgainstInvoiceOnly"
+                  value="1"
+                  checked={formData.salesReturnAgainstInvoiceOnly === 1}
+                  onChange={() =>
+                    handleRadioChange("salesReturnAgainstInvoiceOnly", "1")
+                  }
+                  label="Yes"
+                />
+                <Radio
+                  name="salesReturnAgainstInvoiceOnly"
+                  value="0"
+                  checked={formData.salesReturnAgainstInvoiceOnly === 0}
+                  onChange={() =>
+                    handleRadioChange("salesReturnAgainstInvoiceOnly", "0")
+                  }
+                  label="No"
+                />
+              </div>
+              <TextField
+                label="Credit Note Return Period (in days)"
+                placeholder="Enter Credit Note Return Period"
+                variant="outlined"
+                size="small"
+                fullWidth
+                value={formData.creditNoteReturnPeriod}
+                onChange={handleChange("creditNoteReturnPeriod")}
+              />
+            </div>
+          </section>
+
+          {/* Customer Section */}
+          <section className="mb-8">
+            <h3 className="text-xl underline font-semibold text-neutral-800 mb-4">
+              Customer
+            </h3>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="flex items-center gap-5">
+                <label className="text-neutral-800 font-semibold text-base">
+                  Customer DC Billing
+                </label>
+                <Radio
+                  name="dcBilling"
+                  value="1"
+                  checked={formData.dcBilling === 1}
+                  onChange={() => handleRadioChange("dcBilling", "1")}
+                  label="Yes"
+                />
+                <Radio
+                  name="dcBilling"
+                  value="0"
+                  checked={formData.dcBilling === 0}
+                  onChange={() => handleRadioChange("dcBilling", "0")}
+                  label="No"
+                />
+              </div>
+              <div className="flex items-center gap-5">
+                <label className="text-neutral-800 font-semibold text-base">
+                  Customer Credit Billing
+                </label>
+                <Radio
+                  name="creditBilling"
+                  value="1"
+                  checked={formData.creditBilling === 1}
+                  onChange={() => handleRadioChange("creditBilling", "1")}
+                  label="Yes"
+                />
+                <Radio
+                  name="creditBilling"
+                  value="0"
+                  checked={formData.creditBilling === 0}
+                  onChange={() => handleRadioChange("creditBilling", "0")}
+                  label="No"
+                />
+              </div>
+              <div className="flex items-center gap-5">
+                <label className="text-neutral-800 font-semibold text-base">
+                  Customer Loyalty Enable
+                </label>
+                <Radio
+                  name="loyaltyEnable"
+                  value="1"
+                  checked={formData.loyaltyEnable === 1}
+                  onChange={() => handleRadioChange("loyaltyEnable", "1")}
+                  label="Yes"
+                />
+                <Radio
+                  name="loyaltyEnable"
+                  value="0"
+                  checked={formData.loyaltyEnable === 0}
+                  onChange={() => handleRadioChange("loyaltyEnable", "0")}
+                  label="No"
+                />
+              </div>
+              <Autocomplete
+                options={customerGroups?.data?.data || []}
+                getOptionLabel={(option) => option.GroupName || ""}
+                value={
+                  customerGroups?.data?.data?.find(
+                    (pool) => pool.Id === formData.defaultCustomerPool
+                  ) || null
+                }
+                onChange={(_, newValue) =>
+                  setFormData({
+                    ...formData,
+                    defaultCustomerPool: newValue?.Id || null,
+                  })
+                }
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Customer Group"
+                    placeholder="Select Customer Group"
+                    size="small"
+                    variant="outlined"
+                  />
+                )}
+                fullWidth
+              />
+            </div>
+          </section>
+
+          {/* Invoice Section */}
+          <section className="mb-8">
+            <h3 className="text-xl underline font-semibold text-neutral-800 mb-4">
+              Invoice
+            </h3>
+            <div className="grid grid-cols-2 lg:grid-cols-2">
+              <div className="flex items-center gap-5">
+                <label className="text-neutral-800 font-semibold text-base">
+                  Invoice DC PDF
+                </label>
+                <Radio
+                  name="invoiceDcPdf"
+                  value="1"
+                  checked={formData.invoiceDcPdf === 1}
+                  onChange={() => handleRadioChange("invoiceDcPdf", "1")}
+                  label="Show Selling Price"
+                />
+                <Radio
+                  name="invoiceDcPdf"
+                  value="0"
+                  checked={formData.invoiceDcPdf === 0}
+                  onChange={() => handleRadioChange("invoiceDcPdf", "0")}
+                  label="Show MRP"
+                />
+              </div>
+              <div className="flex items-center gap-5">
+                <label className="text-neutral-800 font-semibold text-base">
+                  Edit Invoice Price
+                </label>
+                <Radio
+                  name="editInvoicePrice"
+                  value="1"
+                  checked={formData.editInvoicePrice === 1}
+                  onChange={() => handleRadioChange("editInvoicePrice", "1")}
+                  label="Yes"
+                />
+                <Radio
+                  name="editInvoicePrice"
+                  value="0"
+                  checked={formData.editInvoicePrice === 0}
+                  onChange={() => handleRadioChange("editInvoicePrice", "0")}
+                  label="No"
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* Others Section */}
+          <section className="mb-8">
+            <h3 className="text-xl underline font-semibold text-neutral-800 mb-4">
+              Others
+            </h3>
+            <div className="grid grid-cols-3 gap-5">
+            
+              <div className="flex items-center gap-5">
+                <label className="text-neutral-800 font-semibold text-base">
+                  GV Multiple Use
+                </label>
+                <Radio
+                  name="gvMultipleUse"
+                  value="1"
+                  checked={formData.gvMultipleUse === 1}
+                  onChange={() => handleRadioChange("gvMultipleUse", "1")}
+                  label="Yes"
+                />
+                <Radio
+                  name="gvMultipleUse"
+                  value="0"
+                  checked={formData.gvMultipleUse === 0}
+                  onChange={() => handleRadioChange("gvMultipleUse", "0")}
+                  label="No"
+                />
+              </div>
+              <TextField
+                label="CL Min Expiry Period (in months)"
+                placeholder="Enter Period"
+                variant="outlined"
+                size="small"
+                fullWidth
+                value={formData.clMinExpPeriod}
+                onChange={handleChange("clMinExpPeriod")}
+              />
+              <TextField
+                label="CL Expiry Grace Period (in days)"
+                placeholder="Enter days"
+                variant="outlined"
+                size="small"
+                fullWidth
+                value={formData.clExpiryGracePeriod}
+                onChange={handleChange("clExpiryGracePeriod")}
+              />
+              {/* <TextField
+                label="Email for Approval"
+                placeholder="Enter email"
+                variant="outlined"
+                size="small"
+                fullWidth
+                value={formData.emailApproval}
+                onChange={handleChange("emailApproval")}
+              /> */}
+              {/* <div className="flex gap-4">
+                <Autocomplete
+                  options={countries?.country || []}
+                  getOptionLabel={(option) =>
+                    `${option.CountryName}(${option.ISDCode})`
+                  }
+                  value={
+                    countries?.country?.find(
+                      (pool) =>
+                        pool.Id === formData.countryCodeForMobileApproval
+                    ) || null
+                  }
+                  onChange={(_, newValue) =>
+                    setFormData({
+                      ...formData,
+                      countryCodeForMobileApproval: newValue?.Id || null,
+                    })
+                  }
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      inputProps={{
-                        ...params.inputProps,
-                        placeholder: "dd/MM/yyyy",
-                      }}
+                      label="Country"
+                      placeholder="Select Country"
                       size="small"
-                      fullWidth
                       variant="outlined"
                     />
                   )}
+                  fullWidth
                 />
-              </div>
-            </LocalizationProvider>
-          </div>
-          <div className="col-span-3">
-            <TextField
-              label="CL Min Expiry Period (in months)"
-              placeholder="Enter Period"
-              variant="outlined"
-              size="small"
-              fullWidth
-              value={formData.clMinExpPeriod}
-              onChange={handleChange("clMinExpPeriod")}
-            />
-          </div>
-          <div className="col-span-3">
-            <TextField
-              label="CL Expiry Grace Period (in days)"
-              placeholder="Enter days"
-              variant="outlined"
-              size="small"
-              fullWidth
-              value={formData.clExpiryGracePeriod}
-              onChange={handleChange("clExpiryGracePeriod")}
-            />
-          </div>
-          <div className="col-span-3">
-            <TextField
-              label="Email for Aprroval"
-              placeholder="Enter email"
-              variant="outlined"
-              size="small"
-              fullWidth
-              value={formData.emailApproval}
-              onChange={handleChange("emailApproval")}
-            />
-          </div>
-          <div className="flex">
-            <Autocomplete
-              options={customerGroups?.data?.data || []}
-              getOptionLabel={(option) => option.GroupName || ""}
-              value={
-                customerGroups?.data?.data?.find(
-                  (pool) => pool.Id == formData.defaultCustomerPool
-                ) || null
-              }
-              onChange={(_, newValue) =>
-                setFormData({
-                  ...formData,
-                  defaultCustomerPool: newValue?.Id || null,
-                })
-              }
-              renderInput={(params) => (
                 <TextField
-                  {...params}
-                  label="Customer Group"
-                  placeholder="Select Customer Group"
-                  size="small"
+                  label="Mobile No For Approval"
+                  placeholder="Enter Mobile No"
                   variant="outlined"
-                />
-              )}
-              fullWidth
-            />
-          </div>
-          <div className="flex">
-            <Autocomplete
-              options={countries?.country || []}
-              getOptionLabel={(option) =>
-                `${option.CountryName}(${option.ISDCode})`
-              }
-              value={
-                countries?.country?.find(
-                  (pool) => pool.Id == formData.countryCodeForMobileApproval
-                ) || null
-              }
-              onChange={(_, newValue) =>
-                setFormData({
-                  ...formData,
-                  countryCodeForMobileApproval: newValue?.Id || null,
-                })
-              }
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Country"
-                  placeholder="Select Country"
                   size="small"
-                  variant="outlined"
+                  fullWidth
+                  value={formData.mobileNoApproval}
+                  onChange={handleChange("mobileNoApproval")}
                 />
-              )}
-              fullWidth
-            />
-            <TextField
-              label="Mobile No For Approval"
-              placeholder="Enter Mobile No"
-              variant="outlined"
-              size="small"
-              fullWidth
-              value={formData.mobileNoApproval}
-              onChange={handleChange("mobileNoApproval")}
-            />
-          </div>
+              </div> */}
+            </div>
+          </section>
         </Box>
       ),
     },

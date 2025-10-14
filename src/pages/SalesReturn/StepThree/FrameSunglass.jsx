@@ -572,6 +572,7 @@ const FrameSunglass = () => {
           FittingTaxPercentage: detail.FittingTaxPercentage ?? null,
           InvoiceDetailId: referenceApplicable === 1 ? detail.Id ?? null : null,
           ApplicationUserId: user.Id,
+          companyId :parseInt(hasMultipleLocations[0])
         };
 
         await saveFinalProducts({ payload }).unwrap();

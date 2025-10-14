@@ -8,6 +8,7 @@ const Products = [
   { value: 1, label: "Frame/Sunglass" },
   { value: 3, label: "Contact Lens" },
   { value: 4, label: "Accessories" },
+  { value: 5, label: "Optical Lens" },
 ];
 
 const SelectProduct = () => {
@@ -29,6 +30,9 @@ const SelectProduct = () => {
     } else if (selectedPurchaseProduct?.value === 3) {
       goToPurchaseStep(3);
       goToSubPurchaseStep(3); // Contact Lens
+    } else if (selectedPurchaseProduct?.value === 5) {
+      goToPurchaseStep(3);
+      goToSubPurchaseStep(4); // Contact Lens
     } else {
       toast.error("Invalid selection type no product available");
       console.warn("Invalid product selection. No matching substep.");
@@ -44,7 +48,6 @@ const SelectProduct = () => {
         </h1>
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
-        
           <Button
             onClick={() => goToPurchaseStep(4)}
             // icon={FiPlus}
