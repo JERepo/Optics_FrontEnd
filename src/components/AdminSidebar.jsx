@@ -9,7 +9,7 @@ import { hasPermission } from "../utils/permissionUtils";
 
 const AdminSidebar = ({ isCollapsed, setIsCollapsed }) => {
   const [openDropdowns, setOpenDropdowns] = useState([]);
-  const { access } = useSelector((state) => state.auth);
+  const { access,user } = useSelector((state) => state.auth);
   const dropdownRefs = useRef({});
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -92,7 +92,7 @@ const AdminSidebar = ({ isCollapsed, setIsCollapsed }) => {
           }`}
         >
           <div
-            className={`flex items-center ${
+            className={`flex items-start ${
               isCollapsed ? "justify-center" : "gap-3"
             }`}
           >
@@ -101,8 +101,8 @@ const AdminSidebar = ({ isCollapsed, setIsCollapsed }) => {
             </div>
             {!isCollapsed && (
               <div>
-                <div className="font-medium text-neutral-100">Optics Admin</div>
-                <div className="text-xs text-neutral-100">Administrator</div>
+                {/* <div className="font-medium text-neutral-100">Optics {user.Role}</div> */}
+                <div className="font-medium text-neutral-100">{user.Role}</div>
               </div>
             )}
           </div>

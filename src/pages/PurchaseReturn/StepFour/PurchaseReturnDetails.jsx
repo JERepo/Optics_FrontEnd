@@ -359,10 +359,10 @@ const CompleteStockTransfer = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    parseFloat(item.DNPrice) * item.DNQty +
+                   ( parseFloat(item.DNPrice) * item.DNQty +
                       parseFloat(item.DNPrice) *
                         item.DNQty *
-                        (parseFloat(item.ProductTaxPercentage) / 100)
+                        (parseFloat(item.ProductTaxPercentage) / 100) + parseFloat(item.FittingReturnPrice || 0)* (parseFloat(item.FittingTaxPercentage || 0)/100) )
                   )}
                 </TableCell>
 

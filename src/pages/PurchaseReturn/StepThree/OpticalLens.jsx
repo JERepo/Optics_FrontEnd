@@ -26,12 +26,14 @@ const getProductName = (order) => {
     Cylinder,
     Diameter,
     AddOnData,
-    returnFittingPrice
+    returnFittingPrice,
   } = order;
 
-  const detail = Array.isArray(productDetails)
-    ? productDetails[0]
-    : productDetails?.ProductDetails;
+   const detail = Array.isArray(productDetails)
+      ? productDetails[0]
+      : productDetails;
+
+    if (!detail) return "";
 
   if (!detail) return "";
 
@@ -53,46 +55,57 @@ const getProductName = (order) => {
 
   const joinNonEmpty = (arr, sep = " ") => arr.filter(Boolean).join(sep);
 
-  // Ophthalmic Lenses (order.ProductType 0)
-  if (order.ProductType === 0) {
-    const olLine = clean(detail.productName);
-    // AddOns
-    const addonNames = Array.isArray(AddOnData)
-      ? AddOnData?.map((item) => clean(item.name?.split(" - ₹")[0])).filter(
-          Boolean
-        )
-      : Array.isArray(detail.addOn)
-      ? detail.addOn?.map((item) => clean(item.addOnName)).filter(Boolean)
-      : "";
+   if (order.ProductType === 0) {
+      const olLine = clean(detail.productDescName);
+      // AddOns
+      const addonNames = detail.specs?.addOn?.addOnName;
+      const tintName = detail.specs?.tint?.tintName;
 
-    const singlePower = detail?.Specs;
+      // for yes
+      const formatPower = (eye) =>
+        joinNonEmpty(
+          [
+            cleanPower(eye?.sphericalPower) &&
+              `SPH: ${cleanPower(eye?.sphericalPower)}`,
+            cleanPower(eye?.addition) && `Add: ${cleanPower(eye?.addition)}`,
+            clean(eye?.diameter) && `Dia: ${clean(eye?.diameter)}`,
+          ],
+          ", "
+        );
 
-    const singlePowerData = joinNonEmpty([
-      cleanPower(singlePower?.Spherical) && `SPH: ${singlePower?.Spherical},`,
-      cleanPower(singlePower?.Cylinder) && `Cyl: ${singlePower?.Cylinder},`,
-      cleanPower(singlePower?.Diameter) && `Dia: ${singlePower?.Diameter}`,
-    ]);
+      const pd = detail?.specs?.powerDetails || {};
 
-    let fittingLine = "";
-    const fitPrice = parseFloat(returnFittingPrice);
-    const gstPerc = parseFloat(fittingGSTPercentage);
-    if (!isNaN(fitPrice) && !isNaN(gstPerc) && fitPrice > 0) {
-      fittingLine = `Fitting Price: ₹${(fitPrice * (1 + gstPerc / 100)).toFixed(
-        2
-      )}`;
+      const rightParts = formatPower(pd.right || {});
+      const leftParts = formatPower(pd.left || {});
+
+      const powerLine = joinNonEmpty(
+        [rightParts && `R: ${rightParts}`, leftParts && `L: ${leftParts}`],
+        "\n"
+      );
+
+      let fittingLine = "";
+      const fitPrice = parseFloat(returnFittingPrice);
+      const gstPerc = parseFloat(fittingGSTPercentage);
+      if (!isNaN(fitPrice) && !isNaN(gstPerc) && fitPrice > 0) {
+        fittingLine = `Fitting Price: ₹${(
+          fitPrice *
+          (1 + gstPerc / 100)
+        ).toFixed(2)}`;
+      }
+
+      return joinNonEmpty(
+        [
+          olLine && olLine,
+          powerLine,
+          // clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+          addonNames && `AddOn: ${addonNames}`,
+          tintName && `Tint: ${tintName}`,
+          fittingLine,
+          clean(detail.hSN) && `HSN: ${clean(clean(detail.hSN))}`,
+        ],
+        "\n"
+      );
     }
-
-    return joinNonEmpty(
-      [
-        olLine && olLine,
-        singlePowerData,
-        fittingLine,
-        addonNames && `AddOn: ${addonNames}`,
-        clean(detail.HSN) && `HSN: ${clean(detail.HSN)}`,
-      ],
-      "\n"
-    );
-  }
 
   return "";
 };
@@ -233,50 +246,134 @@ const OpticalLens = () => {
       )
     );
   };
-const formatProductDetails = (product) => {
-  if (!product) return "";
+const formatProductDetails = (order) => {
+  const {
+    productType,
+    ProductType,
+    productDetails,
+    fittingPrice,
+    fittingGSTPercentage,
+    batchCode,
+    expiry,
+    Spherical,
+    Cylinder,
+    Diameter,
+    AddOnData,
+    returnFittingPrice,
+  } = order;
 
-  const clean = (val) => (val ? String(val).trim() : "");
-  const formatPowerValue = (v) => (v ? `${v}` : "");
+  const detail = Array.isArray(productDetails)
+    ? productDetails[0]
+    : productDetails;
 
-  const productName = clean(product.productName);
-  const brandName = clean(product.brandName);
-  const colour = clean(product.colour);
-  const barcode = clean(product.barcode);
-  const hsn = clean(product.HSN);
+  if (!detail) return "";
 
-  const specs = product.Specs
+  // Utility helpers
+  const clean = (val) =>
+    val == null ||
+    val === "undefined" ||
+    val === "null" ||
+    val === "" ||
+    val === "N/A"
+      ? ""
+      : String(val).trim();
+
+  const cleanPower = (val) => {
+    const cleaned = clean(val);
+    if (!cleaned) return "";
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? "" : num >= 0 ? `+${num}` : `${num}`;
+  };
+
+  const joinNonEmpty = (arr, sep = " ") => arr.filter(Boolean).join(sep);
+
+  // 🟦 TYPE 0 (Optical Lens)
+  if (order.ProductType === 0) {
+    const olLine = clean(detail.productDescName);
+    const addonNames = detail.specs?.addOn?.addOnName;
+    const tintName = detail.specs?.tint?.tintName;
+
+    // Format each eye’s specs
+    const formatPower = (eye) =>
+      joinNonEmpty(
+        [
+          cleanPower(eye?.sphericalPower) &&
+            `SPH: ${cleanPower(eye?.sphericalPower)}`,
+          cleanPower(eye?.addition) && `Add: ${cleanPower(eye?.addition)}`,
+          clean(eye?.diameter) && `Dia: ${clean(eye?.diameter)}`,
+        ],
+        ", "
+      );
+
+    const pd = detail?.specs?.powerDetails || {};
+
+    const rightParts = formatPower(pd.right || {});
+    const leftParts = formatPower(pd.left || {});
+
+    const powerLine = joinNonEmpty(
+      [rightParts && `R: ${rightParts}`, leftParts && `L: ${leftParts}`],
+      "  "
+    );
+
+    // Fitting line
+    let fittingLine = "";
+    const fitPrice = parseFloat(returnFittingPrice || fittingPrice);
+    const gstPerc = parseFloat(fittingGSTPercentage);
+    if (!isNaN(fitPrice) && !isNaN(gstPerc) && fitPrice > 0) {
+      fittingLine = `Fitting Price: ₹${(
+        fitPrice *
+        (1 + gstPerc / 100)
+      ).toFixed(2)}`;
+    }
+
+    // Final return string
+    return joinNonEmpty(
+      [
+        olLine && olLine,
+        powerLine,
+        addonNames && `AddOn: ${addonNames}`,
+        tintName && `Tint: ${tintName}`,
+        fittingLine,
+        clean(detail.hSN) && `HSN: ${clean(detail.hSN)}`,
+      ],
+      "  "
+    );
+  }
+
+ 
+  const productName = clean(detail.productName);
+  const brandName = clean(detail.brandName);
+  const colour = clean(detail.colour);
+  const barcode = clean(detail.barcode);
+  const hsn = clean(detail.HSN);
+  const specs = detail.Specs
     ? [
-        product.Specs.Spherical
-          ? `Sph: ${formatPowerValue(product.Specs.Spherical)}`
+        detail.Specs.Spherical
+          ? `Sph: ${cleanPower(detail.Specs.Spherical)}`
           : "",
-        product.Specs.Cylinder
-          ? `Cyl: ${formatPowerValue(product.Specs.Cylinder)}`
+        detail.Specs.Cylinder
+          ? `Cyl: ${cleanPower(detail.Specs.Cylinder)}`
           : "",
-        product.Specs.Diameter
-          ? `Dia: ${formatPowerValue(product.Specs.Diameter)}`
+        detail.Specs.Diameter
+          ? `Dia: ${clean(detail.Specs.Diameter)}`
           : "",
       ]
         .filter(Boolean)
         .join(", ")
     : "";
 
-  const stock = product.Stock || {};
-  const batchCode = clean(stock.BatchCode);
-  const expiry = clean(stock.Expiry);
-
-  // Build final one-line string
-  return [
-    productName,
-    specs,
-    barcode && `Barcode: ${barcode}`,
-    batchCode && `Batch: ${batchCode}`,
-    expiry && `Expiry: ${expiry}`,
-    hsn && `HSN: ${hsn}`,
-  ]
-    .filter(Boolean)
-    .join("  ");
+  return joinNonEmpty(
+    [
+      productName && `${productName}`,
+      specs && specs,
+      // barcode && `Barcode: ${barcode}`,
+      // colour && `Colour: ${colour}`,
+      hsn && `HSN: ${hsn}`,
+    ],
+    "\n"
+  );
 };
+
 
   const handleDelete = (index) => {
     setItems((prev) => prev.filter((_, idx) => idx !== index));
@@ -362,9 +459,9 @@ const formatProductDetails = (product) => {
             DNQty: item.returnQty,
             DNPrice: parseFloat(item.returnPrice),
             ProductTaxPercentage: parseFloat(item.TaxPercent),
-            VendorOrderNo:item.VendorOrderNo,
-            FittingReturnPrice :item.returnFittingPrice,
-            FittingTaxPercentage :parseFloat(item.fittingGSTPercentage),
+            VendorOrderNo: item.VendorOrderNo,
+            FittingReturnPrice: item.returnFittingPrice,
+            FittingTaxPercentage: parseFloat(item.fittingGSTPercentage),
             ApplicationUserId: user.Id,
           };
         }),
@@ -378,7 +475,7 @@ const formatProductDetails = (product) => {
     }
   };
 
-  console.log(selectedVendor,lensData)
+  console.log(selectedVendor, lensData);
   return (
     <div>
       <div className="max-w-8xl h-auto">
@@ -529,7 +626,7 @@ const formatProductDetails = (product) => {
                         <TableCell>
                           ₹
                           {formatINR(
-                            (item.returnPrice * (item.TaxPercent / 100)) 
+                            item.returnPrice * (item.TaxPercent / 100)
                           )}
                         </TableCell>
                         <TableCell>
@@ -537,7 +634,9 @@ const formatProductDetails = (product) => {
                           {formatINR(
                             item.returnQty *
                               (item.returnPrice +
-                                (item.returnPrice * item.TaxPercent) / 100)
+                                (item.returnPrice * item.TaxPercent) / 100) +
+                              item.fittingPrice *
+                                (item.fittingGSTPercentage / 100)
                           )}
                         </TableCell>
                         <TableCell>
@@ -601,95 +700,112 @@ const formatProductDetails = (product) => {
                   loading={isNumsLoading}
                 />
               </div>
-              {selectedVendor && 
-              <div className="grid grid-cols-3 gap-5 my-5">
-                <Input
-                  className="col-span-3"
-                  label="Product Name"
-                  value={formatProductDetails(selectedVendor?.productDetails?.ProductDetails) || ""}
-                  readOnly
-                  disabled
-                />
-                <Input
-                  label="Total Product Price"
-                  value={(selectedVendor?.GRNPrice * selectedVendor.GRNQty) || ""}
-                  readOnly
-                  disabled
-                />
-                <Input
-                  label="Total Fitting Price"
-                  value={selectedVendor?.FittingPrice || 0}
-                  readOnly
-                  disabled
-                />
-                <Input
-                  label="Total Qty"
-                  value={selectedVendor?.GRNQty || ""}
-                  readOnly
-                  disabled
-                />
-                <Input
-                  label="Return Product Price"
-                  value={lensData.returnProductPrice * lensData.returnQty }
-                  onChange={(e) =>
-                    setLensData((prev) => ({
-                      ...prev,
-                      returnProductPrice: e.target.value,
-                    }))
-                  }
-                  type="number"
-                />
-                <Input
-                  label="Return Fitting Price"
-                  value={lensData.returnFittingPrice}
-                  onChange={(e) =>
-                    setLensData((prev) => ({
-                      ...prev,
-                      returnFittingPrice: e.target.value,
-                    }))
-                  }
-                  type="number"
-                />
-                <Input
-                  label="Return Qty"
-                  value={lensData.returnQty}
-                  onChange={(e) =>
-                    setLensData((prev) => ({
-                      ...prev,
-                      returnQty: e.target.value,
-                    }))
-                  }
-                  type="number"
-                />
-                <Input
-                  label="Return Product GST"
-                  value={
-                    selectedVendor
-                      ? (
-                          (parseFloat(lensData.returnProductPrice || 0) * parseInt(lensData.returnQty)) *
-                          (parseFloat(selectedVendor?.TaxPercent || 0) / 100)
-                        ).toFixed(2)
-                      : 0
-                  }
-                  readOnly
-                  disabled
-                />
-                <Input
-                  label="Return Fitting GST"
-                  value={
-                    selectedVendor
-                      ? (
-                          parseFloat(lensData.returnFittingPrice || 0) *
-                          (parseFloat(selectedVendor?.FittingGSTPercentage) /
-                            100)
-                        ).toFixed(2)
-                      : ""
-                  }
-                  readOnly
-                  disabled
-                />
-              </div>}
-             {selectedVendor && <Button onClick={handleAddItem}>Add</Button>}
+              {selectedVendor && (
+                <div className="grid grid-cols-3 gap-5 my-5">
+                  <Input
+                    className="col-span-3"
+                    label="Product Name"
+                    value={
+                      formatProductDetails(
+                        selectedVendor
+                      ) || ""
+                    }
+                    readOnly
+                    disabled
+                  />
+                  <Input
+                    label="Total Product Price"
+                    value={
+                      selectedVendor?.GRNPrice * selectedVendor.GRNQty || ""
+                    }
+                    readOnly
+                    disabled
+                  />
+                  <Input
+                    label="Total Fitting Price"
+                    value={selectedVendor?.FittingPrice || 0}
+                    readOnly
+                    disabled
+                  />
+                  <Input
+                    label="Total Qty"
+                    value={selectedVendor?.GRNQty || ""}
+                    readOnly
+                    disabled
+                  />
+                  <Input
+                    label="Return Product Price"
+                    value={lensData.returnProductPrice || ""}
+                    onChange={(e) =>
+                      setLensData((prev) => ({
+                        ...prev,
+                        returnProductPrice: e.target.value,
+                      }))
+                    }
+                    onBlur={() =>
+                      setLensData((prev) => ({
+                        ...prev,
+                        returnProductPrice:
+                          (parseFloat(prev.returnProductPrice) || 0) *
+                          (parseFloat(prev.returnQty) || 0),
+                      }))
+                    }
+                    type="number"
+                  />
+
+                  <Input
+                    label="Return Fitting Price"
+                    value={lensData.returnFittingPrice}
+                    onChange={(e) =>
+                      setLensData((prev) => ({
+                        ...prev,
+                        returnFittingPrice: e.target.value,
+                      }))
+                    }
+                    type="number"
+                  />
+                  <Input
+                    label="Return Qty"
+                    value={lensData.returnQty}
+                    onChange={(e) =>
+                      setLensData((prev) => ({
+                        ...prev,
+                        returnQty: e.target.value,
+                      }))
+                    }
+                    type="number"
+                  />
+                  <Input
+                    label="Return Product GST"
+                    value={
+                      selectedVendor
+                        ? (
+                            parseFloat(lensData.returnProductPrice || 0) *
+                            parseInt(lensData.returnQty) *
+                            (parseFloat(selectedVendor?.TaxPercent || 0) / 100)
+                          ).toFixed(2)
+                        : 0
+                    }
+                    readOnly
+                    disabled
+                  />
+                  <Input
+                    label="Return Fitting GST"
+                    value={
+                      selectedVendor
+                        ? (
+                            parseFloat(lensData.returnFittingPrice || 0) *
+                            (parseFloat(selectedVendor?.FittingGSTPercentage) /
+                              100)
+                          ).toFixed(2)
+                        : ""
+                    }
+                    readOnly
+                    disabled
+                  />
+                </div>
+              )}
+              {selectedVendor && <Button onClick={handleAddItem}>Add</Button>}
             </div>
           </div>
         </div>

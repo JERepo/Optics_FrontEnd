@@ -182,6 +182,7 @@ export const menuItems = [
         module: "Location-setting",
         path: "/location-settings",
       },
+      
     ],
   },
 
@@ -378,6 +379,12 @@ export const menuItems = [
         path: "stout-report",
         module: "stout-report",
         icon: IoConstructOutline, // Suggests building/setup
+      },
+       {
+        name: "Loyalty Summary",
+        icon: IoConstructOutline,
+        module: "loyalty-summary",
+        path: "/loyalty-summary",
       },
     ],
   },
