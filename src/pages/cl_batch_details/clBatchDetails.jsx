@@ -1208,7 +1208,7 @@ export default function ClBatchDetails() {
                                         <table className="min-w-full divide-y divide-gray-200">
                                             <thead className="bg-[#000060]">
                                                 <tr>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Product Name + Brand Name</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Product Details</th>
                                                     <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">MRP</th>
                                                     <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Spherical Power</th>
                                                     <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Cylindrical Power</th>
@@ -1220,7 +1220,22 @@ export default function ClBatchDetails() {
                                             <tbody className="bg-white divide-y divide-gray-200">
                                                 <tr>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {productDetails.ProductName}, {productDetails.BrandName}
+                                                        {productDetails?.BrandName ?? ''} {productDetails?.ProductName}
+                                                        {productDetails.Size && <br />}{productDetails.Size}
+                                                        {productDetails.SphericalPower && <br />}{productDetails.SphericalPower ? `Sph: ${productDetails.SphericalPower > 0 ? `+` : ``}${productDetails.SphericalPower}` : `Sph: `}
+                                                        {productDetails.CylindricalPower ? ` Cyl: ${productDetails.CylindricalPower > 0 && `+`}${productDetails.CylindricalPower}` : ` Cyl: `}
+                                                        {productDetails.Axis ? ` Axis: ${productDetails.Axis}` : ` Axis: `}
+                                                        {productDetails.Additional ? ` Add: ${productDetails.Additional}` : ` Add: `}
+                                                        {/* {productDetails?.Barcode && <br />}{productDetails?.Barcode ? `Barcode: ${productDetails?.Barcode}`: ``} */}
+                                                        {(typeof productDetails?.CLBatchCode) === 'string' && <br />}{(typeof productDetails?.CLBatchCode) === 'string' ? `BatchCode: ${productDetails.CLBatchCode}` : ``}
+                                                        {/* {(typeof productDetails?.CLBatchCode) === 'string' && (productDetails?.Expiry || productDetails?.CLBatchExpiry) && ` Expiry: ${productDetails.Expiry || productDetails?.CLBatchExpiry}`} */}
+                                                        {(typeof productDetails?.CLBatchCode) === 'string' && (productDetails?.Expiry || productDetails?.CLBatchExpiry) && (() => {
+                                                            const expiryDate = productDetails.Expiry || productDetails?.CLBatchExpiry;
+                                                            const [year, month, day] = expiryDate.split('-');
+                                                            const formattedExpiry = `${day}-${month}-${year}`;
+                                                            return ` Expiry: ${formattedExpiry}`;
+                                                        })()}
+                                                        {productDetails.HSN && <br />}{productDetails.HSN && `HSN: ` + productDetails.HSN}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                         {productDetails.MRP}
@@ -1434,37 +1449,39 @@ export default function ClBatchDetails() {
                                         className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4 w-full"
                                     >
                                         <div className="flex flex-row gap-4 min-w-[200px]">
-                                            <Autocomplete
-                                                options={filteredBrands}
-                                                getOptionLabel={(option) => option.BrandName}
-                                                onInputChange={(event, value) => {
-                                                    setBrandInput(value);
-                                                }}
-                                                onChange={(event, newValue) => {
-                                                    if (newValue) {
-                                                        setBrandInput(newValue.BrandName);
-                                                        setBrandId(newValue.Id);
-                                                    } else {
-                                                        setBrandInput("");
-                                                        setBrandId(null);
+                                            <div className="flex-1 min-w-[200px]">
+                                                <Autocomplete
+                                                    options={filteredBrands}
+                                                    getOptionLabel={(option) => option.BrandName}
+                                                    onInputChange={(event, value) => {
+                                                        setBrandInput(value);
+                                                    }}
+                                                    onChange={(event, newValue) => {
+                                                        if (newValue) {
+                                                            setBrandInput(newValue.BrandName);
+                                                            setBrandId(newValue.Id);
+                                                        } else {
+                                                            setBrandInput("");
+                                                            setBrandId(null);
+                                                        }
+                                                    }}
+                                                    value={
+                                                        filteredBrands.find((b) => b.BrandName === brandInput) ||
+                                                        null
                                                     }
-                                                }}
-                                                value={
-                                                    filteredBrands.find((b) => b.BrandName === brandInput) ||
-                                                    null
-                                                }
-                                                isOptionEqualToValue={(option, value) =>
-                                                    option.Id === value.Id
-                                                }
-                                                renderInput={(params) => (
-                                                    <TextField
-                                                        {...params}
-                                                        label="Search Brand"
-                                                        variant="outlined"
-                                                        fullWidth
-                                                    />
-                                                )}
-                                            />
+                                                    isOptionEqualToValue={(option, value) =>
+                                                        option.Id === value.Id
+                                                    }
+                                                    renderInput={(params) => (
+                                                        <TextField
+                                                            {...params}
+                                                            label="Search Brand"
+                                                            variant="outlined"
+                                                            fullWidth
+                                                        />
+                                                    )}
+                                                />
+                                            </div>
                                             <>
                                                 {brandId && (
                                                     <div className="flex-1 min-w-[300px]">
@@ -1706,7 +1723,7 @@ export default function ClBatchDetails() {
                                         <table className="min-w-full divide-y divide-gray-200">
                                             <thead className="bg-[#000060]">
                                                 <tr>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Product Name + Brand Name</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Product Details</th>
                                                     <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">MRP</th>
                                                     <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Spherical Power</th>
                                                     <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Cylindrical Power</th>
@@ -1718,7 +1735,22 @@ export default function ClBatchDetails() {
                                             <tbody className="bg-white divide-y divide-gray-200">
                                                 <tr>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {productDetails.ProductName}, {productDetails.BrandName}
+                                                        {productDetails?.BrandName ?? ''} {productDetails?.ProductName}
+                                                        {productDetails.Size && <br />}{productDetails.Size}
+                                                        {productDetails.SphericalPower && <br />}{productDetails.SphericalPower ? `Sph: ${productDetails.SphericalPower > 0 ? `+` : ``}${productDetails.SphericalPower}` : `Sph: `}
+                                                        {productDetails.CylindricalPower ? ` Cyl: ${productDetails.CylindricalPower > 0 && `+`}${productDetails.CylindricalPower}` : ` Cyl: `}
+                                                        {productDetails.Axis ? ` Axis: ${productDetails.Axis}` : ` Axis: `}
+                                                        {productDetails.Additional ? ` Add: ${productDetails.Additional}` : ` Add: `}
+                                                        {/* {productDetails?.Barcode && <br />}{productDetails?.Barcode ? `Barcode: ${productDetails?.Barcode}`: ``} */}
+                                                        {(typeof productDetails?.CLBatchCode) === 'string' && <br />}{(typeof productDetails?.CLBatchCode) === 'string' ? `BatchCode: ${productDetails.CLBatchCode}` : ``}
+                                                        {/* {(typeof productDetails?.CLBatchCode) === 'string' && (productDetails?.Expiry || productDetails?.CLBatchExpiry) && ` Expiry: ${productDetails.Expiry || productDetails?.CLBatchExpiry}`} */}
+                                                        {(typeof productDetails?.CLBatchCode) === 'string' && (productDetails?.Expiry || productDetails?.CLBatchExpiry) && (() => {
+                                                            const expiryDate = productDetails.Expiry || productDetails?.CLBatchExpiry;
+                                                            const [year, month, day] = expiryDate.split('-');
+                                                            const formattedExpiry = `${day}-${month}-${year}`;
+                                                            return ` Expiry: ${formattedExpiry}`;
+                                                        })()}
+                                                        {productDetails.HSN && <br />}{productDetails.HSN && `HSN: ` + productDetails.HSN}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                         {productDetails.MRP}
