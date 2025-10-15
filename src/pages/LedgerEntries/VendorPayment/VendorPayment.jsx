@@ -3,7 +3,6 @@ import { useSelector } from "react-redux";
 import { useNavigate } from "react-router";
 import {
   useGetAllCompanyLocationsQuery,
-  useGetAllCustomersQuery,
   useGetCompanyIdQuery,
 } from "../../../api/customerApi";
 import Button from "../../../components/ui/Button";
@@ -17,10 +16,16 @@ import { formatINR } from "../../../utils/formatINR";
 import { FiCheck, FiEdit2, FiX } from "react-icons/fi";
 import Modal from "../../../components/ui/Modal";
 import Checkbox from "../../../components/Form/Checkbox";
-import PaymentEntries from "./PaymentEntries";
-import CollectAdvance from "./CollectAdvace";
+import VendorPaymentEntries from "./VendorPaymentEntries";
+import {
+  useGetAllvendorByLocationQuery,
+  useGetAllVendorMutation,
+} from "../../../api/vendorApi";
+import { useLazyGetVendorPaymentQuery } from "../../../api/vendorPayment";
+import VendorCollectAdvace from "./VendorCollectAdvace";
+import VendorCollectPOAdvace from "./VendorCollectPOAdvace";
 
-const CustomerPayment = () => {
+const VendorPayment = () => {
   const navigate = useNavigate();
   const { user, hasMultipleLocations } = useSelector((state) => state.auth);
   const [input, setInput] = useState("");
@@ -30,12 +35,13 @@ const CustomerPayment = () => {
   const [items, setItems] = useState([]);
   const [nextClicked, setNextClicked] = useState(false);
   const [collectPayment, setCollectPayment] = useState(false);
+  const [againstPO, setAgainstPO] = useState(false);
 
   const {
     data: customersResp,
     isLoading,
     isFetching,
-  } = useGetAllCustomersQuery();
+  } = useGetAllvendorByLocationQuery({ id: parseInt(hasMultipleLocations[0]) });
   const { data: allCompanies } = useGetAllCompanyLocationsQuery();
   const { data: locationById } = useGetLocationByIdQuery(
     { id: parseInt(hasMultipleLocations[0]) },
@@ -47,13 +53,13 @@ const CustomerPayment = () => {
     { id: companyId },
     { skip: !companyId }
   );
-  const CustomerPoolID = companySettings?.data?.data.CustomerPoolID;
+  const vendorPoolID = companySettings?.data?.data.VendorPoolID;
   const allCompanyIds = allCompanies?.data?.data
-    .filter((item) => item.CustomerPoolID == CustomerPoolID)
+    .filter((item) => item.VendorPoolID == vendorPoolID)
     .map((item) => item.CompanyId);
 
   const [getPayments, { isFetching: isPaymentsLoading }] =
-    useLazyGetCustomerPaymentQuery();
+    useLazyGetVendorPaymentQuery();
 
   // Initialize editMode and set originalAmountToPay for each item
   useEffect(() => {
@@ -76,16 +82,16 @@ const CustomerPayment = () => {
     try {
       const res = await getPayments({
         companyId: parseInt(hasMultipleLocations[0]),
-        customerId: selectedCustomer?.Id,
+        vendorId: selectedCustomer?.Id,
       }).unwrap();
       if (res?.data?.length > 0) {
         // Initialize AmountToPay to Amount (Amount Due) for each item
         const updatedItems = res.data.map((item) => ({
           ...item,
-          AmountToPay: item.Invoice
+          AmountToPay: item.GRNMain
             ? item.AmountToPay ?? item.Amount
             : -(item.AmountToPay ?? item.Amount),
-          Amount: item.Invoice
+          Amount: item.GRNMain
             ? item.AmountToPay ?? item.Amount
             : -(item.AmountToPay ?? item.Amount),
         }));
@@ -208,7 +214,7 @@ const CustomerPayment = () => {
   };
   const totalReceivable = items.reduce((sum, item) => {
     if (selectedProducts.includes(item.Id)) {
-      const amount = item.Invoice
+      const amount = item.GRNMain
         ? parseFloat(item.Amount)
         : -parseFloat(item.Amount);
       return sum + amount;
@@ -223,7 +229,7 @@ const CustomerPayment = () => {
     }
     return sum;
   }, 0);
-
+  console.log(againstPO);
   return (
     <div>
       <div className="max-w-8xl p-6 bg-white rounded-lg shadow-sm border border-gray-100">
@@ -232,11 +238,11 @@ const CustomerPayment = () => {
             <Autocomplete
               options={
                 customersResp?.data?.data.filter((item) =>
-                  allCompanyIds?.includes(item.Company?.Id)
+                  allCompanyIds?.includes(item.CompanyID)
                 ) || []
               }
               getOptionLabel={(option) =>
-                `${option.CustomerName} (${option.MobNumber})`
+                `${option.VendorName} (${option.MobNumber})`
               }
               value={
                 customersResp?.data?.data.find(
@@ -275,15 +281,24 @@ const CustomerPayment = () => {
                 onChange={handleCollectAdvance}
                 label="Collect Advance"
               />
+              <div className="text-lg text-neutral-900">
+                <Checkbox
+                  checked={againstPO}
+                  onChange={(e) => {setAgainstPO(e.target.checked);setItems([])}}
+                  label="Collect Against PO"
+                />
+              </div>
             </div>
 
-            <Button
-              onClick={handleFetch}
-              isLoading={isPaymentsLoading}
-              disabled={isPaymentsLoading}
-            >
-              Fetch Details
-            </Button>
+            {!againstPO && (
+              <Button
+                onClick={handleFetch}
+                isLoading={isPaymentsLoading}
+                disabled={isPaymentsLoading}
+              >
+                Fetch Details
+              </Button>
+            )}
           </div>
         )}
 
@@ -332,21 +347,24 @@ const CustomerPayment = () => {
                   />
                 </TableCell>
                 <TableCell>
-                  {item.Invoice
-                    ? `${item.Invoice?.InvoicePrefix}/${item.Invoice?.InvoiceNo}`
-                    : `${item.salesMaster?.CNPrefix}/${item.salesMaster?.CNNo}`}
+                  {item.GRNMain
+                    ? `${item.GRNMain?.GRNPrefix}/${item.GRNMain?.GRNNo}`
+                    : `${item.purchaseMaster?.DNPrefix}/${item.purchaseMaster?.DNNo}`}
                 </TableCell>
-                <TableCell>{item.Invoice ? "DR" : "CR"}</TableCell>
+                <TableCell>{!item.GRNMain ? "DR" : "CR"}</TableCell>
                 <TableCell>
-                  {item.Invoice
-                    ? format(new Date(item.Invoice?.InvoiceDate), "dd/MM/yyyy")
-                    : format(new Date(item.salesMaster?.CNDate), "dd/MM/yyyy")}
+                  {item.GRNMain
+                    ? format(new Date(item.GRNMain?.GRNDate), "dd/MM/yyyy")
+                    : format(
+                        new Date(item.purchaseMaster?.PurchaseReturnDate),
+                        "dd/MM/yyyy"
+                      )}
                 </TableCell>
                 <TableCell>
                   ₹
-                  {item.Invoice
-                    ? item.Invoice?.TotalValue
-                    : item.salesMaster?.CNTotal}
+                  {item.GRNMain
+                    ? item.GRNMain?.TotalValue
+                    : item.purchaseMaster?.TotalValue}
                 </TableCell>
                 <TableCell>₹{formatINR(item.Amount)}</TableCell>
                 <TableCell>
@@ -425,7 +443,7 @@ const CustomerPayment = () => {
           width="max-w-5xl"
         >
           <div>
-            <PaymentEntries
+            <VendorPaymentEntries
               totalValue={totalReceivable || 0}
               amountToPay={totalSelectedValue || 0}
               selectedPatient={selectedCustomer || 0}
@@ -436,7 +454,7 @@ const CustomerPayment = () => {
         </Modal>
         {collectPayment && (
           <div className="mt-5">
-            <CollectAdvance
+            <VendorCollectAdvace
               totalValue={totalReceivable || 0}
               amountToPay={totalSelectedValue || 0}
               selectedPatient={selectedCustomer || 0}
@@ -446,9 +464,22 @@ const CustomerPayment = () => {
             />
           </div>
         )}
+        {againstPO && (
+          <div className="mt-5">
+            <VendorCollectPOAdvace
+              totalValue={totalReceivable || 0}
+              amountToPay={totalSelectedValue || 0}
+              selectedPatient={selectedCustomer || 0}
+              companyId={parseInt(hasMultipleLocations[0])}
+              items={items}
+              collectPayment={collectPayment}
+              againstPO={againstPO}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default CustomerPayment;
+export default VendorPayment;

@@ -91,7 +91,7 @@ const OfferMainPage = () => {
 
   const handleViewinvoice = (id) => {
     // updateSelectedOrderDetails(invoice);
-    navigate(`/customer-payment/view?cpId=${id}`);
+    navigate(`/offer/view?offerId=${id}`);
   };
 
   if (isOffersLoading) {
@@ -215,15 +215,22 @@ const OfferMainPage = () => {
           </div>
 
           <Table
-            columns={["S.No", "offer code", "offer name", "status"]}
+            columns={["S.No", "offer code", "offer name", "status", "action"]}
             data={paginatedOrders}
             renderRow={(item, index) => (
               <TableRow key={item.id}>
-                <TableCell>{index+1}</TableCell>
+                <TableCell>{index + 1}</TableCell>
                 <TableCell>{item.offerCode}</TableCell>
                 <TableCell>{item.offerName}</TableCell>
 
                 <TableCell>{item.status}</TableCell>
+                <button
+                  onClick={() => handleViewinvoice(item.id)}
+                  className="flex items-center  text-lg font-medium rounded-md "
+                  title="View"
+                >
+                  <FiEye className="" />
+                </button>
               </TableRow>
             )}
             emptyMessage={

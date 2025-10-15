@@ -271,6 +271,7 @@ const CompleteStockTransfer = () => {
         prId: purchaseDraftData.Id || purchaseDraftData[0].Id,
         userId: user.Id,
         locationId: customerPurchase.locationId,
+        vendorId :customerPurchase?.customerData?.Id,
         payload,
       }).unwrap();
       const eInvoicePayload = {

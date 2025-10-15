@@ -214,7 +214,7 @@ const LoyaltySummary = () => {
 
                 {/* Customer Details */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 bg-blue-50 rounded-lg">
-                  <div className="space-y-1">
+                  <div className="">
                     <div className="flex items-center gap-2 text-sm font-medium text-gray-600">
                       <FiUser className="w-4 h-4" />
                       Customer Name
@@ -223,7 +223,7 @@ const LoyaltySummary = () => {
                       {selectedCustomer?.CustomerName}
                     </p>
                   </div>
-                  <div className="space-y-1">
+                  <div className="">
                     <div className="flex items-center gap-2 text-sm font-medium text-gray-600">
                       <FiCreditCard className="w-4 h-4" />
                       Loyalty No
@@ -232,7 +232,7 @@ const LoyaltySummary = () => {
                       {loyaltySummary?.data[0]?.loyaltyNo}
                     </p>
                   </div>
-                  <div className="space-y-1">
+                  <div className="">
                     <div className="flex items-center gap-2 text-sm font-medium text-gray-600">
                       <FiAward className="w-4 h-4" />
                       Points Balance
@@ -241,7 +241,7 @@ const LoyaltySummary = () => {
                       {loyaltySummary?.data[0]?.pointsBalance}
                     </p>
                   </div>
-                  <div className="space-y-1">
+                  <div className="">
                     <div className="flex items-center gap-0 text-sm font-medium text-gray-600">
                       <MdCurrencyRupee className="w-4 h-4" />
                       Points Value
