@@ -430,7 +430,7 @@ export const menuItems = [
         name: "Vendor Payment",
         icon: IoConstructOutline,
         module: "Vendor-Payment",
-        path: "/vendor-payment",
+        path: "/vendor-payment/create",
       },
     ],
   },
