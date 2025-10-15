@@ -1274,20 +1274,18 @@ export default function ClBatchDetails() {
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                         {productDetails?.BrandName ?? ''} {productDetails?.ProductName}
                                                         {productDetails.Size && <br />}{productDetails.Size}
-                                                        {productDetails.SphericalPower && <br />}{productDetails.SphericalPower ? `Sph: ${productDetails.SphericalPower > 0 ? `+` : ``}${productDetails.SphericalPower}` : `Sph: `}
+                                                        {/* {productDetails.SphericalPower && <br />}{productDetails.SphericalPower ? `Sph: ${productDetails.SphericalPower > 0 ? `+` : ``}${productDetails.SphericalPower}` : `Sph: `}
                                                         {productDetails.CylindricalPower ? ` Cyl: ${productDetails.CylindricalPower > 0 && `+`}${productDetails.CylindricalPower}` : ` Cyl: `}
                                                         {productDetails.Axis ? ` Axis: ${productDetails.Axis}` : ` Axis: `}
                                                         {productDetails.Additional ? ` Add: ${productDetails.Additional}` : ` Add: `}
-                                                        {/* {productDetails?.Barcode && <br />}{productDetails?.Barcode ? `Barcode: ${productDetails?.Barcode}`: ``} */}
                                                         {(typeof productDetails?.CLBatchCode) === 'string' && <br />}{(typeof productDetails?.CLBatchCode) === 'string' ? `BatchCode: ${productDetails.CLBatchCode}` : ``}
-                                                        {/* {(typeof productDetails?.CLBatchCode) === 'string' && (productDetails?.Expiry || productDetails?.CLBatchExpiry) && ` Expiry: ${productDetails.Expiry || productDetails?.CLBatchExpiry}`} */}
                                                         {(typeof productDetails?.CLBatchCode) === 'string' && (productDetails?.Expiry || productDetails?.CLBatchExpiry) && (() => {
                                                             const expiryDate = productDetails.Expiry || productDetails?.CLBatchExpiry;
                                                             const [year, month, day] = expiryDate.split('-');
                                                             const formattedExpiry = `${day}-${month}-${year}`;
                                                             return ` Expiry: ${formattedExpiry}`;
                                                         })()}
-                                                        {productDetails.HSN && <br />}{productDetails.HSN && `HSN: ` + productDetails.HSN}
+                                                        {productDetails.HSN && <br />}{productDetails.HSN && `HSN: ` + productDetails.HSN} */}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                         {productDetails.MRP}
@@ -1791,20 +1789,18 @@ export default function ClBatchDetails() {
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                         {productDetails?.BrandName ?? ''} {productDetails?.ProductName}
                                                         {productDetails.Size && <br />}{productDetails.Size}
-                                                        {productDetails.SphericalPower && <br />}{productDetails.SphericalPower ? `Sph: ${productDetails.SphericalPower > 0 ? `+` : ``}${productDetails.SphericalPower}` : `Sph: `}
+                                                        {/* {productDetails.SphericalPower && <br />}{productDetails.SphericalPower ? `Sph: ${productDetails.SphericalPower > 0 ? `+` : ``}${productDetails.SphericalPower}` : `Sph: `}
                                                         {productDetails.CylindricalPower ? ` Cyl: ${productDetails.CylindricalPower > 0 && `+`}${productDetails.CylindricalPower}` : ` Cyl: `}
                                                         {productDetails.Axis ? ` Axis: ${productDetails.Axis}` : ` Axis: `}
                                                         {productDetails.Additional ? ` Add: ${productDetails.Additional}` : ` Add: `}
-                                                        {/* {productDetails?.Barcode && <br />}{productDetails?.Barcode ? `Barcode: ${productDetails?.Barcode}`: ``} */}
                                                         {(typeof productDetails?.CLBatchCode) === 'string' && <br />}{(typeof productDetails?.CLBatchCode) === 'string' ? `BatchCode: ${productDetails.CLBatchCode}` : ``}
-                                                        {/* {(typeof productDetails?.CLBatchCode) === 'string' && (productDetails?.Expiry || productDetails?.CLBatchExpiry) && ` Expiry: ${productDetails.Expiry || productDetails?.CLBatchExpiry}`} */}
                                                         {(typeof productDetails?.CLBatchCode) === 'string' && (productDetails?.Expiry || productDetails?.CLBatchExpiry) && (() => {
                                                             const expiryDate = productDetails.Expiry || productDetails?.CLBatchExpiry;
                                                             const [year, month, day] = expiryDate.split('-');
                                                             const formattedExpiry = `${day}-${month}-${year}`;
                                                             return ` Expiry: ${formattedExpiry}`;
                                                         })()}
-                                                        {productDetails.HSN && <br />}{productDetails.HSN && `HSN: ` + productDetails.HSN}
+                                                        {productDetails.HSN && <br />}{productDetails.HSN && `HSN: ` + productDetails.HSN} */}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                         {productDetails.MRP}
