@@ -417,6 +417,56 @@ export default function ClBatchDetails() {
         setSelectedBatchCode(null);
         setbatchCodeInput("");
         setOldCLBatchCode(""); // Reset oldCLBatchCode
+        // setSelectedSearchOption(null);
+        setSearchInput("");
+        // setSelectedSearchOption(null);
+        setFormErrors({});
+        setProductDetails(null);
+        setProductStockDetails(null);
+        setSelectedBatchCode(null);
+        setOldCLBatchCode("");
+        setbatchCodeInput("");
+        setNewItem({
+            barcode: null,
+            CLDetailId: null,
+            OpticalLensDetailId: null,
+            sphericalPower: null,
+            cylindricalPower: null,
+            diameter: null,
+            axis: null,
+            additional: null,
+            avlQty: null,
+            orderQty: null,
+            quantity: null,
+            buyingPrice: null,
+            Barcode: null,
+            BrandName: null,
+            SphericalPower: null,
+            CylindricalPower: null,
+            BuyingPrice: null,
+            BuyingPriceMaster: null,
+            MRPMaster: null,
+            CLBatchCode: null,
+            ProductName: null,
+            HSN: null,
+            TaxDetails: null,
+            Id: null
+        });
+        setSearchFetched(false);
+        setBarcodeInput('');
+        setBatchDetails({
+            batchCode: "",
+            expiryDate: "",
+            batchBarcode: "",
+            mrp: "",
+        });
+        setPricing([]);
+        setBrandId(null);
+        setBrandInput("");
+        setModalityId(null);
+        setModalityInput("");
+        setProductId(null);
+        setProductInput("");
     };
 
     const handleSearchCLStock = async (batchData) => {
@@ -1159,12 +1209,14 @@ export default function ClBatchDetails() {
                                         </div>
 
                                         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                                            <button className="px-4 py-2 bg-[#000060] text-white rounded-lg hover:bg-[#0000a0] transition-colors flex items-center justify-center flex-1 sm:flex-none">
+                                            {/* <button className="px-4 py-2 bg-[#000060] text-white rounded-lg hover:bg-[#0000a0] transition-colors flex items-center justify-center flex-1 sm:flex-none">
                                                 <Search className="w-4 h-4 mr-2" />
                                                 Search
-                                            </button>
+                                            </button> */}
 
-                                            <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center flex-1 sm:flex-none">
+                                            <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center flex-1 sm:flex-none"
+                                                onClick={handleReset}
+                                            >
                                                 <RefreshCw className="w-4 h-4 mr-2" />
                                                 Refresh
                                             </button>
@@ -1552,12 +1604,14 @@ export default function ClBatchDetails() {
                                         </div>
 
                                         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                                            <button className="px-4 py-2 bg-[#000060] text-white rounded-lg hover:bg-[#0000a0] transition-colors flex items-center justify-center flex-1 sm:flex-none">
+                                            {/* <button className="px-4 py-2 bg-[#000060] text-white rounded-lg hover:bg-[#0000a0] transition-colors flex items-center justify-center flex-1 sm:flex-none">
                                                 <Search className="w-4 h-4 mr-2" />
                                                 Search
-                                            </button>
+                                            </button> */}
 
-                                            <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center flex-1 sm:flex-none">
+                                            <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center flex-1 sm:flex-none"
+                                                onClick={handleReset}
+                                            >
                                                 <RefreshCw className="w-4 h-4 mr-2" />
                                                 Refresh
                                             </button>
@@ -1652,7 +1706,7 @@ export default function ClBatchDetails() {
                                             {selectedBatchCode && (
                                                 <button
                                                     className="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
-                                                    onClick={handleSearchCLStock}
+                                                    onClick={() => handleSearchCLStock(selectedBatchCode)} // Pass selectedBatchCode directly
                                                 >
                                                     Search
                                                 </button>
