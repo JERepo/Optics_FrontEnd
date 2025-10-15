@@ -64,6 +64,7 @@ export default function ClBatchDetails() {
     });
     const [errors, setErrors] = useState({});
     const [searchFethed, setSearchFetched] = useState(false);
+    const [isBatchLoading, setIsBatchLoading] = useState(false);
 
     const [fetchDetails] = useGetContactLensDetailsMutation();
     const { data: allLocations } = useGetAllLocationsQuery();
@@ -185,12 +186,15 @@ export default function ClBatchDetails() {
                     return;
                 }
 
-                toast.success("Product details fetched successfully");
-                setProductDetails(response?.data?.data);
+                setIsBatchLoading(true);
                 await getCLBatches({
                     detailId: response?.data?.data?.CLDetailId,
                     locationId: hasMultipleLocations || null,
                 }).unwrap();
+                setIsBatchLoading(false); // Reset after fetch completes
+
+                toast.success("Product details fetched successfully");
+                setProductDetails(response?.data?.data);
             } else {
                 toast.error("No product found for the given barcode");
             }
@@ -202,8 +206,38 @@ export default function ClBatchDetails() {
             });
             setShowAlert(true);
         } finally {
+            setIsBatchLoading(false);
             setIsLoading(false);
         }
+    };
+
+    const handleBatchBarcodeSearch = async () => {
+        if (!batchCodeInput.trim()) {
+            toast.error("Please enter a batch barcode");
+            return;
+        }
+
+        if (!CLBatches?.data?.length) {
+            toast.error("Please search for a product first to load available batches");
+            return;
+        }
+
+        // Find the matching batch
+        const matchingBatch = CLBatches.data.find(
+            (batch) => batch.CLBatchBarCode?.toLowerCase() === batchCodeInput.toLowerCase()
+        );
+
+        if (!matchingBatch) {
+            toast.error("Invalid batch barcode - no matching batch found");
+            return;
+        }
+
+        // Set selectedBatchCode for UI consistency
+        setSelectedBatchCode(matchingBatch);
+
+        // Pass the batch directly instead of relying on state
+        toast.success("Batch selected, fetching stock details...");
+        await handleSearchCLStock(matchingBatch);
     };
 
     const handlePowerSearchInputChange = (e) => {
@@ -304,6 +338,10 @@ export default function ClBatchDetails() {
 
             const data = response.data.data;
             console.log("data handleSearch ------------ ", data);
+            if (data.CLBatchCode === 0) {
+                toast.error("Cannot add Contact Lens Product with CLBatchCode=0");
+                return;
+            }
             toast.success(response?.data.message || "Power details found");
 
             // Update newItem with response data
@@ -381,25 +419,32 @@ export default function ClBatchDetails() {
         setOldCLBatchCode(""); // Reset oldCLBatchCode
     };
 
-    const handleSearchCLStock = async () => {
+    const handleSearchCLStock = async (batchData) => {
         setIsLoading(true);
-        if (!selectedBatchCode?.CLBatchCode.trim()) {
+
+        // Use the passed parameter or fall back to state
+        const batch = batchData || selectedBatchCode;
+
+        console.log("SelectedbatchCode", batch?.CLBatchCode);
+
+        if (!batch?.CLBatchCode?.trim()) {
             toast.error("Please enter a valid batch code");
+            setIsLoading(false);
             return;
         }
+
         try {
             const response = await getCLStock({
-                BatchCode: selectedBatchCode?.CLBatchCode,
+                BatchCode: batch.CLBatchCode,
                 BatchBarcode: "",
             }).unwrap();
 
             if (response?.status === "success") {
                 toast.success("Product stock details fetched successfully");
                 setProductStockDetails(response?.data?.data);
-                // Initialize batchDetails and pricing with fetched stock details
                 setBatchDetails({
                     batchCode: response?.data?.data?.CLBatchCode || "",
-                    expiryDate: response?.data?.data?.CLBatchExpiry?.split('T')[0] || "", // Format date for input
+                    expiryDate: response?.data?.data?.CLBatchExpiry?.split('T')[0] || "",
                     batchBarcode: response?.data?.data?.CLBatchBarCode || "",
                     mrp: response?.data?.data?.CLMRP || "",
                 });
@@ -565,7 +610,8 @@ export default function ClBatchDetails() {
                 const idx = index + 1;
                 const buyingPrice = parseFloat(loc.buyingPrice) || 0;
                 const sellingPrice = parseFloat(loc.sellingPrice) || 0;
-                const avgPrice = parseFloat(loc.avgPrice) || (buyingPrice + sellingPrice) / 2;
+                // const avgPrice = parseFloat(loc.avgPrice) || (buyingPrice + sellingPrice) / 2;
+                const avgPrice = parseFloat(loc.buyingPrice) || 0;
                 const quantity = loc.quantity || 0;
                 const defectiveQty = loc.defectiveQty || 0;
 
@@ -629,6 +675,32 @@ export default function ClBatchDetails() {
     };
 
 
+    // const handleUpload = async () => {
+    //     if (!selectedFile) {
+    //         toast.error("Please select a file!");
+    //         return;
+    //     }
+
+    //     try {
+    //         const formData = new FormData();
+    //         formData.append("excelFile", selectedFile);
+
+    //         const res = await uploadFile({ formData: formData, applicationUserId: user?.Id, companyId: hasMultipleLocations }).unwrap();
+
+    //         console.log("response", res);
+    //         toast.success(res?.message || "File uploaded successfully!");
+
+    //         // if (res?.data) {
+    //         //     setItems(res.data);
+    //         // }
+
+    //         handleClearFile();
+    //     } catch (error) {
+    //         console.error("Upload error:", error);
+    //         toast.error(error?.data?.error || error?.error || "Upload failed");
+    //     }
+    // };
+
     const handleUpload = async () => {
         if (!selectedFile) {
             toast.error("Please select a file!");
@@ -639,15 +711,59 @@ export default function ClBatchDetails() {
             const formData = new FormData();
             formData.append("excelFile", selectedFile);
 
-            const res = await uploadFile({ formData: formData, applicationUserId: user?.Id, companyId: hasMultipleLocations }).unwrap();
+            const res = await uploadFile({
+                formData: formData,
+                applicationUserId: user?.Id,
+                companyId: hasMultipleLocations
+            }).unwrap();
 
-            toast.success(res?.message || "File uploaded successfully!");
+            console.log("response", res);
 
-            // if (res?.data) {
-            //     setItems(res.data);
-            // }
+            // Check if there are any failed rows
+            if (res?.data?.failedRows > 0 && res?.data?.failedDetails?.length > 0) {
+                // Show error details
+                const errorMessage = (
+                    <div className="max-h-60 overflow-y-auto">
+                        <p className="font-semibold mb-2">
+                            Upload completed with {res.data.failedRows} error(s) out of {res.data.totalProcessed} rows
+                        </p>
+                        <ul className="list-disc pl-5 space-y-1">
+                            {res.data.failedDetails.map((detail, idx) => (
+                                <li key={idx}>
+                                    <span className="font-medium">Row {detail.row}</span>
+                                    {detail.batchCode && ` (${detail.batchCode})`}:
+                                    <span className="text-red-600 ml-1">
+                                        {detail.errors.join(", ")}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                );
 
-            handleClearFile();
+                toast.error(errorMessage, {
+                    duration: 8000,
+                    style: {
+                        maxWidth: '500px',
+                    }
+                });
+            } else if (res?.data?.successCount > 0) {
+                // All successful
+                toast.success(
+                    `${res.data.message || "File uploaded successfully!"}\n` +
+                    `Successfully processed ${res.data.successCount} out of ${res.data.totalProcessed} rows.`,
+                    { duration: 5000 }
+                );
+            } else {
+                // Generic success
+                toast.success(res?.data?.message || res?.message || "File uploaded successfully!");
+            }
+
+            // Clear file only if there are no errors or if user wants to upload a new file
+            if (res?.data?.failedRows === 0) {
+                handleClearFile();
+            }
+
         } catch (error) {
             console.error("Upload error:", error);
             toast.error(error?.data?.error || error?.error || "Upload failed");
@@ -660,6 +776,120 @@ export default function ClBatchDetails() {
             fileInputRef.current.value = "";
         }
     };
+
+
+    const handleSelectOptionChange = (option) => {
+        setSelectedOption(option);
+        setSearchInput("");
+        setSelectedSearchOption(null);
+        setFormErrors({});
+        setProductDetails(null);
+        setProductStockDetails(null);
+        setSelectedBatchCode(null);
+        setOldCLBatchCode("");
+        setbatchCodeInput("");
+        setNewItem({
+            barcode: null,
+            CLDetailId: null,
+            OpticalLensDetailId: null,
+            sphericalPower: null,
+            cylindricalPower: null,
+            diameter: null,
+            axis: null,
+            additional: null,
+            avlQty: null,
+            orderQty: null,
+            quantity: null,
+            buyingPrice: null,
+            Barcode: null,
+            BrandName: null,
+            SphericalPower: null,
+            CylindricalPower: null,
+            BuyingPrice: null,
+            BuyingPriceMaster: null,
+            MRPMaster: null,
+            CLBatchCode: null,
+            ProductName: null,
+            HSN: null,
+            TaxDetails: null,
+            Id: null
+        });
+        setSearchFetched(false);
+        setBarcodeInput('');
+        setBatchDetails({
+            batchCode: "",
+            expiryDate: "",
+            batchBarcode: "",
+            mrp: "",
+        });
+        setPricing([]);
+        setBrandId(null);
+        setBrandInput("");
+        setModalityId(null);
+        setModalityInput("");
+        setProductId(null);
+        setProductInput("");
+    }
+
+    const handleSelectedSearchOption = (option) => {
+        setSelectedSearchOption(option);
+        setSearchInput("");
+        // setSelectedSearchOption(null);
+        setFormErrors({});
+        setProductDetails(null);
+        setProductStockDetails(null);
+        setSelectedBatchCode(null);
+        setOldCLBatchCode("");
+        setbatchCodeInput("");
+        setNewItem({
+            barcode: null,
+            CLDetailId: null,
+            OpticalLensDetailId: null,
+            sphericalPower: null,
+            cylindricalPower: null,
+            diameter: null,
+            axis: null,
+            additional: null,
+            avlQty: null,
+            orderQty: null,
+            quantity: null,
+            buyingPrice: null,
+            Barcode: null,
+            BrandName: null,
+            SphericalPower: null,
+            CylindricalPower: null,
+            BuyingPrice: null,
+            BuyingPriceMaster: null,
+            MRPMaster: null,
+            CLBatchCode: null,
+            ProductName: null,
+            HSN: null,
+            TaxDetails: null,
+            Id: null
+        });
+        setSearchFetched(false);
+        setBarcodeInput('');
+        setBatchDetails({
+            batchCode: "",
+            expiryDate: "",
+            batchBarcode: "",
+            mrp: "",
+        });
+        setPricing([]);
+        setBrandId(null);
+        setBrandInput("");
+        setModalityId(null);
+        setModalityInput("");
+        setProductId(null);
+        setProductInput("");
+    }
+
+    useEffect(() => {
+        if (CLBatches?.data && isBatchLoading) {
+            // Batches have loaded, reset loading state if needed
+            setIsBatchLoading(false);
+        }
+    }, [CLBatches?.data, isBatchLoading]);
 
     return (
         <>
@@ -728,7 +958,7 @@ export default function ClBatchDetails() {
                                         name="batchOption"
                                         value={option}
                                         checked={selectedOption === option}
-                                        onChange={() => setSelectedOption(option)}
+                                        onChange={() => handleSelectOptionChange(option)}
                                         className="h-4 w-4 text-[#000060] focus:ring-[#000060]"
                                     />
                                     <label htmlFor={option} className="ml-2 text-sm font-medium text-[#4b4b80] capitalize">
@@ -757,7 +987,7 @@ export default function ClBatchDetails() {
                                             name="searchOption"
                                             value={option}
                                             checked={selectedSearchOption === option}
-                                            onChange={() => setSelectedSearchOption(option)}
+                                            onChange={() => handleSelectedSearchOption(option)}
                                             className="h-4 w-4 text-[#000060] focus:ring-[#000060]"
                                         />
                                         <label htmlFor={option} className="ml-2 text-sm font-medium text-[#4b4b80] capitalize">
@@ -826,37 +1056,39 @@ export default function ClBatchDetails() {
                                         className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4 w-full"
                                     >
                                         <div className="flex flex-row gap-4 min-w-[200px]">
-                                            <Autocomplete
-                                                options={filteredBrands}
-                                                getOptionLabel={(option) => option.BrandName}
-                                                onInputChange={(event, value) => {
-                                                    setBrandInput(value);
-                                                }}
-                                                onChange={(event, newValue) => {
-                                                    if (newValue) {
-                                                        setBrandInput(newValue.BrandName);
-                                                        setBrandId(newValue.Id);
-                                                    } else {
-                                                        setBrandInput("");
-                                                        setBrandId(null);
+                                            <div className="flex-1 min-w-[200px]">
+                                                <Autocomplete
+                                                    options={filteredBrands}
+                                                    getOptionLabel={(option) => option.BrandName}
+                                                    onInputChange={(event, value) => {
+                                                        setBrandInput(value);
+                                                    }}
+                                                    onChange={(event, newValue) => {
+                                                        if (newValue) {
+                                                            setBrandInput(newValue.BrandName);
+                                                            setBrandId(newValue.Id);
+                                                        } else {
+                                                            setBrandInput("");
+                                                            setBrandId(null);
+                                                        }
+                                                    }}
+                                                    value={
+                                                        filteredBrands.find((b) => b.BrandName === brandInput) ||
+                                                        null
                                                     }
-                                                }}
-                                                value={
-                                                    filteredBrands.find((b) => b.BrandName === brandInput) ||
-                                                    null
-                                                }
-                                                isOptionEqualToValue={(option, value) =>
-                                                    option.Id === value.Id
-                                                }
-                                                renderInput={(params) => (
-                                                    <TextField
-                                                        {...params}
-                                                        label="Search Brand"
-                                                        variant="outlined"
-                                                        fullWidth
-                                                    />
-                                                )}
-                                            />
+                                                    isOptionEqualToValue={(option, value) =>
+                                                        option.Id === value.Id
+                                                    }
+                                                    renderInput={(params) => (
+                                                        <TextField
+                                                            {...params}
+                                                            label="Search Brand"
+                                                            variant="outlined"
+                                                            fullWidth
+                                                        />
+                                                    )}
+                                                />
+                                            </div>
                                             <>
                                                 {brandId && (
                                                     <div className="flex-1 min-w-[300px]">
@@ -1411,53 +1643,51 @@ export default function ClBatchDetails() {
                                         </div>
                                     ) : (
                                         <div className="w-1/2 mt-5 flex items-center gap-4">
+                                            {isBatchLoading && (
+                                                <div className="flex items-center">
+                                                    <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                                                    <span className="text-sm text-gray-500">Loading batches...</span>
+                                                </div>
+                                            )}
                                             <Input
                                                 value={batchCodeInput}
                                                 onChange={(e) => setbatchCodeInput(e.target.value)}
                                                 label="Enter BatchBarCode"
                                                 error={
                                                     batchCodeInput &&
-                                                    !CLBatches?.data?.find(
-                                                        (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
+                                                    CLBatches?.data?.length > 0 &&
+                                                    !CLBatches.data.find(
+                                                        (b) => b.CLBatchBarCode?.toLowerCase() === batchCodeInput.toLowerCase()
                                                     )
                                                 }
                                                 helperText={
-                                                    batchCodeInput &&
-                                                        !CLBatches?.data?.find(
-                                                            (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
-                                                        ) ? "Invalid batch barcode" : "Required"
+                                                    batchCodeInput && CLBatches?.data?.length > 0
+                                                        ? !CLBatches.data.find(
+                                                            (b) => b.CLBatchBarCode?.toLowerCase() === batchCodeInput.toLowerCase()
+                                                        )
+                                                            ? "Invalid batch barcode"
+                                                            : "Valid barcode"
+                                                        : CLBatches?.data?.length === 0
+                                                            ? "Search product first to load batches"
+                                                            : "Enter batch barcode"
                                                 }
                                                 onKeyDown={(e) => {
-                                                    if (e.key === "Enter" && batchCodeInput) {
-                                                        const isValidBatch = CLBatches?.data?.find(
-                                                            (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
-                                                        );
-                                                        if (isValidBatch) {
-                                                            setSelectedBatchCode(isValidBatch);
-                                                            handleSearchCLStock();
-                                                        } else {
-                                                            toast.error("Invalid batch barcode");
-                                                        }
+                                                    if (e.key === "Enter" && batchCodeInput.trim()) {
+                                                        e.preventDefault();
+                                                        handleBatchBarcodeSearch();
                                                     }
                                                 }}
                                             />
                                             <button
                                                 className="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
-                                                onClick={() => {
-                                                    if (batchCodeInput) {
-                                                        const isValidBatch = CLBatches?.data?.find(
-                                                            (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
-                                                        );
-                                                        if (isValidBatch) {
-                                                            setSelectedBatchCode(isValidBatch);
-                                                            handleSearchCLStock();
-                                                        } else {
-                                                            toast.error("Invalid batch barcode");
-                                                        }
-                                                    }
-                                                }}
-                                                disabled={!batchCodeInput}
+                                                onClick={handleBatchBarcodeSearch}
+                                                disabled={!batchCodeInput.trim() || !CLBatches?.data?.length || isLoading}
                                             >
+                                                {isLoading ? (
+                                                    <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                                                ) : (
+                                                    <Search className="w-4 h-4 mr-2" />
+                                                )}
                                                 Search
                                             </button>
                                         </div>
