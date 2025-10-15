@@ -88,10 +88,11 @@ export const purchaseOrderApi = createApi({
             })
         }),
         getPOview: builder.query({
-            query: (po) => ({
-                url: `/api/v1/purchase-order/getpo?po=`,
+            query: () => ({  // Remove the unused po parameter
+                url: `/api/v1/purchase-order/getpo`,
                 method: 'GET'
-            })
+            }),
+            providesTags: ['PurchaseOrders'], // Add this tag
         }),
         getPOMain: builder.mutation({
             query: (payload) => ({
@@ -111,21 +112,24 @@ export const purchaseOrderApi = createApi({
             query: ({ poMainId }) => ({
                 url: `/api/v1/purchase-order/approve-po?poMainId=${poMainId}`,
                 method: 'GET',
-            })
+            }),
+            invalidatesTags: ['PurchaseOrders'],
         }),
         approveUpdatePrice: builder.mutation({
             query: (payload) => ({
                 url: `/api/v1/purchase-order/approve/update-price`,
                 method: 'POST',
                 body: payload
-            })
+            }),
+            // invalidatesTags: ['PurchaseOrders'],
         }),
         approveUpdateQty: builder.mutation({
             query: (payload) => ({
                 url: `/api/v1/purchase-order/approve/update-qty`,
                 method: 'POST',
                 body: payload
-            })
+            }),
+            // invalidatesTags: ['PurchaseOrders'],
         }),
     })
 });

@@ -1683,7 +1683,7 @@ export default function SavePurchaseOrder() {
                 });
                 setShowAlert(true);
                 setTimeout(() => setShowAlert(false), 3000);
-                navigate('/purchase-order/');
+                navigate('/purchase-order');
             } else {
                 setAlertMessage({
                     type: "error",
