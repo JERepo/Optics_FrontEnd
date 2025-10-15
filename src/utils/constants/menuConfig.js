@@ -291,6 +291,20 @@ export const menuItems = [
     // ],
   },
   {
+    name: "Contact-Lens-Details",
+    icon: FiArrowRightCircle,
+    module: "Contact-Lens-Details",
+    path: "/cl-batch-details",
+    // subItems: [
+    //   {
+    //     name: "Add GRN",
+    //     path: "/grn/create",
+    //     module: "GRN",
+    //     icon: IoConstructOutline, // Suggests building/setup
+    //   }
+    // ],
+  },
+  {
     name: "Purchase Return",
     icon: FiFileMinus,
     module: "Purchase-Return",

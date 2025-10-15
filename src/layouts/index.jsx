@@ -1002,7 +1002,7 @@ export const router = createBrowserRouter([
         path: "stin-report",
         element: <STINReport />,
       },
-       {
+      {
         path: "stout-report",
         element: <STOUTReport />,
       },
@@ -1033,8 +1033,7 @@ export const router = createBrowserRouter([
       {
         path: "whatsapp-templates",
         element: <WhatsappTemplates />,
-      },
-     
+      }
     ],
   },
   {
