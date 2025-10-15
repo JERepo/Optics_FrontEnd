@@ -95,7 +95,7 @@ const SelectCustomer = () => {
   } = useGetAllCustomersQuery();
 
   const { data: contactResp, refetch: refetchPatient } =
-    useGetCustomerContactDetailsQuery();
+    useGetCustomerContactDetailsQuery({companyId :parseInt(hasMultipleLocations[0])});
   const [
     getAdvanceAmount,
     { data: advanceData, isFetching: isAdvanceFetching },

@@ -363,6 +363,11 @@ const VendorCollectPOAdvace = ({
       return;
     }
 
+    if (updatedDetails.RemainingToPay > 0) {
+      toast.error("Please cover the remaining balance before saving.");
+      return;
+    }
+
     const finalStructure = {
       companyId: parseInt(hasMultipleLocations[0]),
       CreatedBy: user.Id,
@@ -394,12 +399,6 @@ const VendorCollectPOAdvace = ({
       validationErrors.method = "Please select a payment method";
     if (!newPayment.Amount || isNaN(newPayment.Amount)) {
       validationErrors.amount = "Please enter a valid amount";
-    } else if (
-      !collectPayment &&
-      Number(parseFloat(newPayment.Amount).toFixed(2)) >
-        Number(parseFloat(updatedDetails.RemainingToPay).toFixed(2))
-    ) {
-      validationErrors.amount = "Amount cannot exceed remaining balance";
     }
 
     switch (selectedPaymentMethod) {

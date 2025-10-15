@@ -426,6 +426,12 @@ export const menuItems = [
         module: "Customer-Refund",
         path: "/customer-refund",
       },
+        {
+        name: "Vendor Payment",
+        icon: IoConstructOutline,
+        module: "Vendor-Payment",
+        path: "/vendor-payment",
+      },
     ],
   },
 ];

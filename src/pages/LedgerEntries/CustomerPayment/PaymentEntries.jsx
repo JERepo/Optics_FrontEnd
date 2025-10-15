@@ -286,12 +286,7 @@ const PaymentEntries = ({
       validationErrors.method = "Please select a payment method";
     if (!newPayment.Amount || isNaN(newPayment.Amount)) {
       validationErrors.amount = "Please enter a valid amount";
-    } else if (
-      Number(parseFloat(newPayment.Amount).toFixed(2)) >
-      Number(parseFloat(updatedDetails.RemainingToPay).toFixed(2))
-    ) {
-      validationErrors.amount = "Amount cannot exceed remaining balance";
-    }
+    } 
 
     if (selectedPaymentMethod === 6 && newPayment.advanceId) {
       const isAdvanceDuplicate = fullPaymentDetails.some(

@@ -28,7 +28,10 @@ import { useLazyValidateGiftVoucherQuery } from "../../../api/giftVoucher";
 import { formatINR } from "../../../utils/formatINR";
 import { useSaveCustomerPaymentMutation } from "../../../api/customerPayment";
 import Textarea from "../../../components/Form/Textarea";
-import { useGetAdvanceDataForVendorQuery, useSaveVendorPaymentMutation } from "../../../api/vendorPayment";
+import {
+  useGetAdvanceDataForVendorQuery,
+  useSaveVendorPaymentMutation,
+} from "../../../api/vendorPayment";
 
 const methods = [
   { value: 1, type: "Cash" },
@@ -275,11 +278,6 @@ const VendorPaymentEntries = ({
       validationErrors.method = "Please select a payment method";
     if (!newPayment.Amount || isNaN(newPayment.Amount)) {
       validationErrors.amount = "Please enter a valid amount";
-    } else if (
-      Number(parseFloat(newPayment.Amount).toFixed(2)) >
-      Number(parseFloat(updatedDetails.RemainingToPay).toFixed(2))
-    ) {
-      validationErrors.amount = "Amount cannot exceed remaining balance";
     }
 
     if (selectedPaymentMethod === 6 && newPayment.advanceId) {
@@ -366,7 +364,7 @@ const VendorPaymentEntries = ({
     setErrors({});
     toast.success("Payment added successfully!");
   };
-  
+
   const handleDeletePayment = (index) => {
     setFullPaymentDetails((prev) => prev.filter((_, i) => i !== index));
     toast.success("Payment removed successfully!");
@@ -375,7 +373,7 @@ const VendorPaymentEntries = ({
   const handlePaymentBack = () => {
     goToStep(currentStep - 1);
   };
-  
+
   return (
     <div className="">
       <div className="max-w-8xl">

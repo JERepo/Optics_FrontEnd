@@ -118,7 +118,9 @@ const AddOrder = ({
     { data: newCustomerData, isLoading: isNewCustomerLoading },
   ] = useCreateNewCustomerMutation();
   const { data: contactResp, refetch: refetchPatient } =
-    useGetCustomerContactDetailsQuery();
+    useGetCustomerContactDetailsQuery({
+      companyId: parseInt(hasMultipleLocations[0]),
+    });
   const {
     data: customersResp,
     isLoading,
