@@ -1380,7 +1380,7 @@ export default function ClBatchDetails() {
                                             name="searchOption"
                                             value={option}
                                             checked={selectedSearchOption === option}
-                                            onChange={() => setSelectedSearchOption(option)}
+                                            onChange={() => handleSelectedSearchOption(option)}
                                             className="h-4 w-4 text-[#000060] focus:ring-[#000060]"
                                         />
                                         <label htmlFor={option} className="ml-2 text-sm font-medium text-[#4b4b80] capitalize">
