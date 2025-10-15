@@ -113,6 +113,8 @@ import WhatsappTemplates from "../pages/EmailTemplates/WhatsappTemplates";
 import PurchaseOrderReport from "../pages/Reports/PurchaseOrderReport";
 import STINReport from "../pages/Reports/STINReport";
 import STOUTReport from "../pages/Reports/STOUTReport";
+import OfferViewPage from "../pages/Offer/MainPage/OfferViewPage";
+import VendorPayment from "../pages/LedgerEntries/VendorPayment/VendorPayment";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -932,6 +934,10 @@ export const router = createBrowserRouter([
         path: "offer",
         element: <OfferMainPage />,
       },
+       {
+        path: "offer/view",
+        element: <OfferViewPage />,
+      },
       {
         path: "search-stock/frame",
         element: <SearchFrameStock />,
@@ -955,6 +961,10 @@ export const router = createBrowserRouter([
       {
         path: "customer-payment/view",
         element: <CustomerPaymentView />,
+      },
+      {
+        path : "vendor-payment/create",
+        element : <VendorPayment />
       },
       {
         path: "order-report",
@@ -1024,6 +1034,7 @@ export const router = createBrowserRouter([
         path: "whatsapp-templates",
         element: <WhatsappTemplates />,
       },
+     
     ],
   },
   {

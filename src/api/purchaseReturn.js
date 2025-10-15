@@ -38,8 +38,8 @@ export const purchaseReturnApi = createApi({
       providesTags: ["PurchaseReturn"],
     }),
     deleteUpdatePR: builder.mutation({
-      query: ({ prId, userId, locationId, payload }) => ({
-        url: `/api/v1/purchase-Return/deleteupdate?PRMasterId=${prId}&ApplicationUserId=${userId}&locationId=${locationId}`,
+      query: ({ prId, userId, locationId,vendorId, payload }) => ({
+        url: `/api/v1/purchase-Return/deleteupdate?PRMasterId=${prId}&ApplicationUserId=${userId}&locationId=${locationId}&vendorId=${vendorId}`,
         method: "PUT",
         body: payload,
       }),

@@ -42,6 +42,7 @@ import { contactLensMasterApi } from "../api/contactlensMaster";
 import { reportApi } from "../api/reportApi";
 import { dashboardApi } from "../api/dashboard";
 import { emailAndWhatsaApp } from "../api/emailAndWhatsappApi";
+import { vendorPaymentApi } from "../api/vendorPayment";
 
 const persistConfig = {
   key: "auth",
@@ -100,7 +101,8 @@ export const store = configureStore({
     [contactLensMasterApi.reducerPath]:contactLensMasterApi.reducer,
     [reportApi.reducerPath]:reportApi.reducer,
     [dashboardApi.reducerPath]:dashboardApi.reducer,
-    [emailAndWhatsaApp.reducerPath]:emailAndWhatsaApp.reducer
+    [emailAndWhatsaApp.reducerPath]:emailAndWhatsaApp.reducer,
+    [vendorPaymentApi.reducerPath]:vendorPaymentApi.reducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -145,7 +147,8 @@ export const store = configureStore({
       contactLensMasterApi.middleware,
       reportApi.middleware,
       dashboardApi.middleware,
-      emailAndWhatsaApp.middleware
+      emailAndWhatsaApp.middleware,
+      vendorPaymentApi.middleware
     ),
 });
 

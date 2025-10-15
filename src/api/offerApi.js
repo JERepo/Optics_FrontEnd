@@ -4,7 +4,7 @@ import { customBaseQuery } from "./customBaseQuery";
 export const offerApi = createApi({
   reducerPath: "offerApi",
   baseQuery: customBaseQuery,
-  tagTypes: ["Offer","aval"],
+  tagTypes: ["Offer", "aval"],
   endpoints: (builder) => ({
     getCustomerGroup: builder.query({
       query: ({ poolId }) => ({
@@ -17,7 +17,7 @@ export const offerApi = createApi({
         method: "POST",
         body: payload,
       }),
-      invalidatesTags : ["aval"]
+      invalidatesTags: ["aval"],
     }),
     saveOfferProduct: builder.mutation({
       query: (payload) => ({
@@ -25,7 +25,7 @@ export const offerApi = createApi({
         method: "POST",
         body: payload,
       }),
-      invalidatesTags : ["Offer","aval"]
+      invalidatesTags: ["Offer", "aval"],
     }),
     getAddOnByBrandId: builder.query({
       query: ({ id }) => ({
@@ -48,7 +48,7 @@ export const offerApi = createApi({
         method: "POST",
         body: payload,
       }),
-      invalidatesTags: ["Offer","aval"],
+      invalidatesTags: ["Offer", "aval"],
     }),
 
     getAllOffers: builder.query({
@@ -61,7 +61,13 @@ export const offerApi = createApi({
       query: ({ userId }) => ({
         url: `/api/v1/offer/getOfferById/${userId}`,
       }),
-      providesTags : ["aval"]
+      providesTags: ["aval"],
+    }),
+    getOfferView: builder.query({
+      query: ({ mainId }) => ({
+        url: `/api/v1/offer/getOfferByMainId/${mainId}`,
+      }),
+     
     }),
   }),
 });
@@ -76,4 +82,5 @@ export const {
   useCreateOfferType4Mutation,
   useGetAllOffersQuery,
   useGetOfferAvlQuery,
+  useGetOfferViewQuery
 } = offerApi;
