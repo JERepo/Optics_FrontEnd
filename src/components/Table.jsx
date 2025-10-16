@@ -19,6 +19,7 @@ export const Table = ({
   expand = false,
   name,
 }) => {
+  const expandingColumns = ["Product Details", "Product name","product details","product name"];
   return (
     <div className="space-y-4">
       <div
@@ -32,9 +33,9 @@ export const Table = ({
                   key={index}
                   scope="col"
                   className={`px-4 py-3 min-h-[3.5rem] text-left text-xs font-medium text-neutral-500 uppercase tracking-wider align-top  ${
-                    (expand && column === name)
+                    expand && expandingColumns.includes(column)
                       ? "min-w-[220px] max-w-[300px]"
-                      : expand ? "min-w-[150px]" : ""
+                      : ""
                   } ${freeze ? "sticky top-0 z-10 bg-blue-50" : ""}`} // Applied sticky to <th>
                 >
                   {typeof renderHeader === "function"
@@ -44,7 +45,7 @@ export const Table = ({
               ))}
             </tr>
           </thead>
-          
+
           <tbody className="bg-white divide-y divide-neutral-200">
             {data?.length > 0 ? (
               data.map((item, rowIndex) => renderRow(item, rowIndex))

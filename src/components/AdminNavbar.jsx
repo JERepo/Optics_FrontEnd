@@ -27,7 +27,6 @@ const AdminNavbar = () => {
     setSelectedLocation(firstAllowed || null);
   }
 }, [allLocations?.data, hasMultipleLocations]);
-console.log("ss",selectedLocation)
 
 
   const handleLogout = () => {

@@ -247,7 +247,7 @@ const PurchaseReturnView = () => {
       );
       const link = document.createElement("a");
       link.href = url;
-      link.download = `DebittNote_${item.DNNo} (${item.DNPrefix}${item.DNNo}).pdf`
+      link.download = `DebittNote_${item.DNNo} (${item.DNPrefix}${item.DNNo}).pdf`;
       document.body.appendChild(link);
       link.click();
       // clean up
@@ -319,11 +319,12 @@ const PurchaseReturnView = () => {
         {/* Product Table */}
         <div className="mt-5">
           <Table
+            expand={true}
             columns={[
               "s.no",
               "Product type",
               "supplier order no",
-              "product details",
+              "Product Details",
               "srp",
               "return qty",
               "return price",
