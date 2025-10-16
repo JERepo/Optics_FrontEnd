@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { data, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Autocomplete, TextField } from "@mui/material";
@@ -14,7 +14,10 @@ import {
     SearchIcon,
     RefreshCcw,
     HardDriveDownload,
-    Plus
+    Plus,
+    FileText,
+    Upload,
+    CheckCircle
 } from "lucide-react";
 import { Table, TableRow, TableCell } from "../../components/Table";
 import Input from "../../components/Form/Input";
@@ -34,7 +37,9 @@ import {
     useGetOlByDetailIdMutation,
     useGetAllPoDetailsForNewOrderMutation,
     useGetPOMainMutation,
-    useUpdatePOMainDataMutation
+    useUpdatePOMainDataMutation,
+    useLazyDownloadFrameSampleExcelQuery,
+    useBulkUploadFrameMutation
 } from "../../api/purchaseOrderApi";
 import { useGetCompanySettingsQuery } from "../../api/companySettingsApi";
 import { useGetCompanyByIdQuery } from "../../api/companiesApi";
@@ -143,7 +148,10 @@ export default function SavePurchaseOrder() {
         masterId: null,
         coatingCombo: null,
         olDetailId: null
-    })
+    });
+    const [selectedFile, setSelectedFile] = useState(null);
+    const fileInputRef = useRef(null);
+
 
     const { data: vendorData } = useGetAllvendorByLocationQuery(
         { id: selectedLocation },
@@ -282,6 +290,10 @@ export default function SavePurchaseOrder() {
     const [getPowerDetails, { isLoading: isPowerDetailsLoading }] = useGetPowerDetailsMutation();
 
     const { data: allBrands } = useGetAllBrandsQuery();
+
+    const [downloadFrameSample] = useLazyDownloadFrameSampleExcelQuery();
+    const [uploadFile, { isLoading: isFileUploading }] = useBulkUploadFrameMutation();
+
 
     // Filter brand based on the selected option type : Dont dare to change anything 😠
     useEffect(() => {
@@ -628,6 +640,14 @@ export default function SavePurchaseOrder() {
         });
         setSearchFetched(false);
         setProductName("");
+    };
+
+    const handleFileSelect = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        setSelectedFile(file);
+        toast.success("File selected successfully");
     };
 
 
@@ -1917,6 +1937,117 @@ export default function SavePurchaseOrder() {
         setQtyError('');
     };
 
+    const downloadFile = (blob, filename) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    };
+
+    const handleDownloadSampleExcel = async () => {
+        try {
+            const blob = await downloadFrameSample().unwrap();
+            downloadFile(blob, "SampleFrameBulkUpload.xlsx");
+            toast.success("Sample excel downloaded successfully.");
+        } catch (error) {
+            console.error('Failed to download sample excel:', error);
+            toast.error(error.data?.message || error.message || "Failed to download sample excel");
+        }
+    }
+
+    const handleUpload = async () => {
+        if (!selectedFile) {
+            toast.error("Please select a file!");
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append("excelFile", selectedFile);
+
+            const res = await uploadFile({
+                formData: formData,
+                applicationUserId: user?.Id,
+                poMainId: createdPOMainId
+            }).unwrap();
+
+            console.log("response", res);
+
+            let payload = {
+                locationId: selectedLocation,
+                ApplicationUserId: user.Id,
+                vendorId: selectedVendor,
+                againstOrder: formState.shiptoAddress === "against" ? "1" : "0"
+            };
+
+            // Check if there are any failed rows
+            if (res?.data?.failedRows > 0 && res?.data?.failedDetails?.length > 0) {
+                // Show error details
+                const errorMessage = (
+                    <div className="max-h-60 overflow-y-auto">
+                        <p className="font-semibold mb-2">
+                            Upload completed with {res.data.failedRows} error(s) out of {res.data.totalProcessed} rows
+                        </p>
+                        <ul className="list-disc pl-5 space-y-1">
+                            {res.data.failedDetails.map((detail, idx) => (
+                                <li key={idx}>
+                                    <span className="font-medium">Row {detail.row}</span>
+                                    {detail.batchCode && ` (${detail.batchCode})`}:
+                                    <span className="text-red-600 ml-1">
+                                        {detail.errors.join(", ")}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                );
+
+                toast.error(errorMessage, {
+                    duration: 8000,
+                    style: {
+                        maxWidth: '500px',
+                    }
+                });
+            } else if (res?.data?.successCount > 0) {
+                // All successful
+                toast.success(
+                    `${res.data.message || "File uploaded successfully!"}\n` +
+                    `Successfully processed ${res.data.successCount} out of ${res.data.totalProcessed} rows.`,
+                    { duration: 5000 }
+                );
+            } else {
+                // Generic success
+                toast.success(res?.data?.message || res?.message || "File uploaded successfully!");
+
+                const poDetailsResponse = await getAllPoDetailsForNewOrder(payload).unwrap();
+                setPoreviewDetails(poDetailsResponse.data);
+                setCurrentStep(4);
+
+            }
+
+            // Clear file only if there are no errors or if user wants to upload a new file
+            if (res?.data?.failedRows === 0) {
+                handleClearFile();
+            }
+
+        } catch (error) {
+            console.error("Upload error:", error);
+            toast.error(error?.data?.error || error?.error || "Upload failed");
+        }
+    };
+
+    const handleClearFile = () => {
+        setSelectedFile(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    };
+
+
     return (
         <>
             <motion.div
@@ -2178,7 +2309,7 @@ export default function SavePurchaseOrder() {
 
                     ) : formState.shiptoAddress === "new" ? (
                         <PurchaseOrderStep2
-                            productOptions={["Frame/Sunglass", "Lens", "Contact Lens", "Accessories", "Bulk Process"]}
+                            productOptions={["Frame/Sunglass", "Lens", "Contact Lens", "Accessories"]}
                             formState={formState}
                             handleInputChange={handleInputChange}
                             handleOptionChange={handleOptionChange}
@@ -2311,197 +2442,297 @@ export default function SavePurchaseOrder() {
                                         />
                                         <span className="text-gray-700 font-medium">Seperate Entry</span>
                                     </label>
+                                    <label className="flex items-center space-x-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="EntryType"
+                                            value="bulk"
+                                            checked={formState.EntryType === "bulk"}
+                                            onChange={handleInputChange}
+                                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        />
+                                        <span className="text-gray-700 font-medium">Bulk Process</span>
+                                    </label>
                                 </div>
                             </div>
 
-                            {/* Toggle between barcode input and search inputs */}
-                            {!showSearchInputs ? (
-                                <div className="flex-1 flex items-center gap-5">
-                                    <label htmlFor="barcode" className="block text-sm font-medium text-gray-700 whitespace-nowrap">
-                                        Enter Barcode
-                                    </label>
-                                    <div className="relative flex-1">
-                                        <input
-                                            id="barcode"
-                                            name="barcode"
-                                            type="text"
-                                            autoComplete="off"
-                                            autoFocus
-                                            value={formState.barcode}
-                                            onChange={handleInputChange}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    e.preventDefault();
-                                                    {
-                                                        if (formState.selectedOption === "Frame/Sunglass") { handleSearchByBarcode(1) }
-                                                        else if (formState.selectedOption === "Lens") { handleSearchByBarcode(2) }
-                                                        else if (formState.selectedOption === "Accessories") { handleSearchByBarcode(3) }
-                                                        else if (formState.selectedOption === "Contact Lens") { handleSearchByBarcode(4) }
-                                                    };
-                                                }
-                                            }}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060] pr-10"
-                                            placeholder="Scan or enter barcode..."
-                                            aria-label="Barcode input"
-                                            disabled={isLoading}
-                                        />
-                                        {isLoading && (
-                                            <div className="absolute right-3 top-2.5">
-                                                <svg className="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
+                            {(formState.EntryType === "bulk") ? (
+                                <div>
+                                    <motion.div
+                                        initial={{ y: -20, opacity: 0 }}
+                                        animate={{ y: 0, opacity: 1 }}
+                                        exit={{ y: -20, opacity: 0 }}
+                                        transition={{ duration: 0.5, delay: 0.2 }}
+                                        className="w-full"
+                                    >
+                                        <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+                                            {/* Top info banner */}
+                                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-8 py-4 border-b border-gray-200">
+                                                <p className="text-sm text-gray-700">
+                                                    <span className="font-semibold text-gray-800">Tip:</span> Download the sample file to see the correct format for your bulk upload
+                                                </p>
                                             </div>
-                                        )}
-                                    </div>
 
-                                    <button
-                                        onClick={() => {
-                                            if (formState.selectedOption === "Frame/Sunglass") { handleSearchByBarcode(1) }
-                                            else if (formState.selectedOption === "Lens") { handleSearchByBarcode(2) }
-                                            else if (formState.selectedOption === "Accessories") { handleSearchByBarcode(3) }
-                                            else if (formState.selectedOption === "Contact Lens") { handleSearchByBarcode(4) }
-                                        }}
-                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 whitespace-nowrap flex items-center"
-                                        disabled={!formState.barcode || isLoading}
-                                    >
-                                        {isLoading ? (
-                                            <>
-                                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                                Adding...
-                                            </>
-                                        ) : (
-                                            'Add'
-                                        )}
-                                    </button>
-                                    <button
-                                        onClick={handleAdvSearch}
-                                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors whitespace-nowrap flex items-center"
-                                    >
-                                        <SearchIcon className="h-4 w-4 mr-1" />
-                                        Search
-                                    </button>
+                                            {/* Content Section */}
+                                            <div className="p-8">
+                                                {/* Single Row Layout */}
+                                                <div className="flex flex-col justify-between sm:flex-row items-stretch sm:items-center gap-4">
+                                                    {/* Download Sample Button */}
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.02 }}
+                                                        whileTap={{ scale: 0.98 }}
+                                                        onClick={handleDownloadSampleExcel}
+                                                        // disabled={isSaving}
+                                                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50 flex items-center justify-center flex-1 sm:flex-none"
+                                                    >
+                                                        {/* {isSaving ? (
+                                                            <>
+                                                                <RefreshCw className="w-4 h-4 animate-spin" />
+                                                                <span>Downloading...</span>
+                                                            </>
+                                                        ) : ( */}
+                                                        <>
+                                                            <FileText className="w-4 h-4" />
+                                                            <span className="text-white">Download Sample</span>
+                                                        </>
+                                                        {/* )} */}
+                                                    </motion.button>
+
+                                                    {/* File Upload Input */}
+                                                    <input
+                                                        type="file"
+                                                        ref={fileInputRef}
+                                                        onChange={handleFileSelect}
+                                                        accept=".xlsx,.xls,.csv"
+                                                        className="hidden"
+                                                        id="file-upload"
+                                                    />
+                                                    <motion.label
+                                                        htmlFor="file-upload"
+                                                        whileHover={{ scale: 1.02 }}
+                                                        whileTap={{ scale: 0.98 }}
+                                                        className="px-6 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors border-2 border-dashed border-gray-300 hover:border-gray-400 cursor-pointer flex items-center justify-center gap-2 font-semibold text-gray-700 whitespace-nowrap"
+                                                    >
+                                                        <Upload className="w-4 h-4" />
+                                                        <span>Select File</span>
+                                                    </motion.label>
+
+                                                    <div className="flex gap-4">
+                                                        {/* Upload Button */}
+                                                        <motion.button
+                                                            // whileHover={{ scale: 1.02 }}
+                                                            // whileTap={{ scale: 0.98 }}
+                                                            onClick={handleUpload}
+                                                            disabled={!selectedFile || isFileUploading}
+                                                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50 flex items-center justify-center flex-1 sm:flex-none"
+                                                        >
+                                                            {isFileUploading ? (
+                                                                <>
+                                                                    <RefreshCcw className="w-4 h-4 animate-spin" />
+                                                                    <span className="text-white">Uploading...</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Upload className="w-4 h-4" />
+                                                                    <span className="text-white">Upload</span>
+                                                                </>
+                                                            )}
+                                                        </motion.button>
+                                                        {/* Clear Button */}
+                                                        {selectedFile && (
+                                                            <motion.button
+                                                                initial={{ scale: 0.9, opacity: 0 }}
+                                                                animate={{ scale: 1, opacity: 1 }}
+                                                                exit={{ scale: 0.9, opacity: 0 }}
+                                                                onClick={handleClearFile}
+                                                                className="px-4 py-2 rounded-lg border-2 border-red-300 text-red-600 hover:bg-red-50 transition-colors font-semibold whitespace-nowrap"
+                                                            >
+                                                                Clear
+                                                            </motion.button>
+                                                        )}
+                                                    </div>
+
+                                                </div>
+
+                                                {/* Selected file display below */}
+                                                {selectedFile && (
+                                                    <motion.div
+                                                        initial={{ y: 10, opacity: 0 }}
+                                                        animate={{ y: 0, opacity: 1 }}
+                                                        exit={{ y: -10, opacity: 0 }}
+                                                        className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between"
+                                                    >
+                                                        <div className="flex items-center gap-3 flex-1">
+                                                            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                                                            <div className="min-w-0">
+                                                                <p className="font-semibold text-gray-800 truncate">{selectedFile.name}</p>
+                                                                <p className="text-xs text-gray-600">
+                                                                    {(selectedFile.size / 1024).toFixed(2)} KB
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </motion.div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </motion.div>
                                 </div>
                             ) : (
-                                <div className="flex flex-col md:flex-row items-start md:items-center gap-4 flex-wrap">
-
-                                    {/* Search Brand */}
-                                    <div className="flex-1 min-w-[200px]">
-                                        <Autocomplete
-                                            options={filteredBrands}
-                                            getOptionLabel={(option) => option.BrandName}
-                                            onInputChange={(event, value) => {
-                                                setBrandInput(value);
-                                            }}
-                                            onChange={(event, newValue) => {
-                                                if (newValue) {
-                                                    setBrandInput(newValue.BrandName);
-                                                    setBrandId(newValue.Id);
-                                                }
-                                            }}
-                                            value={
-                                                filteredBrands.find((b) => b.BrandName === brandInput) ||
-                                                null
-                                            }
-                                            isOptionEqualToValue={(option, value) =>
-                                                option.Id === value.Id
-                                            }
-                                            renderInput={(params) => (
-                                                <TextField
-                                                    {...params}
-                                                    label="Search Brand"
-                                                    variant="outlined"
-                                                    fullWidth
-                                                />
+                                !showSearchInputs ? (
+                                    <div className="flex-1 flex items-center gap-5">
+                                        <label htmlFor="barcode" className="block text-sm font-medium text-gray-700 whitespace-nowrap">
+                                            Enter Barcode
+                                        </label>
+                                        <div className="relative flex-1">
+                                            <input
+                                                id="barcode"
+                                                name="barcode"
+                                                type="text"
+                                                autoComplete="off"
+                                                autoFocus
+                                                value={formState.barcode}
+                                                onChange={handleInputChange}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        {
+                                                            if (formState.selectedOption === "Frame/Sunglass") { handleSearchByBarcode(1) }
+                                                            else if (formState.selectedOption === "Lens") { handleSearchByBarcode(2) }
+                                                            else if (formState.selectedOption === "Accessories") { handleSearchByBarcode(3) }
+                                                            else if (formState.selectedOption === "Contact Lens") { handleSearchByBarcode(4) }
+                                                        };
+                                                    }
+                                                }}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060] pr-10"
+                                                placeholder="Scan or enter barcode..."
+                                                aria-label="Barcode input"
+                                                disabled={isLoading}
+                                            />
+                                            {isLoading && (
+                                                <div className="absolute right-3 top-2.5">
+                                                    <svg className="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                </div>
                                             )}
-                                        />
+                                        </div>
+
+                                        <button
+                                            onClick={() => {
+                                                if (formState.selectedOption === "Frame/Sunglass") { handleSearchByBarcode(1) }
+                                                else if (formState.selectedOption === "Lens") { handleSearchByBarcode(2) }
+                                                else if (formState.selectedOption === "Accessories") { handleSearchByBarcode(3) }
+                                                else if (formState.selectedOption === "Contact Lens") { handleSearchByBarcode(4) }
+                                            }}
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 whitespace-nowrap flex items-center"
+                                            disabled={!formState.barcode || isLoading}
+                                        >
+                                            {isLoading ? (
+                                                <>
+                                                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                    Adding...
+                                                </>
+                                            ) : (
+                                                'Add'
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={handleAdvSearch}
+                                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors whitespace-nowrap flex items-center"
+                                        >
+                                            <SearchIcon className="h-4 w-4 mr-1" />
+                                            Search
+                                        </button>
                                     </div>
+                                ) : (
+                                    <div className="flex flex-col md:flex-row items-start md:items-center gap-4 flex-wrap">
 
-                                    {/* For Frame/Sunglass */}
-                                    {formState.selectedOption === "Frame/Sunglass" && (
-                                        <div className="flex-1 min-w-[250px]">
-                                            <input
-                                                id="model"
-                                                name="model"
-                                                type="text"
-                                                autoComplete="off"
-                                                value={modelNo}
-                                                onChange={(e) => setModelNo(e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060] pr-10"
-                                                placeholder="Enter model no."
+                                        {/* Search Brand */}
+                                        <div className="flex-1 min-w-[200px]">
+                                            <Autocomplete
+                                                options={filteredBrands}
+                                                getOptionLabel={(option) => option.BrandName}
+                                                onInputChange={(event, value) => {
+                                                    setBrandInput(value);
+                                                }}
+                                                onChange={(event, newValue) => {
+                                                    if (newValue) {
+                                                        setBrandInput(newValue.BrandName);
+                                                        setBrandId(newValue.Id);
+                                                    }
+                                                }}
+                                                value={
+                                                    filteredBrands.find((b) => b.BrandName === brandInput) ||
+                                                    null
+                                                }
+                                                isOptionEqualToValue={(option, value) =>
+                                                    option.Id === value.Id
+                                                }
+                                                renderInput={(params) => (
+                                                    <TextField
+                                                        {...params}
+                                                        label="Search Brand"
+                                                        variant="outlined"
+                                                        fullWidth
+                                                    />
+                                                )}
                                             />
                                         </div>
-                                    )}
 
-                                    {/* For Accessories */}
-                                    {formState.selectedOption === "Accessories" && (
-                                        <div className="flex-1 min-w-[250px]">
-                                            <input
-                                                id="product"
-                                                name="productName"
-                                                type="text"
-                                                autoComplete="off"
-                                                value={productName}
-                                                onChange={(e) => setProductName(e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060] pr-10"
-                                                placeholder="Enter product name"
-                                            />
-                                        </div>
-                                    )}
-
-                                    {/* Contact Lens */}
-                                    {(formState.selectedOption === "Contact Lens") && (
-                                        <>
-                                            <div className="flex-1 min-w-[300px]">
-                                                <Autocomplete
-                                                    options={modalities?.data || []}
-                                                    getOptionLabel={(option) => option.ModalityName || ""}
-                                                    onInputChange={(event, value) => {
-                                                        setModalityInput(value);
-                                                    }}
-                                                    onChange={(event, newValue) => {
-                                                        if (newValue) {
-                                                            setModalityInput(newValue.ModalityName);
-                                                            setModalityId(newValue.Id);
-                                                        }
-                                                    }}
-                                                    value={
-                                                        modalities?.data.find((b) => b.Id === modalityId) ||
-                                                        null
-                                                    }
-                                                    isOptionEqualToValue={(option, value) =>
-                                                        option.Id === value.Id
-                                                    }
-                                                    renderInput={(params) => (
-                                                        <TextField
-                                                            {...params}
-                                                            label="Search Modality"
-                                                            variant="outlined"
-                                                            fullWidth
-                                                        />
-                                                    )}
+                                        {/* For Frame/Sunglass */}
+                                        {formState.selectedOption === "Frame/Sunglass" && (
+                                            <div className="flex-1 min-w-[250px]">
+                                                <input
+                                                    id="model"
+                                                    name="model"
+                                                    type="text"
+                                                    autoComplete="off"
+                                                    value={modelNo}
+                                                    onChange={(e) => setModelNo(e.target.value)}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060] pr-10"
+                                                    placeholder="Enter model no."
                                                 />
                                             </div>
+                                        )}
 
-                                            {productData && (
+                                        {/* For Accessories */}
+                                        {formState.selectedOption === "Accessories" && (
+                                            <div className="flex-1 min-w-[250px]">
+                                                <input
+                                                    id="product"
+                                                    name="productName"
+                                                    type="text"
+                                                    autoComplete="off"
+                                                    value={productName}
+                                                    onChange={(e) => setProductName(e.target.value)}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060] pr-10"
+                                                    placeholder="Enter product name"
+                                                />
+                                            </div>
+                                        )}
+
+                                        {/* Contact Lens */}
+                                        {(formState.selectedOption === "Contact Lens") && (
+                                            <>
                                                 <div className="flex-1 min-w-[300px]">
                                                     <Autocomplete
-                                                        options={productData?.data?.data || []}
-                                                        getOptionLabel={(option) => option.ProductName || ""}
+                                                        options={modalities?.data || []}
+                                                        getOptionLabel={(option) => option.ModalityName || ""}
                                                         onInputChange={(event, value) => {
-                                                            setProductInput(value);
+                                                            setModalityInput(value);
                                                         }}
                                                         onChange={(event, newValue) => {
                                                             if (newValue) {
-                                                                setProductInput(newValue.ProductName);
-                                                                setProductId(newValue.Id);
+                                                                setModalityInput(newValue.ModalityName);
+                                                                setModalityId(newValue.Id);
                                                             }
                                                         }}
                                                         value={
-                                                            productData?.data?.data.find((b) => b.Id === productId) ||
+                                                            modalities?.data.find((b) => b.Id === modalityId) ||
                                                             null
                                                         }
                                                         isOptionEqualToValue={(option, value) =>
@@ -2510,253 +2741,286 @@ export default function SavePurchaseOrder() {
                                                         renderInput={(params) => (
                                                             <TextField
                                                                 {...params}
-                                                                label="Search Product"
+                                                                label="Search Modality"
                                                                 variant="outlined"
                                                                 fullWidth
                                                             />
                                                         )}
                                                     />
                                                 </div>
-                                            )}
-                                        </>
-                                    )}
 
-                                    {/* Optical Lens */}
-                                    {(formState.selectedOption === "Lens" && brandInput) && (
-                                        <>
-                                            <div className="flex space-x-4">
-                                                <label>Product Type :</label>
-                                                <label className="flex items-center space-x-2 cursor-pointer">
-                                                    <input
-                                                        type="radio"
-                                                        name="productType"
-                                                        value="Stocks"
-                                                        checked={olItemsStack.productType === "Stocks"}
-                                                        onChange={handleOlItemStackChange}
-                                                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                    />
-                                                    <span className="text-gray-700 font-medium">Stocks</span>
-                                                </label>
-                                                <label className="flex items-center space-x-2 cursor-pointer">
-                                                    <input
-                                                        type="radio"
-                                                        name="productType"
-                                                        value="Rx"
-                                                        checked={olItemsStack.productType === "Rx"}
-                                                        onChange={handleOlItemStackChange}
-                                                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                        disabled={true}
-                                                    />
-                                                    <span className="text-gray-700 font-medium">Rx</span>
-                                                </label>
-                                            </div>
-
-                                            {(formState.productType === "Stocks" && focalityData && brandInput) && (
-                                                <>
-                                                    <div className="w-full flex flex-col md:flex-row gap-4 mt-4">
-
-                                                        {/* Focality */}
-                                                        <div className="flex-1">
-                                                            <AutocompleteField
-                                                                label="Focality"
-                                                                options={deduplicateOptions(
-                                                                    focalityData?.data?.filter((b) => b.IsActive === 1) || [],
-                                                                    "OpticalLensFocality.Id"
-                                                                )}
-                                                                valueField="OpticalLensFocality.Id"
-                                                                labelField="OpticalLensFocality.Focality"
-                                                                value={olItemsStack.focality}
-                                                                onChange={(val) =>
-                                                                    setOlItemStack((prev) => ({ ...prev, focality: val }))
+                                                {productData && (
+                                                    <div className="flex-1 min-w-[300px]">
+                                                        <Autocomplete
+                                                            options={productData?.data?.data || []}
+                                                            getOptionLabel={(option) => option.ProductName || ""}
+                                                            onInputChange={(event, value) => {
+                                                                setProductInput(value);
+                                                            }}
+                                                            onChange={(event, newValue) => {
+                                                                if (newValue) {
+                                                                    setProductInput(newValue.ProductName);
+                                                                    setProductId(newValue.Id);
                                                                 }
-                                                                loading={isLoadingFocality}
-                                                                disabled={!!(olItemsStack.family || olItemsStack.design)}
-                                                            />
-                                                        </div>
-
-                                                        {/* Product Family */}
-                                                        {olItemsStack.focality && (
-                                                            <div className="flex-1">
-                                                                <AutocompleteField
-                                                                    label="Product Family"
-                                                                    options={deduplicateOptions(
-                                                                        familyData?.data?.filter((b) => b.IsActive === 1) || [],
-                                                                        "OpticalLensProductFamily.Id"
-                                                                    )}
-                                                                    valueField="OpticalLensProductFamily.Id"
-                                                                    labelField="OpticalLensProductFamily.FamilyName"
-                                                                    value={olItemsStack.family}
-                                                                    onChange={(val) =>
-                                                                        setOlItemStack((prev) => ({ ...prev, family: val }))
-                                                                    }
-                                                                    loading={isLoadingFamily}
-                                                                    disabled={!!olItemsStack.design}
+                                                            }}
+                                                            value={
+                                                                productData?.data?.data.find((b) => b.Id === productId) ||
+                                                                null
+                                                            }
+                                                            isOptionEqualToValue={(option, value) =>
+                                                                option.Id === value.Id
+                                                            }
+                                                            renderInput={(params) => (
+                                                                <TextField
+                                                                    {...params}
+                                                                    label="Search Product"
+                                                                    variant="outlined"
+                                                                    fullWidth
                                                                 />
-                                                            </div>
-                                                        )}
-
-                                                        {/* Product Design */}
-                                                        {olItemsStack.family && (
-                                                            <div className="flex-1">
-                                                                <AutocompleteField
-                                                                    label="Product Design"
-                                                                    options={deduplicateOptions(
-                                                                        productDesignData?.data?.filter((b) => b.IsActive === 1) || [],
-                                                                        "OpticalLensProductDesign.Id"
-                                                                    )}
-                                                                    valueField="OpticalLensProductDesign.Id"
-                                                                    labelField="OpticalLensProductDesign.DesignName"
-                                                                    value={olItemsStack.design}
-                                                                    onChange={(val) =>
-                                                                        setOlItemStack((prev) => ({ ...prev, design: val }))
-                                                                    }
-                                                                    loading={isLoadingProductDesign}
-                                                                    disabled={!!olItemsStack.index}
-                                                                />
-                                                            </div>
-                                                        )}
-
+                                                            )}
+                                                        />
                                                     </div>
+                                                )}
+                                            </>
+                                        )}
 
-                                                    {olItemsStack.design && (
+                                        {/* Optical Lens */}
+                                        {(formState.selectedOption === "Lens" && brandInput) && (
+                                            <>
+                                                <div className="flex space-x-4">
+                                                    <label>Product Type :</label>
+                                                    <label className="flex items-center space-x-2 cursor-pointer">
+                                                        <input
+                                                            type="radio"
+                                                            name="productType"
+                                                            value="Stocks"
+                                                            checked={olItemsStack.productType === "Stocks"}
+                                                            onChange={handleOlItemStackChange}
+                                                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                        />
+                                                        <span className="text-gray-700 font-medium">Stocks</span>
+                                                    </label>
+                                                    <label className="flex items-center space-x-2 cursor-pointer">
+                                                        <input
+                                                            type="radio"
+                                                            name="productType"
+                                                            value="Rx"
+                                                            checked={olItemsStack.productType === "Rx"}
+                                                            onChange={handleOlItemStackChange}
+                                                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                            disabled={true}
+                                                        />
+                                                        <span className="text-gray-700 font-medium">Rx</span>
+                                                    </label>
+                                                </div>
+
+                                                {(formState.productType === "Stocks" && focalityData && brandInput) && (
+                                                    <>
                                                         <div className="w-full flex flex-col md:flex-row gap-4 mt-4">
 
-                                                            {/* Index Value */}
+                                                            {/* Focality */}
                                                             <div className="flex-1">
                                                                 <AutocompleteField
-                                                                    label="Index Values"
+                                                                    label="Focality"
                                                                     options={deduplicateOptions(
-                                                                        indexValuesData?.data?.filter((b) => b.IsActive === 1) ||
-                                                                        [],
-                                                                        "OpticalLensIndex.Id"
+                                                                        focalityData?.data?.filter((b) => b.IsActive === 1) || [],
+                                                                        "OpticalLensFocality.Id"
                                                                     )}
-                                                                    valueField="OpticalLensIndex.Id"
-                                                                    labelField="OpticalLensIndex.Index"
-                                                                    value={olItemsStack.index}
-                                                                    onChange={(val, item) =>
-                                                                        setOlItemStack((prev) => ({
-                                                                            ...prev,
-                                                                            index: val,
-                                                                            masterId: item?.MasterId || null,
-                                                                        }))
+                                                                    valueField="OpticalLensFocality.Id"
+                                                                    labelField="OpticalLensFocality.Focality"
+                                                                    value={olItemsStack.focality}
+                                                                    onChange={(val) =>
+                                                                        setOlItemStack((prev) => ({ ...prev, focality: val }))
                                                                     }
-                                                                    loading={isLoadingIndexValues}
-                                                                    disabled={!!(olItemsStack.masterId && olItemsStack.coating)}
+                                                                    loading={isLoadingFocality}
+                                                                    disabled={!!(olItemsStack.family || olItemsStack.design)}
                                                                 />
                                                             </div>
 
-                                                            {/* Coating */}
-                                                            {olItemsStack.masterId && (
+                                                            {/* Product Family */}
+                                                            {olItemsStack.focality && (
                                                                 <div className="flex-1">
                                                                     <AutocompleteField
-                                                                        label="Coating"
+                                                                        label="Product Family"
                                                                         options={deduplicateOptions(
-                                                                            coatingsData?.data?.filter((b) => b.IsActive === 1) || [],
-                                                                            "OpticalLensCoating.Id"
+                                                                            familyData?.data?.filter((b) => b.IsActive === 1) || [],
+                                                                            "OpticalLensProductFamily.Id"
                                                                         )}
-                                                                        valueField="OpticalLensCoating.Id"
-                                                                        labelField="OpticalLensCoating.CoatingName"
-                                                                        value={olItemsStack.coating}
-                                                                        onChange={(val, item) => {
-                                                                            if (!item) {
-                                                                                setOlItemStack((prev) => ({
-                                                                                    ...prev,
-                                                                                    coating: null,
-                                                                                }));
-                                                                                return;
-                                                                            }
-                                                                            setOlItemStack((prev) => ({
-                                                                                ...prev,
-                                                                                coating: item.OpticalLensCoating?.Id || null,
-                                                                            }));
-                                                                        }}
-                                                                        loading={isLoadingCoatings}
-                                                                        disabled={!!olItemsStack.treatment}
+                                                                        valueField="OpticalLensProductFamily.Id"
+                                                                        labelField="OpticalLensProductFamily.FamilyName"
+                                                                        value={olItemsStack.family}
+                                                                        onChange={(val) =>
+                                                                            setOlItemStack((prev) => ({ ...prev, family: val }))
+                                                                        }
+                                                                        loading={isLoadingFamily}
+                                                                        disabled={!!olItemsStack.design}
                                                                     />
                                                                 </div>
                                                             )}
 
-                                                            {/* Treatment */}
-                                                            {olItemsStack.coating && (
+                                                            {/* Product Design */}
+                                                            {olItemsStack.family && (
                                                                 <div className="flex-1">
                                                                     <AutocompleteField
-                                                                        label="Treatment"
+                                                                        label="Product Design"
                                                                         options={deduplicateOptions(
-                                                                            treatmentsData?.data?.filter((b) => b.IsActive === 1) || [],
-                                                                            "OpticalLensTreatment.Id"
+                                                                            productDesignData?.data?.filter((b) => b.IsActive === 1) || [],
+                                                                            "OpticalLensProductDesign.Id"
                                                                         )}
-                                                                        valueField="OpticalLensTreatment.Id"
-                                                                        labelField="OpticalLensTreatment.TreatmentName"
-                                                                        value={olItemsStack.treatment}
-                                                                        onChange={(val, item) => {
-                                                                            if (!item) {
-                                                                                setOlItemStack((prev) => ({
-                                                                                    ...prev,
-                                                                                    coatingCombo: null,
-                                                                                    treatment: null,
-                                                                                }));
-                                                                                return;
-                                                                            }
-                                                                            setOlItemStack((prev) => ({
-                                                                                ...prev,
-                                                                                coatingCombo: item.CoatingComboId,
-                                                                                treatment: item.OpticalLensTreatment?.Id,
-                                                                            }));
-                                                                        }}
-                                                                        loading={isLoadingTreatments}
+                                                                        valueField="OpticalLensProductDesign.Id"
+                                                                        labelField="OpticalLensProductDesign.DesignName"
+                                                                        value={olItemsStack.design}
+                                                                        onChange={(val) =>
+                                                                            setOlItemStack((prev) => ({ ...prev, design: val }))
+                                                                        }
+                                                                        loading={isLoadingProductDesign}
+                                                                        disabled={!!olItemsStack.index}
                                                                     />
                                                                 </div>
                                                             )}
 
                                                         </div>
-                                                    )}
 
-                                                    {/* Product Name */}
-                                                    {olItemsStack.treatment && (
-                                                        <div className="w-full flex flex-col md:flex-row gap-4 mt-4">
-                                                            <div className="flex-1">
-                                                                <Input
-                                                                    label="Product Name"
-                                                                    value={olItemsStack.productName || ""}
-                                                                    onChange={(e) =>
-                                                                        setOlItemStack({ ...olItemsStack, productName: e.target.value })
-                                                                    }
-                                                                    placeholder="Enter product name"
-                                                                    className="w-full"
-                                                                    disabled
-                                                                />
+                                                        {olItemsStack.design && (
+                                                            <div className="w-full flex flex-col md:flex-row gap-4 mt-4">
+
+                                                                {/* Index Value */}
+                                                                <div className="flex-1">
+                                                                    <AutocompleteField
+                                                                        label="Index Values"
+                                                                        options={deduplicateOptions(
+                                                                            indexValuesData?.data?.filter((b) => b.IsActive === 1) ||
+                                                                            [],
+                                                                            "OpticalLensIndex.Id"
+                                                                        )}
+                                                                        valueField="OpticalLensIndex.Id"
+                                                                        labelField="OpticalLensIndex.Index"
+                                                                        value={olItemsStack.index}
+                                                                        onChange={(val, item) =>
+                                                                            setOlItemStack((prev) => ({
+                                                                                ...prev,
+                                                                                index: val,
+                                                                                masterId: item?.MasterId || null,
+                                                                            }))
+                                                                        }
+                                                                        loading={isLoadingIndexValues}
+                                                                        disabled={!!(olItemsStack.masterId && olItemsStack.coating)}
+                                                                    />
+                                                                </div>
+
+                                                                {/* Coating */}
+                                                                {olItemsStack.masterId && (
+                                                                    <div className="flex-1">
+                                                                        <AutocompleteField
+                                                                            label="Coating"
+                                                                            options={deduplicateOptions(
+                                                                                coatingsData?.data?.filter((b) => b.IsActive === 1) || [],
+                                                                                "OpticalLensCoating.Id"
+                                                                            )}
+                                                                            valueField="OpticalLensCoating.Id"
+                                                                            labelField="OpticalLensCoating.CoatingName"
+                                                                            value={olItemsStack.coating}
+                                                                            onChange={(val, item) => {
+                                                                                if (!item) {
+                                                                                    setOlItemStack((prev) => ({
+                                                                                        ...prev,
+                                                                                        coating: null,
+                                                                                    }));
+                                                                                    return;
+                                                                                }
+                                                                                setOlItemStack((prev) => ({
+                                                                                    ...prev,
+                                                                                    coating: item.OpticalLensCoating?.Id || null,
+                                                                                }));
+                                                                            }}
+                                                                            loading={isLoadingCoatings}
+                                                                            disabled={!!olItemsStack.treatment}
+                                                                        />
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Treatment */}
+                                                                {olItemsStack.coating && (
+                                                                    <div className="flex-1">
+                                                                        <AutocompleteField
+                                                                            label="Treatment"
+                                                                            options={deduplicateOptions(
+                                                                                treatmentsData?.data?.filter((b) => b.IsActive === 1) || [],
+                                                                                "OpticalLensTreatment.Id"
+                                                                            )}
+                                                                            valueField="OpticalLensTreatment.Id"
+                                                                            labelField="OpticalLensTreatment.TreatmentName"
+                                                                            value={olItemsStack.treatment}
+                                                                            onChange={(val, item) => {
+                                                                                if (!item) {
+                                                                                    setOlItemStack((prev) => ({
+                                                                                        ...prev,
+                                                                                        coatingCombo: null,
+                                                                                        treatment: null,
+                                                                                    }));
+                                                                                    return;
+                                                                                }
+                                                                                setOlItemStack((prev) => ({
+                                                                                    ...prev,
+                                                                                    coatingCombo: item.CoatingComboId,
+                                                                                    treatment: item.OpticalLensTreatment?.Id,
+                                                                                }));
+                                                                            }}
+                                                                            loading={isLoadingTreatments}
+                                                                        />
+                                                                    </div>
+                                                                )}
+
                                                             </div>
-                                                        </div>
-                                                    )}
-                                                </>
-                                            )}
-                                        </>
-                                    )}
+                                                        )}
+
+                                                        {/* Product Name */}
+                                                        {olItemsStack.treatment && (
+                                                            <div className="w-full flex flex-col md:flex-row gap-4 mt-4">
+                                                                <div className="flex-1">
+                                                                    <Input
+                                                                        label="Product Name"
+                                                                        value={olItemsStack.productName || ""}
+                                                                        onChange={(e) =>
+                                                                            setOlItemStack({ ...olItemsStack, productName: e.target.value })
+                                                                        }
+                                                                        placeholder="Enter product name"
+                                                                        className="w-full"
+                                                                        disabled
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </>
+                                        )}
 
 
-                                    {(formState.selectedOption === "Frame/Sunglass" || formState.selectedOption === "Accessories") ? (
+                                        {(formState.selectedOption === "Frame/Sunglass" || formState.selectedOption === "Accessories") ? (
+                                            <button
+                                                onClick={() => {
+                                                    if (formState.selectedOption === "Frame/Sunglass") handleDetailSearch(1)
+                                                    else if (formState.selectedOption === "Accessories") handleDetailSearch(2)
+                                                }}
+                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap flex items-center justify-center w-full md:w-auto"
+                                                disabled={!brandId}
+                                            >
+                                                <SearchIcon className="h-4 w-4 mr-1" />
+                                                Search
+                                            </button>
+                                        ) : null}
+
                                         <button
-                                            onClick={() => {
-                                                if (formState.selectedOption === "Frame/Sunglass") handleDetailSearch(1)
-                                                else if (formState.selectedOption === "Accessories") handleDetailSearch(2)
-                                            }}
-                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap flex items-center justify-center w-full md:w-auto"
-                                            disabled={!brandId}
+                                            onClick={() => setShowSearchInputs(false)}
+                                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors whitespace-nowrap flex items-center justify-center w-full md:w-auto"
                                         >
-                                            <SearchIcon className="h-4 w-4 mr-1" />
-                                            Search
+                                            Back to Barcode
                                         </button>
-                                    ) : null}
 
-                                    <button
-                                        onClick={() => setShowSearchInputs(false)}
-                                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors whitespace-nowrap flex items-center justify-center w-full md:w-auto"
-                                    >
-                                        Back to Barcode
-                                    </button>
-
-                                </div>
-                            )}
+                                    </div>
+                                ))
+                            }
                         </div>
 
                         {/* Optical Lens Search */}
@@ -2887,22 +3151,25 @@ export default function SavePurchaseOrder() {
 
                         )}
 
-                        <div className="flex justify-between items-center mt-8">
-                            <button
-                                onClick={handleBack}
-                                className="px-4 py-2 border border-[#000060] text-[#000060] rounded-lg hover:bg-gray-100 transition-colors"
-                            >
-                                Back
-                            </button>
-                            <div className="flex items-center space-x-4">
+                        {!formState.EntryType === "bulk" && (
+                            <div className="flex justify-between items-center mt-8">
                                 <button
-                                    onClick={handleSubmitPODetails}
-                                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
+                                    onClick={handleBack}
+                                    className="px-4 py-2 border border-[#000060] text-[#000060] rounded-lg hover:bg-gray-100 transition-colors"
                                 >
-                                    Save & Next
+                                    Back
                                 </button>
+                                <div className="flex items-center space-x-4">
+                                    <button
+                                        onClick={handleSubmitPODetails}
+                                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
+                                    >
+                                        Save & Next
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        )}
+
                     </motion.div>
                 )}
 

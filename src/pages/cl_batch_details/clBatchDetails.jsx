@@ -725,32 +725,6 @@ export default function ClBatchDetails() {
     };
 
 
-    // const handleUpload = async () => {
-    //     if (!selectedFile) {
-    //         toast.error("Please select a file!");
-    //         return;
-    //     }
-
-    //     try {
-    //         const formData = new FormData();
-    //         formData.append("excelFile", selectedFile);
-
-    //         const res = await uploadFile({ formData: formData, applicationUserId: user?.Id, companyId: hasMultipleLocations }).unwrap();
-
-    //         console.log("response", res);
-    //         toast.success(res?.message || "File uploaded successfully!");
-
-    //         // if (res?.data) {
-    //         //     setItems(res.data);
-    //         // }
-
-    //         handleClearFile();
-    //     } catch (error) {
-    //         console.error("Upload error:", error);
-    //         toast.error(error?.data?.error || error?.error || "Upload failed");
-    //     }
-    // };
-
     const handleUpload = async () => {
         if (!selectedFile) {
             toast.error("Please select a file!");

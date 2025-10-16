@@ -131,6 +131,20 @@ export const purchaseOrderApi = createApi({
             }),
             // invalidatesTags: ['PurchaseOrders'],
         }),
+        downloadFrameSampleExcel: builder.query({
+            query: () => ({
+                url: `/api/v1/purchase-order/frame-sample-excel`,
+                method: 'GET',
+                responseHandler: (response) => response.blob(),
+            })
+        }),
+        bulkUploadFrame: builder.mutation({
+            query: ({formData, applicationUserId, poMainId}) => ({
+                url: `/api/v1/purchase-order/frame-bulk-upload?ApplicationUserId=${applicationUserId}&poMainId=${poMainId}`,
+                method: 'POST',
+                body: formData
+            })
+        })
     })
 });
 
@@ -153,5 +167,7 @@ export const {
     useUpdatePOMainDataMutation,
     useLazyApprovePoQuery,
     useApproveUpdatePriceMutation,
-    useApproveUpdateQtyMutation
+    useApproveUpdateQtyMutation,
+    useLazyDownloadFrameSampleExcelQuery,
+    useBulkUploadFrameMutation,
 } = purchaseOrderApi;
