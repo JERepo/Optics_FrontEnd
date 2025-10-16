@@ -22,6 +22,7 @@ import Modal from "../../components/ui/Modal";
 import Radio from "../../components/Form/Radio";
 import HasPermission from "../../components/HasPermission";
 import { FiPrinter } from "react-icons/fi";
+import OTPScreen from "../../components/OTPScreen";
 
 const getProductName = (order) => {
   const product = order?.productDetails?.[0];
@@ -211,8 +212,10 @@ const InvoiceView = () => {
   const [isCancelOpen, setIsCancelOpen] = useState(false);
   const [cancelDisabled, setIsCancelDisabled] = useState(false);
   const [carry, setCarry] = useState(null);
-    const [printingId, setPrintingId] = useState(null);
-  
+  const [printingId, setPrintingId] = useState(null);
+  const [showOtp, setShowOtp] = useState(false);
+  const [otpValue, setOtpValue] = useState(null);
+  const [selectedDiscountItem, setSelectedDiscountItem] = useState(null);
 
   const { data: invoiceDetails, isLoading } = useGetInvoiceByIdQuery(
     { id: invoiceId },
@@ -396,21 +399,12 @@ const InvoiceView = () => {
         toast.error(result.message);
         return;
       }
-      // try {
-      //   const payload = {
-      //     InvoiceMainId: parseInt(invoiceId) ?? null,
-      //     CustomerMasterID: invoiceDetails?.CustomerMaster?.Id ?? null,
-      //     locationId: parseInt(hasMultipleLocations[0]),
-      //   };
-
-      //   const res = await cancelInvoice({ payload }).unwrap();
-      //   toast.success("Invoice Cancelled Successfully");
-      // } catch (error) {
-      //   console.log(error);
-      // }
     }
   };
-
+  const handleOtpComplete = (otp) => {
+    console.log("OTP Completed:", otp);
+    setOtpValue(otp);
+  };
   const handleUpdateCanceInvoice = async () => {
     const payload = {
       InvoiceMainId: parseInt(invoiceId) ?? null,
@@ -419,6 +413,9 @@ const InvoiceView = () => {
       locationId: parseInt(hasMultipleLocations[0]),
       ApplicationUserId: user.Id,
     };
+    if (otpValue) {
+      payload.otp = otpValue;
+    }
 
     if (carry === 0) {
       payload.selectedrefund =
@@ -428,16 +425,19 @@ const InvoiceView = () => {
         paymentDetails?.data?.receiptDetails?.map((item) => item.Type) || [];
     }
     try {
-      // const payload = {
-      //   InvoiceMainId: parseInt(invoiceId) ?? null,
-      //   CustomerMasterID: invoiceDetails?.CustomerMaster?.Id ?? null,
-      //   locationId: parseInt(hasMultipleLocations[0]),
-      // };
       const res = await cancelInvoice({ payload }).unwrap();
-      toast.success("Invoice Cancelled Successfully");
+      if (res?.data?.otpRequired) {
+        setOtpValue(null);
+        setShowOtp(true);
+        return;
+      }
       setIsCancelOpen(false);
+      setShowOtp(null);
+      setShowOtp(false);
+      toast.success("Invoice Cancelled Successfully");
     } catch (error) {
       console.log(error);
+      setOtpValue(null);
     }
   };
   const handlePrint = async (item) => {
@@ -445,15 +445,15 @@ const InvoiceView = () => {
 
     try {
       const blob = await generatePrint({
-       id :item.Id
+        id: item.Id,
       }).unwrap();
 
       const url = window.URL.createObjectURL(
         new Blob([blob], { type: "application/pdf" })
       );
-       const link = document.createElement("a");
+      const link = document.createElement("a");
       link.href = url;
-      link.download = `Invoice_${invoiceDetails.InvoiceNo} (${invoiceDetails.InvoicePrefix}${invoiceDetails.InvoiceNo}).pdf`
+      link.download = `Invoice_${invoiceDetails.InvoiceNo} (${invoiceDetails.InvoicePrefix}${invoiceDetails.InvoiceNo}).pdf`;
       document.body.appendChild(link);
       link.click();
       // clean up
@@ -475,7 +475,6 @@ const InvoiceView = () => {
       </div>
     );
   }
- 
 
   return (
     <div className="max-w-8xl">
@@ -501,7 +500,7 @@ const InvoiceView = () => {
                   </Button>
                 </HasPermission>
               )}
-                <Button
+            <Button
               onClick={() => handlePrint(invoiceDetails)}
               icon={FiPrinter}
               isLoading={printingId == invoiceDetails.Id}
@@ -681,7 +680,36 @@ const InvoiceView = () => {
               </div>
             </div>
           )}
-
+        <Modal isOpen={showOtp} onClose={() => setShowOtp(false)}>
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Secure Verification
+            </h2>
+            <p className="text-gray-600">
+              Enter the verification code sent to your Email or Whatsapp
+            </p>
+          </div>
+          <OTPScreen
+            length={6}
+            onComplete={handleOtpComplete}
+            autoFocus={true}
+            // disabled={isLoading}
+            type="number"
+            placeholder="*"
+            className="mb-6"
+          />
+          <div className="grid grid-cols-2 w-full gap-5">
+            <Button variant="outline" onClick={() => setShowOtp(false)}>
+              Clear & Close
+            </Button>
+            <Button
+              onClick={() => handleUpdateCanceInvoice()}
+              isLoading={isCancelling}
+            >
+              Submit
+            </Button>
+          </div>
+        </Modal>
         <Modal
           isOpen={isCancelOpen}
           onClose={() => setIsCancelOpen(false)}

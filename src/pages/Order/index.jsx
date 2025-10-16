@@ -65,6 +65,7 @@ const TotalSales = () => {
       ...prev,
       countryId: countrId,
       companyId: companyId,
+      locationId : companyId
     }));
   }, [countrId, locationById, companyId]);
   const { data: companySettings } = useGetCompanyIdQuery(
@@ -88,11 +89,11 @@ const TotalSales = () => {
       ? [hasMultipleLocations]
       : [];
 
-    if (locations.length === 1) {
+    if (locations.length) {
       setLocation(locations[0]);
     }
   }, [hasMultipleLocations]);
-
+console.log("dwd",locationById)
   const commonProps = {
     handleGetPatient,
 

@@ -27,9 +27,9 @@ export const vendorPaymentApi = createApi({
       }),
       invalidatesTags: ["VendorPayment"],
     }),
-    getAllCP: builder.query({
+    getAllVP: builder.query({
       query: () => ({
-        url: `/api/v1/vendor-payment/getallcp`,
+        url: `/api/v1/vendor-payment/getallvp`,
       }),
       providesTags: ["VendorPayment"],
     }),
@@ -56,5 +56,6 @@ export const {
   useSaveVendorPaymentMutation,
   useSaveAdvanceAmountMutation,
   useGetAdvanceDataForVendorQuery,
-  useGetPODetailsQuery
+  useGetPODetailsQuery,
+  useGetAllVPQuery
 } = vendorPaymentApi;

@@ -22,6 +22,21 @@ import toast from "react-hot-toast";
 import { ErrorDisplayModal } from "../../../components/ErrorsDisplay";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import HasPermission from "../../../components/HasPermission";
+import Modal from "../../../components/ui/Modal";
+import OTPScreen from "../../../components/OTPScreen";
+export const getOrderStatus = (statusCode) => {
+  const statusMap = {
+    0: "Order Placed",
+    1: "GRN Done",
+    2: "Partial Invoice",
+    3: "Invoice Completed",
+    4: "Cancelled",
+    5: "PO Raised",
+    6: "Stock Allocation Done for OL",
+  };
+
+  return statusMap[statusCode] || "Unknown Status";
+};
 
 const OrderView = () => {
   const navigate = useNavigate();
@@ -41,6 +56,9 @@ const OrderView = () => {
   const [printingId, setPrintingId] = useState(null);
   const [selectedItemId, setSelectedItemId] = useState(null);
   const [byPassInvoice, setByPassInvoice] = useState(false);
+  const [showOtp, setShowOtp] = useState(false);
+  const [otpValue, setOtpValue] = useState(null);
+  const [selectedDiscountItem, setSelectedDiscountItem] = useState(null);
 
   const { data: orderDetails, isLoading } = useGetSavedOrderDetailsQuery(
     { orderId },
@@ -233,7 +251,9 @@ const OrderView = () => {
         proceedAfterWarnings: true,
         applicationUserId: user.Id,
       };
-
+      if (otpValue) {
+        payload.otp = parseInt(otpValue);
+      }
       const res = await cancelItem({ id: selectedItemId, payload }).unwrap();
       toast.success("Item cancelled successfully");
       setSelectedItemId(null);
@@ -272,10 +292,16 @@ const OrderView = () => {
       };
 
       const res = await cancelItem({ id, payload }).unwrap();
+      if (res?.otpRequired) {
+        setSelectedDiscountItem(id);
+        setShowOtp(true);
+        return;
+      }
       if (res?.status == "warning") {
         setWarningMessage(res?.warnings[0]);
         setIsWarningOpen(true);
       }
+      toast.success("Item Cancelled Successfully!");
     } catch (error) {
       console.log(error);
       toast.error(error?.data?.message || "Item already cancelled");
@@ -434,6 +460,10 @@ const OrderView = () => {
     };
     return types[status] || "Draft";
   };
+  const handleOtpComplete = (otp) => {
+    console.log("OTP Completed:", otp);
+    setOtpValue(otp);
+  };
 
   const columns = [
     "S.No",
@@ -451,7 +481,7 @@ const OrderView = () => {
     columns.push("Advance Amount", "Balance Amount");
   }
 
-  columns.push("Total", "Action");
+  columns.push("Total", "Status", "Action");
   const handlePrintPdf = async (item) => {
     setPrintingId(item.id);
     console.log("ite", item);
@@ -520,7 +550,6 @@ const OrderView = () => {
       </div>
     );
   }
-  console.log("ord", customerDataById?.data.data, orderDetails);
   return (
     <div className="max-w-8xl">
       <div className="bg-white rounded-sm shadow-sm overflow-hidden p-6">
@@ -535,10 +564,10 @@ const OrderView = () => {
                   <Button
                     variant="danger"
                     onClick={handleCancelOrder}
-                    className=""
                     size="md"
                     isLoading={isOrderCancelling}
                     disabled={isOrderCancelling || isItemCancelling}
+                    className="opacity-70"
                   >
                     Cancel Order
                   </Button>
@@ -684,6 +713,7 @@ const OrderView = () => {
                       parseFloat(order.FittingPrice || 0)
                   )}
                 </TableCell>
+                <TableCell>{getOrderStatus(order.Status)}</TableCell>
                 <TableCell>
                   <div className="flex gap-2 items-center">
                     {order.Status !== 3 && (
@@ -701,7 +731,7 @@ const OrderView = () => {
                         <Button
                           variant="danger"
                           onClick={() => handleCancelItem(order.OrderDetailId)}
-                          className=""
+                          className="opacity-70"
                           size="sm"
                           isLoading={
                             selectedItemId === order.OrderDetailId
@@ -804,6 +834,33 @@ const OrderView = () => {
           </div>
         )}
       </div>
+      <Modal isOpen={showOtp} onClose={() => setShowOtp(false)}>
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Secure Verification
+          </h2>
+          <p className="text-gray-600">
+            Enter the verification code sent to your Email or Whatsapp
+          </p>
+        </div>
+        <OTPScreen
+          length={6}
+          onComplete={handleOtpComplete}
+          autoFocus={true}
+          // disabled={isLoading}
+          type="number"
+          placeholder="*"
+          className="mb-6"
+        />
+        <div className="grid grid-cols-2 w-full gap-5">
+          <Button variant="outline" onClick={() => setShowOtp(false)}>
+            Clear & Close
+          </Button>
+          <Button onClick={() => handleConfirmWarnings(selectedDiscountItem)}>
+            Submit
+          </Button>
+        </div>
+      </Modal>
       <ErrorDisplayModal
         title="Error Generating Invoice"
         errors={errors}

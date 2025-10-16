@@ -75,6 +75,13 @@ export const reportApi = createApi({
         responseHandler: (response) => response.blob(),
       }),
     }),
+    getStockAgeingReport: builder.query({
+      query: ({ companyId,productType }) => ({
+        url: `/api/v1/report/Stock-Ageing/${companyId}/${productType}`,
+        method: "GET",
+        responseHandler: (response) => response.blob(),
+      }),
+    }),
   }),
 });
 
@@ -88,5 +95,6 @@ export const {
   useLazyGetPurchaseOrderReportQuery,
   useLazyGetStockInReportQuery,
   useLazyGetAuditReportQuery,
-  useLazyGetStockOutReportQuery
+  useLazyGetStockOutReportQuery,
+  useLazyGetStockAgeingReportQuery
 } = reportApi;

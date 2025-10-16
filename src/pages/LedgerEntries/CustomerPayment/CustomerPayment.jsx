@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router";
 import {
@@ -14,11 +14,21 @@ import { useLazyGetCustomerPaymentQuery } from "../../../api/customerPayment";
 import { toast } from "react-hot-toast";
 import { format } from "date-fns";
 import { formatINR } from "../../../utils/formatINR";
-import { FiCheck, FiEdit2, FiX } from "react-icons/fi";
+import {
+  FiArrowLeft,
+  FiCheck,
+  FiEdit2,
+  FiRefreshCw,
+  FiSearch,
+  FiUserPlus,
+  FiX,
+} from "react-icons/fi";
 import Modal from "../../../components/ui/Modal";
 import Checkbox from "../../../components/Form/Checkbox";
 import PaymentEntries from "./PaymentEntries";
 import CollectAdvance from "./CollectAdvace";
+import Loader from "../../../components/ui/Loader";
+import { useGetCustomerContactDetailsQuery } from "../../../api/orderApi";
 
 const CustomerPayment = () => {
   const navigate = useNavigate();
@@ -30,7 +40,13 @@ const CustomerPayment = () => {
   const [items, setItems] = useState([]);
   const [nextClicked, setNextClicked] = useState(false);
   const [collectPayment, setCollectPayment] = useState(false);
-
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [filters, setFilters] = useState({
+    name: "",
+    mobileNo: "",
+    customerName: "",
+  });
   const {
     data: customersResp,
     isLoading,
@@ -54,6 +70,10 @@ const CustomerPayment = () => {
 
   const [getPayments, { isFetching: isPaymentsLoading }] =
     useLazyGetCustomerPaymentQuery();
+  const { data: contactResp, refetch: refetchPatient } =
+    useGetCustomerContactDetailsQuery({
+      companyId: parseInt(hasMultipleLocations[0]),
+    });
 
   // Initialize editMode and set originalAmountToPay for each item
   useEffect(() => {
@@ -71,6 +91,82 @@ const CustomerPayment = () => {
     });
   }, [items]);
 
+  const allCus = useMemo(() => {
+    if (!customersResp?.data?.data || !contactResp?.data) return [];
+
+    const contacts = contactResp.data; // flat array of contacts
+    const customers = customersResp.data.data; // array of customers
+
+    // Create a flat list where each contact is merged with its customer
+    const combinedList = contacts.map((contact) => {
+      const customer = customers.find((c) => c.Id === contact.CustomerMasterID);
+      if (!customer) return null;
+
+      return {
+        ...customer,
+        CustomerContactDetails: [contact], // only that one contact
+      };
+    });
+
+    // Remove any nulls (if customer was not found)
+    return combinedList.filter(Boolean);
+  }, [customersResp, contactResp]);
+
+  const handleFilterChange = (e, field) => {
+    setFilters((prev) => ({ ...prev, [field]: e.target.value }));
+    setCurrentPage(1);
+  };
+
+  const handleRefresh = () => {
+    setInput("");
+    setFilters({ name: "", mobileNo: "", customerName: "" });
+    setCurrentPage(1);
+  };
+  const handleCustomerSelect = (customerWithContact) => {
+    console.log("cco", customerWithContact);
+    const patient = customerWithContact.CustomerContactDetails?.[0];
+
+    if (!patient) {
+      toast.error("No patient (contact) found for selected customer.");
+      return;
+    }
+    setSelectedCustomer(customerWithContact);
+  };
+  const filteredData = allCus.filter((c) => {
+    const customerName = (c.CustomerName || "").toLowerCase();
+
+    const firstContact = c.CustomerContactDetails[0] || {};
+    const patientName = (firstContact.CustomerName || "").toLowerCase();
+    const mobileNo = (firstContact.MobNumber || "").toLowerCase();
+
+    const matchesMainSearch =
+      !input ||
+      customerName.includes(input.toLowerCase()) ||
+      patientName.includes(input.toLowerCase()) ||
+      mobileNo.includes(input.toLowerCase());
+
+    const matchesPatientName = patientName.includes(filters.name.toLowerCase());
+    const matchesMobile = mobileNo.includes(filters.mobileNo.toLowerCase());
+    const matchesCustomerName = customerName.includes(
+      filters.customerName.toLowerCase()
+    );
+
+    return (
+      matchesMainSearch &&
+      matchesPatientName &&
+      matchesMobile &&
+      matchesCustomerName
+    );
+  });
+
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginatedCustomers = filteredData.slice(
+    startIndex,
+    startIndex + pageSize
+  );
+  const totalPages = Math.ceil(filteredData.length / pageSize);
+  const hasSearchInput =
+    input || filters.name || filters.mobileNo || filters.customerName;
   // Fetch payments and initialize AmountToPay to Amount
   const handleFetch = async () => {
     try {
@@ -228,45 +324,109 @@ const CustomerPayment = () => {
     <div>
       <div className="max-w-8xl p-6 bg-white rounded-lg shadow-sm border border-gray-100">
         <div className="flex justify-between">
-          <div className="w-1/2">
-            <Autocomplete
-              options={
-                customersResp?.data?.data.filter((item) =>
-                  allCompanyIds?.includes(item.Company?.Id)
-                ) || []
-              }
-              getOptionLabel={(option) =>
-                `${option.CustomerName} (${option.MobNumber})`
-              }
-              value={
-                customersResp?.data?.data.find(
-                  (master) => master.Id === selectedCustomer?.Id
-                ) || null
-              }
-              onChange={(_, newValue) => setSelectedCustomer(newValue || null)}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  placeholder="Select by Customer Name or Mobile"
-                  size="medium"
-                />
-              )}
-              isOptionEqualToValue={(option, value) =>
-                option.CustomerMasterID === value.CustomerMasterID
-              }
-              loading={isLoading}
-              fullWidth
-            />
+          <div className="text-xl font-semibold text-neutral-700 mb-4">
+            Patient Information
           </div>
-          <div>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/customer-payment")}
-            >
+          {selectedCustomer && (
+            <Button variant="outline" onClick={() => {handleRefresh();setSelectedCustomer(null)}}>
               Back
             </Button>
-          </div>
+          )}
         </div>
+        {!selectedCustomer && (
+          <div>
+            <div className="flex flex-col sm:flex-row gap-3 mb-6">
+              <div className="relative flex-grow flex items-center">
+                <div className="absolute left-3 text-gray-400">
+                  <FiSearch />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search by name or mobile number..."
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  className="w-full pl-10 pr-24 py-2.5 border border-gray-300 rounded-lg focus:outline-none rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+                <button className="cursor-pointer absolute right-2 bg-neutral-300 hover:bg-neutral-400 text-neutral-700 px-4 py-1.5 rounded-md text-sm font-medium transition-colors">
+                  Search
+                </button>
+              </div>
+
+              <div className="flex gap-2 sm:gap-3">
+                <button
+                  onClick={() => navigate("/order-list")}
+                  className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-neutral-700 hover:bg-gray-50 text-sm"
+                >
+                  <FiArrowLeft />
+                  <span>Back</span>
+                </button>
+                <button
+                  onClick={handleRefresh}
+                  className=" flex items-center gap-2 px-3 py-2 bg-neutral-300 hover:bg-neutral-400 text-neutral-700 rounded-lg text-sm"
+                >
+                  <FiRefreshCw />
+                  <span className="text-neutral-700">Refresh</span>
+                </button>
+              </div>
+            </div>
+
+            {(isLoading || isFetching) && (
+              <div className="flex justify-center items-center">
+                <Loader />
+              </div>
+            )}
+
+            {hasSearchInput && !isLoading && !isFetching && (
+              <div className="mt-8 overflow-hidden rounded-lg border border-gray-200 shadow-sm p-4">
+                <Table
+                  columns={[
+                    "S.No",
+                    "Patient name",
+                    "Mobile no",
+                    "Customer name",
+                    "Action",
+                  ]}
+                  data={paginatedCustomers}
+                  renderRow={(customer, index) => (
+                    <TableRow key={customer.id} className="hover:bg-gray-50">
+                      <TableCell className="px-4 py-3 text-sm">
+                        {startIndex + index + 1}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-sm">
+                        {customer.CustomerContactDetails[0]?.CustomerName}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-sm">
+                        {customer.CustomerContactDetails[0]?.MobNumber}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-sm">
+                        {customer.CustomerName}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-sm">
+                        <Button
+                          // isLoading={loadingCustomerId === customer.Id}
+                          onClick={() => handleCustomerSelect(customer)}
+                          className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 text-xs font-medium"
+                        >
+                          Select
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  headerClassName="bg-gray-100"
+                  rowClassName="border-b border-gray-200 last:border-0"
+                  emptyMessage="No Patients found matching your search"
+                  pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                  pageSize={pageSize}
+                  onPageSizeChange={setPageSize}
+                  totalItems={filteredData.length}
+                />
+              </div>
+            )}
+          </div>
+        )}
         {selectedCustomer && (
           <div className="flex justify-between mt-5 items-center">
             <div className="text-lg text-neutral-900">

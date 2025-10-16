@@ -1576,7 +1576,18 @@ const CustomerSelect = () => {
                               Collect Payment
                             </Button>
                           )}
-                        {(parseFloat(totalBalance.toFixed(2)) === 0 ||
+                        {parseFloat(totalBalance.toFixed(2)) === 0 && (
+                          <Button
+                            onClick={handleGenerateInvoiceCreditYes}
+                            isLoading={isGenerateInvoice}
+                            disabled={isGenerateInvoice}
+                          >
+                            {customerData?.data?.data?.BillingMethod === 1
+                              ? "Generate DC"
+                              : "Generate Invoice"}
+                          </Button>
+                        )}
+                        {(parseFloat(totalBalance.toFixed(2)) > 0 &&
                           selectedPatient?.CustomerMaster?.CreditBilling ===
                             1) && (
                           <Button

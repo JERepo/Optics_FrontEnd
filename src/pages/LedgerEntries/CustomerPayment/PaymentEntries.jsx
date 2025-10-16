@@ -253,8 +253,13 @@ const PaymentEntries = ({
       companyId: parseInt(hasMultipleLocations[0]),
       CreatedBy: user.Id,
       customerId: selectedPatient?.Id,
-      totalAmount: totalValue,
-      totalAmountToPay: amountToPay,
+      // totalAmount: totalValue,
+      // totalAmountToPay: amountToPay,
+      totalAmount: amountToPay, //totalValue
+      totalAmountToPay: fullPaymentDetails?.reduce(
+        (sum, item) => sum + parseFloat(item.Amount),
+        0
+      ),
       remark: "Advance collected from Customer payment",
       payments: preparePaymentsStructure(),
       entries: items.map((item) => {
@@ -286,7 +291,7 @@ const PaymentEntries = ({
       validationErrors.method = "Please select a payment method";
     if (!newPayment.Amount || isNaN(newPayment.Amount)) {
       validationErrors.amount = "Please enter a valid amount";
-    } 
+    }
 
     if (selectedPaymentMethod === 6 && newPayment.advanceId) {
       const isAdvanceDuplicate = fullPaymentDetails.some(
@@ -381,7 +386,7 @@ const PaymentEntries = ({
   const handlePaymentBack = () => {
     goToStep(currentStep - 1);
   };
-console.log(fullPaymentDetails)
+  console.log(fullPaymentDetails);
   return (
     <div className="">
       <div className="max-w-8xl">

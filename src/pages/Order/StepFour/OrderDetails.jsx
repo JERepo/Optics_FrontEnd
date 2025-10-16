@@ -37,6 +37,7 @@ import Modal from "../../../components/ui/Modal";
 import Input from "../../../components/Form/Input";
 import { useSelector } from "react-redux";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
+import OTPScreen from "../../../components/OTPScreen";
 
 // Format number with commas
 const formatNumber = (num) => {
@@ -66,8 +67,6 @@ const DiscountInput = ({
   const error =
     discountTypes[item.OrderDetailId] === 2 &&
     discountInputs[item.OrderDetailId] > 100;
-
-  console.log("type", discountTypes, discountResults);
 
   return (
     <div className="flex flex-col gap-2">
@@ -232,6 +231,7 @@ const OrderDetails = () => {
     customerId,
     setSubStep,
   } = useOrder();
+
   const { user, hasMultipleLocations } = useSelector((state) => state.auth);
   // State for discount management
   const [discountTypes, setDiscountTypes] = useState({});
@@ -249,6 +249,9 @@ const OrderDetails = () => {
   const [offerDetails, setOfferDetails] = useState(null);
   const [showOfferWarning, setShowOfferWarning] = useState(false);
   const [offer4Warning, setOffer4Warning] = useState(false);
+  const [showOtp, setShowOtp] = useState(false);
+  const [otpValue, setOtpValue] = useState(null);
+  const [selectedDiscountItem, setSelectedDiscountItem] = useState(null);
 
   // API queries
   const { data: savedOrders, isLoading: savedOrdersLoading } =
@@ -309,8 +312,12 @@ const OrderDetails = () => {
         : parseFloat(taxPercentage).toFixed(2),
     };
   };
-
+  const resetOtpStates = () => {
+    setOtpValue(null);
+    setSelectedDiscountItem(null);
+  };
   const handleApplyDiscount = async (item) => {
+    setSelectedDiscountItem(item);
     const { OrderDetailId, TaxPercentage, DiscountedSellingPrice, typeid } =
       item;
     const discountType = discountTypes[OrderDetailId];
@@ -325,6 +332,9 @@ const OrderDetails = () => {
       type: discountType === 1 ? "value" : "percent",
       value: input,
     };
+    if (otpValue != null && showOtp) {
+      payload.otp = parseInt(otpValue);
+    }
 
     try {
       const response = await applyDiscount({
@@ -335,6 +345,12 @@ const OrderDetails = () => {
         payload,
       }).unwrap();
 
+      if (response?.otpRequired) {
+        setSelectedDiscountItem(item);
+        setOtpValue(null);
+        setShowOtp(true);
+        return;
+      }
       const newPrice = parseFloat(response?.newPrice) || DiscountedSellingPrice;
       const { gstAmount, taxPercentage } = calculateGST(
         newPrice,
@@ -349,8 +365,16 @@ const OrderDetails = () => {
           taxPercentage,
         },
       }));
+      resetOtpStates();
+      setShowOtp(false);
     } catch (error) {
       console.error("Discount apply error:", error);
+      toast.error(
+        error?.data.message ||
+          error?.message ||
+          "Somehting went wrong while applying discount, please try again later"
+      );
+      setOtpValue(null);
     } finally {
       setApplyingDiscounts((prev) => {
         const newState = { ...prev };
@@ -358,6 +382,9 @@ const OrderDetails = () => {
         return newState;
       });
     }
+  };
+  const handleOtpComplete = (otp) => {
+    setOtpValue(otp);
   };
 
   const handleRemoveDiscount = async (orderDetailId) => {
@@ -683,6 +710,7 @@ const OrderDetails = () => {
       locationId: parseInt(hasMultipleLocations[0]),
       ApplicationUserId: user.Id,
     };
+
     try {
       const res = await applyOffer({ payload }).unwrap();
       setOfferDetails(res?.data);
@@ -691,6 +719,11 @@ const OrderDetails = () => {
       setOfferCode("");
     } catch (error) {
       console.log(error);
+      toast.error(
+        error?.data.message ||
+          error?.message ||
+          "Somehting went wrong while applying discount, please try again later"
+      );
     } finally {
       setShowOfferWarning(false);
       setOfferCode("");
@@ -698,7 +731,9 @@ const OrderDetails = () => {
   };
 
   const handleOfferCodeSubmit = async (e) => {
-    e.preventDefault();
+    if (!showOtp) {
+      e.preventDefault();
+    }
     if (!offerCode) {
       toast.error("Please Enter the OfferCode");
       return;
@@ -711,9 +746,17 @@ const OrderDetails = () => {
       locationId: parseInt(hasMultipleLocations[0]),
       ApplicationUserId: user.Id,
     };
+    if (otpValue && showOtp) {
+      payload.otp = otpValue;
+    }
     try {
       const res = await applyOffer({ payload }).unwrap();
-
+      if (res?.otpRequired) {
+        setSelectedDiscountItem(orderDetails);
+        setOtpValue(null);
+        setShowOtp(true);
+        return;
+      }
       if (res?.warning) {
         setOfferDetails(res);
         setShowOfferWarning(true);
@@ -725,13 +768,17 @@ const OrderDetails = () => {
         toast.success("Offer applied successfully");
         setOfferCode("");
       }
+      resetOtpStates();
+      setShowOtp(false);
     } catch (error) {
       console.log(error);
       toast.error(
         error?.data?.message || "No Offer Applicable on this product"
       );
       setOfferOpen(false);
-      setOfferCode("");
+      if (!showOtp) {
+        setOfferCode("");
+      }
     }
   };
 
@@ -768,7 +815,9 @@ const OrderDetails = () => {
     } catch (error) {
       console.log(error);
       toast.error(
-        error?.data?.message || "No Offer Applicable on this product"
+        error?.data?.message ||
+          error?.messgae ||
+          "No Offer Applicable on this product"
       );
       setOffer4(false);
       setOfferCode("");
@@ -799,10 +848,17 @@ const OrderDetails = () => {
       totalOrderValue: parseFloat(totalAmount),
       ApplicationUserId: user.Id,
     };
-
+    if (otpValue && showOtp) {
+      payload.otp = otpValue;
+    }
     try {
       const res = await applyOffer4({ payload }).unwrap();
-
+      if (res?.otpRequired) {
+        setSelectedDiscountItem({ isType4: true }); // Flag for type 4
+        setOtpValue(null);
+        setShowOtp(true);
+        return;
+      }
       if (res?.warning) {
         setOfferDetails(res);
         setShowOfferWarning(true);
@@ -814,6 +870,8 @@ const OrderDetails = () => {
         toast.success("Offer applied successfully");
         setOfferCode("");
       }
+      resetOtpStates();
+      setShowOtp(false);
     } catch (error) {
       console.log(error);
       toast.error(
@@ -823,12 +881,25 @@ const OrderDetails = () => {
       setOfferCode("");
     }
   };
+const getOtpModalTitle = () => {
+  if (selectedDiscountItem?.isType4) {
+    return "Secure Verification for Order-Level Offer Approval";
+  } 
+  
+  // If offer-related (has an offerCode or is manually opened from offer modal)
+  if (orderDetails && selectedDiscountItem?.OrderDetailId === orderDetails?.OrderDetailId && orderDetails?.offer) {
+    return "Secure Verification for Item-Level Offer Approval";
+  }
+
+  // Default to discount
+  return "Secure Verification for Discount Approval";
+};
+
 
   const offerType4ValueCheck = savedOrders?.reduce(
     (sum, item) => sum + parseFloat(item.DiscountValue),
     0
   );
-  console.log(customerId);
   return (
     <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-md overflow-hidden">
@@ -1104,6 +1175,63 @@ const OrderDetails = () => {
                   </div> */}
                 </div>
               )}
+            </div>
+          </Modal>
+          <Modal
+            isOpen={showOtp}
+            onClose={() => {
+              resetOtpStates();
+              setShowOtp(false);
+            }}
+          >
+            <OTPScreen
+              length={6}
+              onComplete={handleOtpComplete}
+              autoFocus={true}
+              // disabled={isLoading}
+              type="number"
+              placeholder="*"
+              className="mb-6"
+              title={getOtpModalTitle()}
+              showClear={true}
+            />
+
+            <div className="grid grid-cols-2 w-full gap-5">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowOtp(false);
+                  setOtpValue(null);
+                  setSelectedDiscountItem(null);
+                }}
+              >
+                Clear & Close
+              </Button>
+              <Button
+                isLoading={
+                  !!applyingDiscounts[selectedDiscountItem?.OrderDetailId] ||
+                  isOfferApplying ||
+                  isOffer4Applying
+                }
+                onClick={() => {
+                  // setShowOtp(false);
+                  if (selectedDiscountItem?.OrderDetailId) {
+                    // Discount or type 3 retry
+                    if (
+                      selectedDiscountItem.OrderDetailId ===
+                      orderDetails?.OrderDetailId
+                    ) {
+                      handleOfferCodeSubmit();
+                    } else {
+                      handleApplyDiscount(selectedDiscountItem);
+                    }
+                  } else if (selectedDiscountItem?.isType4) {
+                    handleOfferCodeSubmit4();
+                  }
+                }}
+              >
+                Submit
+              </Button>
             </div>
           </Modal>
           <Modal

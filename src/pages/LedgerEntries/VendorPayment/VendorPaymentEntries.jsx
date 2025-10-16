@@ -245,8 +245,12 @@ const VendorPaymentEntries = ({
       companyId: parseInt(hasMultipleLocations[0]),
       CreatedBy: user.Id,
       vendorId: selectedPatient?.Id,
-      totalAmount: totalValue,
-      totalAmountToPay: amountToPay,
+      totalAmount: amountToPay, //totalValue
+      totalAmountToPay: fullPaymentDetails?.reduce(
+        (sum, item) => sum + parseFloat(item.Amount),
+        0
+      ),
+
       remark: "Advance collected from Vendor payment",
       payments: preparePaymentsStructure(),
       entries: items.map((item) => {

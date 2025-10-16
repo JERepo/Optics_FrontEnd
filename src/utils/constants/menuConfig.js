@@ -182,7 +182,6 @@ export const menuItems = [
         module: "Location-setting",
         path: "/location-settings",
       },
-      
     ],
   },
 
@@ -394,11 +393,17 @@ export const menuItems = [
         module: "stout-report",
         icon: IoConstructOutline, // Suggests building/setup
       },
-       {
+      {
         name: "Loyalty Summary",
         icon: IoConstructOutline,
         module: "loyalty-summary",
         path: "/loyalty-summary",
+      },
+      {
+        name: "Stock Ageing Report",
+        icon: IoConstructOutline,
+        module: "Stock-Ageing",
+        path: "/stock-ageing-report",
       },
     ],
   },
@@ -426,11 +431,11 @@ export const menuItems = [
         module: "Customer-Refund",
         path: "/customer-refund",
       },
-        {
+      {
         name: "Vendor Payment",
         icon: IoConstructOutline,
         module: "Vendor-Payment",
-        path: "/vendor-payment/create",
+        path: "/vendor-payment",
       },
     ],
   },

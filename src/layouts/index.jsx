@@ -115,6 +115,8 @@ import STINReport from "../pages/Reports/STINReport";
 import STOUTReport from "../pages/Reports/STOUTReport";
 import OfferViewPage from "../pages/Offer/MainPage/OfferViewPage";
 import VendorPayment from "../pages/LedgerEntries/VendorPayment/VendorPayment";
+import StockAgeingReport from "../pages/Reports/StockAgeingReport";
+import VendorPaymentList from "../pages/LedgerEntries/VendorPayment/VendorPaymentList";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -963,6 +965,10 @@ export const router = createBrowserRouter([
         element: <CustomerPaymentView />,
       },
       {
+        path: "vendor-payment",
+        element: <VendorPaymentList />,
+      },
+      {
         path : "vendor-payment/create",
         element : <VendorPayment />
       },
@@ -1005,6 +1011,10 @@ export const router = createBrowserRouter([
       {
         path: "stout-report",
         element: <STOUTReport />,
+      },
+       {
+        path: "stock-ageing-report",
+        element: <StockAgeingReport />,
       },
       {
         path: "contact-lens-master",

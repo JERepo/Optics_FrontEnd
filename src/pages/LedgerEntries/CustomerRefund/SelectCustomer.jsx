@@ -95,7 +95,9 @@ const SelectCustomer = () => {
   } = useGetAllCustomersQuery();
 
   const { data: contactResp, refetch: refetchPatient } =
-    useGetCustomerContactDetailsQuery({companyId :parseInt(hasMultipleLocations[0])});
+    useGetCustomerContactDetailsQuery({
+      companyId: parseInt(hasMultipleLocations[0]),
+    });
   const [
     getAdvanceAmount,
     { data: advanceData, isFetching: isAdvanceFetching },
@@ -556,13 +558,13 @@ const SelectCustomer = () => {
           <div>
             <div className="mb-6 pb-4 border-b border-gray-200">
               <span className="text-lg font-medium text-gray-800">
-                Step 1: Select Customer
+                Select Patient
               </span>
             </div>
 
             {/* Content Title */}
             <div className="text-xl font-semibold text-gray-800 mb-5">
-              Customer Information
+              Patient Information
             </div>
 
             {/* Search and Actions Container */}
@@ -608,8 +610,8 @@ const SelectCustomer = () => {
                 <Table
                   columns={[
                     "S.No",
-                    "Customer name",
-                    "customer Mobile no",
+                    "Patient name",
+                    "Patient Mobile no",
                     "Action",
                   ]}
                   data={paginatedCustomers}
@@ -619,10 +621,10 @@ const SelectCustomer = () => {
                         {startIndex + index + 1}
                       </TableCell>
                       <TableCell className="px-4 py-3 text-sm">
-                        {customer.CustomerName}
+                        {customer.CustomerContactDetails[0]?.CustomerName}
                       </TableCell>
                       <TableCell className="px-4 py-3 text-sm">
-                        {customer?.MobNumber}
+                        {customer.CustomerContactDetails[0]?.MobNumber}
                       </TableCell>
                       <TableCell className="px-4 py-3 text-sm">
                         <Button
