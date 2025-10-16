@@ -42,7 +42,7 @@ export const grnApi = createApi({
             })
         }),
         getAllGRNmain: builder.query({
-            query: ({companyId}) => ({
+            query: ({ companyId }) => ({
                 url: `/api/v1/grn/get-all-grn?companyId=${companyId}`,
                 method: 'GET'
             })
@@ -93,7 +93,7 @@ export const grnApi = createApi({
             })
         }),
         getAccessoryByDetailId: builder.query({
-            query: ({ accessoryDetailId, locationId, vendorId, productType}) => ({
+            query: ({ accessoryDetailId, locationId, vendorId, productType }) => ({
                 url: `/api/v1/grn/get-accessory-bydetailId?accessoryDetailId=${accessoryDetailId}&locationId=${locationId}&vendorId=${vendorId ?? null}&productType=${productType ?? null}`,
                 method: 'GET'
             })
@@ -124,11 +124,39 @@ export const grnApi = createApi({
             })
         }),
         deleteGRNDetail: builder.query({
-            query: ({grnDetailId}) => ({
+            query: ({ grnDetailId }) => ({
                 url: `/api/v1/grn/delete-grn-details?grnDetailId=${grnDetailId}`,
                 method: 'GET'
             })
-        })
+        }),
+        bulkUploadFrame: builder.mutation({
+            query: ({ formData, applicationUserId, grnMainId }) => ({
+                url: `/api/v1/grn/frame-bulk-upload?ApplicationUserId=${applicationUserId}&grnMainId=${grnMainId}`,
+                method: 'POST',
+                body: formData
+            })
+        }),
+        bulkUploadAccessory: builder.mutation({
+            query: ({ formData, applicationUserId, grnMainId }) => ({
+                url: `/api/v1/grn/accessory-bulk-upload?ApplicationUserId=${applicationUserId}&grnMainId=${grnMainId}`,
+                method: 'POST',
+                body: formData
+            })
+        }),
+        bulkUploadContactLens: builder.mutation({
+            query: ({ formData, applicationUserId, grnMainId }) => ({
+                url: `/api/v1/grn/cl-bulk-upload?ApplicationUserId=${applicationUserId}&grnMainId=${grnMainId}`,
+                method: 'POST',
+                body: formData
+            })
+        }),
+        downloadCLSampleExcel: builder.query({
+            query: () => ({
+                url: `/api/v1/grn/contactlens-sample-excel`,
+                method: 'GET',
+                responseHandler: (response) => response.blob(),
+            })
+        }),
     })
 });
 
@@ -154,5 +182,9 @@ export const {
     useLazyCheckGRNQtyValidationQuery,
     useLazyGetCLByBarcodeQuery,
     useLazyGetCLByDetailIdQuery,
-    useLazyDeleteGRNDetailQuery
+    useLazyDeleteGRNDetailQuery,
+    useBulkUploadFrameMutation,
+    useBulkUploadAccessoryMutation,
+    useBulkUploadContactLensMutation,
+    useLazyDownloadCLSampleExcelQuery
 } = grnApi;

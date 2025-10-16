@@ -1,8 +1,8 @@
 import { useGRN } from "../../features/GRNContext";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, SearchIcon, Trash2 } from "lucide-react";
+import { ArrowLeft, CheckCircle, FileText, Plus, RefreshCcw, SearchIcon, Trash2, Upload } from "lucide-react";
 import { Autocomplete, TextField } from "@mui/material";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import {
     useLazyGetByBarCodeQuery,
@@ -15,12 +15,14 @@ import {
     useGetOrderddMutation
 } from "../../api/orderApi";
 import {
+    useLazyDownloadAccessorySampleExcelQuery,
+    useLazyDownloadFrameSampleExcelQuery,
     useLazyGetOlByBarcodeQuery
 } from "../../api/purchaseOrderApi";
 import { Table, TableRow, TableCell } from "../../components/Table";
 import toast from "react-hot-toast";
 import { useGetAllBrandsQuery } from "../../api/brandsApi";
-import { useCheckSupplierOrderNoQuery, useGetOrderDetailsByorderDetasilIdMutation, useSaveGRNDetailsMutation } from "../../api/grnApi";
+import { useBulkUploadAccessoryMutation, useBulkUploadContactLensMutation, useBulkUploadFrameMutation, useCheckSupplierOrderNoQuery, useGetOrderDetailsByorderDetasilIdMutation, useLazyDownloadCLSampleExcelQuery, useSaveGRNDetailsMutation } from "../../api/grnApi";
 import { GRNCLSearchTable, GRNSearchTable } from "./GRNSearchTables";
 import { GRNScannedTable } from "./GRNScannedTables";
 import { useGetContactLensDetailsMutation } from "../../api/clBatchDetailsApi";
@@ -92,12 +94,22 @@ export default function GRNStep3() {
     const [error, setError] = useState({
         lensSupplierOrderNo: null
     });
+    const fileInputRef = useRef(null);
+    const [selectedFile, setSelectedFile] = useState(null);
 
     // RTK Mutation Hooks
     const [SaveGRN, { isLoading: isSavingGRN }] = useSaveGRNDetailsMutation();
     const [getPowerDetails, { isLoading: isPowerDetailsLoading }] = useGetPowerDetailsMutation();
     const [getOrderDD, { isLoading: isGetOrderDDLoading }] = useGetOrderddMutation();
     const [getGRNOrderDetails] = useGetOrderDetailsByorderDetasilIdMutation();
+    const [downloadFrameSample] = useLazyDownloadFrameSampleExcelQuery();
+    const [downloadAccessorySample] = useLazyDownloadAccessorySampleExcelQuery();
+    const [downloadCLSample] = useLazyDownloadCLSampleExcelQuery();
+    const [uploadFrameFile, { isLoading: isFrameFileUploading }] = useBulkUploadFrameMutation();
+    const [uploadAccessoryFile, { isLoading: isAccessoryFileUploading }] = useBulkUploadAccessoryMutation();
+    const [uploadContactLensFile, { isLoading: isContactLensFileUploading }] = useBulkUploadContactLensMutation();
+
+
     // RTK Query Hooks
     const [triggerBarcodeQuery, {
         data: frameData,
@@ -1061,6 +1073,109 @@ export default function GRNStep3() {
         setErrors({});
     };
 
+
+    const handleFileSelect = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        setSelectedFile(file);
+        toast.success("File selected successfully");
+    };
+
+    const downloadFile = (blob, filename) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    };
+
+    const handleDownloadSampleExcel = async (selectedOption) => {
+        try {
+            if (selectedOption === "Frame/Sunglass") {
+                const blob = await downloadFrameSample().unwrap();
+                downloadFile(blob, "SampleFrameBulkUpload.xlsx");
+            } else if (selectedOption === "Accessories") {
+                const blob = await downloadAccessorySample().unwrap();
+                downloadFile(blob, "SampleAccessoryBulkUpload.xlsx");
+            } else if (selectedOption === "Contact Lens") {
+                const blob = await downloadCLSample().unwrap();
+                downloadFile(blob, "SampleCLBulkUpload.xlsx");
+            }
+            toast.success("Sample excel downloaded successfully.");
+        } catch (error) {
+            console.error('Failed to download sample excel:', error);
+            toast.error(error.data?.message || error.message || "Failed to download sample excel");
+        }
+    }
+
+    const handleUpload = async (selectedOption) => {
+        if (!selectedFile) {
+            toast.error("Please select a file!");
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append("excelFile", selectedFile);
+            let res;
+            if (selectedOption === "Frame/Sunglass") {
+                res = await uploadFrameFile({
+                    formData: formData,
+                    applicationUserId: user?.Id,
+                    grnMainId: formState.grnMainId
+                }).unwrap();
+            } else if (selectedOption === "Accessories") {
+                res = await uploadAccessoryFile({
+                    formData: formData,
+                    applicationUserId: user?.Id,
+                    grnMainId: formState.grnMainId
+                }).unwrap();
+            } else if (selectedOption === "Contact Lens") {
+                res = await uploadContactLensFile({
+                    formData: formData,
+                    applicationUserId: user?.Id,
+                    grnMainId: formState.grnMainId
+                }).unwrap();
+            }
+
+
+            console.log("response", res);
+
+            if (res?.status === "success") {
+                // Generic success
+                toast.success(res?.data?.message || res?.message || "File uploaded successfully!");
+                handleClearFile();
+
+                updateStep1Data({
+                    GrnMainId: formState.grnMainId || null,
+                });
+                nextStep();
+            }
+
+            // // Clear file only if there are no errors or if user wants to upload a new file
+            // if (res?.data?.failedRows === 0) {
+            //     handleClearFile();
+            // }
+
+        } catch (error) {
+            console.error("Upload error:", error);
+            toast.error(error?.data?.error || error?.data?.message || "Upload failed");
+        }
+    };
+
+
+    const handleClearFile = () => {
+        setSelectedFile(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    };
+
+
     return (
         <>
             <motion.div
@@ -1106,6 +1221,17 @@ export default function GRNStep3() {
                                 />
                                 <span className="text-gray-700 font-medium">Separate Entry</span>
                             </label>
+                            <label className="flex items-center space-x-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="EntryType"
+                                    value="bulk"
+                                    checked={formState.EntryType === "bulk"}
+                                    onChange={handleInputChange}
+                                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <span className="text-gray-700 font-medium">Bulk Process</span>
+                            </label>
                         </div>
                     </div>
                 ) : (
@@ -1137,22 +1263,173 @@ export default function GRNStep3() {
                     </div>
                 )}
 
-                {(!showSearchInputs && formState.productType !== "Lens") ? (
-                    <div className="flex-1 flex items-center gap-5">
-                        <label htmlFor="barcode" className="block text-sm font-medium text-gray-700 whitespace-nowrap">
-                            Enter Barcode
-                        </label>
-                        <div className="relative flex-1">
-                            <input
-                                id="barcode"
-                                name="barcode"
-                                type="text"
-                                autoFocus
-                                value={formState.barcode || ''}
-                                onChange={handleInputChange}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        e.preventDefault();
+                {formState.EntryType === "bulk" ? (
+                    <div>
+                        <motion.div
+                            initial={{ y: -20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: -20, opacity: 0 }}
+                            transition={{ duration: 0.5, delay: 0.2 }}
+                            className="w-full"
+                        >
+                            <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+                                {/* Top info banner */}
+                                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-8 py-4 border-b border-gray-200">
+                                    <p className="text-sm text-gray-700">
+                                        <span className="font-semibold text-gray-800">Tip:</span> Download the sample file to see the correct format for your bulk upload
+                                    </p>
+                                </div>
+
+                                {/* Content Section */}
+                                <div className="p-8">
+                                    {/* Single Row Layout */}
+                                    <div className="flex flex-col justify-between sm:flex-row items-stretch sm:items-center gap-4">
+                                        {/* Download Sample Button */}
+                                        <motion.button
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            onClick={() => handleDownloadSampleExcel(formState.productType)}
+                                            // disabled={isSaving}
+                                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50 flex items-center justify-center flex-1 sm:flex-none"
+                                        >
+                                            {/* {isSaving ? (
+                                                                                <>
+                                                                                    <RefreshCw className="w-4 h-4 animate-spin" />
+                                                                                    <span>Downloading...</span>
+                                                                                </>
+                                                                            ) : ( */}
+                                            <>
+                                                <FileText className="w-4 h-4" />
+                                                <span className="text-white">Download Sample</span>
+                                            </>
+                                            {/* )} */}
+                                        </motion.button>
+
+                                        {/* File Upload Input */}
+                                        <input
+                                            type="file"
+                                            ref={fileInputRef}
+                                            onChange={handleFileSelect}
+                                            accept=".xlsx,.xls,.csv"
+                                            className="hidden"
+                                            id="file-upload"
+                                        />
+                                        <motion.label
+                                            htmlFor="file-upload"
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            className="px-6 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors border-2 border-dashed border-gray-300 hover:border-gray-400 cursor-pointer flex items-center justify-center gap-2 font-semibold text-gray-700 whitespace-nowrap"
+                                        >
+                                            <Upload className="w-4 h-4" />
+                                            <span>Select File</span>
+                                        </motion.label>
+
+                                        <div className="flex gap-4">
+                                            {/* Upload Button */}
+                                            <motion.button
+                                                // whileHover={{ scale: 1.02 }}
+                                                // whileTap={{ scale: 0.98 }}
+                                                onClick={() => handleUpload(formState.productType)}
+                                                // disabled={!selectedFile || isFrameFileUploading || isAccessoryFileUploading || isContactLensFileUploading}
+                                                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50 flex items-center justify-center flex-1 sm:flex-none"
+                                            >
+                                                {/* {(isFrameFileUploading || isAccessoryFileUploading || isContactLensFileUploading) ? (
+                                                    <>
+                                                        <RefreshCcw className="w-4 h-4 animate-spin" />
+                                                        <span className="text-white">Uploading...</span>
+                                                    </>
+                                                ) : ( */}
+                                                <>
+                                                    <Upload className="w-4 h-4" />
+                                                    <span className="text-white">Upload</span>
+                                                </>
+                                                {/* )} */}
+                                            </motion.button>
+                                            {/* Clear Button */}
+                                            {selectedFile && (
+                                                <motion.button
+                                                    initial={{ scale: 0.9, opacity: 0 }}
+                                                    animate={{ scale: 1, opacity: 1 }}
+                                                    exit={{ scale: 0.9, opacity: 0 }}
+                                                    onClick={handleClearFile}
+                                                    className="px-4 py-2 rounded-lg border-2 border-red-300 text-red-600 hover:bg-red-50 transition-colors font-semibold whitespace-nowrap"
+                                                >
+                                                    Clear
+                                                </motion.button>
+                                            )}
+                                        </div>
+
+                                    </div>
+
+                                    {/* Selected file display below */}
+                                    {selectedFile && (
+                                        <motion.div
+                                            initial={{ y: 10, opacity: 0 }}
+                                            animate={{ y: 0, opacity: 1 }}
+                                            exit={{ y: -10, opacity: 0 }}
+                                            className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between"
+                                        >
+                                            <div className="flex items-center gap-3 flex-1">
+                                                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                                                <div className="min-w-0">
+                                                    <p className="font-semibold text-gray-800 truncate">{selectedFile.name}</p>
+                                                    <p className="text-xs text-gray-600">
+                                                        {(selectedFile.size / 1024).toFixed(2)} KB
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                ) : (
+                    <div>
+                        {(!showSearchInputs && formState.productType !== "Lens") ? (
+                            <div className="flex-1 flex items-center gap-5">
+                                <label htmlFor="barcode" className="block text-sm font-medium text-gray-700 whitespace-nowrap">
+                                    Enter Barcode
+                                </label>
+                                <div className="relative flex-1">
+                                    <input
+                                        id="barcode"
+                                        name="barcode"
+                                        type="text"
+                                        autoFocus
+                                        value={formState.barcode || ''}
+                                        onChange={handleInputChange}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                if (formState.productType === "Frame/Sunglass") {
+                                                    handleSearchByBarcode(1);
+                                                } else if (formState.productType === "Lens") {
+                                                    handleSearchByBarcode(2);
+                                                } else if (formState.productType === "Accessories") {
+                                                    handleSearchByBarcode(3);
+                                                } else if (formState.productType === "Contact Lens") {
+                                                    handleSearchByBarcode(4);
+                                                }
+                                            }
+                                        }}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060] pr-10"
+                                        placeholder="Scan or enter barcode..."
+                                        aria-label="Barcode input"
+                                        disabled={isLoading}
+                                    />
+                                    {isLoading && (
+                                        <div className="absolute right-3 top-2.5">
+                                            <svg className="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <button
+                                    onClick={() => {
                                         if (formState.productType === "Frame/Sunglass") {
                                             handleSearchByBarcode(1);
                                         } else if (formState.productType === "Lens") {
@@ -1162,257 +1439,232 @@ export default function GRNStep3() {
                                         } else if (formState.productType === "Contact Lens") {
                                             handleSearchByBarcode(4);
                                         }
-                                    }
-                                }}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060] pr-10"
-                                placeholder="Scan or enter barcode..."
-                                aria-label="Barcode input"
-                                disabled={isLoading}
-                            />
-                            {isLoading && (
-                                <div className="absolute right-3 top-2.5">
-                                    <svg className="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                </div>
-                            )}
-                        </div>
-
-                        <button
-                            onClick={() => {
-                                if (formState.productType === "Frame/Sunglass") {
-                                    handleSearchByBarcode(1);
-                                } else if (formState.productType === "Lens") {
-                                    handleSearchByBarcode(2);
-                                } else if (formState.productType === "Accessories") {
-                                    handleSearchByBarcode(3);
-                                } else if (formState.productType === "Contact Lens") {
-                                    handleSearchByBarcode(4);
-                                }
-                            }}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 whitespace-nowrap flex items-center"
-                            disabled={!formState.barcode || isLoading}
-                        >
-                            {isLoading ? (
-                                <>
-                                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    Adding...
-                                </>
-                            ) : (
-                                'Add'
-                            )}
-                        </button>
-                        <button
-                            onClick={() => setShowSearchInputs(true)}
-                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors whitespace-nowrap flex items-center"
-                        >
-                            <SearchIcon className="h-4 w-4 mr-1" />
-                            Search
-                        </button>
-                    </div>
-                ) : (showSearchInputs && formState.productType !== "Lens") ? (
-                    <div className="flex flex-col md:flex-row items-start md:items-center gap-4 flex-wrap">
-                        <div className="flex-1 min-w-[200px]">
-                            <Autocomplete
-                                options={filteredBrands}
-                                getOptionLabel={(option) => option.BrandName}
-                                onInputChange={(event, value) => {
-                                    setBrandInput(value);
-                                }}
-                                onChange={(event, newValue) => {
-                                    if (newValue) {
-                                        setBrandInput(newValue.BrandName);
-                                        setBrandId(newValue.Id);
-                                    } else {
-                                        setBrandInput("");
-                                        setBrandId(null);
-                                    }
-                                }}
-                                value={
-                                    filteredBrands.find((b) => b.BrandName === brandInput) ||
-                                    null
-                                }
-                                isOptionEqualToValue={(option, value) =>
-                                    option.Id === value.Id
-                                }
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        label="Search Brand"
-                                        variant="outlined"
-                                        fullWidth
+                                    }}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 whitespace-nowrap flex items-center"
+                                    disabled={!formState.barcode || isLoading}
+                                >
+                                    {isLoading ? (
+                                        <>
+                                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Adding...
+                                        </>
+                                    ) : (
+                                        'Add'
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => setShowSearchInputs(true)}
+                                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors whitespace-nowrap flex items-center"
+                                >
+                                    <SearchIcon className="h-4 w-4 mr-1" />
+                                    Search
+                                </button>
+                            </div>
+                        ) : (showSearchInputs && formState.productType !== "Lens") ? (
+                            <div className="flex flex-col md:flex-row items-start md:items-center gap-4 flex-wrap">
+                                <div className="flex-1 min-w-[200px]">
+                                    <Autocomplete
+                                        options={filteredBrands}
+                                        getOptionLabel={(option) => option.BrandName}
+                                        onInputChange={(event, value) => {
+                                            setBrandInput(value);
+                                        }}
+                                        onChange={(event, newValue) => {
+                                            if (newValue) {
+                                                setBrandInput(newValue.BrandName);
+                                                setBrandId(newValue.Id);
+                                            } else {
+                                                setBrandInput("");
+                                                setBrandId(null);
+                                            }
+                                        }}
+                                        value={
+                                            filteredBrands.find((b) => b.BrandName === brandInput) ||
+                                            null
+                                        }
+                                        isOptionEqualToValue={(option, value) =>
+                                            option.Id === value.Id
+                                        }
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                label="Search Brand"
+                                                variant="outlined"
+                                                fullWidth
+                                            />
+                                        )}
                                     />
-                                )}
-                            />
-                        </div>
+                                </div>
 
-                        {formState.productType === "Frame/Sunglass" && (
-                            <div className="flex-1 min-w-[250px]">
-                                <input
-                                    id="model"
-                                    name="model"
-                                    type="text"
-                                    autoComplete="off"
-                                    value={modelNo}
-                                    onChange={(e) => setModelNo(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060] pr-10"
-                                    placeholder="Enter model no."
-                                />
-                            </div>
-                        )}
-
-                        {formState.productType === "Accessories" && (
-                            <div className="flex-1 min-w-[250px]">
-                                <input
-                                    id="product"
-                                    name="productName"
-                                    type="text"
-                                    autoComplete="off"
-                                    value={productName}
-                                    onChange={(e) => setProductName(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060] pr-10"
-                                    placeholder="Enter product name"
-                                />
-                            </div>
-                        )}
-
-                        {formState.productType === "Contact Lens" && (
-                            <>
-                                {brandId && (
-                                    <div className="flex-1 min-w-[300px]">
-                                        <Autocomplete
-                                            options={modalities?.data || []}
-                                            getOptionLabel={(option) => option.ModalityName || ""}
-                                            onInputChange={(event, value) => {
-                                                setModalityInput(value);
-                                            }}
-                                            onChange={(event, newValue) => {
-                                                if (newValue) {
-                                                    setModalityInput(newValue.ModalityName);
-                                                    setModalityId(newValue.Id);
-                                                }
-                                            }}
-                                            value={
-                                                modalities?.data.find((b) => b.Id === modalityId) ||
-                                                null
-                                            }
-                                            isOptionEqualToValue={(option, value) =>
-                                                option.Id === value.Id
-                                            }
-                                            renderInput={(params) => (
-                                                <TextField
-                                                    {...params}
-                                                    label="Search Modality"
-                                                    variant="outlined"
-                                                    fullWidth
-                                                />
-                                            )}
+                                {formState.productType === "Frame/Sunglass" && (
+                                    <div className="flex-1 min-w-[250px]">
+                                        <input
+                                            id="model"
+                                            name="model"
+                                            type="text"
+                                            autoComplete="off"
+                                            value={modelNo}
+                                            onChange={(e) => setModelNo(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060] pr-10"
+                                            placeholder="Enter model no."
                                         />
                                     </div>
                                 )}
 
-                                {modalityId && productData && (
-                                    <div className="flex-1 min-w-[300px]">
-                                        <Autocomplete
-                                            options={productData?.data?.data || []}
-                                            getOptionLabel={(option) => option.ProductName || ""}
-                                            onInputChange={(event, value) => {
-                                                setProductInput(value);
-                                            }}
-                                            onChange={(event, newValue) => {
-                                                if (newValue) {
-                                                    setProductInput(newValue.ProductName);
-                                                    setProductId(newValue.Id);
-                                                }
-                                            }}
-                                            value={
-                                                productData?.data?.data.find((b) => b.Id === productId) ||
-                                                null
-                                            }
-                                            isOptionEqualToValue={(option, value) =>
-                                                option.Id === value.Id
-                                            }
-                                            renderInput={(params) => (
-                                                <TextField
-                                                    {...params}
-                                                    label="Search Product"
-                                                    variant="outlined"
-                                                    fullWidth
-                                                />
-                                            )}
+                                {formState.productType === "Accessories" && (
+                                    <div className="flex-1 min-w-[250px]">
+                                        <input
+                                            id="product"
+                                            name="productName"
+                                            type="text"
+                                            autoComplete="off"
+                                            value={productName}
+                                            onChange={(e) => setProductName(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000060] pr-10"
+                                            placeholder="Enter product name"
                                         />
                                     </div>
                                 )}
-                            </>
-                        )}
 
-                        <button
-                            onClick={() => {
-                                if (formState.productType === "Frame/Sunglass") handleDetailSearch(1)
-                                else if (formState.productType === "Accessories") handleDetailSearch(2)
-                            }}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap flex items-center justify-center w-full md:w-auto"
-                            disabled={!brandId || (formState.productType === "Frame/Sunglass" && !modelNo) || (formState.productType === "Accessories" && !productName)}
-                        >
-                            <SearchIcon className="h-4 w-4 mr-1" />
-                            Search
-                        </button>
+                                {formState.productType === "Contact Lens" && (
+                                    <>
+                                        {brandId && (
+                                            <div className="flex-1 min-w-[300px]">
+                                                <Autocomplete
+                                                    options={modalities?.data || []}
+                                                    getOptionLabel={(option) => option.ModalityName || ""}
+                                                    onInputChange={(event, value) => {
+                                                        setModalityInput(value);
+                                                    }}
+                                                    onChange={(event, newValue) => {
+                                                        if (newValue) {
+                                                            setModalityInput(newValue.ModalityName);
+                                                            setModalityId(newValue.Id);
+                                                        }
+                                                    }}
+                                                    value={
+                                                        modalities?.data.find((b) => b.Id === modalityId) ||
+                                                        null
+                                                    }
+                                                    isOptionEqualToValue={(option, value) =>
+                                                        option.Id === value.Id
+                                                    }
+                                                    renderInput={(params) => (
+                                                        <TextField
+                                                            {...params}
+                                                            label="Search Modality"
+                                                            variant="outlined"
+                                                            fullWidth
+                                                        />
+                                                    )}
+                                                />
+                                            </div>
+                                        )}
 
-                        <button
-                            onClick={() => {
-                                setShowSearchInputs(false);
-                                setBrandId(null);
-                                setBrandInput("");
-                                setModalityId(null);
-                                setModalityInput("");
-                                setProductId(null);
-                                setProductInput("");
-                                setProductName("");
-                            }}
-                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors whitespace-nowrap flex items-center justify-center w-full md:w-auto"
-                        >
-                            Back to Barcode
-                        </button>
-                    </div>
-                ) : (!showSearchInputs && formState.productType === "Lens") ? (
-                    <div className="flex-1 min-w-[200px]">
-                        <Autocomplete
-                            options={lensDD}
-                            getOptionLabel={(option) => option.orderNoDDCl}
-                            onInputChange={(event, value) => {
-                                setlensDDInput(value);
-                            }}
-                            onChange={(event, newValue) => {
-                                if (newValue) {
-                                    setlensDDInput(newValue.orderNoDDCl);
-                                    setSelectedLensDD(newValue);
-                                } else {
-                                    setlensDDInput("");
-                                    setSelectedLensDD(null);
-                                }
-                            }}
-                            value={
-                                lensDD.find((b) => b.orderNoDDCl === lensDDInput) ||
-                                null
-                            }
-                            isOptionEqualToValue={(option, value) =>
-                                option.orderNoDDCl === value.orderNoDDCl
-                            }
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    label="Search Order no."
-                                    variant="outlined"
-                                    fullWidth
+                                        {modalityId && productData && (
+                                            <div className="flex-1 min-w-[300px]">
+                                                <Autocomplete
+                                                    options={productData?.data?.data || []}
+                                                    getOptionLabel={(option) => option.ProductName || ""}
+                                                    onInputChange={(event, value) => {
+                                                        setProductInput(value);
+                                                    }}
+                                                    onChange={(event, newValue) => {
+                                                        if (newValue) {
+                                                            setProductInput(newValue.ProductName);
+                                                            setProductId(newValue.Id);
+                                                        }
+                                                    }}
+                                                    value={
+                                                        productData?.data?.data.find((b) => b.Id === productId) ||
+                                                        null
+                                                    }
+                                                    isOptionEqualToValue={(option, value) =>
+                                                        option.Id === value.Id
+                                                    }
+                                                    renderInput={(params) => (
+                                                        <TextField
+                                                            {...params}
+                                                            label="Search Product"
+                                                            variant="outlined"
+                                                            fullWidth
+                                                        />
+                                                    )}
+                                                />
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+
+                                <button
+                                    onClick={() => {
+                                        if (formState.productType === "Frame/Sunglass") handleDetailSearch(1)
+                                        else if (formState.productType === "Accessories") handleDetailSearch(2)
+                                    }}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap flex items-center justify-center w-full md:w-auto"
+                                    disabled={!brandId || (formState.productType === "Frame/Sunglass" && !modelNo) || (formState.productType === "Accessories" && !productName)}
+                                >
+                                    <SearchIcon className="h-4 w-4 mr-1" />
+                                    Search
+                                </button>
+
+                                <button
+                                    onClick={() => {
+                                        setShowSearchInputs(false);
+                                        setBrandId(null);
+                                        setBrandInput("");
+                                        setModalityId(null);
+                                        setModalityInput("");
+                                        setProductId(null);
+                                        setProductInput("");
+                                        setProductName("");
+                                    }}
+                                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors whitespace-nowrap flex items-center justify-center w-full md:w-auto"
+                                >
+                                    Back to Barcode
+                                </button>
+                            </div>
+                        ) : (!showSearchInputs && formState.productType === "Lens") ? (
+                            <div className="flex-1 min-w-[200px]">
+                                <Autocomplete
+                                    options={lensDD}
+                                    getOptionLabel={(option) => option.orderNoDDCl}
+                                    onInputChange={(event, value) => {
+                                        setlensDDInput(value);
+                                    }}
+                                    onChange={(event, newValue) => {
+                                        if (newValue) {
+                                            setlensDDInput(newValue.orderNoDDCl);
+                                            setSelectedLensDD(newValue);
+                                        } else {
+                                            setlensDDInput("");
+                                            setSelectedLensDD(null);
+                                        }
+                                    }}
+                                    value={
+                                        lensDD.find((b) => b.orderNoDDCl === lensDDInput) ||
+                                        null
+                                    }
+                                    isOptionEqualToValue={(option, value) =>
+                                        option.orderNoDDCl === value.orderNoDDCl
+                                    }
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Search Order no."
+                                            variant="outlined"
+                                            fullWidth
+                                        />
+                                    )}
                                 />
-                            )}
-                        />
+                            </div>
+                        ) : null}
                     </div>
-                ) : null}
+
+                )}
 
                 {console.log("selectedLensDD ---------------- ", selectedLensDD)}
                 {(!showSearchInputs && formState.productType === "Lens" && selectedLensDD) && (
@@ -1806,23 +2058,25 @@ export default function GRNStep3() {
                     </div>
                 )}
 
-                <div className="flex justify-between items-center mt-8">
-                    <button
-                        onClick={handleBack}
-                        className="px-4 py-2 border border-[#000060] text-[#000060] rounded-lg hover:bg-gray-100 transition-colors"
-                    >
-                        Back
-                    </button>
-                    <div className="flex items-center space-x-4">
+                {formState.EntryType !== "bulk" && (
+                    <div className="flex justify-between items-center mt-8">
                         <button
-                            onClick={handleSubmitGRNDetails}
-                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
-                            disabled={formState.productType === "Lens" ? (!formState.lensSupplierOrderNo || !selectedLensDD) : scannedItems.length <= 0}
+                            onClick={handleBack}
+                            className="px-4 py-2 border border-[#000060] text-[#000060] rounded-lg hover:bg-gray-100 transition-colors"
                         >
-                            Save & Next
+                            Back
                         </button>
+                        <div className="flex items-center space-x-4">
+                            <button
+                                onClick={handleSubmitGRNDetails}
+                                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
+                                disabled={formState.productType === "Lens" ? (!formState.lensSupplierOrderNo || !selectedLensDD) : scannedItems.length <= 0}
+                            >
+                                Save & Next
+                            </button>
+                        </div>
                     </div>
-                </div>
+                )}
             </motion.div>
         </>
     );
