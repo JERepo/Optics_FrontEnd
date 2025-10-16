@@ -35,8 +35,8 @@ export const orderApi = createApi({
       providesTags: ["Order", "Patient"],
     }),
     getCustomerContactDetails: builder.query({
-      query: () => ({
-        url: `/api/v1/customer/getdetailsall`,
+      query: ({companyId}) => ({
+        url: `/api/v1/customer/getdetailsall/${companyId}`,
       }),
       providesTags: ["Order", "Patient"],
     }),

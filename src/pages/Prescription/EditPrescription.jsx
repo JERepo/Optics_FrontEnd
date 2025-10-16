@@ -146,7 +146,9 @@ const EditPrescription = () => {
     { data: newCustomerData, isLoading: isNewCustomerLoading },
   ] = useCreateNewCustomerMutation();
   const { data: contactResp, refetch: refetchPatient } =
-    useGetCustomerContactDetailsQuery();
+    useGetCustomerContactDetailsQuery({
+      companyId: parseInt(hasMultipleLocations[0]),
+    });
   const {
     data: customersResp,
     isLoading,
@@ -435,7 +437,7 @@ const EditPrescription = () => {
                 onClick={handleOpenNewCustomer}
                 className="flex items-center gap-2 px-3 py-2 bg-neutral-300 text-neutral-700 rounded-lg text-sm"
               >
-                <FiUserPlus  />
+                <FiUserPlus />
                 <span className="text-neutral-700">New Customer</span>
               </button>
             </div>
