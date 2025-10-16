@@ -139,12 +139,40 @@ export const purchaseOrderApi = createApi({
             })
         }),
         bulkUploadFrame: builder.mutation({
-            query: ({formData, applicationUserId, poMainId}) => ({
+            query: ({ formData, applicationUserId, poMainId }) => ({
                 url: `/api/v1/purchase-order/frame-bulk-upload?ApplicationUserId=${applicationUserId}&poMainId=${poMainId}`,
                 method: 'POST',
                 body: formData
             })
-        })
+        }),
+        downloadAccessorySampleExcel: builder.query({
+            query: () => ({
+                url: `/api/v1/purchase-order/accessory-sample-excel`,
+                method: 'GET',
+                responseHandler: (response) => response.blob(),
+            })
+        }),
+        bulkUploadAccessory: builder.mutation({
+            query: ({ formData, applicationUserId, poMainId }) => ({
+                url: `/api/v1/purchase-order/accessory-bulk-upload?ApplicationUserId=${applicationUserId}&poMainId=${poMainId}`,
+                method: 'POST',
+                body: formData
+            })
+        }),
+        downloadCLSampleExcel: builder.query({
+            query: () => ({
+                url: `/api/v1/purchase-order/contactlens-sample-excel`,
+                method: 'GET',
+                responseHandler: (response) => response.blob(),
+            })
+        }),
+        bulkUploadContactLens: builder.mutation({
+            query: ({ formData, applicationUserId, poMainId }) => ({
+                url: `/api/v1/purchase-order/cl-bulk-upload?ApplicationUserId=${applicationUserId}&poMainId=${poMainId}`,
+                method: 'POST',
+                body: formData
+            })
+        }),
     })
 });
 
@@ -170,4 +198,8 @@ export const {
     useApproveUpdateQtyMutation,
     useLazyDownloadFrameSampleExcelQuery,
     useBulkUploadFrameMutation,
+    useLazyDownloadAccessorySampleExcelQuery,
+    useBulkUploadAccessoryMutation,
+    useLazyDownloadCLSampleExcelQuery,
+    useBulkUploadContactLensMutation
 } = purchaseOrderApi;

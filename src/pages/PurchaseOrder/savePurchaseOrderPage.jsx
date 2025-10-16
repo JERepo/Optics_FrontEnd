@@ -39,7 +39,11 @@ import {
     useGetPOMainMutation,
     useUpdatePOMainDataMutation,
     useLazyDownloadFrameSampleExcelQuery,
-    useBulkUploadFrameMutation
+    useBulkUploadFrameMutation,
+    useLazyDownloadAccessorySampleExcelQuery,
+    useLazyDownloadCLSampleExcelQuery,
+    useBulkUploadAccessoryMutation,
+    useBulkUploadContactLensMutation
 } from "../../api/purchaseOrderApi";
 import { useGetCompanySettingsQuery } from "../../api/companySettingsApi";
 import { useGetCompanyByIdQuery } from "../../api/companiesApi";
@@ -292,7 +296,11 @@ export default function SavePurchaseOrder() {
     const { data: allBrands } = useGetAllBrandsQuery();
 
     const [downloadFrameSample] = useLazyDownloadFrameSampleExcelQuery();
-    const [uploadFile, { isLoading: isFileUploading }] = useBulkUploadFrameMutation();
+    const [downloadAccessorySample] = useLazyDownloadAccessorySampleExcelQuery();
+    const [downloadCLSample] = useLazyDownloadCLSampleExcelQuery();
+    const [uploadFrameFile, { isLoading: isFrameFileUploading }] = useBulkUploadFrameMutation();
+    const [uploadAccessoryFile, { isLoading: isAccessoryFileUploading }] = useBulkUploadAccessoryMutation();
+    const [uploadContactLensFile, { isLoading: isContactLensFileUploading }] = useBulkUploadContactLensMutation();
 
 
     // Filter brand based on the selected option type : Dont dare to change anything 😠
@@ -1948,10 +1956,18 @@ export default function SavePurchaseOrder() {
         window.URL.revokeObjectURL(url);
     };
 
-    const handleDownloadSampleExcel = async () => {
+    const handleDownloadSampleExcel = async (selectedOption) => {
         try {
-            const blob = await downloadFrameSample().unwrap();
-            downloadFile(blob, "SampleFrameBulkUpload.xlsx");
+            if (selectedOption === "Frame/Sunglass") {
+                const blob = await downloadFrameSample().unwrap();
+                downloadFile(blob, "SampleFrameBulkUpload.xlsx");
+            } else if (selectedOption === "Accessories") {
+                const blob = await downloadAccessorySample().unwrap();
+                downloadFile(blob, "SampleAccessoryBulkUpload.xlsx");
+            } else if (selectedOption === "Contact Lens") {
+                const blob = await downloadCLSample().unwrap();
+                downloadFile(blob, "SampleCLBulkUpload.xlsx");
+            }
             toast.success("Sample excel downloaded successfully.");
         } catch (error) {
             console.error('Failed to download sample excel:', error);
@@ -1959,7 +1975,7 @@ export default function SavePurchaseOrder() {
         }
     }
 
-    const handleUpload = async () => {
+    const handleUpload = async (selectedOption) => {
         if (!selectedFile) {
             toast.error("Please select a file!");
             return;
@@ -1968,12 +1984,27 @@ export default function SavePurchaseOrder() {
         try {
             const formData = new FormData();
             formData.append("excelFile", selectedFile);
+            let res;
+            if (selectedOption === "Frame/Sunglass") {
+                res = await uploadFrameFile({
+                    formData: formData,
+                    applicationUserId: user?.Id,
+                    poMainId: createdPOMainId
+                }).unwrap();
+            } else if (selectedOption === "Accessories") {
+                res = await uploadAccessoryFile({
+                    formData: formData,
+                    applicationUserId: user?.Id,
+                    poMainId: createdPOMainId
+                }).unwrap();
+            } else if (selectedOption === "Contact Lens") {
+                res = await uploadContactLensFile({
+                    formData: formData,
+                    applicationUserId: user?.Id,
+                    poMainId: createdPOMainId
+                }).unwrap();
+            }
 
-            const res = await uploadFile({
-                formData: formData,
-                applicationUserId: user?.Id,
-                poMainId: createdPOMainId
-            }).unwrap();
 
             console.log("response", res);
 
@@ -2481,7 +2512,7 @@ export default function SavePurchaseOrder() {
                                                     <motion.button
                                                         whileHover={{ scale: 1.02 }}
                                                         whileTap={{ scale: 0.98 }}
-                                                        onClick={handleDownloadSampleExcel}
+                                                        onClick={() => handleDownloadSampleExcel(formState.selectedOption)}
                                                         // disabled={isSaving}
                                                         className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50 flex items-center justify-center flex-1 sm:flex-none"
                                                     >
@@ -2522,11 +2553,11 @@ export default function SavePurchaseOrder() {
                                                         <motion.button
                                                             // whileHover={{ scale: 1.02 }}
                                                             // whileTap={{ scale: 0.98 }}
-                                                            onClick={handleUpload}
-                                                            disabled={!selectedFile || isFileUploading}
+                                                            onClick={() => handleUpload(formState.selectedOption)}
+                                                            disabled={!selectedFile || isFrameFileUploading || isAccessoryFileUploading || isContactLensFileUploading}
                                                             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50 flex items-center justify-center flex-1 sm:flex-none"
                                                         >
-                                                            {isFileUploading ? (
+                                                            {(isFrameFileUploading || isAccessoryFileUploading || isContactLensFileUploading) ? (
                                                                 <>
                                                                     <RefreshCcw className="w-4 h-4 animate-spin" />
                                                                     <span className="text-white">Uploading...</span>
