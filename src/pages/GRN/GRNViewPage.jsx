@@ -279,8 +279,8 @@ export function GRNViewPage() {
                                             {item.PowerSpecsAdditional ? ` Add: ${item.Additional > 0 ? `+` : ``}${item.Additional}` : ` Add: `}
                                             {item.Size && <br />}{item.Size}
                                             {item?.ProductDetails?.barcode && <br />}{item?.ProductDetails?.barcode ? `Barcode: ${item?.ProductDetails?.barcode}` : null}
-                                            {(item?.ProductDetails?.CLBatchCode && item?.BatchCode) && <br />}{(item?.ProductDetails?.CLBatchCode && item.BatchCode) ? `BatchCode: ${item.BatchCode}` : null}
-                                            {(item?.ProductDetails?.CLBatchCode) && (() => {
+                                            {(item?.ProductDetails?.CLBatchCode && item?.BatchCode) ? <br /> : ''}{(item?.ProductDetails?.CLBatchCode && item.BatchCode) ? `BatchCode: ${item.BatchCode}` : null}
+                                            {(item?.ProductDetails?.CLBatchCode && item?.ProductDetails?.Stock?.find(stock => stock.BatchCode === item.BatchCode)) ? (() => {
                                                 console.log("Iteme ajnd", item);
                                                 const stock = item?.ProductDetails?.Stock?.find(stock => stock.BatchCode === item.BatchCode);
                                                 console.log("item.BatchCode:", item.BatchCode);
@@ -294,7 +294,7 @@ export function GRNViewPage() {
                                                     return <> Expiry: {formattedExpiry}</>;
                                                 }
                                                 return null;
-                                            })()}
+                                            })(): ''}
                                             {item?.ProductDetails?.HSN && <br />}{`HSN: ${item?.ProductDetails?.HSN}`}
                                         </TableCell>
                                         : item?.ProductDetails?.ProductType === 0 ?
