@@ -83,6 +83,7 @@ const PaymentFlow = ({
     GVCode: null,
     GVMasterID: null,
   });
+
   const [errors, setErrors] = useState({});
 
   const updatedDetails = useMemo(() => {
@@ -212,7 +213,7 @@ const PaymentFlow = ({
         if (!payments.advance) payments.advance = [];
         payments.advance.push({
           advanceId: payment.advanceId,
-          amount: amount,
+          amount,
         });
         return;
       }
@@ -221,41 +222,47 @@ const PaymentFlow = ({
         if (!payments.giftVoucher) payments.giftVoucher = [];
         payments.giftVoucher.push({
           GVCode: payment.GVCode || null,
-          amount: amount,
+          amount,
         });
         return;
       }
 
-      if (!payments[typeKey]) {
-        payments[typeKey] = { amount: 0 };
-      }
+      if (["card", "cheque", "bank", "upi"].includes(typeKey)) {
+        if (!payments[typeKey]) payments[typeKey] = [];
 
-      payments[typeKey].amount += amount;
+        const paymentEntry = { amount };
 
-      switch (typeKey) {
-        case "card":
-          payments[typeKey].PaymentMachineID = payment.PaymentMachineID;
-          payments[typeKey].ApprCode = payment.RefNo;
-          if (payment.EMI) {
-            payments[typeKey].EMI = payment.EMI;
-            payments[typeKey].EMIMonths = parseInt(payment.EMIMonths);
-            payments[typeKey].EMIBank = payment.EMIBank;
-          }
-          break;
-        case "upi":
-          payments[typeKey].PaymentMachineID = payment.PaymentMachineID;
-          break;
-        case "cheque":
-          payments[typeKey].BankMasterID = payment.BankMasterID;
-          payments[typeKey].ChequeNo = payment.ChequeDetails;
-          payments[typeKey].ChequeDate = payment.ChequeDate
-            ? format(new Date(payment.ChequeDate), "yyyy-MM-dd")
-            : null;
-          break;
-        case "bank":
-          payments[typeKey].BankAccountID = payment.BankAccountID || null;
-          payments[typeKey].ReferenceNo = payment.RefNo || "";
-          break;
+        switch (typeKey) {
+          case "card":
+            paymentEntry.PaymentMachineID = payment.PaymentMachineID;
+            paymentEntry.ApprCode = payment.RefNo;
+            if (payment.EMI) {
+              paymentEntry.EMI = payment.EMI;
+              paymentEntry.EMIMonths = parseInt(payment.EMIMonths);
+              paymentEntry.EMIBank = payment.EMIBank;
+            }
+            break;
+
+          case "upi":
+            paymentEntry.PaymentMachineID = payment.PaymentMachineID;
+            paymentEntry.ReferenceNo = payment.RefNo || "";
+            break;
+
+          case "cheque":
+            paymentEntry.BankMasterID = payment.BankMasterID;
+            paymentEntry.ChequeNo = payment.ChequeDetails;
+            paymentEntry.ChequeDate = payment.ChequeDate
+              ? format(new Date(payment.ChequeDate), "yyyy-MM-dd")
+              : null;
+            break;
+
+          case "bank":
+            paymentEntry.BankAccountID = payment.BankAccountID || null;
+            paymentEntry.ReferenceNo = payment.RefNo || "";
+            break;
+        }
+
+        payments[typeKey].push(paymentEntry);
       }
     });
 
@@ -289,6 +296,7 @@ const PaymentFlow = ({
       detailidwithoutadvance: paymentDetails?.withOutAdvance,
       payments: preparePaymentsStructure(),
     };
+    console.log(finalStructure);
     try {
       const res = await saveFinalPayment({
         orderId: customerId.orderId,
@@ -343,6 +351,50 @@ const PaymentFlow = ({
       Number(parseFloat(updatedDetails.RemainingToPay).toFixed(2))
     ) {
       validationErrors.amount = "Amount cannot exceed remaining balance";
+    }
+    const isDuplicatePayment = (conditionFn) => {
+      return (
+        fullPaymentDetails.some(conditionFn) || fullPayments.some(conditionFn)
+      );
+    };
+    if (selectedPaymentMethod === 2) {
+      const isCardDuplicate = isDuplicatePayment(
+        (payment) =>
+          payment.PaymentMachineID === newPayment.PaymentMachineID &&
+          payment.RefNo?.trim().toLowerCase() ===
+            newPayment.RefNo?.trim().toLowerCase()
+      );
+      if (isCardDuplicate) {
+        toast.error(
+          "This card payment (machine + approval code) already exists"
+        );
+        return;
+      }
+    }
+    if (selectedPaymentMethod === 4) {
+      const isChequeDuplicate = isDuplicatePayment(
+        (payment) =>
+          payment.BankMasterID === newPayment.BankMasterID &&
+          payment.ChequeDetails?.trim().toLowerCase() ===
+            newPayment.ChequeDetails?.trim().toLowerCase()
+      );
+      if (isChequeDuplicate) {
+        toast.error("This cheque (bank + cheque number) already exists");
+        return;
+      }
+    }
+
+    if (selectedPaymentMethod === 5) {
+      const isBankDuplicate = isDuplicatePayment(
+        (payment) =>
+          payment.BankAccountID === newPayment.BankAccountID &&
+          payment.RefNo?.trim().toLowerCase() ===
+            newPayment.RefNo?.trim().toLowerCase()
+      );
+      if (isBankDuplicate) {
+        toast.error("This bank transfer (account + reference) already exists");
+        return;
+      }
     }
 
     // Duplicate validation for Advance (method 6) and Gift Voucher (method 7)
@@ -618,6 +670,23 @@ const PaymentFlow = ({
                           setNewPayment((prev) => ({
                             ...prev,
                             Type: newValue?.type || "",
+                            RefNo: "",
+                            PaymentMachine: "",
+                            PaymentMachineID: null,
+                            BankName: "",
+                            BankMasterID: null,
+                            ChequeDetails: "",
+                            ChequeDate: null,
+                            AccountNumber: "",
+                            BankAccountID: null,
+                            Amount: "",
+                            EMI: false,
+                            EMIMonths: null,
+                            EMIBank: null,
+                            advanceId: null,
+                            advanceData: null,
+                            GVCode: null,
+                            GVMasterID: null,
                           }));
                           setErrors({});
                         }}

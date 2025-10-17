@@ -7,6 +7,8 @@ import { useGetAllPoDetailsForNewOrderMutation, useGetAllPoDetailsMutation } fro
 import { useGetGRNDetailsMutation } from "../../api/grnApi";
 import { Table, TableRow, TableCell } from "../../components/Table";
 import toast from "react-hot-toast";
+import { usePrintLabelsMutation } from "../../api/stockTransfer";
+import Button from "../../components/ui/Button";
 
 
 
@@ -21,6 +23,7 @@ export function GRNViewPage() {
         isLoading: isLoadingGRNDetails,
         error: errorGRNDetails
     }] = useGetGRNDetailsMutation();
+  const [getlabels, { isLoading: isLabelsFetching }] = usePrintLabelsMutation();
 
 
 
@@ -201,6 +204,40 @@ export function GRNViewPage() {
                 return <td className="px-6 py-4 whitespace-wrap">N/A</td>;
         }
     };
+console.log(grnViewDetails)
+      const handleLabels = async () => {
+        const payload = {
+          companyId: parseInt(hasMultipleLocations[0]),
+          items: grnViewDetails?.some(
+            (item) => item.ProductDetails?.ProductType == 1 || item.ProductDetails?.ProductType == 2
+          )
+            ? grnViewDetails?.map((item) => ({
+                type: item.ProductDetails?.ProductType == 1 ? "frame" : "accessory",
+                detailId: item.ProductDetails?.ProductDetailId ?? null,
+                qty: item.GRNQty,
+              }))
+            : [],
+        };
+        try {
+          const blob = await getlabels({ payload }).unwrap();
+    
+          const url = window.URL.createObjectURL(
+            new Blob([blob], { type: "application/pdf" })
+          );
+          const newWindow = window.open(url);
+          if (newWindow) {
+            newWindow.onload = () => {
+              newWindow.focus();
+              newWindow.print();
+            };
+          }
+        } catch (error) {
+          console.log(error);
+          toast.error(
+            "Unable to print the GRN Labels please try again after some time!"
+          );
+        }
+      };
 
     return (
         <motion.div
@@ -210,6 +247,7 @@ export function GRNViewPage() {
             className="bg-white rounded-2xl shadow-xl p-6"
         >
             <div className=" items-center mb-4">
+                <div className="flex items-center justify-between">
                 <button
                     className="text-[#000060] hover:text-[#0000a0] transition-colors flex items-center mb-3"
                     onClick={() => { navigate('/grn') }}
@@ -217,6 +255,14 @@ export function GRNViewPage() {
                     <ArrowLeft className="w-5 h-5 mr-2" />
                     Back to dashboard
                 </button>
+                {grnViewDetails.some(
+                              (item) => item.ProductDetails?.ProductType == 1 || item.ProductDetails?.ProductType == 2
+                            ) && (
+                              <Button onClick={handleLabels} isLoading={isLabelsFetching} >
+                                Print Labels
+                              </Button>
+                            )}
+                            </div>
                 <h1 className="text-3xl lg:text-4xl font-bold text-[#000060] mb-2">
                     GRN Order View
                 </h1>

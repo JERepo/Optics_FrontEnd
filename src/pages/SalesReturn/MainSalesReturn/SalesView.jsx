@@ -670,6 +670,14 @@ const SalesView = () => {
                   ₹{formatINR(totalGST) || "0"}
                 </span>
               </div>
+               <div className="flex flex-col">
+                <span className="text-neutral-700 font-semibold text-lg">
+                  Round Off
+                </span>
+                <span className="text-neutral-600 text-xl font-medium">
+                  ₹{formatINR(customerDataById?.data?.RoundOff) || "0"}
+                </span>
+              </div>
               <div className="flex flex-col">
                 <span className="text-neutral-700 font-semibold text-lg">
                   Total Amount

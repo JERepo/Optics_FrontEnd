@@ -916,45 +916,42 @@ const CustomerSelect = () => {
         return;
       }
 
-      if (!payments[typeKey]) {
-        payments[typeKey] = { amount: 0 };
-      }
+      if (["card", "cheque", "bank", "upi"].includes(typeKey)) {
+        if (!payments[typeKey]) payments[typeKey] = [];
 
-      payments[typeKey].amount += amount;
-      switch (typeKey) {
-        case "card":
-          payments[typeKey].PaymentMachineID = payment.PaymentMachineID;
-          payments[typeKey].ApprCode = payment.RefNo;
-          if (payment.EMI) {
-            payments[typeKey].EMI = payment.EMI;
-            payments[typeKey].EMIMonths = parseInt(payment.EMIMonths);
-            payments[typeKey].EMIBank = payment.EMIBank;
-          }
-          break;
-        case "upi":
-          payments[typeKey].PaymentMachineID = payment.PaymentMachineID;
-          break;
-        case "cheque":
-          payments[typeKey].BankMasterID = payment.BankMasterID;
-          payments[typeKey].ChequeNo = payment.ChequeDetails;
-          payments[typeKey].ChequeDate = payment.ChequeDate
-            ? format(new Date(payment.ChequeDate), "yyyy-MM-dd")
-            : null;
-          break;
-        case "bank":
-          payments[typeKey].BankAccountID = payment.BankAccountID || null;
-          payments[typeKey].ReferenceNo = payment.RefNo || "";
-          break;
-        // case "giftVoucher":
-        //   payments[typeKey].GVCode = payment.GVCode || null;
-        //   break;
-        // case "advance":
-        //   payments[typeKey].CustomerAdvanceIDs =
-        //     payment.CustomerAdvanceIDs || [];
-        //   break;
-        // case "advance":
-        //   payments[typeKey].advanceId = payment.advanceId;
-        //   break;
+        const paymentEntry = { amount };
+
+        switch (typeKey) {
+          case "card":
+            paymentEntry.PaymentMachineID = payment.PaymentMachineID;
+            paymentEntry.ApprCode = payment.RefNo;
+            if (payment.EMI) {
+              paymentEntry.EMI = payment.EMI;
+              paymentEntry.EMIMonths = parseInt(payment.EMIMonths);
+              paymentEntry.EMIBank = payment.EMIBank;
+            }
+            break;
+
+          case "upi":
+            paymentEntry.PaymentMachineID = payment.PaymentMachineID;
+            paymentEntry.ReferenceNo = payment.RefNo || "";
+            break;
+
+          case "cheque":
+            paymentEntry.BankMasterID = payment.BankMasterID;
+            paymentEntry.ChequeNo = payment.ChequeDetails;
+            paymentEntry.ChequeDate = payment.ChequeDate
+              ? format(new Date(payment.ChequeDate), "yyyy-MM-dd")
+              : null;
+            break;
+
+          case "bank":
+            paymentEntry.BankAccountID = payment.BankAccountID || null;
+            paymentEntry.ReferenceNo = payment.RefNo || "";
+            break;
+        }
+
+        payments[typeKey].push(paymentEntry);
       }
     });
     return payments;
@@ -1587,19 +1584,19 @@ const CustomerSelect = () => {
                               : "Generate Invoice"}
                           </Button>
                         )}
-                        {(parseFloat(totalBalance.toFixed(2)) > 0 &&
+                        {parseFloat(totalBalance.toFixed(2)) > 0 &&
                           selectedPatient?.CustomerMaster?.CreditBilling ===
-                            1) && (
-                          <Button
-                            onClick={handleGenerateInvoiceCreditYes}
-                            isLoading={isGenerateInvoice}
-                            disabled={isGenerateInvoice}
-                          >
-                            {customerData?.data?.data?.BillingMethod === 1
-                              ? "Generate DC"
-                              : "Generate Invoice"}
-                          </Button>
-                        )}
+                            1 && (
+                            <Button
+                              onClick={handleGenerateInvoiceCreditYes}
+                              isLoading={isGenerateInvoice}
+                              disabled={isGenerateInvoice}
+                            >
+                              {customerData?.data?.data?.BillingMethod === 1
+                                ? "Generate DC"
+                                : "Generate Invoice"}
+                            </Button>
+                          )}
                       </div>
                     </div>
                   </div>

@@ -8,6 +8,7 @@ import { formatINR } from "../../../utils/formatINR";
 import {
   useGetStockTransferOutByIdQuery,
   useLazyPrintPdfQuery,
+  usePrintLabelsMutation,
 } from "../../../api/stockTransfer";
 import { useSelector } from "react-redux";
 import {
@@ -243,6 +244,8 @@ const StockTransferView = () => {
   );
   const EInvoiceEnable = companySettings?.data?.data.EInvoiceEnable;
   const InvInvoiceEnable = companySettings?.data?.data.STEInvoiceEnable;
+  const [getlabels, { isLoading: isLabelsFetching }] = usePrintLabelsMutation();
+
   const getShortTypeName = (id) => {
     if (id === null || id === undefined) return;
     if (id === 1) return "F/S";
@@ -302,6 +305,41 @@ const StockTransferView = () => {
       setPrintingId(null);
     }
   };
+  const handleLabels = async () => {
+    const payload = {
+      companyId: parseInt(hasMultipleLocations[0]),
+      items: stockDetails?.data?.result.details?.some(
+        (item) => item.FrameDetailId || item.AccessoryDetailId
+      )
+        ? stockDetails?.data?.result.details?.map((item) => ({
+            type: item.FrameDetailId ? "frame" : "accessory",
+            detailId: item.FrameDetailId
+              ? item.FrameDetailId
+              : item.AccessoryDetailId,
+            qty: item.STQtyOut,
+          }))
+        : [],
+    };
+    try {
+      const blob = await getlabels({ payload }).unwrap();
+
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "application/pdf" })
+      );
+      const newWindow = window.open(url);
+      if (newWindow) {
+        newWindow.onload = () => {
+          newWindow.focus();
+          newWindow.print();
+        };
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(
+        "Unable to print the stock transfer out labels please try again after some time!"
+      );
+    }
+  };
   if (isLoading) {
     return <Loader color="black" />;
   }
@@ -324,6 +362,13 @@ const StockTransferView = () => {
               icon={FiPrinter}
               isLoading={printingId === stockDetails?.data?.result?.ID}
             ></Button>
+            {stockDetails?.data?.result.details?.some(
+              (item) => item.FrameDetailId || item.AccessoryDetailId
+            ) && (
+              <Button onClick={handleLabels} isLoading={isLabelsFetching} >
+                Print Labels
+              </Button>
+            )}
           </div>
         </div>
         {/* Order Details */}

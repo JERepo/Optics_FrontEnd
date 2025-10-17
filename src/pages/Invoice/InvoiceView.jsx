@@ -600,7 +600,7 @@ const InvoiceView = () => {
         {/* Summary Section */}
         {invoiceDetails && (
           <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200 flex justify-end">
-            <div className="grid md:grid-cols-3 gap-5">
+            <div className="grid md:grid-cols-4 gap-5">
               <div className="flex flex-col">
                 <span className="text-neutral-700 font-semibold text-lg">
                   Total Qty
@@ -615,6 +615,14 @@ const InvoiceView = () => {
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
                   ₹{formatINR(gstAmount) || "0"}
+                </span>
+              </div>
+               <div className="flex flex-col">
+                <span className="text-neutral-700 font-semibold text-lg">
+                  Round Off
+                </span>
+                <span className="text-neutral-600 text-xl font-medium">
+                  ₹{formatINR(invoiceDetails?.RoundOff) || "0"}
                 </span>
               </div>
               <div className="flex flex-col">

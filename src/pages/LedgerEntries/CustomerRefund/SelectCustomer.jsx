@@ -321,6 +321,50 @@ const SelectCustomer = () => {
       validationErrors.amount = "Amount cannot exceed remaining balance";
     }
 
+        const isDuplicatePayment = (conditionFn) => {
+          return (
+            fullPaymentDetails.some(conditionFn) || fullPayments.some(conditionFn)
+          );
+        };
+        if (selectedPaymentMethod === 2) {
+          const isCardDuplicate = isDuplicatePayment(
+            (payment) =>
+              payment.PaymentMachineID === newPayment.PaymentMachineID &&
+              payment.RefNo?.trim().toLowerCase() ===
+                newPayment.RefNo?.trim().toLowerCase()
+          );
+          if (isCardDuplicate) {
+            toast.error(
+              "This card payment (machine + approval code) already exists"
+            );
+            return;
+          }
+        }
+        if (selectedPaymentMethod === 4) {
+          const isChequeDuplicate = isDuplicatePayment(
+            (payment) =>
+              payment.BankMasterID === newPayment.BankMasterID &&
+              payment.ChequeDetails?.trim().toLowerCase() ===
+                newPayment.ChequeDetails?.trim().toLowerCase()
+          );
+          if (isChequeDuplicate) {
+            toast.error("This cheque (bank + cheque number) already exists");
+            return;
+          }
+        }
+    
+        if (selectedPaymentMethod === 5) {
+          const isBankDuplicate = isDuplicatePayment(
+            (payment) =>
+              payment.BankAccountID === newPayment.BankAccountID &&
+              payment.RefNo?.trim().toLowerCase() ===
+                newPayment.RefNo?.trim().toLowerCase()
+          );
+          if (isBankDuplicate) {
+            toast.error("This bank transfer (account + reference) already exists");
+            return;
+          }
+        }
     switch (selectedPaymentMethod) {
       case 2:
         if (!newPayment.BankMasterID)
@@ -419,7 +463,6 @@ const SelectCustomer = () => {
     };
 
     updatedPayments.forEach((payment) => {
-      console.log("paymr", payment);
       const typeKey = normalizeType(payment.Type || "");
       const amount = parseFloat(payment.Amount);
       if (isNaN(amount)) return;
@@ -429,44 +472,58 @@ const SelectCustomer = () => {
         return;
       }
 
-      if (!payments[typeKey]) {
-        payments[typeKey] = { amount: 0 };
+      if (typeKey === "giftVoucher") {
+        payments.giftVoucher = {
+          amount,
+          GVMasterID: payment.GVMasterID ?? null,
+        };
+        return;
       }
 
-      payments[typeKey].amount += amount;
+      if (!payments[typeKey]) payments[typeKey] = [];
+
+      const entry = { amount };
 
       switch (typeKey) {
         case "card":
-          payments[typeKey].PaymentMachineID = payment.PaymentMachineID;
-          payments[typeKey].ApprCode = payment.RefNo;
+          entry.PaymentMachineID = payment.PaymentMachineID;
+          entry.ApprCode = payment.RefNo;
           if (payment.EMI) {
-            payments[typeKey].EMI = payment.EMI;
-            payments[typeKey].EMIMonths = parseInt(payment.EMIMonths);
-            payments[typeKey].EMIBank = payment.EMIBank;
+            entry.EMI = payment.EMI;
+            entry.EMIMonths = parseInt(payment.EMIMonths);
+            entry.EMIBank = payment.EMIBank;
           }
           break;
+
         case "upi":
-          payments[typeKey].PaymentMachineID = payment.PaymentMachineID;
+          entry.PaymentMachineID = payment.PaymentMachineID;
+          entry.ReferenceNo = payment.RefNo || "";
           break;
+
         case "cheque":
-          payments[typeKey].BankMasterID = payment.BankMasterID;
-          payments[typeKey].ChequeNo = payment.ChequeDetails;
-          payments[typeKey].ChequeDate = payment.ChequeDate
+          entry.BankMasterID = payment.BankMasterID;
+          entry.ChequeNo = payment.ChequeDetails;
+          entry.ChequeDate = payment.ChequeDate
             ? format(new Date(payment.ChequeDate), "yyyy-MM-dd")
             : null;
           break;
+
         case "bank":
-          payments[typeKey].BankAccountID = payment.BankAccountID || null;
-          payments[typeKey].ReferenceNo = payment.RefNo || "";
+          entry.BankAccountID = payment.BankAccountID || null;
+          entry.ReferenceNo = payment.RefNo || "";
           break;
-        case "giftVoucher":
-          payments[typeKey].GVMasterID = payment.GVMasterID ?? null;
+
+        case "advance":
+          entry.advanceId = payment.advanceId;
           break;
       }
+
+      payments[typeKey].push(entry);
     });
 
     return payments;
   };
+
   const handleCreateRefund = async () => {
     if (remainingRefundAmt > 0) {
       toast.error("Please cover the remaining balance before saving.");
@@ -529,6 +586,7 @@ const SelectCustomer = () => {
           ...preparePaymentsStructure(updatedPayments), // Use updatedPayments directly
         },
       };
+      console.log("payload", payload);
 
       await createRefund({ payload }).unwrap();
       toast.success("Customer refund successfully generated!");
@@ -920,6 +978,22 @@ const SelectCustomer = () => {
                           setNewPayment((prev) => ({
                             ...prev,
                             Type: newValue?.type || "",
+                            RefNo: "",
+                            PaymentMachine: "",
+                            PaymentMachineID: null,
+                            BankName: "",
+                            BankMasterID: null,
+                            ChequeDetails: "",
+                            ChequeDate: null,
+                            AccountNumber: "",
+                            BankAccountID: null,
+                            Amount: "",
+                            EMI: false,
+                            EMIMonths: null,
+                            EMIBank: null,
+                            GVCode: null,
+                            GVMasterID: null,
+                            GVData: null,
                           }));
                           setErrors({});
                         }}
