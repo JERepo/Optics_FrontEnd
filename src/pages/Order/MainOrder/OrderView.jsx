@@ -12,7 +12,7 @@ import {
 } from "../../../api/orderApi";
 import { useOrder } from "../../../features/OrderContext";
 import { Table, TableCell, TableRow } from "../../../components/Table";
-import { FiFileText, FiPrinter, FiTrash2 } from "react-icons/fi";
+import { FiFileText, FiPrinter, FiTrash2, FiX } from "react-icons/fi";
 import { format } from "date-fns";
 import Button from "../../../components/ui/Button";
 import Loader from "../../../components/ui/Loader";
@@ -740,8 +740,9 @@ const OrderView = () => {
                           }
                           disabled={isOrderCancelling || isItemCancelling}
                           title="Cancel Item"
+                          icon={FiX}
                         >
-                          Cancel Item
+                          {/* Cancel Item */}
                         </Button>
                       </HasPermission>
                     )}
