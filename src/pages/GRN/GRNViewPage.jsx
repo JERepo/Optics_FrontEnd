@@ -435,7 +435,7 @@ export function GRNViewPage() {
                                         }, 0);
 
                                         const roundOff = parseFloat(grnViewDetails[0]?.RoundOff || 0);
-                                        const totalNetValue = subtotal + roundOff;
+                                        const totalNetValue = subtotal - roundOff;
 
                                         return `₹ ${totalNetValue.toFixed(2)}`;
                                     })()
