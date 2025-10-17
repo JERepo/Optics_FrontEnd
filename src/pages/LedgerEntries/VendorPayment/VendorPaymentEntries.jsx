@@ -291,7 +291,11 @@ const VendorPaymentEntries = ({
     if (!newPayment.Amount || isNaN(newPayment.Amount)) {
       validationErrors.amount = "Please enter a valid amount";
     }
-
+    if (Object.keys(validationErrors).length) {
+  setErrors(validationErrors);
+  toast.error("Please fill all required fields");
+  return;
+}
     if (selectedPaymentMethod === 6 && newPayment.advanceId) {
       const isAdvanceDuplicate = fullPaymentDetails.some(
         (payment) => payment.advanceId === newPayment.advanceId

@@ -196,7 +196,6 @@ const CollectAdvance = ({
         payments[typeKey].push(paymentEntry);
         return;
       }
-     
     });
 
     return payments;
@@ -230,13 +229,13 @@ const CollectAdvance = ({
       remarks: remarks,
       creditBilling: parseInt(selectedPatient?.CreditBilling),
     };
-        console.log("payload", finalStructure);
-
+    console.log("payload", finalStructure);
 
     try {
       await saveFinalPayment({ payload: finalStructure }).unwrap();
       toast.success("Advance taken Successfully");
       navigate("/customer-payment");
+      setFullPaymentDetails([])
     } catch (error) {
       toast.error("Please try again!");
     }
@@ -251,50 +250,55 @@ const CollectAdvance = ({
       validationErrors.amount = "Please enter a valid amount";
     }
 
-        const isDuplicatePayment = (conditionFn) => {
-          return (
-            fullPaymentDetails.some(conditionFn) || fullPayments.some(conditionFn)
-          );
-        };
-        if (selectedPaymentMethod === 2) {
-          const isCardDuplicate = isDuplicatePayment(
-            (payment) =>
-              payment.PaymentMachineID === newPayment.PaymentMachineID &&
-              payment.RefNo?.trim().toLowerCase() ===
-                newPayment.RefNo?.trim().toLowerCase()
-          );
-          if (isCardDuplicate) {
-            toast.error(
-              "This card payment (machine + approval code) already exists"
-            );
-            return;
-          }
-        }
-        if (selectedPaymentMethod === 4) {
-          const isChequeDuplicate = isDuplicatePayment(
-            (payment) =>
-              payment.BankMasterID === newPayment.BankMasterID &&
-              payment.ChequeDetails?.trim().toLowerCase() ===
-                newPayment.ChequeDetails?.trim().toLowerCase()
-          );
-          if (isChequeDuplicate) {
-            toast.error("This cheque (bank + cheque number) already exists");
-            return;
-          }
-        }
-    
-        if (selectedPaymentMethod === 5) {
-          const isBankDuplicate = isDuplicatePayment(
-            (payment) =>
-              payment.BankAccountID === newPayment.BankAccountID &&
-              payment.RefNo?.trim().toLowerCase() ===
-                newPayment.RefNo?.trim().toLowerCase()
-          );
-          if (isBankDuplicate) {
-            toast.error("This bank transfer (account + reference) already exists");
-            return;
-          }
-        }
+    const isDuplicatePayment = (conditionFn) => {
+      return (
+        fullPaymentDetails.some(conditionFn) || fullPayments.some(conditionFn)
+      );
+    };
+    if (Object.keys(validationErrors).length) {
+  setErrors(validationErrors);
+  toast.error("Please fill all required fields");
+  return;
+}
+    if (selectedPaymentMethod === 2) {
+      const isCardDuplicate = isDuplicatePayment(
+        (payment) =>
+          payment.PaymentMachineID === newPayment.PaymentMachineID &&
+          payment.RefNo?.trim().toLowerCase() ===
+            newPayment.RefNo?.trim().toLowerCase()
+      );
+      if (isCardDuplicate) {
+        toast.error(
+          "This card payment (machine + approval code) already exists"
+        );
+        return;
+      }
+    }
+    if (selectedPaymentMethod === 4) {
+      const isChequeDuplicate = isDuplicatePayment(
+        (payment) =>
+          payment.BankMasterID === newPayment.BankMasterID &&
+          payment.ChequeDetails?.trim().toLowerCase() ===
+            newPayment.ChequeDetails?.trim().toLowerCase()
+      );
+      if (isChequeDuplicate) {
+        toast.error("This cheque (bank + cheque number) already exists");
+        return;
+      }
+    }
+
+    if (selectedPaymentMethod === 5) {
+      const isBankDuplicate = isDuplicatePayment(
+        (payment) =>
+          payment.BankAccountID === newPayment.BankAccountID &&
+          payment.RefNo?.trim().toLowerCase() ===
+            newPayment.RefNo?.trim().toLowerCase()
+      );
+      if (isBankDuplicate) {
+        toast.error("This bank transfer (account + reference) already exists");
+        return;
+      }
+    }
     switch (selectedPaymentMethod) {
       case 2:
         if (!newPayment.PaymentMachineID)
@@ -311,18 +315,18 @@ const CollectAdvance = ({
           validationErrors.bankName = "Please select a bank";
         if (!newPayment.ChequeDetails)
           validationErrors.chequeDetails = "Cheque number is required";
-       if (!newPayment.ChequeDate) {
-                 validationErrors.chequeDate = "Cheque date is required";
-               } else {
-                 const today = startOfDay(new Date());
-                 const minDate = subDays(today, 90);
-                 const selectedDate = startOfDay(new Date(newPayment.ChequeDate));
-       
-                 if (isBefore(selectedDate, minDate)) {
-                   validationErrors.chequeDate =
-                     "Cheque date must be within the last 90 days or in the future";
-                 }
-               }
+        if (!newPayment.ChequeDate) {
+          validationErrors.chequeDate = "Cheque date is required";
+        } else {
+          const today = startOfDay(new Date());
+          const minDate = subDays(today, 90);
+          const selectedDate = startOfDay(new Date(newPayment.ChequeDate));
+
+          if (isBefore(selectedDate, minDate)) {
+            validationErrors.chequeDate =
+              "Cheque date must be within the last 90 days or in the future";
+          }
+        }
         break;
       case 5:
         if (!newPayment.BankAccountID)

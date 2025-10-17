@@ -350,8 +350,6 @@ const VendorCollectPOAdvace = ({
         payments[typeKey].push(paymentEntry);
         return;
       }
-
-
     });
 
     return payments;
@@ -392,7 +390,7 @@ const VendorCollectPOAdvace = ({
       creditBilling: parseInt(selectedPatient?.CreditBilling),
       againstPO: againstPO,
     };
-console.log(finalStructure)
+    console.log(finalStructure);
 
     try {
       await saveFinalPayment({ payload: finalStructure }).unwrap();
@@ -410,6 +408,11 @@ console.log(finalStructure)
     if (!newPayment.Amount || isNaN(newPayment.Amount)) {
       validationErrors.amount = "Please enter a valid amount";
     }
+        if (Object.keys(validationErrors).length) {
+  setErrors(validationErrors);
+  toast.error("Please fill all required fields");
+  return;
+}
     const isDuplicatePayment = (conditionFn) => {
       return (
         fullPaymentDetails.some(conditionFn) || fullPayments.some(conditionFn)
@@ -983,8 +986,7 @@ const MethodForm = ({
                 label="Cheque Date *"
                 value={newPayment.ChequeDate}
                 onChange={(date) => {
-                  const today = startOfDay(new Date());
-                  const minDate = subDays(today, 90);
+                  const minDate = subDays(startOfDay(new Date()), 90);
 
                   if (date && isBefore(date, minDate)) {
                     setErrors((prev) => ({
@@ -993,6 +995,7 @@ const MethodForm = ({
                         "Cheque date must be within the last 90 days or in the future",
                     }));
                   } else {
+                    // ✅ clear error and allow both present/future dates
                     setErrors((prev) => ({ ...prev, chequeDate: "" }));
                     setNewPayment((prev) => ({
                       ...prev,
@@ -1008,6 +1011,7 @@ const MethodForm = ({
                     helperText: errors.chequeDate,
                   },
                 }}
+                // ✅ Allows both past 90 days and future
                 minDate={subDays(new Date(), 90)}
               />
             </LocalizationProvider>

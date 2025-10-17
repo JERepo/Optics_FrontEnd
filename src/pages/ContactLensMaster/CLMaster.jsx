@@ -206,7 +206,7 @@ const CLMaster = () => {
 
   // Input change handler for lensData
   const handleInputChange = (field, value) => {
-    console.log(field,value)
+    console.log(field, value);
     setLensData((prev) => ({
       ...prev,
       [field]: value,
@@ -481,7 +481,14 @@ const CLMaster = () => {
         formData.append("Diameter", lensData.diameter || "");
         formData.append("HSN", lensData.hsnCode || "");
         formData.append("MaterialID", lensData.material || "");
-        formData.append("Type", lensData.productType || "");
+        // formData.append("Type", lensData.productType || "");
+        formData.append(
+          "Type",
+          lensData.productType !== null && lensData.productType !== undefined
+            ? lensData.productType
+            : ""
+        );
+
         formData.append("TaxID", lensData.taxPercentage || "");
         formData.append("ApplicationUserId", user.Id || "");
         formData.append("IsActive", 1);
@@ -527,7 +534,12 @@ const CLMaster = () => {
           Diameter: lensData.diameter,
           HSN: lensData.hsnCode,
           MaterialID: lensData.material,
-          Type: lensData.productType,
+          // Type: lensData.productType,
+          Type:
+            lensData.productType !== null && lensData.productType !== undefined
+              ? lensData.productType
+              : null,
+
           TaxID: lensData.taxPercentage,
           ApplicationUserId: user.Id,
           IsActive: 1,
@@ -732,7 +744,7 @@ const CLMaster = () => {
                   getOptionLabel={(option) => option.label || ""}
                   value={
                     productTypes.find(
-                      (pt) => pt.value === lensData.productType
+                      (pt) => pt.value == lensData.productType
                     ) || null
                   }
                   onChange={(_, newValue) =>

@@ -37,9 +37,9 @@ import { useCreateGiftVoucherForRefundMutation } from "../../../api/giftVoucher"
 
 const methods = [
   { value: 1, type: "Cash" },
-  { value: 2, type: "Cheque" },
-  { value: 3, type: "Bank Transfer" },
-  { value: 4, type: "Gift Voucher" },
+  { value: 4, type: "Cheque" },
+  { value: 5, type: "Bank Transfer" },
+  { value: 7, type: "Gift Voucher" },
 ];
 
 const SelectCustomer = () => {
@@ -307,6 +307,7 @@ const SelectCustomer = () => {
       setSelectedProducts([]);
     }
   };
+  console.log(fullPaymentDetails, selectedPaymentMethod,newPayment);
   const handleAddPayment = () => {
     const validationErrors = {};
 
@@ -320,53 +321,17 @@ const SelectCustomer = () => {
     ) {
       validationErrors.amount = "Amount cannot exceed remaining balance";
     }
+    if (Object.keys(validationErrors).length) {
+  setErrors(validationErrors);
+  toast.error("Please fill all required fields");
+  return;
+}
+    const isDuplicatePayment = (conditionFn) => {
+      return fullPaymentDetails.some(conditionFn);
+    };
 
-        const isDuplicatePayment = (conditionFn) => {
-          return (
-            fullPaymentDetails.some(conditionFn) || fullPayments.some(conditionFn)
-          );
-        };
-        if (selectedPaymentMethod === 2) {
-          const isCardDuplicate = isDuplicatePayment(
-            (payment) =>
-              payment.PaymentMachineID === newPayment.PaymentMachineID &&
-              payment.RefNo?.trim().toLowerCase() ===
-                newPayment.RefNo?.trim().toLowerCase()
-          );
-          if (isCardDuplicate) {
-            toast.error(
-              "This card payment (machine + approval code) already exists"
-            );
-            return;
-          }
-        }
-        if (selectedPaymentMethod === 4) {
-          const isChequeDuplicate = isDuplicatePayment(
-            (payment) =>
-              payment.BankMasterID === newPayment.BankMasterID &&
-              payment.ChequeDetails?.trim().toLowerCase() ===
-                newPayment.ChequeDetails?.trim().toLowerCase()
-          );
-          if (isChequeDuplicate) {
-            toast.error("This cheque (bank + cheque number) already exists");
-            return;
-          }
-        }
-    
-        if (selectedPaymentMethod === 5) {
-          const isBankDuplicate = isDuplicatePayment(
-            (payment) =>
-              payment.BankAccountID === newPayment.BankAccountID &&
-              payment.RefNo?.trim().toLowerCase() ===
-                newPayment.RefNo?.trim().toLowerCase()
-          );
-          if (isBankDuplicate) {
-            toast.error("This bank transfer (account + reference) already exists");
-            return;
-          }
-        }
     switch (selectedPaymentMethod) {
-      case 2:
+      case 4:
         if (!newPayment.BankMasterID)
           validationErrors.bankName = "Please select a bank";
         if (!newPayment.ChequeDetails)
@@ -384,14 +349,38 @@ const SelectCustomer = () => {
           }
         }
         break;
-      case 3:
+      case 5:
         if (!newPayment.BankAccountID)
           validationErrors.accountNumber = "Please select an account";
         if (!newPayment.RefNo)
           validationErrors.refNo = "Reference number is required";
         break;
     }
+    if (selectedPaymentMethod === 4) {
+      const isChequeDuplicate = isDuplicatePayment(
+        (payment) =>
+          payment.BankMasterID === newPayment.BankMasterID &&
+          payment.ChequeDetails?.trim().toLowerCase() ===
+            newPayment.ChequeDetails?.trim().toLowerCase()
+      );
+      if (isChequeDuplicate) {
+        toast.error("This cheque (bank + cheque number) already exists");
+        return;
+      }
+    }
 
+    if (selectedPaymentMethod === 5) {
+      const isBankDuplicate = isDuplicatePayment(
+        (payment) =>
+          payment.BankAccountID === newPayment.BankAccountID &&
+          payment.RefNo?.trim().toLowerCase() ===
+            newPayment.RefNo?.trim().toLowerCase()
+      );
+      if (isBankDuplicate) {
+        toast.error("This bank transfer (account + reference) already exists");
+        return;
+      }
+    }
     if (Object.keys(validationErrors).length) {
       setErrors(validationErrors);
       toast.error("Please fill all required fields");
@@ -958,11 +947,11 @@ const SelectCustomer = () => {
                         getOptionLabel={(option) => option.type}
                         value={
                           methods.find(
-                            (p) => p.value === selectedPaymentMethod
+                            (p) => p.value == selectedPaymentMethod
                           ) || null
                         }
                         onChange={(_, newValue) => {
-                          if (newValue?.value === 4) {
+                          if (newValue?.value === 7) {
                             const g = fullPaymentDetails?.find(
                               (item) => item.GVData
                             );
@@ -1116,7 +1105,7 @@ const MethodForm = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
         {method === 1 && commonAmountInput}
 
-        {method === 2 && (
+        {method === 4 && (
           <>
             <Autocomplete
               options={banks}
@@ -1191,7 +1180,7 @@ const MethodForm = ({
           </>
         )}
 
-        {method === 3 && (
+        {method === 5 && (
           <>
             <Autocomplete
               options={uniqueAccounts}
@@ -1233,7 +1222,7 @@ const MethodForm = ({
             {commonAmountInput}
           </>
         )}
-        {method === 4 && (
+        {method === 7 && (
           <Modal
             isOpen={collectGiftAmount}
             onClose={handleAddGiftAmount}

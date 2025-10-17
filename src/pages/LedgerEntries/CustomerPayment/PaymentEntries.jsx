@@ -234,8 +234,7 @@ const PaymentEntries = ({
             paymentEntry.ReferenceNo = payment.RefNo || "";
             break;
         }
-          payments[typeKey].push(paymentEntry);
-
+        payments[typeKey].push(paymentEntry);
       }
     });
 
@@ -275,11 +274,12 @@ const PaymentEntries = ({
         };
       }),
     };
-    console.log("payload", finalStructure);
     try {
       await saveFinalPayment({
         payload: finalStructure,
       }).unwrap();
+      setFullPaymentDetails([]);
+
       toast.success("Payments created Successfully");
       navigate("/customer-payment");
     } catch (error) {
@@ -296,6 +296,11 @@ const PaymentEntries = ({
     if (!newPayment.Amount || isNaN(newPayment.Amount)) {
       validationErrors.amount = "Please enter a valid amount";
     }
+        if (Object.keys(validationErrors).length) {
+  setErrors(validationErrors);
+  toast.error("Please fill all required fields");
+  return;
+}
 
     if (selectedPaymentMethod === 6 && newPayment.advanceId) {
       const isAdvanceDuplicate = fullPaymentDetails.some(
@@ -316,50 +321,50 @@ const PaymentEntries = ({
         return;
       }
     }
-        const isDuplicatePayment = (conditionFn) => {
-          return (
-            fullPaymentDetails.some(conditionFn) || fullPayments.some(conditionFn)
-          );
-        };
-        if (selectedPaymentMethod === 2) {
-          const isCardDuplicate = isDuplicatePayment(
-            (payment) =>
-              payment.PaymentMachineID === newPayment.PaymentMachineID &&
-              payment.RefNo?.trim().toLowerCase() ===
-                newPayment.RefNo?.trim().toLowerCase()
-          );
-          if (isCardDuplicate) {
-            toast.error(
-              "This card payment (machine + approval code) already exists"
-            );
-            return;
-          }
-        }
-        if (selectedPaymentMethod === 4) {
-          const isChequeDuplicate = isDuplicatePayment(
-            (payment) =>
-              payment.BankMasterID === newPayment.BankMasterID &&
-              payment.ChequeDetails?.trim().toLowerCase() ===
-                newPayment.ChequeDetails?.trim().toLowerCase()
-          );
-          if (isChequeDuplicate) {
-            toast.error("This cheque (bank + cheque number) already exists");
-            return;
-          }
-        }
-    
-        if (selectedPaymentMethod === 5) {
-          const isBankDuplicate = isDuplicatePayment(
-            (payment) =>
-              payment.BankAccountID === newPayment.BankAccountID &&
-              payment.RefNo?.trim().toLowerCase() ===
-                newPayment.RefNo?.trim().toLowerCase()
-          );
-          if (isBankDuplicate) {
-            toast.error("This bank transfer (account + reference) already exists");
-            return;
-          }
-        }
+    const isDuplicatePayment = (conditionFn) => {
+      return (
+        fullPaymentDetails.some(conditionFn) || fullPayments.some(conditionFn)
+      );
+    };
+    if (selectedPaymentMethod === 2) {
+      const isCardDuplicate = isDuplicatePayment(
+        (payment) =>
+          payment.PaymentMachineID === newPayment.PaymentMachineID &&
+          payment.RefNo?.trim().toLowerCase() ===
+            newPayment.RefNo?.trim().toLowerCase()
+      );
+      if (isCardDuplicate) {
+        toast.error(
+          "This card payment (machine + approval code) already exists"
+        );
+        return;
+      }
+    }
+    if (selectedPaymentMethod === 4) {
+      const isChequeDuplicate = isDuplicatePayment(
+        (payment) =>
+          payment.BankMasterID === newPayment.BankMasterID &&
+          payment.ChequeDetails?.trim().toLowerCase() ===
+            newPayment.ChequeDetails?.trim().toLowerCase()
+      );
+      if (isChequeDuplicate) {
+        toast.error("This cheque (bank + cheque number) already exists");
+        return;
+      }
+    }
+
+    if (selectedPaymentMethod === 5) {
+      const isBankDuplicate = isDuplicatePayment(
+        (payment) =>
+          payment.BankAccountID === newPayment.BankAccountID &&
+          payment.RefNo?.trim().toLowerCase() ===
+            newPayment.RefNo?.trim().toLowerCase()
+      );
+      if (isBankDuplicate) {
+        toast.error("This bank transfer (account + reference) already exists");
+        return;
+      }
+    }
     switch (selectedPaymentMethod) {
       case 2:
         if (!newPayment.PaymentMachineID)

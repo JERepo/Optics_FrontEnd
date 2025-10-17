@@ -189,8 +189,6 @@ const VendorCollectAdvace = ({
         payments[typeKey].push(paymentEntry);
         return;
       }
-
-    
     });
 
     return payments;
@@ -240,6 +238,11 @@ const VendorCollectAdvace = ({
       validationErrors.method = "Please select a payment method";
     if (!newPayment.Amount || isNaN(newPayment.Amount)) {
       validationErrors.amount = "Please enter a valid amount";
+    }
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors);
+      toast.error("Please fill all required fields");
+      return;
     }
     const isDuplicatePayment = (conditionFn) => {
       return (
@@ -308,9 +311,9 @@ const VendorCollectAdvace = ({
           const minDate = subDays(today, 90);
           const selectedDate = startOfDay(new Date(newPayment.ChequeDate));
 
-          if (isBefore(selectedDate, minDate) || isAfter(selectedDate, today)) {
+          if (isBefore(selectedDate, minDate)) {
             validationErrors.chequeDate =
-              "Cheque date must be within the past 90 days";
+              "Cheque date must be within the last 90 days or in the future";
           }
         }
         break;
@@ -769,14 +772,13 @@ const MethodForm = ({
                 label="Cheque Date *"
                 value={newPayment.ChequeDate}
                 onChange={(date) => {
-                  const today = startOfDay(new Date());
-                  const minDate = subDays(today, 90);
+                  const minDate = subDays(startOfDay(new Date()), 90);
 
                   if (date && isBefore(date, minDate)) {
                     setErrors((prev) => ({
                       ...prev,
                       chequeDate:
-                        "Cheque date must be within the last 90 days or in the future",
+                        "Cheque date must be within the last 90 days or future",
                     }));
                   } else {
                     setErrors((prev) => ({ ...prev, chequeDate: "" }));

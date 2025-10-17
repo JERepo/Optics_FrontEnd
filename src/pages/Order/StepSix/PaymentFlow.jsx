@@ -352,6 +352,11 @@ const PaymentFlow = ({
     ) {
       validationErrors.amount = "Amount cannot exceed remaining balance";
     }
+        if (Object.keys(validationErrors).length) {
+  setErrors(validationErrors);
+  toast.error("Please fill all required fields");
+  return;
+}
     const isDuplicatePayment = (conditionFn) => {
       return (
         fullPaymentDetails.some(conditionFn) || fullPayments.some(conditionFn)
