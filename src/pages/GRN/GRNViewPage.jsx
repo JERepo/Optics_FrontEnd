@@ -295,7 +295,7 @@ export function GRNViewPage() {
                                                     return <> Expiry: {formattedExpiry}</>;
                                                 }
                                                 return null;
-                                            })(): ''}
+                                            })() : ''}
                                             {item?.ProductDetails?.HSN && <br />}{`HSN: ${item?.ProductDetails?.HSN}`}
                                         </TableCell>
                                         : item?.ProductDetails?.ProductType === 0 ?
@@ -413,26 +413,38 @@ export function GRNViewPage() {
 
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total Net Value :</span>
-                    <span className="font-bold text-lg">
-                        {
-                            (grnViewDetails[0]?.GRNType === 1 && grnViewDetails[0]?.DCGRNPrice === 1) ? '' :
+                    <div className="flex flex-col">
+                        <span className="font-bold text-lg">
+                            {
+                                (grnViewDetails[0]?.GRNType === 1 && grnViewDetails[0]?.DCGRNPrice === 1) ? '' :
+                                    (() => {
+                                        const subtotal = grnViewDetails.reduce((total, item) => {
+                                            const quantity = item.GRNQty || 0;
+                                            const price = (item.GRNPrice) || 0;
+                                            const gstPercentage = parseFloat(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) || 0;
 
-                                `₹ ${grnViewDetails
-                                    .reduce((total, item) => {
-                                        const quantity = item.GRNQty || 0;
-                                        const price = (item.GRNPrice) || 0;
-                                        const gstPercentage = parseFloat(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) || 0;
+                                            if (price && !isNaN(price) && !isNaN(quantity)) {
+                                                const itemSubtotal = price * quantity;
+                                                const gstAmount = itemSubtotal * (gstPercentage / 100);
+                                                const fittingPrice = parseFloat(item?.FittingPrice || 0);
+                                                const fittingGstAmount = fittingPrice * (parseFloat(item?.FittingGSTPercentage || 0) / 100);
 
-                                        if (price && !isNaN(price) && !isNaN(quantity)) {
-                                            const subtotal = price * quantity;
-                                            const gstAmount = subtotal * (gstPercentage / 100);
-                                            return total + subtotal + gstAmount + parseFloat(item?.FittingPrice || 0) + ((parseFloat(item?.FittingPrice || 0) * (parseFloat(item?.FittingGSTPercentage || 0) / 100)) || 0);
-                                        }
-                                        return total;
-                                    }, 0)
-                                    ?.toFixed?.(2) ?? '0.00'}`
-                        }
-                    </span>
+                                                return total + itemSubtotal + gstAmount + fittingPrice + fittingGstAmount;
+                                            }
+                                            return total;
+                                        }, 0);
+
+                                        const roundOff = parseFloat(grnViewDetails[0]?.RoundOff || 0);
+                                        const totalNetValue = subtotal + roundOff;
+
+                                        return `₹ ${totalNetValue.toFixed(2)}`;
+                                    })()
+                            }
+                        </span>
+                        <span className="font-bold text-lg">
+                            {`(${parseFloat(grnViewDetails[0]?.RoundOff || 0).toFixed(2)})`}
+                        </span>
+                    </div>
                 </div>
             </div>
         </motion.div>
