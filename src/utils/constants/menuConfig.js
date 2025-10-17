@@ -264,30 +264,22 @@ export const menuItems = [
   {
     name: "GRN",
     icon: FiArrowRightCircle,
-    module: "GRN",
-    path: "/grn/",
-    // subItems: [
-    //   {
-    //     name: "Add GRN",
-    //     path: "/grn/create",
-    //     module: "GRN",
-    //     icon: IoConstructOutline, // Suggests building/setup
-    //   }
-    // ],
-  },
-  {
-    name: "GRN DC",
-    icon: FiArrowRightCircle,
-    module: "GRN DC",
-    path: "/grn-dc",
-    // subItems: [
-    //   {
-    //     name: "Add GRN",
-    //     path: "/grn/create",
-    //     module: "GRN",
-    //     icon: IoConstructOutline, // Suggests building/setup
-    //   }
-    // ],
+    module: ["GRN"],
+    // path: "/grn/",
+    subItems: [
+      {
+        name: "From Orders",
+        path: "/grn/",
+        module: "GRN",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+      {
+        name: "GRN DC",
+        path: "/grn-dc",
+        module: "GRN DC",
+        icon: IoConstructOutline, // Suggests building/setup
+      }
+    ],
   },
   {
     name: "Contact-Lens-Details",

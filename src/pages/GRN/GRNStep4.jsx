@@ -549,12 +549,12 @@ export default function GRNStep4() {
                                                     Barcode: {item.ProductDetails.barcode}
                                                 </>
                                             )}
-                                            {(item?.BatchCode && item?.ProductDetails?.CLBatchCode) && (
+                                            {(item?.BatchCode && item?.ProductDetails?.CLBatchCode) ? (
                                                 <>
                                                     <br />
                                                     BatchCode: {item.BatchCode}
                                                 </>
-                                            )}
+                                            ) : ''}
                                             {/* {(item?.Expiry && item?.ProductDetails?.CLBatchCode) && <br />} */}
                                             {((item?.ProductDetails?.Stock?.find(stock => stock.BatchCode === item.BatchCode)?.Expiry) && item?.ProductDetails?.CLBatchCode)
                                                 ? (() => {

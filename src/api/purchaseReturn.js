@@ -38,7 +38,7 @@ export const purchaseReturnApi = createApi({
       providesTags: ["PurchaseReturn"],
     }),
     deleteUpdatePR: builder.mutation({
-      query: ({ prId, userId, locationId,vendorId, payload }) => ({
+      query: ({ prId, userId, locationId, vendorId, payload }) => ({
         url: `/api/v1/purchase-Return/deleteupdate?PRMasterId=${prId}&ApplicationUserId=${userId}&locationId=${locationId}&vendorId=${vendorId}`,
         method: "PUT",
         body: payload,
@@ -74,6 +74,20 @@ export const purchaseReturnApi = createApi({
         url: `/api/v1/purchase-Return/orderno?vendorId=${vendorId}&companyId=${companyId}`,
       }),
     }),
+    bulkUploadFrame: builder.mutation({
+      query: ({ formData, applicationUserId, prMainId }) => ({
+        url: `/api/v1/purchase-Return/frame-bulk-upload?ApplicationUserId=${applicationUserId}&PRMainId=${prMainId}`,
+        method: 'POST',
+        body: formData
+      })
+    }),
+    bulkUploadAccessory: builder.mutation({
+      query: ({ formData, applicationUserId, prMainId }) => ({
+        url: `/api/v1/purchase-Return/accessory-bulk-upload?ApplicationUserId=${applicationUserId}&PRMainId=${prMainId}`,
+        method: 'POST',
+        body: formData
+      })
+    }),
   }),
 });
 
@@ -88,5 +102,7 @@ export const {
   useGetPRByIdQuery,
   useGetPRDataForViewQuery,
   useLazyPrintPdfQuery,
-  useGetOlSupplierNoQuery
+  useGetOlSupplierNoQuery,
+  useBulkUploadFrameMutation,
+  useBulkUploadAccessoryMutation
 } = purchaseReturnApi;

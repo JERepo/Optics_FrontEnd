@@ -250,7 +250,7 @@ export function GRNAgainstPOScannedTable({ scannedItems, updateScannedItemPrice,
                                 {item.Additional ? ` Add: ${item.Additional > 0 ? `+` : ``}${item.Additional}` : ` Add: `}
                                 {item.Size && <br />}{item.Size}
                                 {item?.Barcode && <br />}{item.Barcode ? `Barcode: ${item.Barcode}` : null}
-                                {(item?.CLBatchCode && item?.BatchCode) && <br />}{(item?.CLBatchCode && item.BatchCode) ? `BatchCode: ${item.BatchCode} - ` : null}
+                                {(item?.CLBatchCode && item?.BatchCode) ? <br /> : ''}{(item?.CLBatchCode && item.BatchCode) ? `BatchCode: ${item.BatchCode} - ` : null}
                                 {(item?.CLBatchCode && item.Expiry) ? (() => {
                                     const [year, month, day] = item.Expiry.split('-');
                                     const formattedExpiry = `${day}-${month}-${year}`;

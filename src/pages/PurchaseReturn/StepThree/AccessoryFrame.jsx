@@ -29,7 +29,11 @@ import {
   validateQuantity,
   validateStockQty,
 } from "../../../utils/isValidNumericInput";
-import { useSavePurchaseReturnProductMutation } from "../../../api/purchaseReturn";
+import { useBulkUploadAccessoryMutation, useSavePurchaseReturnProductMutation } from "../../../api/purchaseReturn";
+import { motion, AnimatePresence } from "framer-motion";
+import { useLazyDownloadAccessorySampleExcelQuery, useLazyDownloadFrameSampleExcelQuery } from "../../../api/purchaseOrderApi";
+import { useLazyDownloadCLSampleExcelQuery } from "../../../api/grnApi";
+import { CheckCircle, FileText, Upload } from "lucide-react";
 
 const AccessoryFrame = () => {
   const {
@@ -52,7 +56,15 @@ const AccessoryFrame = () => {
   const [selectedRows, setSelectedRows] = useState([]);
   const [singleOrCombine, setSingleOrCombine] = useState(0); // 0 = Combine, 1 = Separate
   const [editMode, setEditMode] = useState({}); // { [barcode-index]: { sellingPrice: false, qty: false } }
+  const [selectedFile, setSelectedFile] = useState(null);
+  const fileInputRef = useRef(null);
 
+
+  const [downloadFrameSample] = useLazyDownloadFrameSampleExcelQuery();
+  const [downloadAccessorySample] = useLazyDownloadAccessorySampleExcelQuery();
+  const [downloadCLSample] = useLazyDownloadCLSampleExcelQuery();
+
+  const [uploadAccessoryFile, { isLoading: isAccessoryFileUploading }] = useBulkUploadAccessoryMutation();
   const { data: allBrands } = useGetAllBrandsQuery();
   const [
     fetchByBarcode,
@@ -114,9 +126,9 @@ const AccessoryFrame = () => {
               return prev.map((item, idx) =>
                 idx === index
                   ? {
-                      ...item,
-                      stkQty: newStkQty,
-                    }
+                    ...item,
+                    stkQty: newStkQty,
+                  }
                   : item
               );
             } else {
@@ -428,6 +440,87 @@ const AccessoryFrame = () => {
       b.BrandName.toLowerCase().includes(brandInput.toLowerCase())
   );
 
+
+  const downloadFile = (blob, filename) => {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  };
+
+
+  const handleDownloadSampleExcel = async (selectedOption) => {
+    try {
+      if (selectedOption === "Frame/Sunglass") {
+        const blob = await downloadFrameSample().unwrap();
+        downloadFile(blob, "SampleFrameBulkUpload.xlsx");
+      } else if (selectedOption === "Accessories") {
+        const blob = await downloadAccessorySample().unwrap();
+        downloadFile(blob, "SampleAccessoryBulkUpload.xlsx");
+      } else if (selectedOption === "Contact Lens") {
+        const blob = await downloadCLSample().unwrap();
+        downloadFile(blob, "SampleCLBulkUpload.xlsx");
+      }
+      toast.success("Sample excel downloaded successfully.");
+    } catch (error) {
+      console.error('Failed to download sample excel:', error);
+      toast.error(error.data?.message || error.message || "Failed to download sample excel");
+    }
+  }
+
+  const handleClearFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setSelectedFile(file);
+    toast.success("File selected successfully");
+  };
+
+
+  const handleUpload = async (selectedOption) => {
+    if (!selectedFile) {
+      toast.error("Please select a file!");
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("excelFile", selectedFile);
+      let res;
+      if (selectedOption === "Accessories") {
+        res = await uploadAccessoryFile({
+          formData: formData,
+          applicationUserId: user?.Id,
+          prMainId: purchaseDraftData.Id || purchaseDraftData[0].Id
+        }).unwrap();
+      }
+
+      console.log("response", res);
+
+      if (res.status === "success") {
+        // Generic success
+        toast.success(res?.data?.message || res?.message || "File uploaded successfully!");
+        goToPurchaseStep(4);
+
+      }
+
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error(error?.data?.error || error?.data?.message || "Upload failed");
+    }
+  };
+
   return (
     <div className="max-w-8xl h-auto">
       <div className="bg-white rounded-xl shadow-sm">
@@ -487,34 +580,153 @@ const AccessoryFrame = () => {
                       checked={singleOrCombine === 1}
                       label="Separate Entry"
                     />
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <div className="relative flex items-center">
-                    <input
-                      id="barcode"
-                      type="text"
-                      value={barcode}
-                      onChange={(e) => setBarcode(e.target.value)}
-                      placeholder="Scan or enter barcode"
-                      className="w-[400px] pl-10 pr-4 py-3 border border-gray-300 rounded-lg"
+                    <Radio
+                      value="2"
+                      onChange={() => setSingleOrCombine(2)}
+                      checked={singleOrCombine === 2}
+                      label="Bulk Process"
                     />
-                    <FiSearch className="absolute left-3 text-gray-400" />
                   </div>
-                  <Button
-                    type="submit"
-                    isLoading={isBarcodeLoading || isBarCodeFetching}
-                  >
-                    Add
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={() => setSearchMode(true)}
-                    variant="outline"
-                  >
-                    Search
-                  </Button>
                 </div>
+                {singleOrCombine !== 2 ? (
+                  <div className="flex gap-2">
+                    <div className="relative flex items-center">
+                      <input
+                        id="barcode"
+                        type="text"
+                        value={barcode}
+                        onChange={(e) => setBarcode(e.target.value)}
+                        placeholder="Scan or enter barcode"
+                        className="w-[400px] pl-10 pr-4 py-3 border border-gray-300 rounded-lg"
+                      />
+                      <FiSearch className="absolute left-3 text-gray-400" />
+                    </div>
+                    <Button
+                      type="submit"
+                      isLoading={isBarcodeLoading || isBarCodeFetching}
+                    >
+                      Add
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => setSearchMode(true)}
+                      variant="outline"
+                    >
+                      Search
+                    </Button>
+                  </div>
+                ) : (
+                  <div>
+                    <motion.div
+                      initial={{ y: -20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: -20, opacity: 0 }}
+                      transition={{ duration: 0.5, delay: 0.2 }}
+                      className="w-full"
+                    >
+                      <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+                        {/* Top info banner */}
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-8 py-4 border-b border-gray-200">
+                          <p className="text-sm text-gray-700">
+                            <span className="font-semibold text-gray-800">Tip:</span> Download the sample file to see the correct format for your bulk upload
+                          </p>
+                        </div>
+
+                        {/* Content Section */}
+                        <div className="p-8">
+                          {/* Single Row Layout */}
+                          <div className="flex flex-col justify-between sm:flex-row items-stretch sm:items-center gap-4">
+                            {/* Download Sample Button */}
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => handleDownloadSampleExcel(selectedPurchaseProduct.label)}
+                              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50 flex items-center justify-center flex-1 sm:flex-none"
+                            >
+                              <>
+                                <FileText className="w-4 h-4" />
+                                <span className="text-white">Download Sample</span>
+                              </>
+                            </motion.button>
+
+                            {/* File Upload Input */}
+                            <input
+                              type="file"
+                              ref={fileInputRef}
+                              onChange={handleFileSelect}
+                              accept=".xlsx,.xls,.csv"
+                              className="hidden"
+                              id="file-upload"
+                            />
+                            <motion.label
+                              htmlFor="file-upload"
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              className="px-6 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors border-2 border-dashed border-gray-300 hover:border-gray-400 cursor-pointer flex items-center justify-center gap-2 font-semibold text-gray-700 whitespace-nowrap"
+                            >
+                              <Upload className="w-4 h-4" />
+                              <span>Select File</span>
+                            </motion.label>
+
+                            <div className="flex gap-4">
+                              {/* Upload Button */}
+                              <motion.button
+                                onClick={() => handleUpload(selectedPurchaseProduct.label)}
+                                // disabled={!selectedFile || isFrameFileUploading || isAccessoryFileUploading || isContactLensFileUploading}
+                                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50 flex items-center justify-center flex-1 sm:flex-none"
+                              >
+                                {/* {(isFrameFileUploading || isAccessoryFileUploading || isContactLensFileUploading) ? (
+                                                  <>
+                                                    <RefreshCcw className="w-4 h-4 animate-spin" />
+                                                    <span className="text-white">Uploading...</span>
+                                                  </>
+                                                ) : ( */}
+                                <>
+                                  <Upload className="w-4 h-4" />
+                                  <span className="text-white">Upload</span>
+                                </>
+                                {/* )} */}
+                              </motion.button>
+                              {/* Clear Button */}
+                              {selectedFile && (
+                                <motion.button
+                                  initial={{ scale: 0.9, opacity: 0 }}
+                                  animate={{ scale: 1, opacity: 1 }}
+                                  exit={{ scale: 0.9, opacity: 0 }}
+                                  onClick={handleClearFile}
+                                  className="px-4 py-2 rounded-lg border-2 border-red-300 text-red-600 hover:bg-red-50 transition-colors font-semibold whitespace-nowrap"
+                                >
+                                  Clear
+                                </motion.button>
+                              )}
+                            </div>
+
+                          </div>
+
+                          {/* Selected file display below */}
+                          {selectedFile && (
+                            <motion.div
+                              initial={{ y: 10, opacity: 0 }}
+                              animate={{ y: 0, opacity: 1 }}
+                              exit={{ y: -10, opacity: 0 }}
+                              className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between"
+                            >
+                              <div className="flex items-center gap-3 flex-1">
+                                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-gray-800 truncate">{selectedFile.name}</p>
+                                  <p className="text-xs text-gray-600">
+                                    {(selectedFile.size / 1024).toFixed(2)} KB
+                                  </p>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
               </div>
             </form>
           ) : (
@@ -604,7 +816,7 @@ const AccessoryFrame = () => {
           <div className="p-6">
             <Table
               columns={[
-                
+
                 "s.no",
                 "Product type",
                 "supplier order no",
@@ -629,7 +841,7 @@ const AccessoryFrame = () => {
                     <div>HSN: {item.HSN}</div>
                   </TableCell>
                   <TableCell>₹{formatINR(item.MRP)}</TableCell>
-                    <TableCell>
+                  <TableCell>
                     {editMode[`${item.Barcode}-${index}`]?.qty ? (
                       <div className="flex items-center gap-2">
                         <input
@@ -739,13 +951,13 @@ const AccessoryFrame = () => {
                     ₹{formatINR(calculateStockGST(item).gstAmount)}(
                     {calculateStockGST(item).gstPercent}%)
                   </TableCell>
-                
+
                   {/* <TableCell>{item.Quantity}</TableCell> */}
                   <TableCell>
                     ₹
                     {formatINR(
                       parseFloat(item.BuyingPrice) * item.stkQty +
-                        calculateStockGST(item).gstAmount * item.stkQty
+                      calculateStockGST(item).gstAmount * item.stkQty
                     )}
                   </TableCell>
                   <TableCell>
