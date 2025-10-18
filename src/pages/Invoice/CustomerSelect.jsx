@@ -1202,8 +1202,7 @@ const CustomerSelect = () => {
                     <div className="flex gap-1">
                       <strong>Credit Limit Available:</strong>
                       {parseFloat(
-                        customerData?.data?.data?.CustomerCreditLimit
-                          .CreditLimitAvl
+                        customerData?.data?.data?.CustomerCreditLimit?.CreditLimitAvl || 0
                       ).toLocaleString()}
                     </div>
                   </>

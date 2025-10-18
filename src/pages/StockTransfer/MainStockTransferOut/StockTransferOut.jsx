@@ -112,6 +112,7 @@ const StockTransferOut = () => {
         ToCompanyId: s.ToCompanyId,
         STOutCreateDate: s.STOutCreateDate,
         status: getStatus(s.Status),
+        s
       }))
       .filter(
         (order) => order.FromCompanyId === parseInt(hasMultipleLocations[0])
@@ -141,13 +142,14 @@ const StockTransferOut = () => {
       const url = window.URL.createObjectURL(
         new Blob([blob], { type: "application/pdf" })
       );
-      const newWindow = window.open(url);
-      if (newWindow) {
-        newWindow.onload = () => {
-          newWindow.focus();
-          newWindow.print();
-        };
-      }
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `StockOut_${item.s.STOutNo} (${item.s.STOutPrefix}/${item.s.STOutNo}).pdf`;
+      document.body.appendChild(link);
+      link.click();
+      // clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.log(error);
       toast.error(

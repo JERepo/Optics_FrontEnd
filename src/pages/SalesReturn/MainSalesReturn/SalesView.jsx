@@ -479,13 +479,14 @@ const SalesView = () => {
       const url = window.URL.createObjectURL(
         new Blob([blob], { type: "application/pdf" })
       );
-      const newWindow = window.open(url);
-      if (newWindow) {
-        newWindow.onload = () => {
-          newWindow.focus();
-          newWindow.print();
-        };
-      }
+       const link = document.createElement("a");
+      link.href = url;
+      link.download = `Credit_Note${customerDataById?.data.CNNo} (${customerDataById?.data.CNPrefix}${customerDataById?.data.CNNo}).pdf`;
+      document.body.appendChild(link);
+      link.click();
+      // clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.log(error);
       toast.error(
@@ -683,7 +684,7 @@ const SalesView = () => {
                   Total Amount
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
-                  ₹{formatINR(Number(grandTotal?.toFixed(2))) || "0"}
+                  ₹{formatINR(grandTotal + parseFloat(customerDataById?.data?.RoundOff || 0)) || "0"}
                 </span>
               </div>
             </div>

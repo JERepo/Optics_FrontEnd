@@ -113,6 +113,8 @@ const STINReport = () => {
       toast.success("StockTransferIn Details Generated successfully!");
       setFromDate(new Date());
       setToDate(new Date());
+            setDateType("today")
+
     } catch (error) {
       console.log(error);
 

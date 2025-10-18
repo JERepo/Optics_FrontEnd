@@ -641,7 +641,7 @@ const PaymentFlow = ({
 
             {/* Add Payment Method */}
             <div className="mt-8">
-              {!parseInt(updatedDetails.RemainingToPay) <= 0 && (
+              {!parseFloat(updatedDetails.RemainingToPay) <= 0 && (
                 <>
                   <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
                     <FiPlus className="text-blue-500" />

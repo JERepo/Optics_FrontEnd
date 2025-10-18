@@ -299,7 +299,7 @@ const InvoiceView = () => {
     const fittingGst = parseFloat(item.FittingGSTPercentage || 0);
     const FittingAmt = fittingPrice * (fittingGst / 100);
     return (
-      sum +
+      sum + 
       FittingAmt +
       (invoicePrice * qty +
         (item.ProductType == 0 ? parseFloat(fittingPrice) : 0))
@@ -402,7 +402,6 @@ const InvoiceView = () => {
     }
   };
   const handleOtpComplete = (otp) => {
-    console.log("OTP Completed:", otp);
     setOtpValue(otp);
   };
   const handleUpdateCanceInvoice = async () => {
@@ -630,7 +629,7 @@ const InvoiceView = () => {
                   Total Amount
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
-                  ₹{formatINR(grandTotal) || "0"}
+                  ₹{formatINR(grandTotal + parseFloat(invoiceDetails?.RoundOff || 0)) || "0"}
                 </span>
               </div>
             </div>

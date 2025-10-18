@@ -399,7 +399,7 @@ const PurchaseReturnView = () => {
                   Total Amount
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
-                  ₹{formattedTotals.totalReturnValue}
+                  ₹{parseFloat(formattedTotals.totalReturnValue) + parseFloat(PRDetails?.data.data?.RoundOff || 0) }
                 </span>
               </div>
             </div>

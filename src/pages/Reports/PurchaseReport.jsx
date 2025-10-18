@@ -114,6 +114,8 @@ const PurchaseReport = () => {
       toast.success("Purchase Report Generated successfully!");
       setFromDate(new Date());
       setToDate(new Date());
+            setDateType("today")
+
     } catch (error) {
       console.log(error);
 

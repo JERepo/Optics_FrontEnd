@@ -172,7 +172,6 @@ const AuditReport = () => {
     link.remove();
     window.URL.revokeObjectURL(url);
   };
-console.log("se",selectedReports)
   const handleSubmit = async () => {
     const payload = {
       reportType: selectedReports.includes(0) ? 0 : selectedReports, // Send 0 for "All Pages" or array of selected types
@@ -188,6 +187,8 @@ console.log("se",selectedReports)
       }).unwrap();
       downloadFile(blob, "AuditReport.xlsx");
       toast.success("Audit Report Generated successfully!");
+            setDateType("today")
+
       setFromDate(new Date());
       setToDate(new Date());
     } catch (error) {

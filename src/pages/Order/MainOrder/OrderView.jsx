@@ -805,7 +805,7 @@ const OrderView = () => {
                     Total Amount
                   </span>
                   <span className="text-neutral-600 text-xl font-medium">
-                    ₹{formatINR(Number(grandTotal)) || "0"}
+                    ₹{formatINR(Number(grandTotal + parseFloat(customerDataById?.data?.data?.RoundOff || 0))) || "0"}
                   </span>
                 </div>
                 <div className="flex flex-col">

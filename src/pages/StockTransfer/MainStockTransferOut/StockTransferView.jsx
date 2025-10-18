@@ -289,13 +289,14 @@ const StockTransferView = () => {
       const url = window.URL.createObjectURL(
         new Blob([blob], { type: "application/pdf" })
       );
-      const newWindow = window.open(url);
-      if (newWindow) {
-        newWindow.onload = () => {
-          newWindow.focus();
-          newWindow.print();
-        };
-      }
+       const link = document.createElement("a");
+      link.href = url;
+      link.download = `StockOut_${stockDetails?.data?.result?.STOutNo} (${stockDetails?.data?.result?.STOutPrefix}/${stockDetails?.data?.result?.STOutNo}).pdf`;
+      document.body.appendChild(link);
+      link.click();
+      // clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.log(error);
       toast.error(
@@ -409,7 +410,7 @@ const StockTransferView = () => {
               "transfer price",
               "gst",
               "stock out qty",
-              "Avl qty",
+             
               "total amount",
             ]}
             data={stockDetails?.data?.result.details || []}
@@ -433,11 +434,11 @@ const StockTransferView = () => {
                 </TableCell>
 
                 <TableCell>{item.STQtyOut}</TableCell>
-                <TableCell>
+                {/* <TableCell>
                   {Array.isArray(item?.ProductDetails?.Stock)
                     ? item?.ProductDetails?.Stock[0]?.Quantity ?? 0
                     : item?.ProductDetails?.Stock?.Quantity ?? 0}
-                </TableCell>
+                </TableCell> */}
                 <TableCell>
                   ₹
                   {formatINR(

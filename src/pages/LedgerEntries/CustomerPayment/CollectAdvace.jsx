@@ -235,7 +235,7 @@ const CollectAdvance = ({
       await saveFinalPayment({ payload: finalStructure }).unwrap();
       toast.success("Advance taken Successfully");
       navigate("/customer-payment");
-      setFullPaymentDetails([])
+      setFullPaymentDetails([]);
     } catch (error) {
       toast.error("Please try again!");
     }
@@ -256,10 +256,10 @@ const CollectAdvance = ({
       );
     };
     if (Object.keys(validationErrors).length) {
-  setErrors(validationErrors);
-  toast.error("Please fill all required fields");
-  return;
-}
+      setErrors(validationErrors);
+      toast.error("Please fill all required fields");
+      return;
+    }
     if (selectedPaymentMethod === 2) {
       const isCardDuplicate = isDuplicatePayment(
         (payment) =>
@@ -464,7 +464,15 @@ const CollectAdvance = ({
                 </div>
               </div>
             )}
-
+            {fullPaymentDetails?.length > 0 && (
+              <div className="mt-3 text-lg text-neutral-700 font-semibold">
+                Total Advance :{" "}
+                {fullPaymentDetails?.reduce(
+                  (s, a) => s + (parseFloat(a.Amount) || 0),
+                  0
+                )}
+              </div>
+            )}
             {/* Add Payment Method */}
             <div className="mt-8">
               <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">

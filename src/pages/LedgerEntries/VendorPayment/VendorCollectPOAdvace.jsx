@@ -408,11 +408,11 @@ const VendorCollectPOAdvace = ({
     if (!newPayment.Amount || isNaN(newPayment.Amount)) {
       validationErrors.amount = "Please enter a valid amount";
     }
-        if (Object.keys(validationErrors).length) {
-  setErrors(validationErrors);
-  toast.error("Please fill all required fields");
-  return;
-}
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors);
+      toast.error("Please fill all required fields");
+      return;
+    }
     const isDuplicatePayment = (conditionFn) => {
       return (
         fullPaymentDetails.some(conditionFn) || fullPayments.some(conditionFn)
@@ -751,7 +751,15 @@ const VendorCollectPOAdvace = ({
                 </div>
               </div>
             )}
-
+            {fullPaymentDetails?.length > 0 && (
+              <div className="mt-3 text-lg text-neutral-700 font-semibold">
+                Total PO Advance :{" "}
+                {fullPaymentDetails?.reduce(
+                  (s, a) => s + (parseFloat(a.Amount) || 0),
+                  0
+                )}
+              </div>
+            )}
             {/* Add Payment Method */}
             {againstPONext && (
               <div className="mt-8">

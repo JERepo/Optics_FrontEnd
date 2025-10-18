@@ -453,7 +453,15 @@ const VendorCollectAdvace = ({
                 </div>
               </div>
             )}
-
+            {fullPaymentDetails?.length > 0 && (
+              <div className="mt-3 text-lg text-neutral-700 font-semibold">
+                Total Advance :{" "}
+                {fullPaymentDetails?.reduce(
+                  (s, a) => s + (parseFloat(a.Amount) || 0),
+                  0
+                )}
+              </div>
+            )}
             {/* Add Payment Method */}
             <div className="mt-8">
               <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">

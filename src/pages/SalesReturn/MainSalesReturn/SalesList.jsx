@@ -107,6 +107,7 @@ const SalesList = () => {
         CompanyID: parseInt(s.CompanyID),
         CNDate: s.CNDate,
         status: getStatus(s.Status),
+        s
       }))
       .filter((order) => order.CompanyID === parseInt(hasMultipleLocations[0]))
       .sort((a, b) => new Date(b.CNDate) - new Date(a.CNDate));
@@ -134,7 +135,7 @@ const SalesList = () => {
       );
       const link = document.createElement("a");
       link.href = url;
-      link.download = `Invoice_${item.InvoiceNo} (${item.InvoicePrefix}${item.InvoiceNo}).pdf`;
+      link.download = `Credit_Note${item.s.CNNo} (${item.s.CNPrefix}${item.s.CNNo}).pdf`;
       document.body.appendChild(link);
       link.click();
       // clean up

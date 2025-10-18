@@ -127,6 +127,7 @@ const CompanySettings = () => {
     enableEIInvoice: "",
     enableEICreditNote: "",
     enableEIDebitNote: "",
+    enableEInStockOut: "",
     city: "",
     state: null,
     country: null,
@@ -258,7 +259,7 @@ const CompanySettings = () => {
         creditNoteTc: data.CreditNoteTc,
         debitNoteTc: data.DebitNoteTc,
         invoiceTc: data.InvoiceTc,
-        frameLabel: data?.BarcodeLabelId, 
+        frameLabel: data?.BarcodeLabelId,
         frameColumn1: data.FSBL1,
         frameColumn2: data.FSBL2,
         frameColumn3: data.FSBL3,
@@ -268,7 +269,8 @@ const CompanySettings = () => {
         invoiceDcPdf: 0, // 0 show MRP, 1 selling
         editInvoicePrice: 0,
         salesReturnAgainstInvoiceOnly: 0,
-        accessoryLabel: data?.BarcodeLabelId,
+        NoOfColumns :allLabels?.data?.find(item => data?.BarcodeLabelId == item.Id).NoOfColumns,
+        accessoryLabel: data?.AccBarcodeLableId,
         accessoryColumn1: data.AccBL1,
         accessoryColumn2: data.AccBL2,
         accessoryColumn3: data.AccBL3,
@@ -297,7 +299,8 @@ const CompanySettings = () => {
         discountValue: data?.DiscountMaxValue,
         ClientEmail: data?.ClientEmail,
         EInvoiceInstanceID: data?.EInvoiceInstanceID,
-        discountPercentage :data?.DiscountMaxSlabPerct,
+        discountPercentage: data?.DiscountMaxSlabPerct,
+        enableEInStockOut: data?.STEInvoiceEnable,
       });
       setLogoPreview(
         companySettingData?.data?.data?.Company?.Logo
@@ -310,7 +313,7 @@ const CompanySettings = () => {
           : null
       );
     }
-  }, [companySettingData]);
+  }, [companySettingData, allLabels]);
   const fetchLocationDetails = async (pincode) => {
     try {
       const response = await getPinCodeData({ pincode }).unwrap();
@@ -488,7 +491,7 @@ const CompanySettings = () => {
       CreditNoteTc: formData.creditNoteTc,
       DebitNoteTc: formData.debitNoteTc,
       InvoiceTc: formData.invoiceTc,
-      BarcodeLabelId: formData.frameLabel , // Assuming it's an ID
+      BarcodeLabelId: formData.frameLabel, // Assuming it's an ID
       FSBL1: formData.frameColumn1,
       FSBL2: formData.frameColumn2,
       FSBL3: formData.frameColumn3,
@@ -504,20 +507,13 @@ const CompanySettings = () => {
       AccBL3: formData.accessoryColumn3,
       AccBL4: formData.accessoryColumn4,
       AccBL5: formData.accessoryColumn5,
-      OLGSTINunit: EInvoiceGSTOptions?.find(
-        (item) => item.value === formData.olGstUnit
-      )?.name,
-      CLGSTINunit: EInvoiceGSTOptions?.find(
-        (item) => item.value === formData.clGstUnit
-      )?.name,
-      AccGSTINunit: EInvoiceGSTOptions?.find(
-        (item) => item.value === formData.accGstUnit
-      )?.name,
-      FSGSTINunit: EInvoiceGSTOptions?.find(
-        (item) => item.value === formData.fsGstUnit
-      )?.name,
+      OLGSTINunit: formData.olGstUnit,
+      CLGSTINunit: formData.clGstUnit,
+      AccGSTINunit: formData.accGstUnit,
+      FSGSTINunit: formData.fsGstUnit,
       CNEInvoiceEnable: formData.enableEICreditNote,
       DNEInvoiceEnable: formData.enableEIDebitNote,
+      STEInvoiceEnable: formData.enableEInStockOut,
       POApproval: formData.poApproval,
       GVMultipleUse: formData.gvMultipleUse,
       DCBilling: formData.dcBilling,
@@ -535,7 +531,7 @@ const CompanySettings = () => {
       DiscountMaxValue: formData.discountValue,
       EInvoiceInstanceID: formData.EInvoiceInstanceID,
       ClientEmail: formData.ClientEmail,
-      DiscountMaxSlabPerct :formData?.discountPercentage
+      DiscountMaxSlabPerct: formData?.discountPercentage,
     };
 
     // If logo/QR need uploading (assuming multipart form)
@@ -938,35 +934,37 @@ const CompanySettings = () => {
       icon: <FiFileText className="text-purple-600 text-xl" />,
       content: (
         <Box className="flex gap-4 flex-col">
-          <div className="flex items-center gap-5">
-            <label className="text-neutral-800 font-semibold text-base">
-              Enable GST Verification{" "}
-            </label>
-            <Radio
-              name="enableGstVerification"
-              value="1"
-              checked={formData.enableGstVerification === 1}
-              onChange={() => handleRadioChange("enableGstVerification", "1")}
-              label="Yes"
-            />
-            <Radio
-              name="enableGstVerification"
-              value="0"
-              checked={formData.enableGstVerification === 0}
-              onChange={() => handleRadioChange("enableGstVerification", "0")}
-              label="No"
-            />
-          </div>
-          <div className="flex-grow flex">
-            <TextField
-              label="GST Search Instance ID"
-              placeholder="Enter GST Search Instance ID"
-              variant="outlined"
-              size="small"
-              fullWidth
-              value={formData.gstSearchInstanceId}
-              onChange={handleChange("gstSearchInstanceId")}
-            />
+          <div className="flex gap-5">
+            <div className="flex items-center gap-5">
+              <label className="text-neutral-800 font-semibold text-base">
+                Enable GST Verification{" "}
+              </label>
+              <Radio
+                name="enableGstVerification"
+                value="1"
+                checked={formData.enableGstVerification === 1}
+                onChange={() => handleRadioChange("enableGstVerification", "1")}
+                label="Yes"
+              />
+              <Radio
+                name="enableGstVerification"
+                value="0"
+                checked={formData.enableGstVerification === 0}
+                onChange={() => handleRadioChange("enableGstVerification", "0")}
+                label="No"
+              />
+            </div>
+            <div className="flex-grow flex">
+              <TextField
+                label="GST Search Instance ID"
+                placeholder="Enter GST Search Instance ID"
+                variant="outlined"
+                size="small"
+                fullWidth
+                value={formData.gstSearchInstanceId}
+                onChange={handleChange("gstSearchInstanceId")}
+              />
+            </div>
           </div>
           <div className="flex items-center gap-5">
             <label className="text-neutral-800 font-semibold text-base">
@@ -988,6 +986,17 @@ const CompanySettings = () => {
               label="No"
             />
           </div>
+          <div className="flex-grow flex">
+            <TextField
+              label="E-Invoice Instance ID"
+              placeholder="Enter E-Invoice Instance ID"
+              variant="outlined"
+              size="small"
+              fullWidth
+              value={formData.EInvoiceInstanceID}
+              onChange={handleChange("EInvoiceInstanceID")}
+            />
+          </div>
           {formData.enableEInvoice === 1 && (
             <>
               <div className="grid grid-cols-4 gap-5">
@@ -997,13 +1006,13 @@ const CompanySettings = () => {
                     getOptionLabel={(option) => option.name || ""}
                     value={
                       EInvoiceGSTOptions?.find(
-                        (pool) => pool.value == formData.olGstUnit
+                        (pool) => pool.name == formData.olGstUnit
                       ) || null
                     }
                     onChange={(_, newValue) =>
                       setFormData({
                         ...formData,
-                        olGstUnit: newValue?.value || null,
+                        olGstUnit: newValue?.name || null,
                       })
                     }
                     renderInput={(params) => (
@@ -1024,13 +1033,13 @@ const CompanySettings = () => {
                     getOptionLabel={(option) => option.name || ""}
                     value={
                       EInvoiceGSTOptions?.find(
-                        (pool) => pool.value == formData.clGstUnit
+                        (pool) => pool.name == formData.clGstUnit
                       ) || null
                     }
                     onChange={(_, newValue) =>
                       setFormData({
                         ...formData,
-                        clGstUnit: newValue?.value || null,
+                        clGstUnit: newValue?.name || null,
                       })
                     }
                     renderInput={(params) => (
@@ -1051,13 +1060,13 @@ const CompanySettings = () => {
                     getOptionLabel={(option) => option.name || ""}
                     value={
                       EInvoiceGSTOptions?.find(
-                        (pool) => pool.value == formData.fsGstUnit
+                        (pool) => pool.name == formData.fsGstUnit
                       ) || null
                     }
                     onChange={(_, newValue) =>
                       setFormData({
                         ...formData,
-                        fsGstUnit: newValue?.value || null,
+                        fsGstUnit: newValue?.name || null,
                       })
                     }
                     renderInput={(params) => (
@@ -1078,13 +1087,13 @@ const CompanySettings = () => {
                     getOptionLabel={(option) => option.name || ""}
                     value={
                       EInvoiceGSTOptions?.find(
-                        (pool) => pool.value == formData.accGstUnit
+                        (pool) => pool.name == formData.accGstUnit
                       ) || null
                     }
                     onChange={(_, newValue) =>
                       setFormData({
                         ...formData,
-                        accGstUnit: newValue?.value || null,
+                        accGstUnit: newValue?.name || null,
                       })
                     }
                     renderInput={(params) => (
@@ -1099,9 +1108,8 @@ const CompanySettings = () => {
                     fullWidth
                   />
                 </div>
-               
               </div>
-              <div className="mt-5 grid grid-cols-3 gap-5">
+              <div className="mt-5 grid grid-cols-4 gap-5">
                 <div className="flex items-center gap-3">
                   <label className="text-neutral-800 font-semibold text-base">
                     Enable E-Invoice for Invoice
@@ -1163,18 +1171,26 @@ const CompanySettings = () => {
                     label="No"
                   />
                 </div>
-              </div>
-               <div className="flex-grow flex">
-                  <TextField
-                    label="E-Invoice Instance ID"
-                    placeholder="Enter E-Invoice Instance ID"
-                    variant="outlined"
-                    size="small"
-                    fullWidth
-                    value={formData.EInvoiceInstanceID}
-                    onChange={handleChange("EInvoiceInstanceID")}
+                <div className="flex items-center gap-3">
+                  <label className="text-neutral-800 font-semibold text-base">
+                    Enable E-Invoice for Stock out
+                  </label>
+                  <Radio
+                    name="E-5"
+                    value="1"
+                    checked={formData.enableEInStockOut === 1}
+                    onChange={() => handleRadioChange("enableEInStockOut", "1")}
+                    label="Yes"
+                  />
+                  <Radio
+                    name="E-5"
+                    value="0"
+                    checked={formData.enableEInStockOut === 0}
+                    onChange={() => handleRadioChange("enableEInStockOut", "0")}
+                    label="No"
                   />
                 </div>
+              </div>
             </>
           )}
         </Box>
@@ -1687,21 +1703,27 @@ const CompanySettings = () => {
       icon: <FiBox className="text-pink-600 text-xl" />,
       content: (
         <Box className="flex flex-col gap-5">
+          {/* Barcode Label (Frame) */}
           <div>
-            <div className="mb-3">Barcode Label(Frame)</div>
-            <div className="">
+            <div className="mb-3">Barcode Label (Frame)</div>
+            <div>
               <div className="col-span-3">
                 <Autocomplete
-                  options={allLabels?.data || []} // perhaps change options to label templates if available
+                  options={allLabels?.data || []}
                   getOptionLabel={(option) => option.LabelName || ""}
-                  value={allLabels?.data.find(
-                    (item) => item.Id == formData.frameLabel
-                  )}
+                  value={
+                    allLabels?.data
+                      ? allLabels.data.find(
+                          (item) =>
+                            String(item.Id) === String(formData.frameLabel)
+                        ) || null
+                      : null
+                  }
                   onChange={(_, newValue) =>
                     setFormData({
                       ...formData,
                       frameLabel: newValue?.Id || null,
-                      NoOfColumns: newValue?.NoOfColumns,
+                      NoOfColumns: newValue?.NoOfColumns || null,
                     })
                   }
                   renderInput={(params) => (
@@ -1714,10 +1736,9 @@ const CompanySettings = () => {
                     />
                   )}
                   fullWidth
-                  
                 />
               </div>
-              {formData?.frameLabel && (
+              {formData?.frameLabel && formData?.NoOfColumns && (
                 <div className="grid grid-cols-3 gap-5 w-full mt-5">
                   {Array.from({ length: formData.NoOfColumns }).map(
                     (_, index) => (
@@ -1726,11 +1747,13 @@ const CompanySettings = () => {
                           multiple
                           options={FrameOptions || []}
                           getOptionLabel={(option) => option.label || ""}
-                          value={FrameOptions.filter((item) =>
-                            (formData[`frameColumn${index + 1}`] || "")
-                              .split(",")
-                              .includes(item.label)
-                          )}
+                          value={
+                            FrameOptions.filter((item) =>
+                              (formData[`frameColumn${index + 1}`] || "")
+                                .split(",")
+                                .includes(item.label)
+                            ) || []
+                          }
                           onChange={(_, newValue) => {
                             const concatenated = newValue
                               .map((item) => item.label)
@@ -1757,22 +1780,28 @@ const CompanySettings = () => {
               )}
             </div>
           </div>
-          <div>
-            <div className="mb-3">Barcode Label(Accessory)</div>
 
-            <div className="">
+          {/* Barcode Label (Accessory) */}
+          <div>
+            <div className="mb-3">Barcode Label (Accessory)</div>
+            <div>
               <div className="col-span-3">
                 <Autocomplete
-                  options={allLabels?.data || []} // perhaps change options to label templates if available
+                  options={allLabels?.data || []}
                   getOptionLabel={(option) => option.LabelName || ""}
-                  value={allLabels?.data.find(
-                    (item) => item.Id === formData.frameLabel
-                  )}
+                  value={
+                    allLabels?.data
+                      ? allLabels.data.find(
+                          (item) =>
+                            String(item.Id) === String(formData.accessoryLabel)
+                        ) || null
+                      : null
+                  }
                   onChange={(_, newValue) =>
                     setFormData({
                       ...formData,
-                      frameLabel: newValue?.Id || null,
-                      NoOfColumns: newValue?.NoOfColumns,
+                      accessoryLabel: newValue?.Id || null,
+                      NoOfColumns: newValue?.NoOfColumns || null,
                     })
                   }
                   renderInput={(params) => (
@@ -1787,7 +1816,7 @@ const CompanySettings = () => {
                   fullWidth
                 />
               </div>
-              {formData?.frameLabel && (
+              {formData?.accessoryLabel && formData?.NoOfColumns && (
                 <div className="grid grid-cols-3 gap-5 w-full mt-5">
                   {Array.from({ length: formData.NoOfColumns }).map(
                     (_, index) => (
@@ -1796,11 +1825,13 @@ const CompanySettings = () => {
                           multiple
                           options={AccOptions || []}
                           getOptionLabel={(option) => option.label || ""}
-                          value={AccOptions.filter((item) =>
-                            (formData[`accessoryColumn${index + 1}`] || "")
-                              .split(",")
-                              .includes(item.label)
-                          )}
+                          value={
+                            AccOptions.filter((item) =>
+                              (formData[`accessoryColumn${index + 1}`] || "")
+                                .split(",")
+                                .includes(item.label)
+                            ) || []
+                          }
                           onChange={(_, newValue) => {
                             const concatenated = newValue
                               .map((item) => item.label)
@@ -2173,7 +2204,6 @@ const CompanySettings = () => {
               Others
             </h3>
             <div className="grid grid-cols-3 gap-5">
-            
               <div className="flex items-center gap-5">
                 <label className="text-neutral-800 font-semibold text-base">
                   GV Multiple Use
