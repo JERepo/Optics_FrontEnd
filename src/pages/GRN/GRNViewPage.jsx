@@ -442,7 +442,7 @@ export function GRNViewPage() {
                             }
                         </span>
                         <span className="font-bold text-lg">
-                            {`(${parseFloat(grnViewDetails[0]?.RoundOff || 0).toFixed(2)})`}
+                            {`RoundOff: ${parseFloat(grnViewDetails[0]?.RoundOff || 0).toFixed(2)}`}
                         </span>
                     </div>
                 </div>

@@ -1,5 +1,5 @@
 import { useGRN } from "../../features/GRNContext";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, CheckCircle, FileText, Plus, RefreshCcw, SearchIcon, Trash2, Upload } from "lucide-react";
 import { Autocomplete, TextField } from "@mui/material";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -108,7 +108,8 @@ export default function GRNStep3() {
     const [uploadFrameFile, { isLoading: isFrameFileUploading }] = useBulkUploadFrameMutation();
     const [uploadAccessoryFile, { isLoading: isAccessoryFileUploading }] = useBulkUploadAccessoryMutation();
     const [uploadContactLensFile, { isLoading: isContactLensFileUploading }] = useBulkUploadContactLensMutation();
-
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [errorMessage, setErrorMessage] = useState([]);
 
     // RTK Query Hooks
     const [triggerBarcodeQuery, {
@@ -1163,7 +1164,16 @@ export default function GRNStep3() {
 
         } catch (error) {
             console.error("Upload error:", error);
-            toast.error(error?.data?.error || error?.data?.message || "Upload failed");
+            // toast.error(error?.data?.error || error?.data?.message || "Upload failed");
+            const errorMsg = error?.data?.error || error?.data?.message || "Upload failed";
+            // Handle validation errors (e.g., "Validation errors: Row 5: Barcode is required; Row 6: Invalid Quantity...")
+            if (errorMsg.includes("Validation errors")) {
+                const validationErrors = errorMsg.replace("Validation errors: ", "").split("; ").filter(msg => msg.trim());
+                setErrorMessage(validationErrors.length > 0 ? validationErrors : [errorMsg]);
+            } else {
+                setErrorMessage([errorMsg]);
+            }
+            setShowErrorModal(true);
         }
     };
 
@@ -2078,6 +2088,67 @@ export default function GRNStep3() {
                     </div>
                 )}
             </motion.div>
+
+            {/* Error Modal */}
+            {showErrorModal && (
+                <AnimatePresence>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="fixed inset-0 bg-neutral-200/50 backdrop-blur-xs flex items-center justify-center z-50"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                            className="bg-white p-6 rounded-lg shadow-xl w-96"
+                        >
+                            <motion.h3
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 }}
+                                className="text-lg font-bold mb-4 text-red-600"
+                            >
+                                Error
+                            </motion.h3>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.2 }}
+                                className="mb-4"
+                            >
+                                {errorMessage.length > 1 ? (
+                                    <ul className="list-disc pl-5 space-y-2">
+                                        {errorMessage.map((msg, index) => (
+                                            <li key={index} className="text-gray-700 bg-red-100 rounded-lg p-2">
+                                                {msg}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <p className="text-gray-700">{errorMessage[0]}</p>
+                                )}
+                            </motion.div>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.3 }}
+                                className="flex justify-end"
+                            >
+                                <button
+                                    onClick={() => setShowErrorModal(false)}
+                                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                                >
+                                    Close
+                                </button>
+                            </motion.div>
+                        </motion.div>
+                    </motion.div>
+                </AnimatePresence>
+            )}
         </>
     );
 }

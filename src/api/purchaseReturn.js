@@ -88,6 +88,13 @@ export const purchaseReturnApi = createApi({
         body: formData
       })
     }),
+    bulkUploadContactLens: builder.mutation({
+      query: ({ formData, applicationUserId, prMainId }) => ({
+        url: `/api/v1/purchase-Return/cl-bulk-upload?ApplicationUserId=${applicationUserId}&PRMainId=${prMainId}`,
+        method: 'POST',
+        body: formData
+      })
+    }),
   }),
 });
 
@@ -104,5 +111,6 @@ export const {
   useLazyPrintPdfQuery,
   useGetOlSupplierNoQuery,
   useBulkUploadFrameMutation,
-  useBulkUploadAccessoryMutation
+  useBulkUploadAccessoryMutation,
+  useBulkUploadContactLensMutation
 } = purchaseReturnApi;

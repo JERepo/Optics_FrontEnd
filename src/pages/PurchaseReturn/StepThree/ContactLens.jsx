@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useOrder } from "../../../features/OrderContext";
 import {
   FiArrowLeft,
@@ -31,7 +31,7 @@ import { useGetBatchBarCodeMutation } from "../../../api/salesReturnApi";
 import { formatINR } from "../../../utils/formatINR";
 import Modal from "../../../components/ui/Modal";
 import { useSaveStockDetailsMutation } from "../../../api/stockTransfer";
-import { useSavePurchaseReturnProductMutation } from "../../../api/purchaseReturn";
+import { useSavePurchaseReturnProductMutation, useBulkUploadContactLensMutation } from "../../../api/purchaseReturn";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle, FileText, Upload } from "lucide-react";
 import { useLazyDownloadAccessorySampleExcelQuery, useLazyDownloadFrameSampleExcelQuery } from "../../../api/purchaseOrderApi";
@@ -189,6 +189,8 @@ const ContactLens = () => {
   const [productCodeInput, setProductCodeInput] = useState("");
   const [detailId, setDetailId] = useState(false);
   const [openBatch, setOpenBatch] = useState(false);
+  const fileInputRef = useRef(null);
+
 
   const [lensData, setLensData] = useState({
     orderReference: null,
@@ -216,6 +218,7 @@ const ContactLens = () => {
   const [downloadFrameSample] = useLazyDownloadFrameSampleExcelQuery();
   const [downloadAccessorySample] = useLazyDownloadAccessorySampleExcelQuery();
   const [downloadCLSample] = useLazyDownloadCLSampleExcelQuery();
+  const [uploadContactLensFile] = useBulkUploadContactLensMutation();
 
   const { data: modalities, isLoading: modalitiesLoading } =
     useGetModalitiesQuery();
@@ -244,6 +247,13 @@ const ContactLens = () => {
 
   const [savePR, { isLoading: isPurchaseReturnLoading }] =
     useSavePurchaseReturnProductMutation();
+
+  const handleClearFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   useEffect(() => {
     setEditMode((prev) => {
@@ -873,6 +883,51 @@ const ContactLens = () => {
   }
 
 
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setSelectedFile(file);
+    toast.success("File selected successfully");
+  };
+
+
+
+  const handleUpload = async (selectedOption) => {
+    if (!selectedFile) {
+      toast.error("Please select a file!");
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("excelFile", selectedFile);
+      let res;
+
+      if (selectedOption === "Contact Lens") {
+        res = await uploadContactLensFile({
+          formData: formData,
+          applicationUserId: user?.Id,
+          prMainId: purchaseDraftData.Id || purchaseDraftData[0].Id
+        }).unwrap();
+      }
+
+      console.log("response", res);
+
+      if (res.status === "success") {
+        // Generic success
+        toast.success(res?.data?.message || res?.message || "File uploaded successfully!");
+        goToPurchaseStep(4);
+
+      }
+
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error(error?.data?.error || error?.data?.message || "Upload failed");
+    }
+  };
+
+
   return (
     <div className="max-w-8xl h-auto">
       <div className="bg-white rounded-xl shadow-sm p-2">
@@ -1391,8 +1446,8 @@ const ContactLens = () => {
                     {/* File Upload Input */}
                     <input
                       type="file"
-                      // ref={fileInputRef}
-                      // onChange={handleFileSelect}
+                      ref={fileInputRef}
+                      onChange={handleFileSelect}
                       accept=".xlsx,.xls,.csv"
                       className="hidden"
                       id="file-upload"
@@ -1412,7 +1467,7 @@ const ContactLens = () => {
                       <motion.button
                         // whileHover={{ scale: 1.02 }}
                         // whileTap={{ scale: 0.98 }}
-                        // onClick={() => handleUpload(formState.selectedOption)}
+                        onClick={() => handleUpload(selectedPurchaseProduct.label)}
                         // disabled={!selectedFile || isFrameFileUploading || isAccessoryFileUploading || isContactLensFileUploading}
                         className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50 flex items-center justify-center flex-1 sm:flex-none"
                       >
@@ -1434,7 +1489,7 @@ const ContactLens = () => {
                           initial={{ scale: 0.9, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
                           exit={{ scale: 0.9, opacity: 0 }}
-                          // onClick={handleClearFile}
+                          onClick={handleClearFile}
                           className="px-4 py-2 rounded-lg border-2 border-red-300 text-red-600 hover:bg-red-50 transition-colors font-semibold whitespace-nowrap"
                         >
                           Clear
