@@ -119,7 +119,6 @@ const PurchaseReturn = () => {
   };
   const handlePrint = async (item) => {
     setPrintingId(item.id);
-    console.log("ite",item)
 
     try {
       const blob = await generatePrint({

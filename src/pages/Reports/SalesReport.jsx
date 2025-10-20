@@ -114,6 +114,8 @@ const SalesReport = () => {
       toast.success("Sales Report Generated successfully!");
       setFromDate(new Date())
       setToDate(new Date())
+            setDateType("today")
+
     } catch (error) {
       console.log(error);
 

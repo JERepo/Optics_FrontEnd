@@ -131,6 +131,15 @@ export const stockTransferApi = createApi({
       }),
       transformResponse: (response) => response,
     }),
+    printLabels: builder.mutation({
+      query: ({ payload }) => ({
+        url: `/api/v1/pdf/stout-qr`,
+        method :"POST",
+        body : payload,
+        responseHandler: (response) => response.blob(),
+      }),
+      transformResponse: (response) => response,
+    }),
   }),
 });
 
@@ -146,6 +155,7 @@ export const {
   useGetAllStockOutDetailsQuery,
   useGetStockTransferOutByIdQuery,
   useLazyPrintPdfQuery,
+  usePrintLabelsMutation,
 
   // Stock transfer In APIs
   useGetStockOutDataForStockInQuery,

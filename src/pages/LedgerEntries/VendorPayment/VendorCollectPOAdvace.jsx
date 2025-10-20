@@ -312,36 +312,43 @@ const VendorCollectPOAdvace = ({
         return;
       }
 
-      if (!payments[typeKey]) {
-        payments[typeKey] = { amount: 0 };
-      }
+      if (["card", "cheque", "bank", "upi"].includes(typeKey)) {
+        if (!payments[typeKey]) payments[typeKey] = [];
 
-      payments[typeKey].amount += amount;
+        const paymentEntry = { amount };
 
-      switch (typeKey) {
-        case "card":
-          payments[typeKey].PaymentMachineID = payment.PaymentMachineID;
-          payments[typeKey].ApprCode = payment.RefNo;
-          if (payment.EMI) {
-            payments[typeKey].EMI = payment.EMI;
-            payments[typeKey].EMIMonths = parseInt(payment.EMIMonths);
-            payments[typeKey].EMIBank = payment.EMIBank;
-          }
-          break;
-        case "upi":
-          payments[typeKey].PaymentMachineID = payment.PaymentMachineID;
-          break;
-        case "cheque":
-          payments[typeKey].BankMasterID = payment.BankMasterID;
-          payments[typeKey].ChequeNo = payment.ChequeDetails;
-          payments[typeKey].ChequeDate = payment.ChequeDate
-            ? format(new Date(payment.ChequeDate), "yyyy-MM-dd")
-            : null;
-          break;
-        case "bank":
-          payments[typeKey].BankAccountID = payment.BankAccountID || null;
-          payments[typeKey].ReferenceNo = payment.RefNo || "";
-          break;
+        switch (typeKey) {
+          case "card":
+            paymentEntry.PaymentMachineID = payment.PaymentMachineID;
+            paymentEntry.ApprCode = payment.RefNo;
+            if (payment.EMI) {
+              paymentEntry.EMI = payment.EMI;
+              paymentEntry.EMIMonths = parseInt(payment.EMIMonths);
+              paymentEntry.EMIBank = payment.EMIBank;
+            }
+            break;
+
+          case "upi":
+            paymentEntry.PaymentMachineID = payment.PaymentMachineID;
+            paymentEntry.ReferenceNo = payment.RefNo || "";
+            break;
+
+          case "cheque":
+            paymentEntry.BankMasterID = payment.BankMasterID;
+            paymentEntry.ChequeNo = payment.ChequeDetails;
+            paymentEntry.ChequeDate = payment.ChequeDate
+              ? format(new Date(payment.ChequeDate), "yyyy-MM-dd")
+              : null;
+            break;
+
+          case "bank":
+            paymentEntry.BankAccountID = payment.BankAccountID || null;
+            paymentEntry.ReferenceNo = payment.RefNo || "";
+            break;
+        }
+
+        payments[typeKey].push(paymentEntry);
+        return;
       }
     });
 
@@ -383,6 +390,7 @@ const VendorCollectPOAdvace = ({
       creditBilling: parseInt(selectedPatient?.CreditBilling),
       againstPO: againstPO,
     };
+    console.log(finalStructure);
 
     try {
       await saveFinalPayment({ payload: finalStructure }).unwrap();
@@ -400,7 +408,55 @@ const VendorCollectPOAdvace = ({
     if (!newPayment.Amount || isNaN(newPayment.Amount)) {
       validationErrors.amount = "Please enter a valid amount";
     }
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors);
+      toast.error("Please fill all required fields");
+      return;
+    }
+    const isDuplicatePayment = (conditionFn) => {
+      return (
+        fullPaymentDetails.some(conditionFn) || fullPayments.some(conditionFn)
+      );
+    };
+    if (selectedPaymentMethod === 2) {
+      const isCardDuplicate = isDuplicatePayment(
+        (payment) =>
+          payment.PaymentMachineID === newPayment.PaymentMachineID &&
+          payment.RefNo?.trim().toLowerCase() ===
+            newPayment.RefNo?.trim().toLowerCase()
+      );
+      if (isCardDuplicate) {
+        toast.error(
+          "This card payment (machine + approval code) already exists"
+        );
+        return;
+      }
+    }
+    if (selectedPaymentMethod === 4) {
+      const isChequeDuplicate = isDuplicatePayment(
+        (payment) =>
+          payment.BankMasterID === newPayment.BankMasterID &&
+          payment.ChequeDetails?.trim().toLowerCase() ===
+            newPayment.ChequeDetails?.trim().toLowerCase()
+      );
+      if (isChequeDuplicate) {
+        toast.error("This cheque (bank + cheque number) already exists");
+        return;
+      }
+    }
 
+    if (selectedPaymentMethod === 5) {
+      const isBankDuplicate = isDuplicatePayment(
+        (payment) =>
+          payment.BankAccountID === newPayment.BankAccountID &&
+          payment.RefNo?.trim().toLowerCase() ===
+            newPayment.RefNo?.trim().toLowerCase()
+      );
+      if (isBankDuplicate) {
+        toast.error("This bank transfer (account + reference) already exists");
+        return;
+      }
+    }
     switch (selectedPaymentMethod) {
       case 2:
         if (!newPayment.PaymentMachineID)
@@ -695,7 +751,15 @@ const VendorCollectPOAdvace = ({
                 </div>
               </div>
             )}
-
+            {fullPaymentDetails?.length > 0 && (
+              <div className="mt-3 text-lg text-neutral-700 font-semibold">
+                Total PO Advance :{" "}
+                {fullPaymentDetails?.reduce(
+                  (s, a) => s + (parseFloat(a.Amount) || 0),
+                  0
+                )}
+              </div>
+            )}
             {/* Add Payment Method */}
             {againstPONext && (
               <div className="mt-8">
@@ -930,8 +994,7 @@ const MethodForm = ({
                 label="Cheque Date *"
                 value={newPayment.ChequeDate}
                 onChange={(date) => {
-                  const today = startOfDay(new Date());
-                  const minDate = subDays(today, 90);
+                  const minDate = subDays(startOfDay(new Date()), 90);
 
                   if (date && isBefore(date, minDate)) {
                     setErrors((prev) => ({
@@ -940,6 +1003,7 @@ const MethodForm = ({
                         "Cheque date must be within the last 90 days or in the future",
                     }));
                   } else {
+                    // ✅ clear error and allow both present/future dates
                     setErrors((prev) => ({ ...prev, chequeDate: "" }));
                     setNewPayment((prev) => ({
                       ...prev,
@@ -955,6 +1019,7 @@ const MethodForm = ({
                     helperText: errors.chequeDate,
                   },
                 }}
+                // ✅ Allows both past 90 days and future
                 minDate={subDays(new Date(), 90)}
               />
             </LocalizationProvider>

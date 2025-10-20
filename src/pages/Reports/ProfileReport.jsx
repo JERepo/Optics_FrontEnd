@@ -113,6 +113,8 @@ const ProfitReport = () => {
       }).unwrap();
       downloadFile(blob, "OrderReport.xlsx");
       toast.success("Order Report Generated successfully!");
+            setDateType("today")
+
       setFromDate(new Date());
       setToDate(new Date());
     } catch (error) {

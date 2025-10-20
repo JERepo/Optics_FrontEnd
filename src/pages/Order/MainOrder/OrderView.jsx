@@ -805,9 +805,18 @@ const OrderView = () => {
                     Total Amount
                   </span>
                   <span className="text-neutral-600 text-xl font-medium">
-                    ₹{formatINR(Number(grandTotal)) || "0"}
+                    ₹{formatINR(Number(grandTotal + parseFloat(customerDataById?.data?.data?.RoundOff || 0))) || "0"}
                   </span>
                 </div>
+                <div className="flex flex-col">
+                  <span className="text-neutral-700 font-semibold text-lg">
+                    Round Off
+                  </span>
+                  <span className="text-neutral-600 text-xl font-medium">
+                    ₹{formatINR(Number(customerDataById?.data?.data?.RoundOff)) || "0"}
+                  </span>
+                </div>
+                
                 {customerDataById?.data.data?.CustomerMaster?.CreditBilling ===
                   0 && (
                   <div className="flex flex-col">

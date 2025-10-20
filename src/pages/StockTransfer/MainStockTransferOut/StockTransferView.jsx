@@ -8,6 +8,7 @@ import { formatINR } from "../../../utils/formatINR";
 import {
   useGetStockTransferOutByIdQuery,
   useLazyPrintPdfQuery,
+  usePrintLabelsMutation,
 } from "../../../api/stockTransfer";
 import { useSelector } from "react-redux";
 import {
@@ -243,6 +244,8 @@ const StockTransferView = () => {
   );
   const EInvoiceEnable = companySettings?.data?.data.EInvoiceEnable;
   const InvInvoiceEnable = companySettings?.data?.data.STEInvoiceEnable;
+  const [getlabels, { isLoading: isLabelsFetching }] = usePrintLabelsMutation();
+
   const getShortTypeName = (id) => {
     if (id === null || id === undefined) return;
     if (id === 1) return "F/S";
@@ -286,6 +289,44 @@ const StockTransferView = () => {
       const url = window.URL.createObjectURL(
         new Blob([blob], { type: "application/pdf" })
       );
+       const link = document.createElement("a");
+      link.href = url;
+      link.download = `StockOut_${stockDetails?.data?.result?.STOutNo} (${stockDetails?.data?.result?.STOutPrefix}/${stockDetails?.data?.result?.STOutNo}).pdf`;
+      document.body.appendChild(link);
+      link.click();
+      // clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.log(error);
+      toast.error(
+        "Unable to print the stock transfer out please try again after some time!"
+      );
+    } finally {
+      setPrintingId(null);
+    }
+  };
+  const handleLabels = async () => {
+    const payload = {
+      companyId: parseInt(hasMultipleLocations[0]),
+      items: stockDetails?.data?.result.details?.some(
+        (item) => item.FrameDetailId || item.AccessoryDetailId
+      )
+        ? stockDetails?.data?.result.details?.map((item) => ({
+            type: item.FrameDetailId ? "frame" : "accessory",
+            detailId: item.FrameDetailId
+              ? item.FrameDetailId
+              : item.AccessoryDetailId,
+            qty: item.STQtyOut,
+          }))
+        : [],
+    };
+    try {
+      const blob = await getlabels({ payload }).unwrap();
+
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "application/pdf" })
+      );
       const newWindow = window.open(url);
       if (newWindow) {
         newWindow.onload = () => {
@@ -296,10 +337,8 @@ const StockTransferView = () => {
     } catch (error) {
       console.log(error);
       toast.error(
-        "Unable to print the stock transfer out please try again after some time!"
+        "Unable to print the stock transfer out labels please try again after some time!"
       );
-    } finally {
-      setPrintingId(null);
     }
   };
   if (isLoading) {
@@ -324,6 +363,13 @@ const StockTransferView = () => {
               icon={FiPrinter}
               isLoading={printingId === stockDetails?.data?.result?.ID}
             ></Button>
+            {stockDetails?.data?.result.details?.some(
+              (item) => item.FrameDetailId || item.AccessoryDetailId
+            ) && (
+              <Button onClick={handleLabels} isLoading={isLabelsFetching} >
+                Print Labels
+              </Button>
+            )}
           </div>
         </div>
         {/* Order Details */}
@@ -364,7 +410,7 @@ const StockTransferView = () => {
               "transfer price",
               "gst",
               "stock out qty",
-              "Avl qty",
+             
               "total amount",
             ]}
             data={stockDetails?.data?.result.details || []}
@@ -388,11 +434,11 @@ const StockTransferView = () => {
                 </TableCell>
 
                 <TableCell>{item.STQtyOut}</TableCell>
-                <TableCell>
+                {/* <TableCell>
                   {Array.isArray(item?.ProductDetails?.Stock)
                     ? item?.ProductDetails?.Stock[0]?.Quantity ?? 0
                     : item?.ProductDetails?.Stock?.Quantity ?? 0}
-                </TableCell>
+                </TableCell> */}
                 <TableCell>
                   ₹
                   {formatINR(

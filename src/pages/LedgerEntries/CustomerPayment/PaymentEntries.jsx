@@ -200,38 +200,41 @@ const PaymentEntries = ({
         return;
       }
 
-      if (!payments[typeKey]) {
-        payments[typeKey] = { amount: 0 };
-      }
-      payments[typeKey].amount += amount;
+      if (["card", "cheque", "bank", "upi"].includes(typeKey)) {
+        if (!payments[typeKey]) payments[typeKey] = [];
 
-      switch (typeKey) {
-        case "card":
-          payments[typeKey].PaymentMachineID = payment.PaymentMachineID;
-          payments[typeKey].ApprCode = payment.RefNo;
-          if (payment.EMI) {
-            payments[typeKey].EMI = payment.EMI;
-            payments[typeKey].EMIMonths = parseInt(payment.EMIMonths);
-            payments[typeKey].EMIBank = payment.EMIBank;
-          }
-          break;
-        case "upi":
-          payments[typeKey].PaymentMachineID = payment.PaymentMachineID;
-          break;
-        case "cheque":
-          payments[typeKey].BankMasterID = payment.BankMasterID;
-          payments[typeKey].ChequeNo = payment.ChequeDetails;
-          payments[typeKey].ChequeDate = payment.ChequeDate
-            ? format(new Date(payment.ChequeDate), "yyyy-MM-dd")
-            : null;
-          break;
-        case "bank":
-          payments[typeKey].BankAccountID = payment.BankAccountID || null;
-          payments[typeKey].ReferenceNo = payment.RefNo || "";
-          break;
-        // case "giftVoucher":
-        //   payments[typeKey].GVMasterID = payment.GVMasterID || null;
-        //   break;
+        const paymentEntry = { amount };
+
+        switch (typeKey) {
+          case "card":
+            paymentEntry.PaymentMachineID = payment.PaymentMachineID;
+            paymentEntry.ApprCode = payment.RefNo;
+            if (payment.EMI) {
+              paymentEntry.EMI = payment.EMI;
+              paymentEntry.EMIMonths = parseInt(payment.EMIMonths);
+              paymentEntry.EMIBank = payment.EMIBank;
+            }
+            break;
+
+          case "upi":
+            paymentEntry.PaymentMachineID = payment.PaymentMachineID;
+            paymentEntry.ReferenceNo = payment.RefNo || "";
+            break;
+
+          case "cheque":
+            paymentEntry.BankMasterID = payment.BankMasterID;
+            paymentEntry.ChequeNo = payment.ChequeDetails;
+            paymentEntry.ChequeDate = payment.ChequeDate
+              ? format(new Date(payment.ChequeDate), "yyyy-MM-dd")
+              : null;
+            break;
+
+          case "bank":
+            paymentEntry.BankAccountID = payment.BankAccountID || null;
+            paymentEntry.ReferenceNo = payment.RefNo || "";
+            break;
+        }
+        payments[typeKey].push(paymentEntry);
       }
     });
 
@@ -271,11 +274,12 @@ const PaymentEntries = ({
         };
       }),
     };
-    console.log("payload", finalStructure);
     try {
       await saveFinalPayment({
         payload: finalStructure,
       }).unwrap();
+      setFullPaymentDetails([]);
+
       toast.success("Payments created Successfully");
       navigate("/customer-payment");
     } catch (error) {
@@ -292,6 +296,11 @@ const PaymentEntries = ({
     if (!newPayment.Amount || isNaN(newPayment.Amount)) {
       validationErrors.amount = "Please enter a valid amount";
     }
+        if (Object.keys(validationErrors).length) {
+  setErrors(validationErrors);
+  toast.error("Please fill all required fields");
+  return;
+}
 
     if (selectedPaymentMethod === 6 && newPayment.advanceId) {
       const isAdvanceDuplicate = fullPaymentDetails.some(
@@ -309,6 +318,50 @@ const PaymentEntries = ({
       );
       if (isGiftVoucherDuplicate) {
         toast.error("This gift voucher has already been added");
+        return;
+      }
+    }
+    const isDuplicatePayment = (conditionFn) => {
+      return (
+        fullPaymentDetails.some(conditionFn) || fullPayments.some(conditionFn)
+      );
+    };
+    if (selectedPaymentMethod === 2) {
+      const isCardDuplicate = isDuplicatePayment(
+        (payment) =>
+          payment.PaymentMachineID === newPayment.PaymentMachineID &&
+          payment.RefNo?.trim().toLowerCase() ===
+            newPayment.RefNo?.trim().toLowerCase()
+      );
+      if (isCardDuplicate) {
+        toast.error(
+          "This card payment (machine + approval code) already exists"
+        );
+        return;
+      }
+    }
+    if (selectedPaymentMethod === 4) {
+      const isChequeDuplicate = isDuplicatePayment(
+        (payment) =>
+          payment.BankMasterID === newPayment.BankMasterID &&
+          payment.ChequeDetails?.trim().toLowerCase() ===
+            newPayment.ChequeDetails?.trim().toLowerCase()
+      );
+      if (isChequeDuplicate) {
+        toast.error("This cheque (bank + cheque number) already exists");
+        return;
+      }
+    }
+
+    if (selectedPaymentMethod === 5) {
+      const isBankDuplicate = isDuplicatePayment(
+        (payment) =>
+          payment.BankAccountID === newPayment.BankAccountID &&
+          payment.RefNo?.trim().toLowerCase() ===
+            newPayment.RefNo?.trim().toLowerCase()
+      );
+      if (isBankDuplicate) {
+        toast.error("This bank transfer (account + reference) already exists");
         return;
       }
     }
@@ -377,7 +430,6 @@ const PaymentEntries = ({
     setErrors({});
     toast.success("Payment added successfully!");
   };
-  console.log("ite", items);
   const handleDeletePayment = (index) => {
     setFullPaymentDetails((prev) => prev.filter((_, i) => i !== index));
     toast.success("Payment removed successfully!");
@@ -516,6 +568,23 @@ const PaymentEntries = ({
                           setNewPayment((prev) => ({
                             ...prev,
                             Type: newValue?.type || "",
+                            RefNo: "",
+                            PaymentMachine: "",
+                            PaymentMachineID: null,
+                            BankName: "",
+                            BankMasterID: null,
+                            ChequeDetails: "",
+                            ChequeDate: null,
+                            AccountNumber: "",
+                            BankAccountID: null,
+                            Amount: "",
+                            EMI: false,
+                            EMIMonths: null,
+                            EMIBank: null,
+                            advanceId: null,
+                            advanceData: null,
+                            GVCode: null,
+                            GVMasterID: null,
                           }));
                           setErrors({});
                         }}

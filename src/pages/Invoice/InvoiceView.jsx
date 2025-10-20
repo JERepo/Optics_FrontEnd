@@ -299,7 +299,7 @@ const InvoiceView = () => {
     const fittingGst = parseFloat(item.FittingGSTPercentage || 0);
     const FittingAmt = fittingPrice * (fittingGst / 100);
     return (
-      sum +
+      sum + 
       FittingAmt +
       (invoicePrice * qty +
         (item.ProductType == 0 ? parseFloat(fittingPrice) : 0))
@@ -402,7 +402,6 @@ const InvoiceView = () => {
     }
   };
   const handleOtpComplete = (otp) => {
-    console.log("OTP Completed:", otp);
     setOtpValue(otp);
   };
   const handleUpdateCanceInvoice = async () => {
@@ -600,7 +599,7 @@ const InvoiceView = () => {
         {/* Summary Section */}
         {invoiceDetails && (
           <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200 flex justify-end">
-            <div className="grid md:grid-cols-3 gap-5">
+            <div className="grid md:grid-cols-4 gap-5">
               <div className="flex flex-col">
                 <span className="text-neutral-700 font-semibold text-lg">
                   Total Qty
@@ -617,12 +616,20 @@ const InvoiceView = () => {
                   ₹{formatINR(gstAmount) || "0"}
                 </span>
               </div>
+               <div className="flex flex-col">
+                <span className="text-neutral-700 font-semibold text-lg">
+                  Round Off
+                </span>
+                <span className="text-neutral-600 text-xl font-medium">
+                  ₹{formatINR(invoiceDetails?.RoundOff) || "0"}
+                </span>
+              </div>
               <div className="flex flex-col">
                 <span className="text-neutral-700 font-semibold text-lg">
                   Total Amount
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
-                  ₹{formatINR(grandTotal) || "0"}
+                  ₹{formatINR(grandTotal + parseFloat(invoiceDetails?.RoundOff || 0)) || "0"}
                 </span>
               </div>
             </div>
