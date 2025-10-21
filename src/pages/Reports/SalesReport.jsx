@@ -6,15 +6,17 @@ import { enGB } from "date-fns/locale";
 import React, { useState } from "react";
 import { format, subDays, subMonths, startOfDay, endOfDay } from "date-fns";
 import Button from "../../components/ui/Button";
-import { useLazyGetOrderReportQuery, useLazyGetSalesReportQuery } from "../../api/reportApi";
+import {
+  useLazyGetOrderReportQuery,
+  useLazyGetSalesReportQuery,
+} from "../../api/reportApi";
 import { useSelector } from "react-redux";
 import toast from "react-hot-toast";
 
 const reportTypes = [
   { value: 0, label: "Detailed Sales" },
-  { value: 1, label: "Tally Sales" },
+  // { value: 1, label: "Tally Sales" },
   { value: 2, label: "Sales by product Type" },
- 
 ];
 
 const dateOptions = [
@@ -54,32 +56,29 @@ const SalesReport = () => {
         break;
       case "yesterday":
         start = startOfDay(subDays(today, 1));
-        end = endOfDay(today); // FIX: toDate = today
+        end = endOfDay(subDays(today, 1));
         break;
       case "7days":
         start = startOfDay(subDays(today, 7));
-        end = endOfDay(today);
+        end = endOfDay(subDays(today, 1));
         break;
       case "30days":
         start = startOfDay(subDays(today, 30));
-        end = endOfDay(today);
+        end = endOfDay(subDays(today, 1));
         break;
       case "90days":
         start = startOfDay(subDays(today, 90));
-        end = endOfDay(today);
+        end = endOfDay(subDays(today, 1));
         break;
       case "6months":
         start = startOfDay(subMonths(today, 6));
-        end = endOfDay(today);
+        end = endOfDay(subDays(today, 1));
         break;
       case "1year":
         start = startOfDay(subMonths(today, 12));
-        end = endOfDay(today);
+        end = endOfDay(subDays(today, 1));
         break;
       case "custom":
-        start = today;
-        end = today;
-        break;
       default:
         start = today;
         end = today;
@@ -88,6 +87,7 @@ const SalesReport = () => {
     setFromDate(start);
     setToDate(end);
   };
+
   const downloadFile = (blob, filename) => {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -109,13 +109,13 @@ const SalesReport = () => {
         fromDate: payload.fromDate,
         toDate: payload.toDate,
         userId: user.Id,
+        type: payload.reportType,
       }).unwrap();
       downloadFile(blob, "Sales Report.xlsx");
       toast.success("Sales Report Generated successfully!");
-      setFromDate(new Date())
-      setToDate(new Date())
-            setDateType("today")
-
+      setFromDate(new Date());
+      setToDate(new Date());
+      setDateType("today");
     } catch (error) {
       console.log(error);
 

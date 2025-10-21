@@ -96,7 +96,7 @@ const CLMaster = () => {
   );
   const [updateMaster, { isLoading: isMasterUpdating }] =
     useUpdateCLMasterMutation();
-  console.log(clData?.data);
+ 
   useEffect(() => {
     if (id && clData?.data && !isCLLoading) {
       const data = clData?.data;
