@@ -86,7 +86,7 @@ export function POViewPage() {
         }
 
         // Fetch PurchaseOrderMain data for calculation summary
-        const poMainRes = await fetchPoMain({ poMainId: poData.id }).unwrap();
+        const poMainRes = await fetchPoMain({ poMainId: poData.id, view: true }).unwrap();
         console.log("poMainRes (initial load)", poMainRes);
         if (
           poMainRes.status === "success" &&
@@ -162,7 +162,7 @@ export function POViewPage() {
         );
 
         // Fetch updated poMain data
-        const poMainRes = await fetchPoMain({ poMainId: poData.id }).unwrap();
+        const poMainRes = await fetchPoMain({ poMainId: poData.id, view: true }).unwrap();
         console.log("poMainRes (price update)", poMainRes);
         if (
           poMainRes.status === "success" &&
@@ -226,7 +226,7 @@ export function POViewPage() {
         );
 
         // Fetch updated poMain data
-        const poMainRes = await fetchPoMain({ poMainId: poData.id }).unwrap();
+        const poMainRes = await fetchPoMain({ poMainId: poData.id, view: true }).unwrap();
         console.log("poMainRes (qty update)", poMainRes);
         if (
           poMainRes.status === "success" &&

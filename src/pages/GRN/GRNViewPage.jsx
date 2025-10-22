@@ -57,7 +57,8 @@ export function GRNViewPage() {
                 grnMain: grnData?.id,
                 // againstPo: String(grnData?.AgainstPO),
                 // applicationUserId: grnData?.applicationUser,
-                status: 1
+                status: 1,
+                view: true
             }
 
             try {
