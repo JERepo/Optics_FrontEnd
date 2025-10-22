@@ -58,32 +58,29 @@ const OrderReport = () => {
         break;
       case "yesterday":
         start = startOfDay(subDays(today, 1));
-        end = endOfDay(today); // FIX: toDate = today
+        end = endOfDay(subDays(today, 1));
         break;
       case "7days":
         start = startOfDay(subDays(today, 7));
-        end = endOfDay(today);
+        end = endOfDay(subDays(today, 1));
         break;
       case "30days":
         start = startOfDay(subDays(today, 30));
-        end = endOfDay(today);
+        end = endOfDay(subDays(today, 1));
         break;
       case "90days":
         start = startOfDay(subDays(today, 90));
-        end = endOfDay(today);
+        end = endOfDay(subDays(today, 1));
         break;
       case "6months":
         start = startOfDay(subMonths(today, 6));
-        end = endOfDay(today);
+        end = endOfDay(subDays(today, 1));
         break;
       case "1year":
         start = startOfDay(subMonths(today, 12));
-        end = endOfDay(today);
+        end = endOfDay(subDays(today, 1));
         break;
       case "custom":
-        start = today;
-        end = today;
-        break;
       default:
         start = today;
         end = today;
@@ -92,6 +89,7 @@ const OrderReport = () => {
     setFromDate(start);
     setToDate(end);
   };
+
   const downloadFile = (blob, filename) => {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -117,9 +115,9 @@ const OrderReport = () => {
       }).unwrap();
       downloadFile(blob, "OrderReport.xlsx");
       toast.success("Order Report Generated successfully!");
-      setDateType("today")
-      setFromDate(new Date())
-      setToDate(new Date())
+      setDateType("today");
+      setFromDate(new Date());
+      setToDate(new Date());
     } catch (error) {
       console.log(error);
 

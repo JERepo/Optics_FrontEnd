@@ -13,8 +13,8 @@ export const reportApi = createApi({
       }),
     }),
     getSalesReport: builder.query({
-      query: ({ fromDate, toDate, userId }) => ({
-        url: `/api/v1/report/salesreport?fromDate=${fromDate}&toDate=${toDate}&userId=${userId}`,
+      query: ({ fromDate, toDate, userId,type }) => ({
+        url: `/api/v1/report/salesreport?fromDate=${fromDate}&toDate=${toDate}&type=${type}&userId=${userId}`,
         method: "GET",
         responseHandler: (response) => response.blob(),
       }),

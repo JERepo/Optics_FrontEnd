@@ -12,7 +12,7 @@ import toast from "react-hot-toast";
 
 const reportTypes = [
   { value: 0, label: " Detailed Sales Return" },
-  { value: 1, label: "Tally Sales Return" },
+  // { value: 1, label: "Tally Sales Return" },
   { value: 2, label: "Sales Return by product Type" },
  
 ];
@@ -40,54 +40,52 @@ const SalesReturnReport = () => {
   const [getReport, { isFetching: isReportLoading }] =
     useLazyGetSalesReturnReportQuery();
 
-  const handleDateTypeChange = (_, newValue) => {
-    if (!newValue) return;
-    setDateType(newValue.value);
+const handleDateTypeChange = (_, newValue) => {
+  if (!newValue) return;
+  setDateType(newValue.value);
 
-    const today = new Date();
-    let start, end;
+  const today = new Date();
+  let start, end;
 
-    switch (newValue.value) {
-      case "today":
-        start = startOfDay(today);
-        end = endOfDay(today);
-        break;
-      case "yesterday":
-        start = startOfDay(subDays(today, 1));
-        end = endOfDay(today); // FIX: toDate = today
-        break;
-      case "7days":
-        start = startOfDay(subDays(today, 7));
-        end = endOfDay(today);
-        break;
-      case "30days":
-        start = startOfDay(subDays(today, 30));
-        end = endOfDay(today);
-        break;
-      case "90days":
-        start = startOfDay(subDays(today, 90));
-        end = endOfDay(today);
-        break;
-      case "6months":
-        start = startOfDay(subMonths(today, 6));
-        end = endOfDay(today);
-        break;
-      case "1year":
-        start = startOfDay(subMonths(today, 12));
-        end = endOfDay(today);
-        break;
-      case "custom":
-        start = today;
-        end = today;
-        break;
-      default:
-        start = today;
-        end = today;
-    }
+  switch (newValue.value) {
+    case "today":
+      start = startOfDay(today);
+      end = endOfDay(today);
+      break;
+    case "yesterday":
+      start = startOfDay(subDays(today, 1));
+      end = endOfDay(subDays(today, 1));
+      break;
+    case "7days":
+      start = startOfDay(subDays(today, 7));
+      end = endOfDay(subDays(today, 1));
+      break;
+    case "30days":
+      start = startOfDay(subDays(today, 30));
+      end = endOfDay(subDays(today, 1));
+      break;
+    case "90days":
+      start = startOfDay(subDays(today, 90));
+      end = endOfDay(subDays(today, 1));
+      break;
+    case "6months":
+      start = startOfDay(subMonths(today, 6));
+      end = endOfDay(subDays(today, 1));
+      break;
+    case "1year":
+      start = startOfDay(subMonths(today, 12));
+      end = endOfDay(subDays(today, 1));
+      break;
+    case "custom":
+    default:
+      start = today;
+      end = today;
+  }
 
-    setFromDate(start);
-    setToDate(end);
-  };
+  setFromDate(start);
+  setToDate(end);
+};
+
   const downloadFile = (blob, filename) => {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
