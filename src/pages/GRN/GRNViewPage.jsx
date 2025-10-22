@@ -23,7 +23,7 @@ export function GRNViewPage() {
         isLoading: isLoadingGRNDetails,
         error: errorGRNDetails
     }] = useGetGRNDetailsMutation();
-  const [getlabels, { isLoading: isLabelsFetching }] = usePrintLabelsMutation();
+    const [getlabels, { isLoading: isLabelsFetching }] = usePrintLabelsMutation();
 
 
 
@@ -204,40 +204,40 @@ export function GRNViewPage() {
                 return <td className="px-6 py-4 whitespace-wrap">N/A</td>;
         }
     };
-console.log(grnViewDetails)
-      const handleLabels = async () => {
+    console.log(grnViewDetails)
+    const handleLabels = async () => {
         const payload = {
-          companyId: parseInt(hasMultipleLocations[0]),
-          items: grnViewDetails?.some(
-            (item) => item.ProductDetails?.ProductType == 1 || item.ProductDetails?.ProductType == 2
-          )
-            ? grnViewDetails?.map((item) => ({
-                type: item.ProductDetails?.ProductType == 1 ? "frame" : "accessory",
-                detailId: item.ProductDetails?.ProductDetailId ?? null,
-                qty: item.GRNQty,
-              }))
-            : [],
+            companyId: parseInt(hasMultipleLocations[0]),
+            items: grnViewDetails?.some(
+                (item) => item.ProductDetails?.ProductType == 1 || item.ProductDetails?.ProductType == 2
+            )
+                ? grnViewDetails?.map((item) => ({
+                    type: item.ProductDetails?.ProductType == 1 ? "frame" : "accessory",
+                    detailId: item.ProductDetails?.ProductDetailId ?? null,
+                    qty: item.GRNQty,
+                }))
+                : [],
         };
         try {
-          const blob = await getlabels({ payload }).unwrap();
-    
-          const url = window.URL.createObjectURL(
-            new Blob([blob], { type: "application/pdf" })
-          );
-          const newWindow = window.open(url);
-          if (newWindow) {
-            newWindow.onload = () => {
-              newWindow.focus();
-              newWindow.print();
-            };
-          }
+            const blob = await getlabels({ payload }).unwrap();
+
+            const url = window.URL.createObjectURL(
+                new Blob([blob], { type: "application/pdf" })
+            );
+            const newWindow = window.open(url);
+            if (newWindow) {
+                newWindow.onload = () => {
+                    newWindow.focus();
+                    newWindow.print();
+                };
+            }
         } catch (error) {
-          console.log(error);
-          toast.error(
-            "Unable to print the GRN Labels please try again after some time!"
-          );
+            console.log(error);
+            toast.error(
+                "Unable to print the GRN Labels please try again after some time!"
+            );
         }
-      };
+    };
 
     return (
         <motion.div
@@ -248,21 +248,21 @@ console.log(grnViewDetails)
         >
             <div className=" items-center mb-4">
                 <div className="flex items-center justify-between">
-                <button
-                    className="text-[#000060] hover:text-[#0000a0] transition-colors flex items-center mb-3"
-                    onClick={() => { navigate('/grn') }}
-                >
-                    <ArrowLeft className="w-5 h-5 mr-2" />
-                    Back to dashboard
-                </button>
-                {grnViewDetails.some(
-                              (item) => item.ProductDetails?.ProductType == 1 || item.ProductDetails?.ProductType == 2
-                            ) && (
-                              <Button onClick={handleLabels} isLoading={isLabelsFetching} >
+                    <button
+                        className="text-[#000060] hover:text-[#0000a0] transition-colors flex items-center mb-3"
+                        onClick={() => { navigate('/grn') }}
+                    >
+                        <ArrowLeft className="w-5 h-5 mr-2" />
+                        Back to dashboard
+                    </button>
+                    {grnViewDetails.some(
+                        (item) => item.ProductDetails?.ProductType == 1 || item.ProductDetails?.ProductType == 2
+                    ) && (
+                            <Button onClick={handleLabels} isLoading={isLabelsFetching} >
                                 Print Labels
-                              </Button>
-                            )}
-                            </div>
+                            </Button>
+                        )}
+                </div>
                 <h1 className="text-3xl lg:text-4xl font-bold text-[#000060] mb-2">
                     GRN Order View
                 </h1>
@@ -457,40 +457,42 @@ console.log(grnViewDetails)
                     </span>
                 </div>
 
-                <div className="flex justify-between gap-4">
-                    <span className="text-gray-600 font-bold text-lg">Total Net Value :</span>
-                    <div className="flex flex-col">
-                        <span className="font-bold text-lg">
-                            {
-                                (grnViewDetails[0]?.GRNType === 1 && grnViewDetails[0]?.DCGRNPrice === 1) ? '' :
-                                    (() => {
-                                        const subtotal = grnViewDetails.reduce((total, item) => {
-                                            const quantity = item.GRNQty || 0;
-                                            const price = (item.GRNPrice) || 0;
-                                            const gstPercentage = parseFloat(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) || 0;
+                <div className="">
+                    <div className="flex justify-between gap-4">
+                        <span className="text-gray-600 font-bold text-lg">Total Net Value :</span>
+                        <div className="flex flex-col">
+                            <span className="font-bold text-lg">
+                                {
+                                    (grnViewDetails[0]?.GRNType === 1 && grnViewDetails[0]?.DCGRNPrice === 1) ? '' :
+                                        (() => {
+                                            const subtotal = grnViewDetails.reduce((total, item) => {
+                                                const quantity = item.GRNQty || 0;
+                                                const price = (item.GRNPrice) || 0;
+                                                const gstPercentage = parseFloat(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) || 0;
 
-                                            if (price && !isNaN(price) && !isNaN(quantity)) {
-                                                const itemSubtotal = price * quantity;
-                                                const gstAmount = itemSubtotal * (gstPercentage / 100);
-                                                const fittingPrice = parseFloat(item?.FittingPrice || 0);
-                                                const fittingGstAmount = fittingPrice * (parseFloat(item?.FittingGSTPercentage || 0) / 100);
+                                                if (price && !isNaN(price) && !isNaN(quantity)) {
+                                                    const itemSubtotal = price * quantity;
+                                                    const gstAmount = itemSubtotal * (gstPercentage / 100);
+                                                    const fittingPrice = parseFloat(item?.FittingPrice || 0);
+                                                    const fittingGstAmount = fittingPrice * (parseFloat(item?.FittingGSTPercentage || 0) / 100);
 
-                                                return total + itemSubtotal + gstAmount + fittingPrice + fittingGstAmount;
-                                            }
-                                            return total;
-                                        }, 0);
+                                                    return total + itemSubtotal + gstAmount + fittingPrice + fittingGstAmount;
+                                                }
+                                                return total;
+                                            }, 0);
 
-                                        const roundOff = parseFloat(grnViewDetails[0]?.RoundOff || 0);
-                                        const totalNetValue = subtotal - roundOff;
+                                            const roundOff = parseFloat(grnViewDetails[0]?.RoundOff || 0);
+                                            const totalNetValue = subtotal + roundOff;
 
-                                        return `₹ ${totalNetValue.toFixed(2)}`;
-                                    })()
-                            }
-                        </span>
-                        <span className="font-bold text-lg">
-                            {`RoundOff: ${parseFloat(grnViewDetails[0]?.RoundOff || 0).toFixed(2)}`}
-                        </span>
+                                            return `₹ ${totalNetValue.toFixed(2)}`;
+                                        })()
+                                }
+                            </span>
+                        </div>
                     </div>
+                    <span className="font-bold text-lg">
+                        {`RoundOff: ${parseFloat(grnViewDetails[0]?.RoundOff || 0).toFixed(2)}`}
+                    </span>
                 </div>
             </div>
         </motion.div>

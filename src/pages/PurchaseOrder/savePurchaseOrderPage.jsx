@@ -1712,7 +1712,11 @@ export default function SavePurchaseOrder() {
                 });
                 setShowAlert(true);
                 setTimeout(() => setShowAlert(false), 3000);
-                navigate('/purchase-order');
+                // navigate('/purchase-order');
+                // Navigate with state to trigger refetch
+                navigate('/purchase-order', {
+                    state: { shouldRefetch: true }
+                });
             } else {
                 setAlertMessage({
                     type: "error",
@@ -3061,8 +3065,9 @@ export default function SavePurchaseOrder() {
                                         </button>
 
                                     </div>
-                                ))
-                            }
+                                )
+
+                            )}
                         </div>
 
                         {/* Optical Lens Search */}
@@ -3193,7 +3198,7 @@ export default function SavePurchaseOrder() {
 
                         )}
 
-                        {!formState.EntryType === "bulk" && (
+                        {formState.EntryType !== "bulk" && (
                             <div className="flex justify-between items-center mt-8">
                                 <button
                                     onClick={handleBack}
@@ -3646,6 +3651,7 @@ export default function SavePurchaseOrder() {
                 )}
             </motion.div >
 
+            {/* Edit Price Modal */}
             {editPriceModalOpen && (
                 <AnimatePresence>
                     <motion.div
@@ -3712,149 +3718,146 @@ export default function SavePurchaseOrder() {
                         </motion.div>
                     </motion.div>
                 </AnimatePresence>
-            )
-            }
+            )}
 
-            {
-                editQtyModalOpen && (
-                    <AnimatePresence>
+            {/* Edit Qty Modal */}
+            {editQtyModalOpen && (
+                <AnimatePresence>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="fixed inset-0 bg-neutral-200/50 backdrop-blur-xs flex items-center justify-center z-50"
+                    >
                         <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="fixed inset-0 bg-neutral-200/50 backdrop-blur-xs flex items-center justify-center z-50"
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                            className="bg-white p-6 rounded-lg shadow-xl w-96"
                         >
-                            <motion.div
-                                initial={{ scale: 0.9, y: 20 }}
-                                animate={{ scale: 1, y: 0 }}
-                                exit={{ scale: 0.9, y: 20 }}
-                                transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                                className="bg-white p-6 rounded-lg shadow-xl w-96"
+                            <motion.h3
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 }}
+                                className="text-lg font-bold mb-4"
                             >
-                                <motion.h3
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.1 }}
-                                    className="text-lg font-bold mb-4"
-                                >
-                                    Edit PO Quantity
-                                </motion.h3>
+                                Edit PO Quantity
+                            </motion.h3>
 
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.2 }}
-                                >
-                                    <input
-                                        type="number"
-                                        value={editedPoQty}
-                                        onChange={(e) => {
-                                            setEditedPoQty(e.target.value);
-                                            setQtyError(''); // Clear error when typing
-                                        }}
-                                        className="w-full p-2 border border-gray-300 rounded mb-1 focus:ring-2 focus:ring-[#000060] focus:border-transparent transition-all"
-                                        placeholder="Enter new quantity"
-                                        min="1"
-                                        autoFocus
-                                    />
-                                    {qtyError && (
-                                        <p className="text-red-500 text-sm mb-3">{qtyError}</p>
-                                    )}
-                                    <p className="text-gray-500 text-sm">
-                                        Order Quantity: {currentEditingItem?.orderQty - currentEditingItem?.billedQty - currentEditingItem?.cancelledQty}
-                                    </p>
-                                </motion.div>
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2 }}
+                            >
+                                <input
+                                    type="number"
+                                    value={editedPoQty}
+                                    onChange={(e) => {
+                                        setEditedPoQty(e.target.value);
+                                        setQtyError(''); // Clear error when typing
+                                    }}
+                                    className="w-full p-2 border border-gray-300 rounded mb-1 focus:ring-2 focus:ring-[#000060] focus:border-transparent transition-all"
+                                    placeholder="Enter new quantity"
+                                    min="1"
+                                    autoFocus
+                                />
+                                {qtyError && (
+                                    <p className="text-red-500 text-sm mb-3">{qtyError}</p>
+                                )}
+                                <p className="text-gray-500 text-sm">
+                                    Order Quantity: {currentEditingItem?.orderQty - currentEditingItem?.billedQty - currentEditingItem?.cancelledQty}
+                                </p>
+                            </motion.div>
 
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{ delay: 0.3 }}
-                                    className="flex justify-end space-x-2"
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.3 }}
+                                className="flex justify-end space-x-2"
+                            >
+                                <button
+                                    onClick={() => {
+                                        setEditQtyModalOpen(false);
+                                        setQtyError('');
+                                    }}
+                                    className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
                                 >
-                                    <button
-                                        onClick={() => {
-                                            setEditQtyModalOpen(false);
-                                            setQtyError('');
-                                        }}
-                                        className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleQtyUpdate}
-                                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                    >
-                                        Update
-                                    </button>
-                                </motion.div>
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleQtyUpdate}
+                                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                >
+                                    Update
+                                </button>
                             </motion.div>
                         </motion.div>
-                    </AnimatePresence>
-                )
-            }
+                    </motion.div>
+                </AnimatePresence>
+            )}
 
-            {
-                showRemoveModal && (
-                    <AnimatePresence>
+            {/* Delete/Remove Modal */}
+            {showRemoveModal && (
+                <AnimatePresence>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="fixed inset-0 bg-neutral-200/50 backdrop-blur-xs flex items-center justify-center z-50"
+                    >
                         <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="fixed inset-0 bg-neutral-200/50 backdrop-blur-xs flex items-center justify-center z-50"
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                            className="bg-white p-6 rounded-lg shadow-xl w-96"
                         >
-                            <motion.div
-                                initial={{ scale: 0.9, y: 20 }}
-                                animate={{ scale: 1, y: 0 }}
-                                exit={{ scale: 0.9, y: 20 }}
-                                transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                                className="bg-white p-6 rounded-lg shadow-xl w-96"
+                            <motion.h3
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 }}
+                                className="text-lg font-bold mb-4"
                             >
-                                <motion.h3
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.1 }}
-                                    className="text-lg font-bold mb-4"
-                                >
-                                    Are you sure you want to delete?
-                                </motion.h3>
+                                Are you sure you want to delete?
+                            </motion.h3>
 
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{ delay: 0.3 }}
-                                    className="flex justify-end space-x-2"
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.3 }}
+                                className="flex justify-end space-x-2"
+                            >
+                                <button
+                                    onClick={() => {
+                                        setShowRemoveModal(false);
+                                        setQtyError('');
+                                    }}
+                                    className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
                                 >
-                                    <button
-                                        onClick={() => {
-                                            setShowRemoveModal(false);
-                                            setQtyError('');
-                                        }}
-                                        className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleRemoveOrder}
-                                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                    >
-                                        Yes
-                                    </button>
-                                </motion.div>
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleRemoveOrder}
+                                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                >
+                                    Yes
+                                </button>
                             </motion.div>
                         </motion.div>
-                    </AnimatePresence>
-                )
-            }
+                    </motion.div>
+                </AnimatePresence>
+            )}
 
             {/* Error Modal */}
             {showErrorModal && (

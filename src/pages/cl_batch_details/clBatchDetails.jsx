@@ -1661,7 +1661,7 @@ export default function ClBatchDetails() {
                                                         ) || null
                                                     }
                                                     onChange={(_, newValue) => {
-                                                        setSelectedBatchCode(newValue);
+                                                        handleSearchCLStock(newValue);
                                                     }}
                                                     renderInput={(params) => (
                                                         <TextField
@@ -1722,7 +1722,7 @@ export default function ClBatchDetails() {
                                                 }}
                                             />
                                             <button
-                                                className="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
+                                                className="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50 flex justify-center items-center"
                                                 onClick={handleBatchBarcodeSearch}
                                                 disabled={!batchCodeInput.trim() || !CLBatches?.data?.length || isLoading}
                                             >
@@ -1816,6 +1816,7 @@ export default function ClBatchDetails() {
                                                 Enter Batch Code <span className="text-red-500">*</span>
                                             </label>
                                             <input
+                                                disabled="true"
                                                 type="text"
                                                 value={batchDetails.batchCode}
                                                 onChange={(e) => handleBatchDetailChange("batchCode", e.target.value)}

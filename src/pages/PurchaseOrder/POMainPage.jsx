@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { FiEye, FiPlus, FiPrinter, FiSearch } from "react-icons/fi";
 import { TextField } from "@mui/material";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -18,6 +18,7 @@ import toast from "react-hot-toast";
 
 export function PurchaseOrderMainPage() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { user, hasMultipleLocations } = useSelector((state) => state.auth);
 
     const [fromDate, setFromDate] = useState(null);
@@ -25,18 +26,27 @@ export function PurchaseOrderMainPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
-        const [printingId, setPrintingId] = useState(null);
-    
+    const [printingId, setPrintingId] = useState(null);
 
-    const { data: poResponse, isLoading: isAllPoLoading } = useGetPOviewQuery();
+
+    const { data: poResponse, isLoading: isAllPoLoading, refetch } = useGetPOviewQuery();
     const allPo = poResponse?.data?.data || [];
     console.log("poResponse -------- ", poResponse);
-         const [generatePrint, { isFetching: isPrinting }] =
-            useLazyPrintPdfQuery();
+    const [generatePrint, { isFetching: isPrinting }] =
+        useLazyPrintPdfQuery();
 
     useEffect(() => {
         setCurrentPage(1);
     }, [fromDate, toDate, searchQuery]);
+
+    // Refetch when navigating back with shouldRefetch flag
+    useEffect(() => {
+        if (location.state?.shouldRefetch) {
+            refetch();
+            // Clear the state to prevent refetch on subsequent renders
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location.state, refetch, navigate, location.pathname]);
 
     const getOrderStatus = (status) => {
         const types = {
@@ -113,7 +123,7 @@ export function PurchaseOrderMainPage() {
             poReference: po.POReferenceNo || "N/A",
             shipToCompany: po.ShipToCompanyID,
             vendor: po.Vendor,
-            po :po
+            po: po
         }));
     }, [allPo, fromDate, toDate, searchQuery]);
 
@@ -128,34 +138,34 @@ export function PurchaseOrderMainPage() {
             }
         });
     };
-  const handlePrint = async (item) => {
-    setPrintingId(item.Id);
+    const handlePrint = async (item) => {
+        setPrintingId(item.Id);
 
-    try {
-      const blob = await generatePrint({
-        mainId: item.Id,
-        companyId: parseInt(hasMultipleLocations[0]),
-      }).unwrap();
+        try {
+            const blob = await generatePrint({
+                mainId: item.Id,
+                companyId: parseInt(hasMultipleLocations[0]),
+            }).unwrap();
 
-      const url = window.URL.createObjectURL(
-        new Blob([blob], { type: "application/pdf" })
-      );
-      const newWindow = window.open(url);
-      if (newWindow) {
-        newWindow.onload = () => {
-          newWindow.focus();
-          newWindow.print();
-        };
-      }
-    } catch (error) {
-      console.log(error);
-      toast.error(
-        "Unable to print the purchase order please try again after some time!"
-      );
-    } finally {
-      setPrintingId(null);
-    }
-  };
+            const url = window.URL.createObjectURL(
+                new Blob([blob], { type: "application/pdf" })
+            );
+            const newWindow = window.open(url);
+            if (newWindow) {
+                newWindow.onload = () => {
+                    newWindow.focus();
+                    newWindow.print();
+                };
+            }
+        } catch (error) {
+            console.log(error);
+            toast.error(
+                "Unable to print the purchase order please try again after some time!"
+            );
+        } finally {
+            setPrintingId(null);
+        }
+    };
     const handleCreatePO = () => {
         navigate("/purchase-order/create");
     };
@@ -266,13 +276,13 @@ export function PurchaseOrderMainPage() {
                         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                             <HasPermission module="Purchase Order" action={["create"]}>
                                 <button
-                                icon={FiPlus}
-                                className="flex gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
-                                onClick={handleCreatePO}
-                            >
-                                <Plus />
-                                Create Purchase Order
-                            </button>
+                                    icon={FiPlus}
+                                    className="flex gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
+                                    onClick={handleCreatePO}
+                                >
+                                    <Plus />
+                                    Create Purchase Order
+                                </button>
                             </HasPermission>
                         </div>
                     </div>
@@ -311,22 +321,22 @@ export function PurchaseOrderMainPage() {
                                 <TableCell className="flex gap-2">
                                     <button
                                         onClick={() => handleViewPO(po.id, po)}
-                    className="flex items-center  text-lg font-medium rounded-md "
-                    title="View"                                    >
+                                        className="flex items-center  text-lg font-medium rounded-md "
+                                        title="View"                                    >
                                         <FiEye className="mr-1.5" />
                                     </button>
-                                     <button
-                                                        className="flex items-center justify-center  text-lg font-medium rounded-md text-green-600 "
-                                                        onClick={() => handlePrint(po.po)}
-                                                      >
-                                                        {printingId === po?.id ? (
-                                                          <Loader color="black" />
-                                                        ) : (
-                                                          <div className="flex items-center">
-                                                            <FiPrinter  />
-                                                          </div>
-                                                        )}
-                                                      </button>
+                                    <button
+                                        className="flex items-center justify-center  text-lg font-medium rounded-md text-green-600 "
+                                        onClick={() => handlePrint(po.po)}
+                                    >
+                                        {printingId === po?.id ? (
+                                            <Loader color="black" />
+                                        ) : (
+                                            <div className="flex items-center">
+                                                <FiPrinter />
+                                            </div>
+                                        )}
+                                    </button>
                                 </TableCell>
                             </TableRow>
                         )}

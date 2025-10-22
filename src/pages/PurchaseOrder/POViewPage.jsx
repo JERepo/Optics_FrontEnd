@@ -126,7 +126,11 @@ export function POViewPage() {
       const response = await triggerApprovePo({ poMainId: poData.id }).unwrap();
       if (response.status == "success") {
         toast.success("PO Approved successfully");
-        navigate("/purchase-order");
+        // navigate("/purchase-order");
+        // Navigate with state to trigger refetch
+        navigate('/purchase-order', {
+          state: { shouldRefetch: true }
+        });
       }
     } catch (error) {
       console.error("Error approving PO:", error);
@@ -264,60 +268,54 @@ export function POViewPage() {
               order?.specs?.powerDetails?.right?.cylindricalPower ||
               order?.specs?.powerDetails?.right?.axis ||
               order?.specs?.powerDetails?.right?.additional) && (
-              <>
-                <br />
-                R:{" "}
-                {order?.specs?.powerDetails?.right?.sphericalPower &&
-                  `SPH: ${
-                    order?.specs?.powerDetails?.right?.sphericalPower > 0
+                <>
+                  <br />
+                  R:{" "}
+                  {order?.specs?.powerDetails?.right?.sphericalPower &&
+                    `SPH: ${order?.specs?.powerDetails?.right?.sphericalPower > 0
                       ? `+${order?.specs?.powerDetails?.right?.sphericalPower}`
                       : order?.specs?.powerDetails?.right?.sphericalPower
-                  }`}
-                {order?.specs?.powerDetails?.right?.cylindricalPower &&
-                  ` CYL: ${
-                    order?.specs?.powerDetails?.right?.cylindricalPower > 0
+                    }`}
+                  {order?.specs?.powerDetails?.right?.cylindricalPower &&
+                    ` CYL: ${order?.specs?.powerDetails?.right?.cylindricalPower > 0
                       ? `+${order?.specs?.powerDetails?.right?.cylindricalPower}`
                       : order?.specs?.powerDetails?.right?.cylindricalPower
-                  }`}
-                {order?.specs?.powerDetails?.right?.axis &&
-                  ` Axis: ${order?.specs?.powerDetails?.right?.axis}`}
-                {order?.specs?.powerDetails?.right?.additional &&
-                  ` Add: ${
-                    order?.specs?.powerDetails?.right?.additional > 0
+                    }`}
+                  {order?.specs?.powerDetails?.right?.axis &&
+                    ` Axis: ${order?.specs?.powerDetails?.right?.axis}`}
+                  {order?.specs?.powerDetails?.right?.additional &&
+                    ` Add: ${order?.specs?.powerDetails?.right?.additional > 0
                       ? `+${order?.specs?.powerDetails?.right?.additional}`
                       : order?.specs?.powerDetails?.right?.additional
-                  }`}
-              </>
-            )}
+                    }`}
+                </>
+              )}
             {(order?.specs?.powerDetails?.left?.sphericalPower ||
               order?.specs?.powerDetails?.left?.cylindricalPower ||
               order?.specs?.powerDetails?.left?.axis ||
               order?.specs?.powerDetails?.left?.additional) && (
-              <>
-                <br />
-                L:{" "}
-                {order?.specs?.powerDetails?.left?.sphericalPower &&
-                  `SPH: ${
-                    order?.specs?.powerDetails?.left?.sphericalPower > 0
+                <>
+                  <br />
+                  L:{" "}
+                  {order?.specs?.powerDetails?.left?.sphericalPower &&
+                    `SPH: ${order?.specs?.powerDetails?.left?.sphericalPower > 0
                       ? `+${order?.specs?.powerDetails?.left?.sphericalPower}`
                       : order?.specs?.powerDetails?.left?.sphericalPower
-                  }`}
-                {order?.specs?.powerDetails?.left?.cylindricalPower &&
-                  ` CYL: ${
-                    order?.specs?.powerDetails?.left?.cylindricalPower > 0
+                    }`}
+                  {order?.specs?.powerDetails?.left?.cylindricalPower &&
+                    ` CYL: ${order?.specs?.powerDetails?.left?.cylindricalPower > 0
                       ? `+${order?.specs?.powerDetails?.left?.cylindricalPower}`
                       : order?.specs?.powerDetails?.left?.cylindricalPower
-                  }`}
-                {order?.specs?.powerDetails?.left?.axis &&
-                  ` Axis: ${order?.specs?.powerDetails?.left?.axis}`}
-                {order?.specs?.powerDetails?.left?.additional &&
-                  ` Add: ${
-                    order?.specs?.powerDetails?.left?.additional > 0
+                    }`}
+                  {order?.specs?.powerDetails?.left?.axis &&
+                    ` Axis: ${order?.specs?.powerDetails?.left?.axis}`}
+                  {order?.specs?.powerDetails?.left?.additional &&
+                    ` Add: ${order?.specs?.powerDetails?.left?.additional > 0
                       ? `+${order?.specs?.powerDetails?.left?.additional}`
                       : order?.specs?.powerDetails?.left?.additional
-                  }`}
-              </>
-            )}
+                    }`}
+                </>
+              )}
             {order?.specs?.addOn?.addOnId && (
               <>
                 <br />
@@ -386,23 +384,20 @@ export function POViewPage() {
             {order?.productDescName}
             <br />
             {order?.sphericalPower &&
-              `Sph: ${
-                order?.sphericalPower > 0
-                  ? `+${order?.sphericalPower}`
-                  : order?.sphericalPower
+              `Sph: ${order?.sphericalPower > 0
+                ? `+${order?.sphericalPower}`
+                : order?.sphericalPower
               }`}
             {order?.cylindricalPower &&
-              ` Cyld: ${
-                order?.cylindricalPower > 0
-                  ? `+${order?.cylindricalPower}`
-                  : order?.cylindricalPower
+              ` Cyld: ${order?.cylindricalPower > 0
+                ? `+${order?.cylindricalPower}`
+                : order?.cylindricalPower
               }`}
             {order?.axis && ` Axis: ${order?.axis}`}
             {order?.additional &&
-              ` Add: ${
-                order?.additional > 0
-                  ? `+${order?.additional}`
-                  : order?.additional
+              ` Add: ${order?.additional > 0
+                ? `+${order?.additional}`
+                : order?.additional
               }`}
             {order?.color && (
               <>
@@ -568,12 +563,12 @@ export function POViewPage() {
                     {order.productType === 0
                       ? "OL"
                       : order.productType === 1
-                      ? "F/S"
-                      : order.productType === 2
-                      ? "ACC"
-                      : order.productType === 3
-                      ? "CL"
-                      : "N/A"}
+                        ? "F/S"
+                        : order.productType === 2
+                          ? "ACC"
+                          : order.productType === 3
+                            ? "CL"
+                            : "N/A"}
                   </td>
                   {renderProductDetails(order)}
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -611,9 +606,9 @@ export function POViewPage() {
                             setSelectedOrder(order);
                             setNewQty(
                               order.poQty ??
-                                order.orderQty -
-                                  order.billedQty -
-                                  order.cancelledQty
+                              order.orderQty -
+                              order.billedQty -
+                              order.cancelledQty
                             );
                             setShowQtyModal(true);
                           }}
@@ -626,9 +621,9 @@ export function POViewPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     {order.productType === 3
                       ? order?.stock?.reduce(
-                          (total, item) => total + item.quantity,
-                          0
-                        ) || 0
+                        (total, item) => total + item.quantity,
+                        0
+                      ) || 0
                       : order?.pricing?.quantity || 0}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -650,14 +645,14 @@ export function POViewPage() {
                         0;
                       const addonBuying = Array.isArray(order?.specs?.addOn)
                         ? order.specs.addOn.reduce(
-                            (sum, add) =>
-                              sum +
-                              (parseFloat(add?.addOnBuyingPrice || 0) || 0),
-                            0
-                          )
+                          (sum, add) =>
+                            sum +
+                            (parseFloat(add?.addOnBuyingPrice || 0) || 0),
+                          0
+                        )
                         : parseFloat(
-                            order?.specs?.addOn?.addOnBuyingPrice || 0
-                          ) || 0;
+                          order?.specs?.addOn?.addOnBuyingPrice || 0
+                        ) || 0;
 
                       let total;
                       if (bothLens) {
@@ -712,12 +707,12 @@ export function POViewPage() {
                     {order?.ProductDetails?.ProductType === 0
                       ? "OL"
                       : order?.ProductDetails?.ProductType === 1
-                      ? "F/S"
-                      : order?.ProductDetails?.ProductType === 2
-                      ? "ACC"
-                      : order?.ProductDetails?.ProductType === 3
-                      ? "CL"
-                      : "N/A"}
+                        ? "F/S"
+                        : order?.ProductDetails?.ProductType === 2
+                          ? "ACC"
+                          : order?.ProductDetails?.ProductType === 3
+                            ? "CL"
+                            : "N/A"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {order?.ProductDetails?.ProductType === 0
@@ -810,7 +805,7 @@ export function POViewPage() {
                             setSelectedOrder(order);
                             setNewBuyingPrice(
                               order.poPrice ??
-                                order?.ProductDetails?.price?.BuyingPrice
+                              order?.ProductDetails?.price?.BuyingPrice
                             );
                             setShowPriceModal(true);
                           }}
@@ -841,20 +836,20 @@ export function POViewPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     {order?.ProductDetails?.ProductType === 3
                       ? order?.ProductDetails?.Stock.reduce(
-                          (total, item) => total + item.Quantity,
-                          0
-                        )
+                        (total, item) => total + item.Quantity,
+                        0
+                      )
                       : order?.ProductDetails?.Stock?.Quantity}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {(
                       (order?.poPrice ??
                         order?.ProductDetails?.price?.BuyingPrice) *
-                        (order.poQty ?? order?.POQty) +
+                      (order.poQty ?? order?.POQty) +
                       (order?.poPrice ??
                         order?.ProductDetails?.price?.BuyingPrice) *
-                        (order.poQty ?? order?.POQty) *
-                        (order?.taxPercent / 100 || 0)
+                      (order.poQty ?? order?.POQty) *
+                      (order?.taxPercent / 100 || 0)
                     ).toFixed(2)}
                   </td>
                 </tr>
