@@ -43,6 +43,7 @@ import { reportApi } from "../api/reportApi";
 import { dashboardApi } from "../api/dashboard";
 import { emailAndWhatsaApp } from "../api/emailAndWhatsappApi";
 import { vendorPaymentApi } from "../api/vendorPayment";
+import { searchStock } from "../api/searchStock";
 
 const persistConfig = {
   key: "auth",
@@ -102,7 +103,8 @@ export const store = configureStore({
     [reportApi.reducerPath]:reportApi.reducer,
     [dashboardApi.reducerPath]:dashboardApi.reducer,
     [emailAndWhatsaApp.reducerPath]:emailAndWhatsaApp.reducer,
-    [vendorPaymentApi.reducerPath]:vendorPaymentApi.reducer
+    [vendorPaymentApi.reducerPath]:vendorPaymentApi.reducer,
+    [searchStock.reducerPath]:searchStock.reducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -148,7 +150,8 @@ export const store = configureStore({
       reportApi.middleware,
       dashboardApi.middleware,
       emailAndWhatsaApp.middleware,
-      vendorPaymentApi.middleware
+      vendorPaymentApi.middleware,
+      searchStock.middleware
     ),
 });
 

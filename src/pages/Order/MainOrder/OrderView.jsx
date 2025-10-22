@@ -52,6 +52,8 @@ const OrderView = () => {
   const [warningMessage, setWarningMessage] = useState(null);
   const [isCancelOrder, setIsCancelOrder] = useState(false);
   const [generalWarning, setGeneralWarning] = useState(false);
+  const [openInvoiceWarning, setOpenInvoiceWarning] = useState(false);
+  const [InvoiceWarnings, setInvoiceWarnings] = useState([]);
 
   const [printingId, setPrintingId] = useState(null);
   const [selectedItemId, setSelectedItemId] = useState(null);
@@ -59,6 +61,7 @@ const OrderView = () => {
   const [showOtp, setShowOtp] = useState(false);
   const [otpValue, setOtpValue] = useState(null);
   const [selectedDiscountItem, setSelectedDiscountItem] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   const { data: orderDetails, isLoading } = useGetSavedOrderDetailsQuery(
     { orderId },
@@ -330,6 +333,19 @@ const OrderView = () => {
     }
   };
   const handleGenerateInvoiceConfirm = async (order) => {
+    const discountedSellingPrice =
+      parseFloat(order?.DiscountedSellingPrice) || 0;
+    const orderQty = parseFloat(order?.OrderQty) || 0;
+    const fittingPrice = parseFloat(order?.FittingPrice) || 0;
+    const fittingGST = parseFloat(order?.FittingGSTPercentage) || 0;
+    const advance = parseFloat(order?.AdvanceAmount) || 0;
+
+    const totalFittingGST = fittingPrice * (fittingGST / 100);
+    const totalvalue =
+      discountedSellingPrice * orderQty +
+      totalFittingGST +
+      fittingPrice -
+      advance;
     const payload = {
       invoiceItems: [
         {
@@ -356,12 +372,7 @@ const OrderView = () => {
           parseFloat(order.TaxPercentage)
         ).gstAmount
       ),
-      totalValue:
-        order?.DiscountedSellingPrice * order.OrderQty +
-        parseFloat(order.FittingPrice || 0) *
-          (parseFloat(order.FittingGSTPercentage || 0) / 100) +
-        parseFloat(order.FittingPrice || 0) -
-        (order.AdvanceAmount || 0),
+      totalValue: totalvalue,
       // roundOff: 0.0,
 
       applicationUserId: user.Id,
@@ -376,12 +387,9 @@ const OrderView = () => {
       const res = await generateInvoice({ payload }).unwrap();
       // if()
       toast.success("Invoice Generated successfully!");
+      setSelectedOrder(null);
     } catch (error) {
       console.log(error);
-
-      // if(error?.data?.warning){
-
-      // }
       setErrors(
         Array.isArray(error?.data?.validationErrors)
           ? error?.data?.validationErrors
@@ -390,14 +398,25 @@ const OrderView = () => {
           : []
       );
       setErrorModalOpen(true);
-
+      setOpenInvoiceWarning(false);
       return;
     }
   };
   const handleGenerateInvoice = async (order) => {
-    const advance = await getAdvanceAmt({
-      orderId: order.OrderDetailId,
-    }).unwrap();
+    setSelectedOrder(order);
+    const discountedSellingPrice =
+      parseFloat(order?.DiscountedSellingPrice) || 0;
+    const orderQty = parseFloat(order?.OrderQty) || 0;
+    const fittingPrice = parseFloat(order?.FittingPrice) || 0;
+    const fittingGST = parseFloat(order?.FittingGSTPercentage) || 0;
+    const advance = parseFloat(order?.AdvanceAmount) || 0;
+
+    const totalFittingGST = fittingPrice * (fittingGST / 100);
+    const totalvalue =
+      discountedSellingPrice * orderQty +
+      totalFittingGST +
+      fittingPrice -
+      advance;
     const payload = {
       invoiceItems: [
         {
@@ -424,12 +443,7 @@ const OrderView = () => {
           parseFloat(order.TaxPercentage)
         ).gstAmount
       ),
-      totalValue:
-        order?.DiscountedSellingPrice * order.OrderQty +
-        parseFloat(order.FittingPrice || 0) *
-          (parseFloat(order.FittingGSTPercentage || 0) / 100) +
-        parseFloat(order.FittingPrice || 0) -
-        (order.AdvanceAmount || 0),
+      totalValue: totalvalue,
       // roundOff: 0.0,
 
       applicationUserId: user.Id,
@@ -439,18 +453,29 @@ const OrderView = () => {
         customerDataById?.data.data?.CustomerMaster?.CreditBilling === 1, // true or false
     };
 
-    console.log(payload);
     try {
       const res = await generateInvoice({ payload }).unwrap();
-      // if()
+      console.log(res);
+      if (res?.warning) {
+        setInvoiceWarnings(res?.warnings || []);
+        setOpenInvoiceWarning(true);
+        return;
+      }
       toast.success("Invoice Generated successfully!");
+      setSelectedOrder(null);
     } catch (error) {
-      console.log(error);
-
+      setErrors(
+        Array.isArray(error?.data?.validationErrors)
+          ? error?.data?.validationErrors
+          : typeof errors === "string"
+          ? [error?.data?.validationErrors]
+          : []
+      );
+      setErrorModalOpen(true);
+      setSelectedOrder(null);
       return;
     }
   };
-
   const getOrderStatus = (status) => {
     const types = {
       1: "Confirmed",
@@ -723,6 +748,7 @@ const OrderView = () => {
                           icon={FiFileText}
                           onClick={() => handleGenerateInvoice(order)}
                           title="Generate Invoice"
+                          isLoading={isInvoiceGenerating}
                         ></Button>
                       </HasPermission>
                     )}
@@ -805,7 +831,15 @@ const OrderView = () => {
                     Total Amount
                   </span>
                   <span className="text-neutral-600 text-xl font-medium">
-                    ₹{formatINR(Number(grandTotal + parseFloat(customerDataById?.data?.data?.RoundOff || 0))) || "0"}
+                    ₹
+                    {formatINR(
+                      Number(
+                        grandTotal +
+                          parseFloat(
+                            customerDataById?.data?.data?.RoundOff || 0
+                          )
+                      )
+                    ) || "0"}
                   </span>
                 </div>
                 <div className="flex flex-col">
@@ -813,10 +847,13 @@ const OrderView = () => {
                     Round Off
                   </span>
                   <span className="text-neutral-600 text-xl font-medium">
-                    ₹{formatINR(Number(customerDataById?.data?.data?.RoundOff)) || "0"}
+                    ₹
+                    {formatINR(
+                      Number(customerDataById?.data?.data?.RoundOff)
+                    ) || "0"}
                   </span>
                 </div>
-                
+
                 {customerDataById?.data.data?.CustomerMaster?.CreditBilling ===
                   0 && (
                   <div className="flex flex-col">
@@ -909,6 +946,25 @@ const OrderView = () => {
         cancelText="Cancel"
         danger={false}
         isLoading={isOrderCancelling}
+      />
+      <ConfirmationModal
+        isOpen={openInvoiceWarning}
+        onClose={() => setOpenInvoiceWarning(false)}
+        onConfirm={() => handleGenerateInvoiceConfirm(selectedOrder)}
+        title="Warning!"
+        message={
+          <div className="space-y-2">
+            {InvoiceWarnings?.map((item, index) => (
+              <p key={index} className="text-neutral-700">
+                {item}
+              </p>
+            ))}
+          </div>
+        }
+        confirmText="Yes, Proceed"
+        cancelText="Cancel"
+        danger={false}
+        isLoading={isInvoiceGenerating}
       />
     </div>
   );

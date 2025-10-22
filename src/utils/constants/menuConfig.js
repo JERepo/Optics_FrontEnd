@@ -19,6 +19,7 @@ import {
   FiBarChart2,
   FiMapPin,
   FiGrid,
+  FiAperture,
 } from "react-icons/fi";
 import {
   IoPeopleOutline,
@@ -286,14 +287,14 @@ export const menuItems = [
     icon: FiArrowRightCircle,
     module: "Contact-Lens-Details",
     path: "/cl-batch-details",
-    // subItems: [
-    //   {
-    //     name: "Add GRN",
-    //     path: "/grn/create",
-    //     module: "GRN",
-    //     icon: IoConstructOutline, // Suggests building/setup
-    //   }
-    // ],
+   
+  },
+   {
+    name: "Contact Lens Master",
+    icon: FiAperture,
+    module: "CLMaster",
+    path: "/contact-lens-master",
+   
   },
   {
     name: "Purchase Return",

@@ -209,7 +209,7 @@ const PurchaseReturnView = () => {
     totalQty: totals.totalQty,
     totalGST: formatINR(totals.totalGST),
     totalBasicValue: formatINR(totals.totalBasicValue),
-    totalReturnValue: formatINR(totals.totalReturnValue),
+    totalReturnValue: formatINR(totals.totalReturnValue + (parseFloat(PRDetails?.data?.data?.RoundOff) || 0)),
   };
   const getEInvoiceData = async () => {
     const eInvoicePayload = {
@@ -399,7 +399,7 @@ const PurchaseReturnView = () => {
                   Total Amount
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
-                  ₹{parseFloat(formattedTotals.totalReturnValue) + parseFloat(PRDetails?.data.data?.RoundOff || 0) }
+                  ₹{formattedTotals.totalReturnValue}
                 </span>
               </div>
             </div>
