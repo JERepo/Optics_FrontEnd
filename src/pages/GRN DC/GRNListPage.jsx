@@ -288,7 +288,6 @@ export function GRNDCListPage() {
                     className="flex items-center  text-lg font-medium rounded-md "
                     title="View"                                    >
                                         <FiEye className="mr-1.5" />
-                                        View
                                     </button>
                                 </TableCell>
                             </TableRow>

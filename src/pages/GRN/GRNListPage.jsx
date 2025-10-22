@@ -295,10 +295,10 @@ export function GRNListPage() {
                                 <TableCell>
                                     <button
                                         onClick={() => handleViewGRN(grn.id, grn)}
-                                        className="flex items-center  text-lg font-medium rounded-md "
+                                        className="flex items-center justify-center text-lg font-medium rounded-md"
                                         title="View"                                    >
                                         <FiEye className="mr-1.5" />
-                                        View
+                                        {/* View */}
                                     </button>
                                 </TableCell>
                             </TableRow>

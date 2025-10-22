@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { ArrowLeft, CheckCircle, PenIcon, X } from "lucide-react";
+import { ArrowLeft, CheckCircle, Download, PenIcon, X } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
@@ -119,6 +119,8 @@ export function POViewPage() {
     poData.applicationUser,
     poData.vendor?.Id,
     poData.againstOrder,
+    poData.poMain,
+    poData.poMainId
   ]);
 
   const approvePo = async () => {
@@ -471,27 +473,38 @@ export function POViewPage() {
           <h1 className="text-3xl lg:text-4xl font-bold text-[#000060] mb-2">
             Purchase Order
           </h1>
-          <Button
-            onClick={() => handlePrint(poData)}
-            icon={FiPrinter}
-            isLoading={isPrinting}
-          ></Button>
         </div>
         {console.log(poData)}
         {console.log(poMainStatus)}
-        {poMainStatus === 1 && poData?.vendor?.POApproval === 1 && (
-          <HasPermission module="Purchase Order" action={["edit"]}>
-            <div>
-              <button
-                className="flex gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
-                onClick={approvePo}
-              >
-                <CheckCircle />
-                Approve PO
-              </button>
-            </div>
-          </HasPermission>
-        )}
+        <div className="flex gap-4">
+          {poMainStatus === 1 && poData?.vendor?.POApproval === 1 && (
+            <HasPermission module="Purchase Order" action={["edit"]}>
+              <div>
+                <button
+                  className="flex gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
+                  onClick={approvePo}
+                >
+                  <CheckCircle />
+                  Approve PO
+                </button>
+              </div>
+            </HasPermission>
+          )}
+          <div>
+            {/* <Button
+              onClick={() => handlePrint(poData)}
+              icon={FiPrinter}
+              isLoading={isPrinting}
+            ></Button> */}
+            <button
+              className="flex gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
+              onClick={() => handlePrint(poData)}
+              isLoading={isPrinting}
+            >
+              <Download />
+            </button>
+          </div>
+        </div>
       </div>
       {console.log("PODATA ----", poData)}
       <div key={poData.vendor?.Id || "vendor"} className="gap-12 my-10">
