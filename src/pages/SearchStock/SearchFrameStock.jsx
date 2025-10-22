@@ -1,4 +1,10 @@
-import React, { useState } from "react";
+import React, {
+  useState,
+  useMemo,
+  useRef,
+  useEffect,
+  useCallback,
+} from "react";
 import Button from "../../components/ui/Button";
 import {
   FiChevronDown,
@@ -6,11 +12,18 @@ import {
   FiX,
   FiSearch,
   FiCheck,
+  FiTag,
+  FiBox,
+  FiActivity,
 } from "react-icons/fi";
 import { useGetAllBrandsQuery } from "../../api/brandsApi";
 import { useGetAllBrandGroupsQuery } from "../../api/brandGroup";
 import { Table, TableCell, TableRow } from "../../components/Table";
 import { useGetFrameSizesQuery } from "../../api/frameMasterApi";
+import { useGetFrameStockQuery } from "../../api/searchStock";
+import { useSelector } from "react-redux";
+import { useLazyPrintLabelsQuery } from "../../api/reportApi";
+import {toast} from 'react-hot-toast'
 
 const toTitleCase = (str) =>
   str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
@@ -18,12 +31,12 @@ const toTitleCase = (str) =>
 const typesOptions = [
   { Id: "F", Name: "Full Rim" },
   { Id: "H", Name: "Half Rim" },
-  { Id: "R", Name: "Rimless" },
+  { Id: "R", Name: "Rim Less" },
 ];
 
 const categoryOptions = [
-  { Id: "O", Name: "Frame" },
-  { Id: "S", Name: "Sunglass" },
+  { Id: 0, Name: "Frame" },
+  { Id: 1, Name: "Sunglass" },
 ];
 
 const othersOptions = [
@@ -33,7 +46,97 @@ const othersOptions = [
   { Id: "ClipOn", Name: "ClipOn" },
 ];
 
+const debounce = (func, delay) => {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => func(...args), delay);
+  };
+};
+
+const buildQueryParams = ({
+  brandGroupDropdown,
+  brandNameDropdown,
+  columnSearchTerms,
+  category,
+  type,
+  colourCode,
+  frameColour,
+  barcode,
+  location,
+  size,
+  dbl,
+  templeLength,
+  frameFrontColor,
+  templeColor,
+  lensColor,
+  isRxable,
+  isClipOn,
+  noOfClips,
+}) => {
+  const combineDropdownAndSearch = (dropdownValues, searchTerm, keyName) => {
+    const names = dropdownValues?.map((v) => v[keyName]) || [];
+    if (searchTerm && searchTerm.trim() !== "") {
+      const searchTerms = searchTerm
+        .split(",")
+        .map((t) => t.trim())
+        .filter((t) => t !== "");
+      names.push(...searchTerms);
+    }
+    return names.length > 0 ? names.join(",") : "null";
+  };
+
+  const add = (key, value) =>
+    `${key}=${
+      value !== undefined && value !== null && value !== "" ? value : "null"
+    }`;
+
+  const params = [
+    add(
+      "brandGroup",
+      combineDropdownAndSearch(
+        brandGroupDropdown,
+        columnSearchTerms["brand group"],
+        "BrandGroupName"
+      )
+    ),
+    add(
+      "brandName",
+      combineDropdownAndSearch(
+        brandNameDropdown,
+        columnSearchTerms["brand name"],
+        "BrandName"
+      )
+    ),
+    add(
+      "category",
+      category?.map((c) => c.Id)
+    ),
+    add(
+      "type",
+      type?.map((t) => t.Name)
+    ),
+    add("colourCode", colourCode),
+    add("frameColour", frameColour),
+    add("barcode", barcode),
+    add("location", location),
+    add("size", size),
+    add("dbl", dbl),
+    add("templeLength", templeLength),
+    add("frameFrontColor", frameFrontColor),
+    add("templeColor", templeColor),
+    add("lensColor", lensColor),
+    add("isRxable", isRxable),
+    add("isClipOn", isClipOn),
+    add("noOfClips", noOfClips),
+  ];
+
+  // Keep spaces as-is
+  return `?${params.join("&")}`;
+};
+
 const SearchFrameStock = () => {
+  const { hasMultipleLocations } = useSelector((state) => state.auth);
   const { data: allBrands } = useGetAllBrandsQuery();
   const { data: allBrandGroups } = useGetAllBrandGroupsQuery();
   const { data: allSizes } = useGetFrameSizesQuery();
@@ -43,6 +146,12 @@ const SearchFrameStock = () => {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedOthers, setSelectedOthers] = useState([]);
   const [selectedSizes, setSelectedSizes] = useState([]);
+  const [tempBrands, setTempBrands] = useState([]);
+  const [tempBrandGroups, setTempBrandGroups] = useState([]);
+  const [tempTypes, setTempTypes] = useState([]);
+  const [tempCategories, setTempCategories] = useState([]);
+  const [tempOthers, setTempOthers] = useState([]);
+  const [tempSizes, setTempSizes] = useState([]);
   const [showBrandDropdown, setShowBrandDropdown] = useState(false);
   const [showBrandGroupDropdown, setShowBrandGroupDropdown] = useState(false);
   const [showTypesDropdown, setShowTypesDropdown] = useState(false);
@@ -55,9 +164,7 @@ const SearchFrameStock = () => {
   const [categorySearchTerm, setCategorySearchTerm] = useState("");
   const [othersSearchTerm, setOthersSearchTerm] = useState("");
   const [sizeSearchTerm, setSizeSearchTerm] = useState("");
-  // State for individual column search terms
   const [columnSearchTerms, setColumnSearchTerms] = useState({
-    "s.no": "",
     "brand group": "",
     "brand name": "",
     cat: "",
@@ -71,138 +178,294 @@ const SearchFrameStock = () => {
     mrp: "",
     stock: "",
     "stock avl": "",
-    action: "",
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
 
-  // Toggle brand selection
-  const toggleBrand = (brand) => {
-    if (selectedBrands.some((b) => b.Id === brand.Id)) {
-      setSelectedBrands(selectedBrands.filter((b) => b.Id !== brand.Id));
-    } else {
-      setSelectedBrands([...selectedBrands, brand]);
-    }
+  const brandRef = useRef(null);
+  const brandGroupRef = useRef(null);
+  const typesRef = useRef(null);
+  const categoryRef = useRef(null);
+  const othersRef = useRef(null);
+  const sizesRef = useRef(null);
+  const queryString = useMemo(() => {
+    return buildQueryParams({
+      brandGroupDropdown: selectedBrandGroups,
+      brandNameDropdown: selectedBrands,
+      columnSearchTerms,
+      category: selectedCategories,
+      type: selectedTypes,
+      colourCode: columnSearchTerms["colour code"] || null,
+      frameColour: columnSearchTerms["frame colour"] || null,
+      barcode: columnSearchTerms["barcode"] || null,
+      location: parseInt(hasMultipleLocations[0]),
+      size: selectedSizes.map((s) => s.Size) || null,
+      dbl: null,
+      templeLength: null,
+      frameFrontColor: null,
+      templeColor: null,
+      lensColor: null,
+      isRxable: null,
+      isClipOn: null,
+      noOfClips: null,
+    });
+  }, [
+    selectedBrands,
+    selectedBrandGroups,
+    selectedCategories,
+    selectedTypes,
+    selectedSizes,
+    columnSearchTerms,
+    hasMultipleLocations,
+  ]);
+
+  console.log("ff", selectedBrandGroups);
+  const [columnInput, setColumnInput] = useState({ ...columnSearchTerms });
+
+  // On input change
+  const handleColumnInputChange = (column, value) => {
+    setColumnInput((prev) => ({ ...prev, [column]: value }));
   };
 
-  // Toggle brand group selection
-  const toggleBrandGroup = (brandGroup) => {
-    if (selectedBrandGroups.some((bg) => bg.Id === brandGroup.Id)) {
-      setSelectedBrandGroups(
-        selectedBrandGroups.filter((bg) => bg.Id !== brandGroup.Id)
-      );
+  // Debounce effect: updates columnSearchTerms after 500ms of inactivity
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setColumnSearchTerms(columnInput);
+    }, 500); // adjust debounce delay as needed
+
+    return () => clearTimeout(timer); // cleanup on new input
+  }, [columnInput]);
+
+  const {
+    data: framData,
+    isFetching,
+    isLoading: isDataLoading,
+    refetch,
+  } = useGetFrameStockQuery(queryString);
+
+  const debouncedColumnSearch = useCallback(
+    debounce((column, value) => {
+      setColumnSearchTerms((prev) => ({ ...prev, [column]: value }));
+    }, 300),
+    []
+  );
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        !brandRef.current?.contains(event.target) &&
+        !brandGroupRef.current?.contains(event.target) &&
+        !typesRef.current?.contains(event.target) &&
+        !categoryRef.current?.contains(event.target) &&
+        !othersRef.current?.contains(event.target) &&
+        !sizesRef.current?.contains(event.target)
+      ) {
+        setShowBrandDropdown(false);
+        setShowBrandGroupDropdown(false);
+        setShowTypesDropdown(false);
+        setShowCategoryDropdown(false);
+        setShowOthersDropdown(false);
+        setShowSizesDropdown(false);
+      }
+    };
+
+    const isAnyDropdownOpen =
+      showBrandDropdown ||
+      showBrandGroupDropdown ||
+      showTypesDropdown ||
+      showCategoryDropdown ||
+      showOthersDropdown ||
+      showSizesDropdown;
+
+    if (isAnyDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
     } else {
-      setSelectedBrandGroups([...selectedBrandGroups, brandGroup]);
+      document.removeEventListener("mousedown", handleClickOutside);
     }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [
+    showBrandDropdown,
+    showBrandGroupDropdown,
+    showTypesDropdown,
+    showCategoryDropdown,
+    showOthersDropdown,
+    showSizesDropdown,
+  ]);
+
+  // Toggle temp selections
+  const toggleTempBrand = (brand) => {
+    setTempBrands((prev) =>
+      prev.some((b) => b.Id === brand.Id)
+        ? prev.filter((b) => b.Id !== brand.Id)
+        : [...prev, brand]
+    );
   };
 
-  // Toggle type selection
-  const toggleType = (type) => {
-    if (selectedTypes.some((t) => t.Id === type.Id)) {
-      setSelectedTypes(selectedTypes.filter((t) => t.Id !== type.Id));
-    } else {
-      setSelectedTypes([...selectedTypes, type]);
-    }
+  const toggleTempBrandGroup = (brandGroup) => {
+    setTempBrandGroups((prev) =>
+      prev.some((bg) => bg.Id === brandGroup.Id)
+        ? prev.filter((bg) => bg.Id !== brandGroup.Id)
+        : [...prev, brandGroup]
+    );
   };
 
-  // Toggle category selection
-  const toggleCategory = (category) => {
-    if (selectedCategories.some((c) => c.Id === category.Id)) {
-      setSelectedCategories(
-        selectedCategories.filter((c) => c.Id !== category.Id)
-      );
-    } else {
-      setSelectedCategories([...selectedCategories, category]);
-    }
+  const toggleTempType = (type) => {
+    setTempTypes((prev) =>
+      prev.some((t) => t.Id === type.Id)
+        ? prev.filter((t) => t.Id !== type.Id)
+        : [...prev, type]
+    );
   };
 
-  // Toggle others selection
-  const toggleOthers = (other) => {
-    if (selectedOthers.some((o) => o.Id === other.Id)) {
-      setSelectedOthers(selectedOthers.filter((o) => o.Id !== other.Id));
-    } else {
-      setSelectedOthers([...selectedOthers, other]);
-    }
+  const toggleTempCategory = (category) => {
+    setTempCategories((prev) =>
+      prev.some((c) => c.Id === category.Id)
+        ? prev.filter((c) => c.Id !== category.Id)
+        : [...prev, category]
+    );
   };
 
-  // Toggle sizes selection
-  const toggleSizes = (size) => {
-    if (selectedSizes.some((o) => o.Id === size.Id)) {
-      setSelectedSizes(selectedSizes.filter((o) => o.Id !== size.Id));
-    } else {
-      setSelectedSizes([...selectedSizes, size]);
-    }
+  const toggleTempOthers = (other) => {
+    setTempOthers((prev) =>
+      prev.some((o) => o.Id === other.Id)
+        ? prev.filter((o) => o.Id !== other.Id)
+        : [...prev, other]
+    );
   };
 
-  // Clear all selections
-  const clearAllBrands = () => setSelectedBrands([]);
-  const clearAllBrandGroups = () => setSelectedBrandGroups([]);
-  const clearAllTypes = () => setSelectedTypes([]);
-  const clearAllCategories = () => setSelectedCategories([]);
-  const clearAllOthers = () => setSelectedOthers([]);
-  const clearAllSizes = () => setSelectedSizes([]);
+  const toggleTempSize = (size) => {
+    setTempSizes((prev) =>
+      prev.some((s) => s.Id === size.Id)
+        ? prev.filter((s) => s.Id !== size.Id)
+        : [...prev, size]
+    );
+  };
 
-  // Toggle dropdowns (only one open at a time)
-  const toggleBrandDropdown = () => {
-    setShowBrandDropdown(!showBrandDropdown);
+  // Apply and clear functions
+  const applyBrands = () => {
+    setSelectedBrands(tempBrands);
+    setShowBrandDropdown(false);
+  };
+
+  const clearAllBrands = () => setTempBrands([]);
+
+  const applyBrandGroups = () => {
+    setSelectedBrandGroups(tempBrandGroups);
     setShowBrandGroupDropdown(false);
+  };
+
+  const clearAllBrandGroups = () => setTempBrandGroups([]);
+
+  const applyTypes = () => {
+    setSelectedTypes(tempTypes);
     setShowTypesDropdown(false);
+  };
+
+  const clearAllTypes = () => setTempTypes([]);
+
+  const applyCategories = () => {
+    setSelectedCategories(tempCategories);
     setShowCategoryDropdown(false);
+  };
+
+  const clearAllCategories = () => setTempCategories([]);
+
+  const applyOthers = () => {
+    setSelectedOthers(tempOthers);
     setShowOthersDropdown(false);
+  };
+
+  const clearAllOthers = () => setTempOthers([]);
+
+  const applySizes = () => {
+    setSelectedSizes(tempSizes);
     setShowSizesDropdown(false);
+  };
+
+  const clearAllSizes = () => setTempSizes([]);
+
+  // Toggle dropdowns and set temp states
+  const toggleBrandDropdown = () => {
+    if (!showBrandDropdown) {
+      setTempBrands(selectedBrands);
+      setShowBrandGroupDropdown(false);
+      setShowTypesDropdown(false);
+      setShowCategoryDropdown(false);
+      setShowOthersDropdown(false);
+      setShowSizesDropdown(false);
+    }
+    setShowBrandDropdown(!showBrandDropdown);
   };
 
   const toggleBrandGroupDropdown = () => {
+    if (!showBrandGroupDropdown) {
+      setTempBrandGroups(selectedBrandGroups);
+      setShowBrandDropdown(false);
+      setShowTypesDropdown(false);
+      setShowCategoryDropdown(false);
+      setShowOthersDropdown(false);
+      setShowSizesDropdown(false);
+    }
     setShowBrandGroupDropdown(!showBrandGroupDropdown);
-    setShowBrandDropdown(false);
-    setShowTypesDropdown(false);
-    setShowCategoryDropdown(false);
-    setShowOthersDropdown(false);
-    setShowSizesDropdown(false);
   };
 
   const toggleTypesDropdown = () => {
+    if (!showTypesDropdown) {
+      setTempTypes(selectedTypes);
+      setShowBrandDropdown(false);
+      setShowBrandGroupDropdown(false);
+      setShowCategoryDropdown(false);
+      setShowOthersDropdown(false);
+      setShowSizesDropdown(false);
+    }
     setShowTypesDropdown(!showTypesDropdown);
-    setShowBrandDropdown(false);
-    setShowBrandGroupDropdown(false);
-    setShowCategoryDropdown(false);
-    setShowOthersDropdown(false);
-    setShowSizesDropdown(false);
   };
 
   const toggleCategoryDropdown = () => {
+    if (!showCategoryDropdown) {
+      setTempCategories(selectedCategories);
+      setShowBrandDropdown(false);
+      setShowBrandGroupDropdown(false);
+      setShowTypesDropdown(false);
+      setShowOthersDropdown(false);
+      setShowSizesDropdown(false);
+    }
     setShowCategoryDropdown(!showCategoryDropdown);
-    setShowBrandDropdown(false);
-    setShowBrandGroupDropdown(false);
-    setShowTypesDropdown(false);
-    setShowOthersDropdown(false);
-    setShowSizesDropdown(false);
   };
 
   const toggleOthersDropdown = () => {
+    if (!showOthersDropdown) {
+      setTempOthers(selectedOthers);
+      setShowBrandDropdown(false);
+      setShowBrandGroupDropdown(false);
+      setShowTypesDropdown(false);
+      setShowCategoryDropdown(false);
+      setShowSizesDropdown(false);
+    }
     setShowOthersDropdown(!showOthersDropdown);
-    setShowBrandDropdown(false);
-    setShowBrandGroupDropdown(false);
-    setShowTypesDropdown(false);
-    setShowCategoryDropdown(false);
-    setShowSizesDropdown(false);
   };
 
   const toggleSizesDropdown = () => {
+    if (!showSizesDropdown) {
+      setTempSizes(selectedSizes);
+      setShowBrandDropdown(false);
+      setShowBrandGroupDropdown(false);
+      setShowTypesDropdown(false);
+      setShowCategoryDropdown(false);
+      setShowOthersDropdown(false);
+    }
     setShowSizesDropdown(!showSizesDropdown);
-    setShowBrandDropdown(false);
-    setShowBrandGroupDropdown(false);
-    setShowTypesDropdown(false);
-    setShowCategoryDropdown(false);
-    setShowOthersDropdown(false);
   };
 
-  // Handle column search input changes
+  // Handle column search input changes (debounced)
   const handleColumnSearch = (column, value) => {
-    setColumnSearchTerms((prev) => ({
-      ...prev,
-      [column]: value,
-    }));
+    debouncedColumnSearch(column, value);
   };
 
+  // Filtered options
   const filteredTypes =
     typesSearchTerm.trim() === ""
       ? typesOptions
@@ -229,9 +492,8 @@ const SearchFrameStock = () => {
       ? allSizes?.data
       : allSizes?.data?.filter((size) =>
           size.Size.toLowerCase().includes(sizeSearchTerm.toLowerCase())
-        );
+        ) || [];
 
-  // Filtered brands
   const filteredBrands =
     allBrands?.filter(
       (brand) =>
@@ -240,125 +502,163 @@ const SearchFrameStock = () => {
           brand.BrandName.toLowerCase().includes(brandSearchTerm.toLowerCase()))
     ) || [];
 
-  // Collect all BrandGroupIDs that exist in filtered brands
   const validBrandGroupIds = new Set(filteredBrands.map((b) => b.BrandGroupID));
 
-  // Filtered brand groups
   const filteredBrandGroups =
     brandGroupSearchTerm.trim() === ""
       ? (allBrandGroups?.data || []).filter((bg) =>
           validBrandGroupIds.has(bg.Id)
         )
-      : allBrandGroups?.filter(
+      : (allBrandGroups?.data || []).filter(
           (brandGroup) =>
             brandGroup.BrandGroupName.toLowerCase().includes(
               brandGroupSearchTerm.toLowerCase()
             ) && validBrandGroupIds.has(brandGroup.Id)
-        ) || [];
+        );
 
-  // Mock data (replace with actual data from an API or other source)
-  const mockData = [
-    {
-      id: 1,
-      sno: "1",
-      brandGroup: "Group A",
-      brandName: "Brand X",
-      cat: "Frame",
-      type: "Full",
-      modelNo: "ABC123",
-      colourCode: "BLK",
-      sizeDblLength: "55-18-140",
-      barcode: "123456789",
-      frameColour: "Black",
-      others: "Rxable",
-      mrp: "1000",
-      stock: "10",
-      stockAvl: "8",
-    },
-    {
-      id: 2,
-      sno: "2",
-      brandGroup: "Group B",
-      brandName: "Brand Y",
-      cat: "Sunglass",
-      type: "Rimless",
-      modelNo: "XYZ789",
-      colourCode: "BRN",
-      sizeDblLength: "53-20-145",
-      barcode: "987654321",
-      frameColour: "Brown",
-      others: "Polarised",
-      mrp: "1500",
-      stock: "5",
-      stockAvl: "3",
-    },
-  ];
+  const handleRefresh = () => {
+    // Reset dropdown selections
+    setSelectedBrands([]);
+    setSelectedBrandGroups([]);
+    setSelectedCategories([]);
+    setSelectedTypes([]);
+    setSelectedOthers([]);
+    setSelectedSizes([]);
 
-  // Filter data based on column search terms and selected filters
-  const filteredData = mockData.filter((item) => {
-    const matchesColumnSearch = Object.keys(columnSearchTerms).every((key) => {
-      if (columnSearchTerms[key].trim() === "") return true;
-      const value = item[key.replace(" ", "")] || "";
-      return value
-        .toString()
-        .toLowerCase()
-        .includes(columnSearchTerms[key].toLowerCase());
-    });
+    // Reset temp states (to ensure dropdowns are cleared visually)
+    setTempBrands([]);
+    setTempBrandGroups([]);
+    setTempCategories([]);
+    setTempTypes([]);
+    setTempOthers([]);
+    setTempSizes([]);
 
-    const matchesSelectedFilters =
-      (selectedBrands.length === 0 ||
-        selectedBrands.some((brand) =>
-          item.brandName.toLowerCase().includes(brand.BrandName.toLowerCase())
-        )) &&
-      (selectedBrandGroups.length === 0 ||
-        selectedBrandGroups.some((bg) =>
-          item.brandGroup
-            .toLowerCase()
-            .includes(bg.BrandGroupName.toLowerCase())
-        )) &&
-      (selectedTypes.length === 0 ||
-        selectedTypes.some((type) =>
-          item.type.toLowerCase().includes(type.Name.toLowerCase())
-        )) &&
-      (selectedCategories.length === 0 ||
-        selectedCategories.some((cat) =>
-          item.cat.toLowerCase().includes(cat.Name.toLowerCase())
-        )) &&
-      (selectedOthers.length === 0 ||
-        selectedOthers.some((other) =>
-          item.others.toLowerCase().includes(other.Name.toLowerCase())
-        )) &&
-      (selectedSizes.length === 0 ||
-        selectedSizes.some((size) =>
-          item.sizeDblLength.toLowerCase().includes(size.Size.toLowerCase())
-        ));
+    // Reset column searches
+    const clearedColumns = Object.keys(columnSearchTerms).reduce((acc, key) => {
+      acc[key] = "";
+      return acc;
+    }, {});
+    setColumnSearchTerms(clearedColumns);
+    setColumnInput(clearedColumns);
 
-    return matchesColumnSearch && matchesSelectedFilters;
-  });
+    // Reset search terms for dropdown filters
+    setBrandSearchTerm("");
+    setBrandGroupSearchTerm("");
+    setTypesSearchTerm("");
+    setCategorySearchTerm("");
+    setOthersSearchTerm("");
+    setSizeSearchTerm("");
 
-  // Render header with search input
+    // Reset pagination
+    setCurrentPage(1);
+
+    // Re-fetch original (unfiltered) data
+    // refetch();
+  };
+  const [getlabels,{isFetching :isLabelsFetching}]= useLazyPrintLabelsQuery();
+  const [printId,setprintId] = useState(null)
+  const handleLabels = async (detailId) => {
+   setprintId(detailId)
+    try {
+      const blob = await getlabels({frameDetailId : detailId, companyId: parseInt(hasMultipleLocations[0]), }).unwrap();
+
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "application/pdf" })
+      );
+      const newWindow = window.open(url);
+      if (newWindow) {
+        newWindow.onload = () => {
+          newWindow.focus();
+          newWindow.print();
+        };
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(
+        "Unable to print the frame label please try again after some time!"
+      );
+    }
+  };
+  // Get column value for filtering and display
+  const getColumnValue = (item, column) => {
+    switch (column) {
+      case "brand group":
+        return item.BrandGroup || "";
+      case "brand name":
+        return item.BrandName || "";
+      case "cat":
+        return item.Category === 0 ? "O" : "S";
+      case "type":
+        return item.FrameRimType || "";
+      case "model no":
+        return item.ModelNo || "";
+      case "colour code":
+        return item.ColourCode || "";
+      case "size-dbl-length":
+        return `${item.Size || ""}-${item.DBL || ""}-${
+          item.TempleLength || ""
+        }`;
+      case "barcode":
+        return item.Barcode || "";
+      case "frame colour":
+        return item.FrameFrontColor || "";
+      case "others":
+        const othersArr = [];
+        if (item.IsRxable === "Yes") othersArr.push("Rxable");
+        if (item.IsClipOn === "Yes") othersArr.push("ClipOn");
+        // Add more if available in data, e.g., Polarised, Photochromatic
+        return othersArr.join(", ");
+      case "mrp":
+        return item.FrameSRP || "";
+
+      case "stock":
+        return item.Quantity;
+      default:
+        return "";
+    }
+  };
+  const locallyFiltered = useMemo(() => {
+    const raw = framData?.data || [];
+    return raw.filter((item) =>
+      Object.entries(columnSearchTerms).every(([col, term]) => {
+        if (!term) return true;
+        const val = getColumnValue(item, col).toString().toLowerCase();
+        return val.includes(term.toLowerCase());
+      })
+    );
+  }, [framData?.data, columnSearchTerms]);
+
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginatedData = locallyFiltered.slice(
+    startIndex,
+    startIndex + pageSize
+  );
+  const totalPages = Math.ceil(locallyFiltered.length / pageSize);
 
   const renderHeader = (column) => (
     <div className="flex flex-col">
       {toTitleCase(column)}
-      {column !== "action" &&
-      column !== "s.no" &&
+      {column !== "s.no" &&
+        column !== "others" &&
         column !== "mrp" &&
         column !== "stock" &&
-        column !== "stock avl" && (
+        column !== "action" && (
           <div className="relative mt-1">
-            {/* <FiSearch className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" /> */}
             <input
               type="text"
               placeholder={`Search ${toTitleCase(column)}...`}
               className="w-full pl-2 pr-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-              value={columnSearchTerms[column]}
-              onChange={(e) => handleColumnSearch(column, e.target.value)}
+              value={columnInput[column]}
+              onChange={(e) => handleColumnInputChange(column, e.target.value)}
             />
           </div>
         )}
     </div>
   );
+
+  if (isDataLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="max-w-8xl">
@@ -366,16 +666,19 @@ const SearchFrameStock = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-semibold text-gray-800">Frame Stock</h2>
-          <Button variant="outline" className="flex items-center gap-2">
-            <FiChevronDown className="transform rotate-90" />
-            Back
-          </Button>
+          <div className="flex gap-3 items-center">
+            <Button variant="outline" className="flex items-center gap-2">
+              <FiChevronDown className="transform rotate-90" />
+              Back
+            </Button>
+            <Button onClick={handleRefresh}>Refresh</Button>
+          </div>
         </div>
 
         {/* Filters Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {/* Brand Selector */}
-          <div className="relative">
+          <div className="relative" ref={brandRef}>
             <div
               className="flex justify-between items-center p-3 border border-gray-300 rounded-lg cursor-pointer bg-white shadow-sm hover:border-blue-400 transition-colors"
               onClick={toggleBrandDropdown}
@@ -409,20 +712,20 @@ const SearchFrameStock = () => {
                         <div
                           key={brand.Id}
                           className={`flex items-center p-2 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors ${
-                            selectedBrands.some((b) => b.Id === brand.Id)
+                            tempBrands.some((b) => b.Id === brand.Id)
                               ? "bg-blue-50"
                               : ""
                           }`}
-                          onClick={() => toggleBrand(brand)}
+                          onClick={() => toggleTempBrand(brand)}
                         >
                           <div
                             className={`w-5 h-5 rounded border flex items-center justify-center mr-2 ${
-                              selectedBrands.some((b) => b.Id === brand.Id)
+                              tempBrands.some((b) => b.Id === brand.Id)
                                 ? "bg-blue-600 border-blue-600"
                                 : "border-gray-300"
                             }`}
                           >
-                            {selectedBrands.some((b) => b.Id === brand.Id) && (
+                            {tempBrands.some((b) => b.Id === brand.Id) && (
                               <FiCheck className="text-white text-sm" />
                             )}
                           </div>
@@ -448,7 +751,7 @@ const SearchFrameStock = () => {
                   <Button
                     variant="primary"
                     className="px-4 py-2"
-                    onClick={() => setShowBrandDropdown(false)}
+                    onClick={applyBrands}
                   >
                     Apply
                   </Button>
@@ -458,7 +761,7 @@ const SearchFrameStock = () => {
           </div>
 
           {/* Brand Group Selector */}
-          <div className="relative">
+          <div className="relative" ref={brandGroupRef}>
             <div
               className="flex justify-between items-center p-3 border border-gray-300 rounded-lg cursor-pointer bg-white shadow-sm hover:border-blue-400 transition-colors"
               onClick={toggleBrandGroupDropdown}
@@ -492,24 +795,24 @@ const SearchFrameStock = () => {
                         <div
                           key={brandGroup.Id}
                           className={`flex items-center p-2 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors ${
-                            selectedBrandGroups.some(
+                            tempBrandGroups.some(
                               (bg) => bg.Id === brandGroup.Id
                             )
                               ? "bg-blue-50"
                               : ""
                           }`}
-                          onClick={() => toggleBrandGroup(brandGroup)}
+                          onClick={() => toggleTempBrandGroup(brandGroup)}
                         >
                           <div
                             className={`w-5 h-5 rounded border flex items-center justify-center mr-2 ${
-                              selectedBrandGroups.some(
+                              tempBrandGroups.some(
                                 (bg) => bg.Id === brandGroup.Id
                               )
                                 ? "bg-blue-600 border-blue-600"
                                 : "border-gray-300"
                             }`}
                           >
-                            {selectedBrandGroups.some(
+                            {tempBrandGroups.some(
                               (bg) => bg.Id === brandGroup.Id
                             ) && <FiCheck className="text-white text-sm" />}
                           </div>
@@ -535,7 +838,7 @@ const SearchFrameStock = () => {
                   <Button
                     variant="primary"
                     className="px-4 py-2"
-                    onClick={() => setShowBrandGroupDropdown(false)}
+                    onClick={applyBrandGroups}
                   >
                     Apply
                   </Button>
@@ -545,7 +848,7 @@ const SearchFrameStock = () => {
           </div>
 
           {/* Types Selector */}
-          <div className="relative">
+          <div className="relative" ref={typesRef}>
             <div
               className="flex justify-between items-center p-3 border border-gray-300 rounded-lg cursor-pointer bg-white shadow-sm hover:border-blue-400 transition-colors"
               onClick={toggleTypesDropdown}
@@ -578,20 +881,20 @@ const SearchFrameStock = () => {
                         <div
                           key={type.Id}
                           className={`flex items-center p-2 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors ${
-                            selectedTypes.some((t) => t.Id === type.Id)
+                            tempTypes.some((t) => t.Id === type.Id)
                               ? "bg-blue-50"
                               : ""
                           }`}
-                          onClick={() => toggleType(type)}
+                          onClick={() => toggleTempType(type)}
                         >
                           <div
                             className={`w-5 h-5 rounded border flex items-center justify-center mr-2 ${
-                              selectedTypes.some((t) => t.Id === type.Id)
+                              tempTypes.some((t) => t.Id === type.Id)
                                 ? "bg-blue-600 border-blue-600"
                                 : "border-gray-300"
                             }`}
                           >
-                            {selectedTypes.some((t) => t.Id === type.Id) && (
+                            {tempTypes.some((t) => t.Id === type.Id) && (
                               <FiCheck className="text-white text-sm" />
                             )}
                           </div>
@@ -617,7 +920,7 @@ const SearchFrameStock = () => {
                   <Button
                     variant="primary"
                     className="px-4 py-2"
-                    onClick={() => setShowTypesDropdown(false)}
+                    onClick={applyTypes}
                   >
                     Apply
                   </Button>
@@ -627,7 +930,7 @@ const SearchFrameStock = () => {
           </div>
 
           {/* Category Selector */}
-          <div className="relative">
+          <div className="relative" ref={categoryRef}>
             <div
               className="flex justify-between items-center p-3 border border-gray-300 rounded-lg cursor-pointer bg-white shadow-sm hover:border-blue-400 transition-colors"
               onClick={toggleCategoryDropdown}
@@ -660,22 +963,20 @@ const SearchFrameStock = () => {
                         <div
                           key={category.Id}
                           className={`flex items-center p-2 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors ${
-                            selectedCategories.some((c) => c.Id === category.Id)
+                            tempCategories.some((c) => c.Id === category.Id)
                               ? "bg-blue-50"
                               : ""
                           }`}
-                          onClick={() => toggleCategory(category)}
+                          onClick={() => toggleTempCategory(category)}
                         >
                           <div
                             className={`w-5 h-5 rounded border flex items-center justify-center mr-2 ${
-                              selectedCategories.some(
-                                (c) => c.Id === category.Id
-                              )
+                              tempCategories.some((c) => c.Id === category.Id)
                                 ? "bg-blue-600 border-blue-600"
                                 : "border-gray-300"
                             }`}
                           >
-                            {selectedCategories.some(
+                            {tempCategories.some(
                               (c) => c.Id === category.Id
                             ) && <FiCheck className="text-white text-sm" />}
                           </div>
@@ -701,7 +1002,7 @@ const SearchFrameStock = () => {
                   <Button
                     variant="primary"
                     className="px-4 py-2"
-                    onClick={() => setShowCategoryDropdown(false)}
+                    onClick={applyCategories}
                   >
                     Apply
                   </Button>
@@ -711,7 +1012,7 @@ const SearchFrameStock = () => {
           </div>
 
           {/* Others Selector */}
-          <div className="relative">
+          <div className="relative" ref={othersRef}>
             <div
               className="flex justify-between items-center p-3 border border-gray-300 rounded-lg cursor-pointer bg-white shadow-sm hover:border-blue-400 transition-colors"
               onClick={toggleOthersDropdown}
@@ -724,7 +1025,7 @@ const SearchFrameStock = () => {
               {showOthersDropdown ? <FiChevronUp /> : <FiChevronDown />}
             </div>
             {showOthersDropdown && (
-              <div className="absolute top-full right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-[100] w-[600px]">
+              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-[100] w-[600px]">
                 <div className="p-3 border-b border-gray-200">
                   <div className="relative">
                     <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -744,20 +1045,20 @@ const SearchFrameStock = () => {
                         <div
                           key={other.Id}
                           className={`flex items-center p-2 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors ${
-                            selectedOthers.some((o) => o.Id === other.Id)
+                            tempOthers.some((o) => o.Id === other.Id)
                               ? "bg-blue-50"
                               : ""
                           }`}
-                          onClick={() => toggleOthers(other)}
+                          onClick={() => toggleTempOthers(other)}
                         >
                           <div
                             className={`w-5 h-5 rounded border flex items-center justify-center mr-2 ${
-                              selectedOthers.some((o) => o.Id === other.Id)
+                              tempOthers.some((o) => o.Id === other.Id)
                                 ? "bg-blue-600 border-blue-600"
                                 : "border-gray-300"
                             }`}
                           >
-                            {selectedOthers.some((o) => o.Id === other.Id) && (
+                            {tempOthers.some((o) => o.Id === other.Id) && (
                               <FiCheck className="text-white text-sm" />
                             )}
                           </div>
@@ -783,7 +1084,7 @@ const SearchFrameStock = () => {
                   <Button
                     variant="primary"
                     className="px-4 py-2"
-                    onClick={() => setShowOthersDropdown(false)}
+                    onClick={applyOthers}
                   >
                     Apply
                   </Button>
@@ -793,7 +1094,7 @@ const SearchFrameStock = () => {
           </div>
 
           {/* Sizes Selector */}
-          <div className="relative">
+          <div className="relative" ref={sizesRef}>
             <div
               className="flex justify-between items-center p-3 border border-gray-300 rounded-lg cursor-pointer bg-white shadow-sm hover:border-blue-400 transition-colors"
               onClick={toggleSizesDropdown}
@@ -820,26 +1121,26 @@ const SearchFrameStock = () => {
                   </div>
                 </div>
                 <div className="max-h-60 overflow-y-auto">
-                  {filteredSizes && filteredSizes.length > 0 ? (
+                  {filteredSizes.length > 0 ? (
                     <div className="grid grid-cols-4 gap-2 p-3">
                       {filteredSizes.map((size) => (
                         <div
                           key={size.Id}
                           className={`flex items-center p-2 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors ${
-                            selectedSizes.some((s) => s.Id === size.Id)
+                            tempSizes.some((s) => s.Id === size.Id)
                               ? "bg-blue-50"
                               : ""
                           }`}
-                          onClick={() => toggleSizes(size)}
+                          onClick={() => toggleTempSize(size)}
                         >
                           <div
                             className={`w-5 h-5 rounded border flex items-center justify-center mr-2 ${
-                              selectedSizes.some((s) => s.Id === size.Id)
+                              tempSizes.some((s) => s.Id === size.Id)
                                 ? "bg-blue-600 border-blue-600"
                                 : "border-gray-300"
                             }`}
                           >
-                            {selectedSizes.some((s) => s.Id === size.Id) && (
+                            {tempSizes.some((s) => s.Id === size.Id) && (
                               <FiCheck className="text-white text-sm" />
                             )}
                           </div>
@@ -865,7 +1166,7 @@ const SearchFrameStock = () => {
                   <Button
                     variant="primary"
                     className="px-4 py-2"
-                    onClick={() => setShowSizesDropdown(false)}
+                    onClick={applySizes}
                   >
                     Apply
                   </Button>
@@ -878,6 +1179,7 @@ const SearchFrameStock = () => {
         {/* Table with search inputs in headers */}
         <Table
           expand={true}
+          freeze={true}
           columns={[
             "s.no",
             "brand group",
@@ -892,34 +1194,70 @@ const SearchFrameStock = () => {
             "others",
             "mrp",
             "stock",
-            "stock avl",
             "action",
           ]}
-          data={filteredData}
+          data={paginatedData || []}
           renderHeader={renderHeader}
           renderRow={(item, index) => (
             <TableRow key={item.id}>
-              <TableCell>{item.sno}</TableCell>
-              <TableCell>{item.brandGroup}</TableCell>
-              <TableCell>{item.brandName}</TableCell>
-              <TableCell>{item.cat}</TableCell>
-              <TableCell>{item.type}</TableCell>
-              <TableCell>{item.modelNo}</TableCell>
-              <TableCell>{item.colourCode}</TableCell>
-              <TableCell>{item.sizeDblLength}</TableCell>
-              <TableCell>{item.barcode}</TableCell>
-              <TableCell>{item.frameColour}</TableCell>
-              <TableCell>{item.others}</TableCell>
-              <TableCell>{item.mrp}</TableCell>
-              <TableCell>{item.stock}</TableCell>
-              <TableCell>{item.stockAvl}</TableCell>
-              <TableCell>
-                <Button variant="outline" size="sm">
-                  Action
-                </Button>
+              <TableCell>{index + 1}</TableCell>
+              <TableCell>{getColumnValue(item, "brand group")}</TableCell>
+              <TableCell>{getColumnValue(item, "brand name")}</TableCell>
+              <TableCell>{getColumnValue(item, "cat")}</TableCell>
+              <TableCell>{getColumnValue(item, "type")}</TableCell>
+              <TableCell>{getColumnValue(item, "model no")}</TableCell>
+              <TableCell>{getColumnValue(item, "colour code")}</TableCell>
+              <TableCell>{getColumnValue(item, "size-dbl-length")}</TableCell>
+              <TableCell>{getColumnValue(item, "barcode")}</TableCell>
+              <TableCell>{getColumnValue(item, "frame colour")}</TableCell>
+              <TableCell className="w-[80px]">
+                <div className="grid grid-cols-2 gap-2 w-auto">
+                  {[
+                    item.PO == 1 ? "PH" : null,
+                    item.Ph == 1 ? "PO" : null,
+                    item.NoOfClips ? `CL: ${item.Cl}` : null,
+                    item.IsRxable == "Yes" ? "Rx" : null,
+                  ]
+                    .filter(Boolean)
+                    .map((val, idx) => (
+                      <div key={idx}>{val}</div>
+                    ))}
+                </div>
+              </TableCell>
+              <TableCell>{getColumnValue(item, "mrp")}</TableCell>
+              <TableCell>{getColumnValue(item, "stock")}</TableCell>
+              <TableCell className="flex gap-1 justify-center">
+                <Button
+                  size="xs"
+                  variant="outline"
+                  title="Barcode Label Printing"
+                  icon={FiTag}
+                  onClick={() => handleLabels(item)}
+                  isLoading={printId === item.FrameDetailId}
+                ></Button>
+                <Button
+                  size="xs"
+                  variant="outline"
+                  title="Stock History"
+                  icon={FiBox}
+                ></Button>
+                <Button
+                  size="xs"
+                  variant="outline"
+                  title="Transaction History"
+                  icon={FiActivity}
+                ></Button>
               </TableCell>
             </TableRow>
           )}
+          emptyMessage={isDataLoading ? "Loading..." : "No data found"}
+          pagination={true}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
+          totalItems={paginatedData}
         />
       </div>
     </div>

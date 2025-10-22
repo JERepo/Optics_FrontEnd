@@ -116,6 +116,7 @@ const CLMaster = () => {
         mrp: data.prices ? data.prices.MRP.toString() : "",
         excel: data?.FileUploaded ? 1 : 0,
         selectedFile: null,
+        
       });
 
       // Prefill contact lens details

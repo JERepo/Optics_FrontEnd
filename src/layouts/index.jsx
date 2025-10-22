@@ -117,6 +117,7 @@ import OfferViewPage from "../pages/Offer/MainPage/OfferViewPage";
 import VendorPayment from "../pages/LedgerEntries/VendorPayment/VendorPayment";
 import StockAgeingReport from "../pages/Reports/StockAgeingReport";
 import VendorPaymentList from "../pages/LedgerEntries/VendorPayment/VendorPaymentList";
+import UserProfile from "../pages/Profile/UserProfile";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -1043,6 +1044,10 @@ export const router = createBrowserRouter([
       {
         path: "whatsapp-templates",
         element: <WhatsappTemplates />,
+      },
+      {
+        path : "profile",
+        element : <UserProfile />
       }
     ],
   },

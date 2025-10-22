@@ -82,6 +82,13 @@ export const reportApi = createApi({
         responseHandler: (response) => response.blob(),
       }),
     }),
+     printLabels: builder.query({
+      query: ({ frameDetailId, companyId }) => ({
+        url: `/api/v1/pdf/frame-qr?frameDetailId=${frameDetailId}&companyId=${companyId}`,
+        responseHandler: (response) => response.blob(),
+      }),
+      transformResponse: (response) => response,
+    }),
   }),
 });
 
@@ -96,5 +103,6 @@ export const {
   useLazyGetStockInReportQuery,
   useLazyGetAuditReportQuery,
   useLazyGetStockOutReportQuery,
-  useLazyGetStockAgeingReportQuery
+  useLazyGetStockAgeingReportQuery,
+  useLazyPrintLabelsQuery
 } = reportApi;

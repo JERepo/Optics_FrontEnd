@@ -19,7 +19,29 @@ export const Table = ({
   expand = false,
   name,
 }) => {
-  const expandingColumns = ["Product Details", "Product name","product details","product name"];
+  const expandingColumns = [
+    "Product Details",
+    "Product name",
+    "product details",
+    "product name",
+  ];
+  const frameColumns = [
+    // "s.no",
+    "brand group",
+    "brand name",
+    "cat",
+    "type",
+    "model no",
+    "colour code",
+    "size-dbl-length",
+    "barcode",
+    "frame colour",
+    // "others",
+    // "mrp",
+    // "stock",
+    // "stock avl",
+    // "action",
+  ];
   return (
     <div className="space-y-4">
       <div
@@ -36,7 +58,11 @@ export const Table = ({
                     expand && expandingColumns.includes(column)
                       ? "min-w-[220px] max-w-[300px]"
                       : ""
-                  } ${freeze ? "sticky top-0 z-10 bg-blue-50" : ""}`} // Applied sticky to <th>
+                  } ${freeze ? "sticky top-0 z-10 bg-blue-50" : ""} ${
+                    expand && frameColumns.includes(column)
+                      ? "min-w-[150px]"
+                      : ""
+                  } `} // Applied sticky to <th>
                 >
                   {typeof renderHeader === "function"
                     ? renderHeader(column)

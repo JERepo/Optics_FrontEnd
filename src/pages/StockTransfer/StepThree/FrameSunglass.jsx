@@ -127,7 +127,8 @@ const FrameSunglass = () => {
         setBarcode("");
       }
     } catch (error) {
-      toast.error("Product does not exist");
+      console.log("com")
+      toast.error(error?.data?.message || error?.data?.error?.message || "Product does not exist");
       setBarcode("");
     }
   };
@@ -410,7 +411,6 @@ const FrameSunglass = () => {
       )
     );
   };
-  console.log("sto", stockDraftData);
   const handleSaveData = async () => {
     if (!Array.isArray(items) || items.length === 0) {
       console.warn("No details to save");
@@ -431,13 +431,13 @@ const FrameSunglass = () => {
           };
         }),
       };
-      console.log(payload);
       await saveStockTransfer({ payload }).unwrap();
       toast.success("Frame Stock transfer out successfully added");
       goToStockStep(4);
     } catch (error) {
       console.log(error);
-      // toast.error("Error saving STK")
+      toast.error(error?.data?.message || error?.data?.error?.message || "Unable to proceed forward please try after some time")
+      
     }
   };
 
