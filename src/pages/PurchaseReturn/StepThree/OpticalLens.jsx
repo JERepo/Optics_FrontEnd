@@ -475,7 +475,6 @@ const formatProductDetails = (order) => {
     }
   };
 
-  console.log(selectedVendor, lensData);
   return (
     <div>
       <div className="max-w-8xl h-auto">
@@ -635,8 +634,8 @@ const formatProductDetails = (order) => {
                             item.returnQty *
                               (item.returnPrice +
                                 (item.returnPrice * item.TaxPercent) / 100) +
-                              item.fittingPrice *
-                                (item.fittingGSTPercentage / 100)
+                             ( item.fittingPrice *
+                                (item.fittingGSTPercentage / 100))
                           )}
                         </TableCell>
                         <TableCell>

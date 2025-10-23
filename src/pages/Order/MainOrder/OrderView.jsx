@@ -333,6 +333,8 @@ const OrderView = () => {
     }
   };
   const handleGenerateInvoiceConfirm = async (order) => {
+        console.log("order",order)
+
     const discountedSellingPrice =
       parseFloat(order?.DiscountedSellingPrice) || 0;
     const orderQty = parseFloat(order?.OrderQty) || 0;
@@ -342,10 +344,9 @@ const OrderView = () => {
 
     const totalFittingGST = fittingPrice * (fittingGST / 100);
     const totalvalue =
-      discountedSellingPrice * orderQty +
+      (discountedSellingPrice * orderQty )+
       totalFittingGST +
-      fittingPrice -
-      advance;
+      fittingPrice
     const payload = {
       invoiceItems: [
         {
@@ -388,6 +389,7 @@ const OrderView = () => {
       // if()
       toast.success("Invoice Generated successfully!");
       setSelectedOrder(null);
+      setOpenInvoiceWarning(false);
     } catch (error) {
       console.log(error);
       setErrors(
@@ -403,6 +405,7 @@ const OrderView = () => {
     }
   };
   const handleGenerateInvoice = async (order) => {
+    console.log("order",order)
     setSelectedOrder(order);
     const discountedSellingPrice =
       parseFloat(order?.DiscountedSellingPrice) || 0;
@@ -413,10 +416,9 @@ const OrderView = () => {
 
     const totalFittingGST = fittingPrice * (fittingGST / 100);
     const totalvalue =
-      discountedSellingPrice * orderQty +
+      (discountedSellingPrice * orderQty) +
       totalFittingGST +
-      fittingPrice -
-      advance;
+      fittingPrice
     const payload = {
       invoiceItems: [
         {
@@ -473,6 +475,8 @@ const OrderView = () => {
       );
       setErrorModalOpen(true);
       setSelectedOrder(null);
+      setOpenInvoiceWarning(false);
+
       return;
     }
   };
@@ -509,7 +513,6 @@ const OrderView = () => {
   columns.push("Total", "Status", "Action");
   const handlePrintPdf = async (item) => {
     setPrintingId(item.id);
-    console.log("ite", item);
 
     try {
       const blob = await generatePrint({
@@ -538,7 +541,6 @@ const OrderView = () => {
   };
 
   const handlePrint = async (item) => {
-    console.log("ite", item);
     setPrintingId(item.OrderDetailId);
 
     try {

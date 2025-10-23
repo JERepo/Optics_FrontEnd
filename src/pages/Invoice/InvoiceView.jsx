@@ -425,7 +425,9 @@ const InvoiceView = () => {
     }
     try {
       const res = await cancelInvoice({ payload }).unwrap();
-      if (res?.data?.otpRequired) {
+      console.log("res",res)
+      if (res?.otpRequired) {
+        setIsCancelOpen(false);
         setOtpValue(null);
         setShowOtp(true);
         return;
@@ -688,14 +690,7 @@ const InvoiceView = () => {
             </div>
           )}
         <Modal isOpen={showOtp} onClose={() => setShowOtp(false)}>
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Secure Verification
-            </h2>
-            <p className="text-gray-600">
-              Enter the verification code sent to your Email or Whatsapp
-            </p>
-          </div>
+          
           <OTPScreen
             length={6}
             onComplete={handleOtpComplete}

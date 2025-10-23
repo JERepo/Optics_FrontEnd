@@ -120,7 +120,64 @@ const getProductName = (item) => {
 
     return lines.filter(Boolean).join("\n");
   }
+ if (type === 0) {
+    const detailsArray = Array.isArray(detail) ? detail : [detail];
 
+    return detailsArray
+      .map((d) => {
+        const olLine = clean(d.productDescName);
+
+        // AddOns & Tint
+        const addonNames = d.specs?.addOn?.addOnName;
+        const tintName = d.specs?.tint?.tintName;
+
+        // Power formatting
+        const joinNonEmpty = (arr, sep = " ") => arr.filter(Boolean).join(sep);
+        const formatPower = (eye) =>
+          joinNonEmpty(
+            [
+              formatPowerValue(eye?.sphericalPower) &&
+                `SPH: ${formatPowerValue(eye?.sphericalPower)}`,
+              formatPowerValue(eye?.addition) &&
+                `Add: ${formatPowerValue(eye?.addition)}`,
+              clean(eye?.diameter) && `Dia: ${clean(eye?.diameter)}`,
+            ],
+            ", "
+          );
+
+        const pd = d?.specs?.powerDetails || {};
+        const rightParts = formatPower(pd.right || {});
+        const leftParts = formatPower(pd.left || {});
+        const powerLine = joinNonEmpty(
+          [rightParts && `R: ${rightParts}`, leftParts && `L: ${leftParts}`],
+          "\n"
+        );
+
+        // Fitting price
+        let fittingLine = "";
+        const fitPrice = parseFloat(d.fittingPrice || 0);
+        const gstPerc = parseFloat(d.fittingGSTPercentage || 0);
+        if (!isNaN(fitPrice) && !isNaN(gstPerc) && fitPrice > 0) {
+          fittingLine = `Fitting Price: ₹${(
+            fitPrice *
+            (1 + gstPerc / 100)
+          ).toFixed(2)}`;
+        }
+
+        return joinNonEmpty(
+          [
+            olLine,
+            powerLine,
+            addonNames && `AddOn: ${addonNames}`,
+            tintName && `Tint: ${tintName}`,
+            fittingLine,
+            clean(d.hSN) && `HSN: ${clean(d.hSN)}`,
+          ],
+          "\n"
+        );
+      })
+      .join("\n\n"); // join multiple products if array
+  }
   return "";
 };
 
@@ -191,10 +248,13 @@ const PurchaseReturnView = () => {
       const qty = item.DNQty || 0;
       const unitPrice = parseFloat(item.DNPrice) || 0;
       const gstRate = parseFloat(item.ProductTaxPercentage) / 100;
+      const fittingPrice = parseFloat(item.FittingReturnPrice || 0);
+      const fittingGst = parseFloat(item.FittingTaxPercentage || 0);
+      const totalFitting = fittingPrice * (fittingGst/100);
 
       const basicValue = unitPrice * qty;
-      const gst = unitPrice * qty * gstRate;
-      const returnTotal = basicValue + gst;
+      const gst = unitPrice * qty * gstRate + totalFitting;
+      const returnTotal = basicValue + gst +totalFitting;
 
       acc.totalQty += qty;
       acc.totalGST += gst;
@@ -336,7 +396,7 @@ const PurchaseReturnView = () => {
               <TableRow key={item.ID}>
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>{getShortTypeName(item.ProductType)}</TableCell>
-                <TableCell></TableCell>
+                <TableCell>{item.VendorOrderNo}</TableCell>
                 <TableCell className="whitespace-pre-wrap">
                   {getProductName(item)}
                 </TableCell>
@@ -353,14 +413,16 @@ const PurchaseReturnView = () => {
                 </TableCell>
 
                 <TableCell>
-                  ₹
-                  {formatINR(
-                    parseFloat(parseFloat(item.DNPrice) * item.DNQty) +
-                      parseFloat(item.DNPrice) *
-                        ((parseFloat(item.ProductTaxPercentage) / 100) *
-                          item.DNQty)
-                  )}
-                </TableCell>
+                                 ₹
+                                 {formatINR(
+                                   parseFloat(item.DNPrice) * item.DNQty +
+                                     parseFloat(item.DNPrice) *
+                                       item.DNQty *
+                                       (parseFloat(item.ProductTaxPercentage) / 100) +
+                                     parseFloat(item.FittingReturnPrice || 0) *
+                                       (parseFloat(item.FittingTaxPercentage || 0) / 100)
+                                 )}
+                               </TableCell>
               </TableRow>
             )}
           />
