@@ -436,12 +436,13 @@ const SalesView = () => {
 
   const totalGST = salesDetails?.data.reduce((sum, item) => {
     const price = parseFloat(item.ReturnPricePerUnit);
+    const qty = parseInt(item.ReturnQty)
     const totalPriceGst = parseFloat(
       calculateGST(price, parseFloat(item.GSTPercentage)).gstAmount
     );
     const fittingPrice = parseFloat(item.FittingCharges || 0);
     const gst = parseFloat(item.FittingGSTPercentage || 0);
-    const fittingGst = fittingPrice * (gst / 100);
+    const fittingGst = (fittingPrice * qty) * (gst / 100);
     return sum + totalPriceGst + fittingGst;
   }, 0);
 
