@@ -46,11 +46,15 @@ const EditCustomerGroup = () => {
       setSelectedLocation(String(brandCategory.data.data.CompanyID));
     }
   }, [id, brandCategory, isSuccess]);
-
+console.log("has",hasMultipleLocations[0])
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!brandName || !selectedLocation) {
+    if (!brandName) {
       toast.error("Please fill all fields!");
+      return;
+    }
+    if(hasMultipleLocations?.length > 1){
+      toast.error("Please select the location!");
       return;
     }
     if (brandName.length > 50) {
@@ -63,7 +67,7 @@ const EditCustomerGroup = () => {
     try {
       if (id) {
         await updateBrandGroup({
-          companyId: selectedLocation,
+          companyId:hasMultipleLocations?.length > 1 ?selectedLocation :parseInt(hasMultipleLocations[0]),
           id,
           payload,
         }).unwrap();
@@ -71,7 +75,7 @@ const EditCustomerGroup = () => {
       } else {
         await createBrandGroup({
           id: user.Id,
-          companyId: selectedLocation,
+          companyId: hasMultipleLocations?.length > 1 ?selectedLocation :parseInt(hasMultipleLocations[0]),
           payload,
         }).unwrap();
         toast.success("Customer Group created successfully");

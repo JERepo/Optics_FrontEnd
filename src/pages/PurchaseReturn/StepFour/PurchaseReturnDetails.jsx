@@ -309,8 +309,8 @@ const CompleteStockTransfer = () => {
       const fittingTotal = fittingPrice * (fgst/100);
 
       const basicValue = unitPrice * qty;
-      const gst = unitPrice * qty * gstRate;
-      const returnTotal = basicValue + gst +fittingTotal;
+      const gst = unitPrice * qty * gstRate + fittingTotal;
+      const returnTotal = basicValue + gst +fittingPrice +fittingTotal;
 
       acc.totalQty += qty;
       acc.totalGST += gst;

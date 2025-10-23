@@ -18,6 +18,7 @@ import {
   useGetFrameMasterByIdQuery,
   useUpdateFramemasterMutation,
   useDeActivateMutation,
+  useDeActivateDetailMutation,
 } from "../../../api/frameMasterApi";
 import { useGetAllLocationsQuery } from "../../../api/roleManagementApi";
 import toast from "react-hot-toast";
@@ -49,7 +50,7 @@ const EditFrameMaster = () => {
     useCreateFrameMasterMutation();
   const [updateFramemaster, { isLoading: isFrameUpdating }] =
     useUpdateFramemasterMutation();
-  const [deActivate] = useDeActivateMutation();
+  const [deActivate] = useDeActivateDetailMutation();
   const { data: frameMaster, isLoading: isFrameLoading } =
     useGetFrameMasterByIdQuery(id ? { id } : { skip: true });
   const { data: allFrames } = useGetAllFrameMasterQuery();

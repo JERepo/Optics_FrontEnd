@@ -481,7 +481,7 @@ const OpticalLens = () => {
       toast.success("Optical lens Purchase return successfully added!");
       goToPurchaseStep(4);
     } catch (error) {
-      toast.error(error?.data.error);
+      toast.error(error?.data.error  || "Please try again after some time!");
     }
   };
 
