@@ -730,7 +730,7 @@ const OpticalLens = () => {
                       Prescription
                     </label>
                     <Autocomplete
-                      options={prescriptionData}
+                      options={prescriptionData || []}
                       getOptionLabel={(option) => {
                         const date = option?.PrescriptionDate;
                         const remarks = option?.Remarks || "";
