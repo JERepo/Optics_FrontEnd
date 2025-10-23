@@ -120,7 +120,7 @@ const getProductName = (item) => {
 
     return lines.filter(Boolean).join("\n");
   }
- if (type === 0) {
+  if (type === 0) {
     const detailsArray = Array.isArray(detail) ? detail : [detail];
 
     return detailsArray
@@ -250,11 +250,11 @@ const PurchaseReturnView = () => {
       const gstRate = parseFloat(item.ProductTaxPercentage) / 100;
       const fittingPrice = parseFloat(item.FittingReturnPrice || 0);
       const fittingGst = parseFloat(item.FittingTaxPercentage || 0);
-      const totalFitting = fittingPrice * (fittingGst/100);
+      const totalFitting = fittingPrice * (fittingGst / 100);
 
       const basicValue = unitPrice * qty;
       const gst = unitPrice * qty * gstRate + totalFitting;
-      const returnTotal = basicValue + gst +totalFitting;
+      const returnTotal = basicValue + gst + totalFitting;
 
       acc.totalQty += qty;
       acc.totalGST += gst;
@@ -269,7 +269,10 @@ const PurchaseReturnView = () => {
     totalQty: totals.totalQty,
     totalGST: formatINR(totals.totalGST),
     totalBasicValue: formatINR(totals.totalBasicValue),
-    totalReturnValue: formatINR(totals.totalReturnValue + (parseFloat(PRDetails?.data?.data?.RoundOff) || 0)),
+    totalReturnValue: formatINR(
+      totals.totalReturnValue +
+        (parseFloat(PRDetails?.data?.data?.RoundOff) || 0)
+    ),
   };
   const getEInvoiceData = async () => {
     const eInvoicePayload = {
@@ -413,16 +416,16 @@ const PurchaseReturnView = () => {
                 </TableCell>
 
                 <TableCell>
-                                 ₹
-                                 {formatINR(
-                                   parseFloat(item.DNPrice) * item.DNQty +
-                                     parseFloat(item.DNPrice) *
-                                       item.DNQty *
-                                       (parseFloat(item.ProductTaxPercentage) / 100) +
-                                     parseFloat(item.FittingReturnPrice || 0) *
-                                       (parseFloat(item.FittingTaxPercentage || 0) / 100)
-                                 )}
-                               </TableCell>
+                  ₹
+                  {formatINR(
+                    parseFloat(item.DNPrice) * item.DNQty +
+                      parseFloat(item.DNPrice) *
+                        item.DNQty *
+                        (parseFloat(item.ProductTaxPercentage) / 100) +
+                      parseFloat(item.FittingReturnPrice || 0) *
+                        (parseFloat(item.FittingTaxPercentage || 0) / 100) + parseFloat(item.FittingReturnPrice)
+                  )}
+                </TableCell>
               </TableRow>
             )}
           />

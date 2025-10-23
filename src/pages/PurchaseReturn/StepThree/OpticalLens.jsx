@@ -400,7 +400,7 @@ const OpticalLens = () => {
     const returnQty = Number(lensData.returnQty);
     const returnFittingPrice = Number(lensData.returnFittingPrice) || 0;
 
-    if (returnPrice > (selectedVendor.GRNPrice * selectedVendor.GRNQty)) {
+    if (returnPrice > selectedVendor.GRNPrice * selectedVendor.GRNQty) {
       toast.error("Return product price cannot exceed GRN price!");
       return;
     }
@@ -412,10 +412,12 @@ const OpticalLens = () => {
       toast.error("Return price and quantity must be valid numbers!");
       return;
     }
-
+    const qty = parseFloat(lensData.returnQty || 0);
+    const totalPrice = parseFloat(lensData.returnProductPrice || 0);
+    const unitPrice = qty > 0 ? totalPrice / qty : 0;
     const newItem = {
       ...selectedVendor,
-      returnPrice,
+      returnPrice: unitPrice,
       returnQty,
       returnFittingPrice,
       ProductType: 0,
@@ -435,17 +437,17 @@ const OpticalLens = () => {
     setSelectedVendor(null);
   };
   useEffect(() => {
-  if (selectedVendor) {
-    setLensData({
-      supplier: selectedVendor,
-      returnProductPrice: (
-        (selectedVendor?.GRNPrice || 0) * (selectedVendor?.GRNQty || 0)
-      ).toFixed(2),
-      returnFittingPrice: selectedVendor?.FittingPrice || 0,
-      returnQty: selectedVendor?.GRNQty || "",
-    });
-  }
-}, [selectedVendor]);
+    if (selectedVendor) {
+      setLensData({
+        supplier: selectedVendor,
+        returnProductPrice: (
+          (selectedVendor?.GRNPrice || 0) * (selectedVendor?.GRNQty || 0)
+        ).toFixed(2),
+        returnFittingPrice: selectedVendor?.FittingPrice || 0,
+        returnQty: selectedVendor?.GRNQty || "",
+      });
+    }
+  }, [selectedVendor]);
 
   const handleSaveData = async () => {
     if (!Array.isArray(items) || items.length === 0) {
@@ -636,16 +638,20 @@ const OpticalLens = () => {
                             item.returnPrice * (item.TaxPercent / 100)
                           )}
                         </TableCell>
-                        <TableCell>
-                          ₹
-                          {formatINR(
-                            item.returnQty *
-                              (item.returnPrice +
-                                (item.returnPrice * item.TaxPercent) / 100) +
-                              item.fittingPrice *
-                                (item.fittingGSTPercentage / 100)
-                          )}
-                        </TableCell>
+                       <TableCell>
+  ₹
+  {formatINR(
+    // Product total (price × qty)
+    (item.returnPrice * item.returnQty) +
+    // Product GST
+    ((item.returnPrice * item.returnQty) * (item.TaxPercent / 100)) +
+    // Fitting total (fitting price × qty)
+    (parseFloat(item.returnFittingPrice || 0) ) +
+    // Fitting GST
+    ((parseFloat(item.returnFittingPrice || 0)) * (parseFloat(item.fittingGSTPercentage || 0) / 100))
+  )}
+</TableCell>
+
                         <TableCell>
                           <button
                             onClick={() => handleDelete(index)}

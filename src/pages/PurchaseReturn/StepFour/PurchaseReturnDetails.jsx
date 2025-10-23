@@ -166,8 +166,8 @@ const getProductName = (item) => {
 
         // Fitting price
         let fittingLine = "";
-        const fitPrice = parseFloat(d.fittingPrice || 0);
-        const gstPerc = parseFloat(d.fittingGSTPercentage || 0);
+        const fitPrice = parseFloat(item?.FittingReturnPrice || 0);
+        const gstPerc = parseFloat(item?.FittingTaxPercentage || 0);
         if (!isNaN(fitPrice) && !isNaN(gstPerc) && fitPrice > 0) {
           fittingLine = `Fitting Price: ₹${(
             fitPrice *
@@ -304,9 +304,13 @@ const CompleteStockTransfer = () => {
       const unitPrice = parseFloat(item.DNPrice);
       const gstRate = parseFloat(item.ProductTaxPercentage) / 100;
 
+      const fittingPrice = parseFloat(item.FittingReturnPrice || 0);
+      const fgst = parseFloat(item.FittingTaxPercentage || 0);
+      const fittingTotal = fittingPrice * (fgst/100);
+
       const basicValue = unitPrice * qty;
       const gst = unitPrice * qty * gstRate;
-      const returnTotal = basicValue + gst;
+      const returnTotal = basicValue + gst +fittingTotal;
 
       acc.totalQty += qty;
       acc.totalGST += gst;
@@ -427,7 +431,7 @@ const CompleteStockTransfer = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    parseFloat(item.DNPrice) * item.DNQty +
+                    parseFloat(item.DNPrice) * item.DNQty + parseFloat(item.FittingReturnPrice)+
                       parseFloat(item.DNPrice) *
                         item.DNQty *
                         (parseFloat(item.ProductTaxPercentage) / 100) +
