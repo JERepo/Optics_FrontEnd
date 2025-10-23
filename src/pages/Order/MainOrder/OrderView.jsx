@@ -295,6 +295,7 @@ const OrderView = () => {
       };
 
       const res = await cancelItem({ id, payload }).unwrap();
+      
       if (res?.otpRequired) {
         setSelectedDiscountItem(id);
         setShowOtp(true);
@@ -311,6 +312,8 @@ const OrderView = () => {
     }
   };
   const handleCancelOrder = async () => {
+        setSelectedItemId(orderId);
+
     try {
       const payload = {
         proceedAfterWarnings: false,
@@ -321,6 +324,11 @@ const OrderView = () => {
         id: parseInt(orderId),
         payload,
       }).unwrap();
+      if (res?.otpRequired) {
+        setSelectedDiscountItem(orderId);
+        setShowOtp(true);
+        return;
+      }
       if (res?.status == "warning") {
         setWarningMessage(res?.warnings[0]);
         setIsCancelOrder(true);
@@ -570,6 +578,7 @@ const OrderView = () => {
       setPrintingId(null);
     }
   };
+  // console.log("dd",selectedDiscountItem)
   if (isViewLoading || isLoading) {
     return (
       <div>
@@ -884,14 +893,7 @@ const OrderView = () => {
         )}
       </div>
       <Modal isOpen={showOtp} onClose={() => setShowOtp(false)}>
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Secure Verification
-          </h2>
-          <p className="text-gray-600">
-            Enter the verification code sent to your Email or Whatsapp
-          </p>
-        </div>
+        
         <OTPScreen
           length={6}
           onComplete={handleOtpComplete}
