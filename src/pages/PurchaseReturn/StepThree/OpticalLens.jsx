@@ -400,7 +400,7 @@ const OpticalLens = () => {
     const returnQty = Number(lensData.returnQty);
     const returnFittingPrice = Number(lensData.returnFittingPrice) || 0;
 
-    if (returnPrice > selectedVendor.GRNPrice) {
+    if (returnPrice > (selectedVendor.GRNPrice * selectedVendor.GRNQty)) {
       toast.error("Return product price cannot exceed GRN price!");
       return;
     }
