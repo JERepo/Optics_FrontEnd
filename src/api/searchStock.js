@@ -11,7 +11,15 @@ export const searchStock = createApi({
         url: `/api/v1/frame-main/framesearch${queryString}`,
       }),
     }),
+    getAccessoryStock: builder.query({
+      query: (queryString) => ({
+        url: `/api/v1/other-products/get/stocks${queryString}`,
+      }),
+    }),
   }),
 });
 
-export const { useGetFrameStockQuery } = searchStock;
+export const { 
+  useGetFrameStockQuery,
+  useLazyGetAccessoryStockQuery
+} = searchStock;
