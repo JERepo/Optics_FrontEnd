@@ -82,10 +82,10 @@ const VendorPaymentList = () => {
   const filteredOrders = customerPayments.length;
   const today = new Date();
 
-  //   const handleViewinvoice = (id) => {
-  //     // updateSelectedOrderDetails(invoice);
-  //     navigate(`/customer-payment/view?cpId=${id}`);
-  //   };
+    const handleViewinvoice = (id) => {
+      // updateSelectedOrderDetails(invoice);
+      navigate(`/vendor-payment/view?vpId=${id}`);
+    };
 
   if (isAllOrdersLoading) {
     return (
@@ -218,7 +218,7 @@ const VendorPaymentList = () => {
               "vendor name",
               "mobile",
               "amount paid",
-              //   "action",
+                "action",
             ]}
             data={paginatedOrders}
             renderRow={(item, index) => (
@@ -228,7 +228,7 @@ const VendorPaymentList = () => {
                 <TableCell>{item.customerName}</TableCell>
                 <TableCell>{item.mobile}</TableCell>
                 <TableCell>₹{Math.abs(parseFloat(item.amount))}</TableCell>
-                {/* <TableCell>
+                <TableCell>
                   <button
                     onClick={() => handleViewinvoice(item.id)}
                     className="flex items-center  text-lg font-medium rounded-md "
@@ -236,7 +236,7 @@ const VendorPaymentList = () => {
                   >
                     <FiEye className="" />
                   </button>
-                </TableCell> */}
+                </TableCell>
               </TableRow>
             )}
             emptyMessage={

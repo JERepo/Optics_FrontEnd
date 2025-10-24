@@ -486,57 +486,63 @@ const StockTransferView = () => {
 
         {/* Summary Section */}
         {stockDetails?.data?.result && (
-          <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200 justify-end">
-            <div className="flex justify-end gap-10">
-              <div className="flex flex-col">
-                <span className="text-neutral-700 font-semibold text-lg">
-                  Total Qty
-                </span>
-                <span className="text-neutral-600 text-xl font-medium">
-                  {stockDetails?.data?.result?.details.reduce(
-                    (sum, item) => sum + item.STQtyOut,
-                    0
-                  )}
-                </span>
-              </div>
-              {/* summation of (Buying Price * Qty*GST %) */}
-              <div className="flex flex-col">
-                <span className="text-neutral-700 font-semibold text-lg">
-                  Total GST
-                </span>
-                <span className="text-neutral-600 text-xl font-medium">
-                  ₹
-                  {formatINR(
-                    stockDetails?.data?.result?.details.reduce(
-                      (sum, item) =>
-                        sum +
-                        parseFloat(item.TransferPrice) *
-                          item.STQtyOut *
-                          (parseFloat(item.ProductTaxPercentage) / 100),
+          <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200">
+            <div className="flex justify-between">
+              <Info
+                label="Comment"
+                value={stockDetails?.data?.result?.Comment || ""}
+              />
+              <div className="flex justify-end gap-10">
+                <div className="flex flex-col">
+                  <span className="text-neutral-700 font-semibold text-lg">
+                    Total Qty
+                  </span>
+                  <span className="text-neutral-600 text-xl font-medium">
+                    {stockDetails?.data?.result?.details.reduce(
+                      (sum, item) => sum + item.STQtyOut,
                       0
-                    )
-                  ) || "0"}
-                </span>
-              </div>
-              {/* Buying Price*Qty + Buying Price * Qty*GST % */}
-              <div className="flex flex-col">
-                <span className="text-neutral-700 font-semibold text-lg">
-                  Total Amount
-                </span>
-                <span className="text-neutral-600 text-xl font-medium">
-                  ₹
-                  {formatINR(
-                    stockDetails?.data?.result?.details.reduce(
-                      (sum, item) =>
-                        sum +
-                        item.STQtyOut * parseFloat(item.TransferPrice) +
-                        parseFloat(item.TransferPrice) *
-                          item.STQtyOut *
-                          (parseFloat(item.ProductTaxPercentage) / 100),
-                      0
-                    )
-                  ) || "0"}
-                </span>
+                    )}
+                  </span>
+                </div>
+                {/* summation of (Buying Price * Qty*GST %) */}
+                <div className="flex flex-col">
+                  <span className="text-neutral-700 font-semibold text-lg">
+                    Total GST
+                  </span>
+                  <span className="text-neutral-600 text-xl font-medium">
+                    ₹
+                    {formatINR(
+                      stockDetails?.data?.result?.details.reduce(
+                        (sum, item) =>
+                          sum +
+                          parseFloat(item.TransferPrice) *
+                            item.STQtyOut *
+                            (parseFloat(item.ProductTaxPercentage) / 100),
+                        0
+                      )
+                    ) || "0"}
+                  </span>
+                </div>
+                {/* Buying Price*Qty + Buying Price * Qty*GST % */}
+                <div className="flex flex-col">
+                  <span className="text-neutral-700 font-semibold text-lg">
+                    Total Amount
+                  </span>
+                  <span className="text-neutral-600 text-xl font-medium">
+                    ₹
+                    {formatINR(
+                      stockDetails?.data?.result?.details.reduce(
+                        (sum, item) =>
+                          sum +
+                          item.STQtyOut * parseFloat(item.TransferPrice) +
+                          parseFloat(item.TransferPrice) *
+                            item.STQtyOut *
+                            (parseFloat(item.ProductTaxPercentage) / 100),
+                        0
+                      )
+                    ) || "0"}
+                  </span>
+                </div>
               </div>
             </div>
           </div>

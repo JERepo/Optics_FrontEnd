@@ -23,7 +23,7 @@ const CRView = () => {
   const { search } = useLocation();
   const params = new URLSearchParams(search);
   const crId = params.get("crId");
-  const { data: details, isLoading } = useGetCRByIdQuery(crId);
+  const { data: details, isLoading } = useGetPaymentsByIdQuery(crId);
 
   if (isLoading) {
     return (
@@ -52,35 +52,56 @@ const CRView = () => {
           <div className="grid grid-cols-3 gap-3">
             <Info
               label="Customer Name"
-              value={details?.data.customer?.CustomerName}
+              value={details?.data.receiptMain?.CustomerMaster?.CustomerName}
             />
 
             <Info
               label="Customer Mobile No"
-              value={details?.data.customer?.MobNumber}
+              value={details?.data.receiptMain?.CustomerMaster?.MobNumber}
             />
           </div>
           <div className="mt-10">
             <Table
-              columns={["S.No", "date","Type", "amount"]}
-              data={details?.data.refund || []}
+              columns={[
+                "S.No",
+                "Type",
+                "amount",
+                "ref no",
+                "payment machine",
+                "bank name",
+                "cheque details",
+                "account number",
+              ]}
+              data={details?.data.payments || []}
               renderRow={(c, index) => (
                 <TableRow key={index}>
                   <TableCell>{index + 1}</TableCell>
-                   <TableCell>{c.CustomerReceiptMain?.ReceiptDate?.split("-").reverse().join("/")}</TableCell>
-                  <TableCell>{paymentTypes[c.Type]}</TableCell>
-               
-                  {/* <TableCell>
-                    {c.typeNum === 7 ? c.extra.GVCode : "-"}
+                  <TableCell>{c.type || ""}</TableCell>
+                  <TableCell>₹{formatINR(Math.abs(c.amount))}</TableCell>
+                  <TableCell>
+                    {c?.data?.ApprCode || c?.ReferenceNo || "-"}
                   </TableCell>
                   <TableCell>
-                    {c.typeNum === 6 && c.extra?.AdvanceDate
-                      ? format(new Date(c.extra.AdvanceDate), "dd/MM/yyyy")
-                      : ""}
-                  </TableCell> */}
+                    {c?.data?.PaymentMachine?.MachineName || "-"}
+                  </TableCell>
+                  <TableCell>{c?.data?.BankMaster?.BankName || "-"}</TableCell>
+                  <TableCell className="whitespace-pre-wrap">
+                    {c?.data?.ChequeNo || c?.data?.ChequeDate ? (
+                      <>
+                        <div>Cheque No:{c?.data?.ChequeNo || "-"}</div>
+                        <div>
+                          Cheque Date:
+                          {c?.data?.ChequeDate.split("-").reverse().join("-") ||
+                            "-"}
+                        </div>
+                      </>
+                    ) : (
+                      "-"
+                    )}
+                  </TableCell>
 
                   <TableCell>
-                    ₹{formatINR(Math.abs(parseFloat(c.Amount)))}
+                    {c?.data?.BankAccountDetail?.AccountNo || "-"}
                   </TableCell>
                 </TableRow>
               )}
@@ -88,7 +109,7 @@ const CRView = () => {
             />
           </div>
 
-          {details?.data?.refund?.length > 0 && (
+          {details?.data?.payments?.length > 0 && (
             <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200 flex justify-end">
               <div className="">
                 <div className="flex flex-col">
@@ -99,8 +120,8 @@ const CRView = () => {
                     ₹
                     {formatINR(
                       Math.abs(
-                        details?.data?.refund?.reduce(
-                          (sum, item) => sum + parseFloat(item.Amount),
+                        details?.data?.payments?.reduce(
+                          (sum, item) => sum + parseFloat(item.amount),
                           0
                         )
                       )

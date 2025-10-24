@@ -1,18 +1,19 @@
 import React from "react";
 import Button from "../../../components/ui/Button";
 import { useLocation, useNavigate } from "react-router";
-import { useGetPaymentsByIdQuery } from "../../../api/customerPayment";
 import Loader from "../../../components/ui/Loader";
 import { Table, TableCell, TableRow } from "../../../components/Table";
-import { format } from "date-fns";
 import { formatINR } from "../../../utils/formatINR";
+import { useGetPaymentsQuery } from "../../../api/vendorPayment";
 
-const CustomerPaymentView = () => {
+
+
+const VendorPaymentView = () => {
   const navigate = useNavigate();
   const { search } = useLocation();
   const params = new URLSearchParams(search);
-  const cpId = params.get("cpId");
-  const { data: details, isLoading } = useGetPaymentsByIdQuery(cpId);
+  const crId = params.get("vpId");
+  const { data: details, isLoading } = useGetPaymentsQuery(crId);
 
   if (isLoading) {
     return (
@@ -27,12 +28,12 @@ const CustomerPaymentView = () => {
         <div className="bg-white rounded-sm shadow-sm overflow-hidden p-6">
           <div className="flex justify-between items-center mb-3">
             <div className="text-neutral-800 text-2xl font-semibold">
-              Customer Payment Details
+              Vendor Payment Details
             </div>
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
-                onClick={() => navigate("/customer-payment")}
+                onClick={() => navigate("/vendor-payment")}
               >
                 Back
               </Button>
@@ -40,13 +41,13 @@ const CustomerPaymentView = () => {
           </div>
           <div className="grid grid-cols-3 gap-3">
             <Info
-              label="Customer Name"
-              value={details?.data.receiptMain?.CustomerMaster?.CustomerName}
+              label="Vendor Name"
+              value={details?.data.receiptMain?.Vendor?.VendorName}
             />
 
             <Info
-              label="Customer Mobile No"
-              value={details?.data.receiptMain?.CustomerMaster?.MobNumber}
+              label="Vendor Mobile No"
+              value={details?.data.receiptMain?.Vendor?.MobNumber}
             />
           </div>
           <div className="mt-10">
@@ -78,7 +79,11 @@ const CustomerPaymentView = () => {
                     {c?.data?.ChequeNo || c?.data?.ChequeDate ? (
                       <>
                         <div>Cheque No:{c?.data?.ChequeNo || "-"}</div>
-                        <div>Cheque Date:{c?.data?.ChequeDate.split("-").reverse().join("-") || "-"}</div>
+                        <div>
+                          Cheque Date:
+                          {c?.data?.ChequeDate.split("-").reverse().join("-") ||
+                            "-"}
+                        </div>
                       </>
                     ) : (
                       "-"
@@ -122,7 +127,7 @@ const CustomerPaymentView = () => {
   );
 };
 
-export default CustomerPaymentView;
+export default VendorPaymentView;
 
 const Info = ({ label, value }) => (
   <div className="flex flex-col">

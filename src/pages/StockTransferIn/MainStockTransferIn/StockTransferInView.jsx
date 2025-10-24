@@ -294,7 +294,7 @@ const StockTransferInView = () => {
             value={statusMap[stockDetails?.data?.Status] || "Unknown"}
           />
 
-          <Info label="Comments" value={stockDetails?.data?.Comment || ""} />
+          
         </div>
 
         {/* Product Table */}
@@ -347,7 +347,9 @@ const StockTransferInView = () => {
 
         {/* Summary Section */}
         {stockDetails?.data?.StockTransferInDetails?.length > 0 && (
-          <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200 justify-end">
+          <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200 ">
+            <div className="flex justify-between">
+              <Info label="Comments" value={stockDetails?.data?.Comment || ""} />
             <div className="flex justify-end gap-10">
               <div className="flex flex-col">
                 <span className="text-neutral-700 font-semibold text-lg">
@@ -373,6 +375,7 @@ const StockTransferInView = () => {
                   ₹{formattedTotals.totalReturnValue}
                 </span>
               </div>
+            </div>
             </div>
           </div>
         )}

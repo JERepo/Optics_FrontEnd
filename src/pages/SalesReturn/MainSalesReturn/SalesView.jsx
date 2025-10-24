@@ -553,10 +553,7 @@ const SalesView = () => {
             label="Status"
             value="Confirmed"
           />
-           <Info
-            label="Comments"
-            value={customerDataById?.data?.Comment || ""}
-          />
+          
           {customerDataById?.data.CustomerMaster?.TAXRegisteration === 1 && (
             <>
               <div className="flex gap-1">
@@ -673,7 +670,12 @@ const SalesView = () => {
 
         {/* Summary Section */}
         {salesDetails && (
-          <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200 justify-end">
+          <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200 ">
+            <div className="flex justify-between">
+             <Info
+            label="Comment"
+            value={customerDataById?.data?.Comment || ""}
+          />
             <div className="flex justify-end gap-10">
               <div className="flex flex-col">
                 <span className="text-neutral-700 font-semibold text-lg">
@@ -711,6 +713,7 @@ const SalesView = () => {
                   ) || "0"}
                 </span>
               </div>
+            </div>
             </div>
           </div>
         )}

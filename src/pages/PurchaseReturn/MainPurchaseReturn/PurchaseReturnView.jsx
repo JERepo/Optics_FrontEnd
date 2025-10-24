@@ -253,7 +253,7 @@ const PurchaseReturnView = () => {
       const totalFitting = fittingPrice * (fittingGst / 100);
 
       const basicValue = unitPrice * qty;
-      const gst = unitPrice * qty * gstRate + totalFitting;
+      const gst = unitPrice * qty * gstRate;
       const returnTotal = basicValue + gst + totalFitting;
 
       acc.totalQty += qty;
@@ -405,10 +405,7 @@ const PurchaseReturnView = () => {
                 : ""
             }
           />
-           <Info
-            label="Status"
-            value="Confirmed"
-          />
+          <Info label="Status" value="Confirmed" />
         </div>
 
         {/* Product Table */}
@@ -455,8 +452,8 @@ const PurchaseReturnView = () => {
                         item.DNQty *
                         (parseFloat(item.ProductTaxPercentage) / 100) +
                       parseFloat(item.FittingReturnPrice || 0) *
-                        (parseFloat(item.FittingTaxPercentage || 0) / 100) +
-                      parseFloat(item.FittingReturnPrice)
+                        (parseFloat(item?.FittingTaxPercentage || 0) / 100) +
+                      parseFloat(item?.FittingReturnPrice || 0)
                   )}
                 </TableCell>
               </TableRow>
@@ -466,39 +463,45 @@ const PurchaseReturnView = () => {
 
         {/* Summary Section */}
         {PRMainDetails?.details && (
-          <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200 justify-end">
-            <div className="flex justify-end gap-10">
-              <div className="flex flex-col">
-                <span className="text-neutral-700 font-semibold text-lg">
-                  Total Qty
-                </span>
-                <span className="text-neutral-600 text-xl font-medium">
-                  {formattedTotals.totalQty}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-neutral-700 font-semibold text-lg">
-                  Total GST
-                </span>
-                <span className="text-neutral-600 text-xl font-medium">
-                  ₹{formattedTotals.totalGST}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-neutral-700 font-semibold text-lg">
-                  Round Off
-                </span>
-                <span className="text-neutral-600 text-xl font-medium">
-                  ₹{PRDetails?.data.data?.RoundOff}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-neutral-700 font-semibold text-lg">
-                  Total Amount
-                </span>
-                <span className="text-neutral-600 text-xl font-medium">
-                  ₹{formattedTotals.totalReturnValue}
-                </span>
+          <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200 ">
+            <div className="flex justify-between">
+              <Info
+                label="Comment"
+                value={PRDetails?.data.data?.Comment || "N/A"}
+              />
+              <div className="flex justify-end gap-10">
+                <div className="flex flex-col">
+                  <span className="text-neutral-700 font-semibold text-lg">
+                    Total Qty
+                  </span>
+                  <span className="text-neutral-600 text-xl font-medium">
+                    {formattedTotals.totalQty}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-neutral-700 font-semibold text-lg">
+                    Total GST
+                  </span>
+                  <span className="text-neutral-600 text-xl font-medium">
+                    ₹{formattedTotals.totalGST}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-neutral-700 font-semibold text-lg">
+                    Round Off
+                  </span>
+                  <span className="text-neutral-600 text-xl font-medium">
+                    ₹{PRDetails?.data.data?.RoundOff}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-neutral-700 font-semibold text-lg">
+                    Total Amount
+                  </span>
+                  <span className="text-neutral-600 text-xl font-medium">
+                    ₹{formattedTotals.totalReturnValue}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
