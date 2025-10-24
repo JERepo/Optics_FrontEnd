@@ -24,6 +24,7 @@ const VendorForm = ({
   states,
   isVerifyGSTLoading,
   countryIsd,
+  isView
 }) => {
   const [getPinCode, { isFetching: isFetchingPincode }] =
     useLazyGetPinCodeQuery();
@@ -147,6 +148,7 @@ const VendorForm = ({
                 value="0"
                 checked={formData.vendor_type === 0}
                 onChange={handleChange}
+                disabled={isView}
               />
               <Radio
                 label="International"
@@ -154,6 +156,7 @@ const VendorForm = ({
                 value="1"
                 checked={formData.vendor_type === 1}
                 onChange={handleChange}
+                  disabled={isView}
               />
             </div>
           </div>
@@ -170,6 +173,7 @@ const VendorForm = ({
                     value="0"
                     checked={formData.isReverseChargeApplicable === 0}
                     onChange={handleChange}
+                      disabled={isView}
                   />
                   <Radio
                     label="Yes"
@@ -177,6 +181,7 @@ const VendorForm = ({
                     value="1"
                     checked={formData.isReverseChargeApplicable === 1}
                     onChange={handleChange}
+                      disabled={isView}
                   />
                 </div>
               </div>
@@ -192,6 +197,7 @@ const VendorForm = ({
                       value="0"
                       checked={formData.billingMethod === 0}
                       onChange={handleChange}
+                        disabled={isView}
                     />
                     <Radio
                       label="Delivery Challan (DC)"
@@ -199,6 +205,7 @@ const VendorForm = ({
                       value="1"
                       checked={formData.billingMethod === 1}
                       onChange={handleChange}
+                        disabled={isView}
                     />
                   </div>
                 </div>
@@ -212,6 +219,7 @@ const VendorForm = ({
                 checked={formData.isServiceProvider === 1}
                 onChange={handleChange}
                 className="mt-5"
+                  disabled={isView}
               />
               {formData.billingMethod === 1 && (
                 <div className="flex items-center gap-3">
@@ -222,6 +230,7 @@ const VendorForm = ({
                     value="0"
                     onChange={handleChange}
                     checked={formData.dCGRNPrice === 0}
+                      disabled={isView}
                   />
                   <Radio
                     label="Yes"
@@ -229,6 +238,7 @@ const VendorForm = ({
                     value="1"
                     onChange={handleChange}
                     checked={formData.dCGRNPrice === 1}
+                      disabled={isView}
                   />
                 </div>
               )}
@@ -249,6 +259,7 @@ const VendorForm = ({
                 value="1"
                 checked={formData.gstStatus === 1}
                 onChange={handleChange}
+                  disabled={isView}
               />
               <Radio
                 label="Unregistered"
@@ -256,6 +267,7 @@ const VendorForm = ({
                 value="0"
                 checked={formData.gstStatus === 0}
                 onChange={handleChange}
+                  disabled={isView}
               />
               <Radio
                 label="Composite"
@@ -263,6 +275,7 @@ const VendorForm = ({
                 value="2"
                 checked={formData.gstStatus === 2}
                 onChange={handleChange}
+                  disabled={isView}
               />
             </div>
           </div>
@@ -277,10 +290,11 @@ const VendorForm = ({
                   placeholder="Enter GSTIN"
                   error={errors.gst_no}
                   className="w-full"
+                    disabled={isView}
                 />
                 <Button
                   onClick={handleVerifyGST}
-                  disabled={isVerifyGSTLoading || isFetchingPincode}
+                  disabled={isVerifyGSTLoading || isFetchingPincode || isView}
                 >
                   {isVerifyGSTLoading ? "Verifying..." : "Verify"}
                 </Button>
@@ -294,6 +308,7 @@ const VendorForm = ({
               onChange={handleChange}
               placeholder="Enter PAN Number"
               error={errors.pan_no}
+                disabled={isView}
             />
           </div>
         </div>
@@ -310,6 +325,7 @@ const VendorForm = ({
             placeholder="Enter Legal Name"
             className=""
             error={errors.legal_name}
+              disabled={isView}
           />
           <div></div>
           <Input
@@ -319,6 +335,7 @@ const VendorForm = ({
             onChange={handleChange}
             placeholder="Enter Address 1"
             error={errors.vendor_address1}
+              disabled={isView}
           />
           <Input
             label="Address 2"
@@ -326,6 +343,7 @@ const VendorForm = ({
             value={formData.vendor_address2}
             onChange={handleChange}
             placeholder="Enter Address 2"
+              disabled={isView}
           />
           <Input
             label="Landmark"
@@ -333,6 +351,7 @@ const VendorForm = ({
             value={formData.vendor_landmark}
             onChange={handleChange}
             placeholder="Enter Landmark"
+              disabled={isView}
           />
           <div className="flex flex-col gap-2 w-full">
             <div className="flex gap-3 items-center">
@@ -344,6 +363,7 @@ const VendorForm = ({
                 placeholder="Enter PIN Code"
                 className="w-full"
                 error={errors.vendor_pincode}
+                  disabled={isView}
               />
               {formData.vendor_type === 0 && (
                 <Button
@@ -362,6 +382,7 @@ const VendorForm = ({
             onChange={handleChange}
             placeholder="Enter City"
             error={errors.vendor_city}
+              disabled={isView}
           />
           <Select
             label="State *"
@@ -374,6 +395,7 @@ const VendorForm = ({
             error={errors.vendor_state}
             disabled={formData.vendor_type === 1}
             greyOut={formData.vendor_type === 1}
+              disabled={isView}
           />
           <Select
             label="Country *"
@@ -384,6 +406,7 @@ const VendorForm = ({
             optionValue="Id"
             optionLabel="CountryName"
             error={errors.vendor_country}
+              disabled={isView}
           />
         </div>
       </Section>
@@ -399,6 +422,7 @@ const VendorForm = ({
             placeholder="Enter Email"
             error={errors.email}
             className=""
+              disabled={isView}
           />
           <div></div>
           <div className="grid grid-cols-2 items-center gap-5 col-span-2">
@@ -416,6 +440,7 @@ const VendorForm = ({
                   optionValue="Id"
                   optionLabel="CountryName"
                   className="w-36"
+                    disabled={isView}
                 />
                 <Input
                   name="mobile_no"
@@ -424,6 +449,7 @@ const VendorForm = ({
                   placeholder="Enter Mobile Number"
                   error={errors.mobile_no}
                   className="flex-1"
+                    disabled={isView}
                 />
               </div>
             </div>
@@ -435,6 +461,7 @@ const VendorForm = ({
               onChange={handleChange}
               placeholder="Enter Telephone"
               error={errors.telephone}
+                disabled={isView}
             />
           </div>
         </div>

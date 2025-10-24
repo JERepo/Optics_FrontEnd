@@ -435,7 +435,9 @@ const SalesView = () => {
   }, 0);
 
   const totalGST = salesDetails?.data.reduce((sum, item) => {
-    const price = parseFloat(item.ReturnPricePerUnit);
+    const qty = parseInt(item.ReturnQty);
+
+    const price = parseFloat(item.ReturnPricePerUnit) * qty;
     const totalPriceGst = parseFloat(
       calculateGST(price, parseFloat(item.GSTPercentage)).gstAmount
     );
@@ -479,7 +481,7 @@ const SalesView = () => {
       const url = window.URL.createObjectURL(
         new Blob([blob], { type: "application/pdf" })
       );
-       const link = document.createElement("a");
+      const link = document.createElement("a");
       link.href = url;
       link.download = `Credit_Note${customerDataById?.data.CNNo} (${customerDataById?.data.CNPrefix}${customerDataById?.data.CNNo}).pdf`;
       document.body.appendChild(link);
@@ -523,7 +525,13 @@ const SalesView = () => {
           </div>
         </div>
         {/* Order Details */}
+
+
         <div className="grid grid-cols-3 gap-3">
+           <Info
+            label="SR No"
+            value={`${customerDataById?.data.CNPrefix}/${customerDataById?.data?.CNNo}`}
+          />
           <Info
             label="Patient Name"
             value={customerDataById?.data.CustomerContactDetail.CustomerName}
@@ -536,7 +544,19 @@ const SalesView = () => {
             label="Patient Mobile"
             value={customerDataById?.data.CustomerContactDetail?.MobNumber}
           />
-
+         
+          <Info
+            label="Date"
+            value={customerDataById?.data?.CNDate ? format(new Date(customerDataById?.data?.CNDate), "dd/MM/yyyy") : ""}
+          />
+           <Info
+            label="Status"
+            value="Confirmed"
+          />
+           <Info
+            label="Comments"
+            value={customerDataById?.data?.Comment || ""}
+          />
           {customerDataById?.data.CustomerMaster?.TAXRegisteration === 1 && (
             <>
               <div className="flex gap-1">
@@ -671,7 +691,7 @@ const SalesView = () => {
                   ₹{formatINR(totalGST) || "0"}
                 </span>
               </div>
-               <div className="flex flex-col">
+              <div className="flex flex-col">
                 <span className="text-neutral-700 font-semibold text-lg">
                   Round Off
                 </span>
@@ -684,7 +704,11 @@ const SalesView = () => {
                   Total Amount
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
-                  ₹{formatINR(grandTotal + parseFloat(customerDataById?.data?.RoundOff || 0)) || "0"}
+                  ₹
+                  {formatINR(
+                    grandTotal +
+                      parseFloat(customerDataById?.data?.RoundOff || 0)
+                  ) || "0"}
                 </span>
               </div>
             </div>

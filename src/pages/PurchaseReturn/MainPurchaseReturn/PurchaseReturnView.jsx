@@ -120,7 +120,64 @@ const getProductName = (item) => {
 
     return lines.filter(Boolean).join("\n");
   }
+  if (type === 0) {
+    const detailsArray = Array.isArray(detail) ? detail : [detail];
 
+    return detailsArray
+      .map((d) => {
+        const olLine = clean(d.productDescName);
+
+        // AddOns & Tint
+        const addonNames = d.specs?.addOn?.addOnName;
+        const tintName = d.specs?.tint?.tintName;
+
+        // Power formatting
+        const joinNonEmpty = (arr, sep = " ") => arr.filter(Boolean).join(sep);
+        const formatPower = (eye) =>
+          joinNonEmpty(
+            [
+              formatPowerValue(eye?.sphericalPower) &&
+                `SPH: ${formatPowerValue(eye?.sphericalPower)}`,
+              formatPowerValue(eye?.addition) &&
+                `Add: ${formatPowerValue(eye?.addition)}`,
+              clean(eye?.diameter) && `Dia: ${clean(eye?.diameter)}`,
+            ],
+            ", "
+          );
+
+        const pd = d?.specs?.powerDetails || {};
+        const rightParts = formatPower(pd.right || {});
+        const leftParts = formatPower(pd.left || {});
+        const powerLine = joinNonEmpty(
+          [rightParts && `R: ${rightParts}`, leftParts && `L: ${leftParts}`],
+          "\n"
+        );
+
+        // Fitting price
+        let fittingLine = "";
+        const fitPrice = parseFloat(d.fittingPrice || 0);
+        const gstPerc = parseFloat(d.fittingGSTPercentage || 0);
+        if (!isNaN(fitPrice) && !isNaN(gstPerc) && fitPrice > 0) {
+          fittingLine = `Fitting Price: ₹${(
+            fitPrice *
+            (1 + gstPerc / 100)
+          ).toFixed(2)}`;
+        }
+
+        return joinNonEmpty(
+          [
+            olLine,
+            powerLine,
+            addonNames && `AddOn: ${addonNames}`,
+            tintName && `Tint: ${tintName}`,
+            fittingLine,
+            clean(d.hSN) && `HSN: ${clean(d.hSN)}`,
+          ],
+          "\n"
+        );
+      })
+      .join("\n\n"); // join multiple products if array
+  }
   return "";
 };
 
@@ -191,10 +248,13 @@ const PurchaseReturnView = () => {
       const qty = item.DNQty || 0;
       const unitPrice = parseFloat(item.DNPrice) || 0;
       const gstRate = parseFloat(item.ProductTaxPercentage) / 100;
+      const fittingPrice = parseFloat(item.FittingReturnPrice || 0);
+      const fittingGst = parseFloat(item.FittingTaxPercentage || 0);
+      const totalFitting = fittingPrice * (fittingGst / 100);
 
       const basicValue = unitPrice * qty;
-      const gst = unitPrice * qty * gstRate;
-      const returnTotal = basicValue + gst;
+      const gst = unitPrice * qty * gstRate + totalFitting;
+      const returnTotal = basicValue + gst + totalFitting;
 
       acc.totalQty += qty;
       acc.totalGST += gst;
@@ -209,7 +269,10 @@ const PurchaseReturnView = () => {
     totalQty: totals.totalQty,
     totalGST: formatINR(totals.totalGST),
     totalBasicValue: formatINR(totals.totalBasicValue),
-    totalReturnValue: formatINR(totals.totalReturnValue + (parseFloat(PRDetails?.data?.data?.RoundOff) || 0)),
+    totalReturnValue: formatINR(
+      totals.totalReturnValue +
+        (parseFloat(PRDetails?.data?.data?.RoundOff) || 0)
+    ),
   };
   const getEInvoiceData = async () => {
     const eInvoicePayload = {
@@ -288,10 +351,37 @@ const PurchaseReturnView = () => {
           </div>
         </div>
         {/* Order Details */}
+        {/* PR:
+1. PR NO
+2. Vendor Name
+3. Vendor Mob no
+4. Vendor Address
+5. Vendor GST, if GST is not NULL
+6. Date
+7. Status=1 Confirmed
+8. Comments */}
+
         <div className="grid grid-cols-3 gap-3">
+          <Info
+            label="PR No"
+            value={`${PRDetails?.data.data?.DNPrefix}/${PRDetails?.data.data?.DNNo}`}
+          />
           <Info
             label="Vendor Name"
             value={PRDetails?.data.data.Vendor.VendorName}
+          />
+          <Info
+            label="Vendor Mob No"
+            value={PRDetails?.data.data.Vendor.MobNumber}
+          />
+          <Info
+            label="Address"
+            value={
+              (PRDetails?.data.data.Vendor.Address1 &&
+                PRDetails?.data.data.Vendor.Landmark) ||
+              (PRDetails?.data.data.Vendor.City &&
+                `${PRDetails?.data.data.Vendor.Address1} ${PRDetails?.data.data.Vendor.Landmark} ${PRDetails?.data.data.Vendor.City}`)
+            }
           />
 
           {PRDetails?.data.data.Vendor.TAXRegisteration === 1 && (
@@ -302,18 +392,23 @@ const PurchaseReturnView = () => {
                 label="PAN Number"
                 value={PRDetails?.data.data.Vendor.PANNumber}
               />
-
-              <Info
-                label="Address"
-                value={
-                  (PRDetails?.data.data.Vendor.Address1 &&
-                    PRDetails?.data.data.Vendor.Landmark) ||
-                  (PRDetails?.data.data.Vendor.City &&
-                    `${PRDetails?.data.data.Vendor.Address1} ${PRDetails?.data.data.Vendor.Landmark} ${PRDetails?.data.data.Vendor.City}`)
-                }
-              />
             </>
           )}
+          <Info
+            label="Date"
+            value={
+              PRDetails?.data.data.PurchaseReturnDate
+                ? format(
+                    new Date(PRDetails?.data.data.PurchaseReturnDate),
+                    "dd/MM/yyyy"
+                  )
+                : ""
+            }
+          />
+           <Info
+            label="Status"
+            value="Confirmed"
+          />
         </div>
 
         {/* Product Table */}
@@ -336,7 +431,7 @@ const PurchaseReturnView = () => {
               <TableRow key={item.ID}>
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>{getShortTypeName(item.ProductType)}</TableCell>
-                <TableCell></TableCell>
+                <TableCell>{item.VendorOrderNo}</TableCell>
                 <TableCell className="whitespace-pre-wrap">
                   {getProductName(item)}
                 </TableCell>
@@ -355,10 +450,13 @@ const PurchaseReturnView = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    parseFloat(parseFloat(item.DNPrice) * item.DNQty) +
+                    parseFloat(item.DNPrice) * item.DNQty +
                       parseFloat(item.DNPrice) *
-                        ((parseFloat(item.ProductTaxPercentage) / 100) *
-                          item.DNQty)
+                        item.DNQty *
+                        (parseFloat(item.ProductTaxPercentage) / 100) +
+                      parseFloat(item.FittingReturnPrice || 0) *
+                        (parseFloat(item.FittingTaxPercentage || 0) / 100) +
+                      parseFloat(item.FittingReturnPrice)
                   )}
                 </TableCell>
               </TableRow>

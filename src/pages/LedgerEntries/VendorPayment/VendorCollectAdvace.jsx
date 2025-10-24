@@ -225,7 +225,7 @@ const VendorCollectAdvace = ({
     try {
       await saveFinalPayment({ payload: finalStructure }).unwrap();
       toast.success("Advance taken Successfully");
-      navigate("/customer-payment");
+      navigate("/vendor-payment");
     } catch (error) {
       toast.error("Please try again!");
     }
@@ -606,7 +606,7 @@ const MethodForm = ({
 
   const uniqueAccounts = useMemo(() => {
     return Array.from(
-      new Map(accounts?.map((item) => [item.AccountNumber, item])).values()
+      new Map(accounts?.map((item) => [item.AccountNo, item])).values()
     );
   }, [accounts]);
 

@@ -15,6 +15,7 @@ const AddressForm = ({
   countryIsd,
   formData,
   useDifferentShipping,
+  isView
 }) => {
   const prefix = title.toLowerCase().replace(" ", "");
 
@@ -39,6 +40,7 @@ const AddressForm = ({
             value={data.line1 || ""}
             onChange={onChange}
             className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          disabled={isView}
           />
           {errors[`${prefix}Line1`] && (
             <p className="text-red-500 text-sm mt-1">
@@ -59,6 +61,7 @@ const AddressForm = ({
             value={data.line2 || ""}
             onChange={onChange}
             className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            disabled={isView}
           />
           {errors[`${prefix}Line2`] && (
             <p className="text-red-500 text-sm mt-1">
@@ -78,6 +81,7 @@ const AddressForm = ({
             value={data.landmark || ""}
             onChange={onChange}
             className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            disabled={isView}
           />
           {errors[`${prefix}Landmark`] && (
             <p className="text-red-500 text-sm mt-1">
@@ -103,14 +107,16 @@ const AddressForm = ({
                 value={data.pincode || ""}
                 onChange={onChange}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+               disabled={isView}
+             />
             </div>
             <button
               type="button"
               onClick={onFetchLocation}
               disabled={!data.pincode || isFetching}
               className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-            >
+             disabled={isView}
+           >
               {isFetching ? <Loader /> : "Fetch Location"}
             </button>
           </div>
@@ -134,6 +140,7 @@ const AddressForm = ({
             onChange={onChange}
             className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             }`}
+            disabled={isView}
           >
             <option value="">Select Country</option>
             {countries?.map((country) => (
@@ -164,6 +171,7 @@ const AddressForm = ({
             value={data.city || ""}
             onChange={onChange}
             className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            disabled={isView}
           />
           {errors[`${prefix}City`] && (
             <p className="text-red-500 text-sm mt-1">
@@ -188,6 +196,7 @@ const AddressForm = ({
             className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent 
               "
             }`}
+            disabled={isView}
           >
             <option value="">Select State</option>
             {(states || []).map((state) => (
@@ -221,6 +230,7 @@ const BillingAddress = ({
   countryIsd,
   formData,
   locationData,
+  isView
 }) => {
   const [getPinCode, { isFetching, isError }] = useLazyGetPinCodeQuery();
   const [fetchingType, setFetchingType] = useState(null);
@@ -432,6 +442,7 @@ useEffect(() => {
           states={states}
           countryIsd={countryIsd}
           formData={formData}
+          isView={isView}
         />
 
         <div className="flex items-center p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
@@ -441,6 +452,7 @@ useEffect(() => {
             checked={useDifferentShipping}
             onChange={(e) => setUseDifferentShipping(e.target.checked)}
             className={`h-5 w-5 text-blue-600 rounded focus:ring-blue-500 `}
+            disabled={isView}
           />
           <label
             htmlFor="differentShipping"
@@ -463,6 +475,7 @@ useEffect(() => {
             countryIsd={countryIsd}
             formData={formData}
             useDifferentShipping={useDifferentShipping}
+            isView={isView}
           />
         )}
       </div>

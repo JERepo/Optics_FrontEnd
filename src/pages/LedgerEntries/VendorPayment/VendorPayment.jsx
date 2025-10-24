@@ -284,7 +284,10 @@ const VendorPayment = () => {
               <div className="text-lg text-neutral-900">
                 <Checkbox
                   checked={againstPO}
-                  onChange={(e) => {setAgainstPO(e.target.checked);setItems([])}}
+                  onChange={(e) => {
+                    setAgainstPO(e.target.checked);
+                    setItems([]);
+                  }}
                   label="Collect Against PO"
                 />
               </div>
@@ -348,18 +351,30 @@ const VendorPayment = () => {
                 </TableCell>
                 <TableCell>
                   {item.GRNMain
-                    ? `${item.GRNMain?.GRNPrefix}/${item.GRNMain?.GRNNo}`
-                    : `${item.purchaseMaster?.DNPrefix}/${item.purchaseMaster?.DNNo}`}
+                    ? `${item.GRNMain.GRNPrefix || ""}/${
+                        item.GRNMain.GRNNo || ""
+                      }`
+                    : item.purchaseMaster
+                    ? `${item.purchaseMaster.DNPrefix || ""}/${
+                        item.purchaseMaster.DNNo || ""
+                      }`
+                    : "-"}{" "}
+                  {/* fallback if both are null */}
                 </TableCell>
+
                 <TableCell>{!item.GRNMain ? "DR" : "CR"}</TableCell>
                 <TableCell>
-                  {item.GRNMain
-                    ? format(new Date(item.GRNMain?.GRNDate), "dd/MM/yyyy")
-                    : format(
-                        new Date(item.purchaseMaster?.PurchaseReturnDate),
+                  {item.GRNMain?.GRNDate
+                    ? format(new Date(item.GRNMain.GRNDate), "dd/MM/yyyy")
+                    : item.purchaseMaster?.PurchaseReturnDate
+                    ? format(
+                        new Date(item.purchaseMaster.PurchaseReturnDate),
                         "dd/MM/yyyy"
-                      )}
+                      )
+                    : "-"}{" "}
+                  {/* fallback if both are null */}
                 </TableCell>
+
                 <TableCell>
                   ₹
                   {item.GRNMain

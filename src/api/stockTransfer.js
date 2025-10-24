@@ -34,7 +34,7 @@ export const stockTransferApi = createApi({
       query: ({ mainId, locationId }) => ({
         url: `/api/v1/stock-transfer/bymainid/${mainId}?locationId=${locationId}`,
       }),
-      providesTags: ["StockTransfer"],
+      providesTags: ["StockTransfer","StockTransferIn"],
     }),
     updateStockTransferOut: builder.mutation({
       query: ({ payload }) => ({
@@ -74,12 +74,14 @@ export const stockTransferApi = createApi({
       query: ({ mainId, locationId }) => ({
         url: `/api/v1/stock-transfer/inbyout/details?STOutMainId=${mainId}&locationId=${locationId}`,
       }),
+     
     }),
 
     getSelectStock: builder.query({
       query: ({ locationId }) => ({
         url: `/api/v1/stock-transfer/openstocktransfer?locationId=${locationId}`,
       }),
+       providesTags :["StockTransferIn"]
     }),
     saveSTKIDraft: builder.mutation({
       query: ({ locationId, mainId, userId }) => ({

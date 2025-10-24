@@ -13,7 +13,7 @@ import toast from "react-hot-toast";
 const reportTypes = [
   { value: 0, label: " Detailed Sales Return" },
   // { value: 1, label: "Tally Sales Return" },
-  { value: 2, label: "Sales Return by product Type" },
+  { value: 1, label: "Sales Return by Product Type" },
  
 ];
 

@@ -113,7 +113,7 @@ const SelectStock = () => {
                 "Total Qty",
                 "Total Value",
               ]}
-              data={stockData?.data}
+              data={stockData?.data?.filter(item => item.Status !== 4) || []}
               renderRow={(item, index) => (
                 <TableRow key={item.STOutMainId}>
                   <TableCell>

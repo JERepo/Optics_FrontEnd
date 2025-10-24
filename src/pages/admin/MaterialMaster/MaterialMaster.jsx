@@ -218,10 +218,10 @@ const MaterialMaster = () => {
         onConfirm={handleConfirmToggle}
         title={`Are you sure you want to ${
           currentStatus ? "deactivate" : "activate"
-        } this Master?`}
+        } this Material Master?`}
         message={`This will ${
           currentStatus ? "deactivate" : "activate"
-        } the pool. You can change it again later.`}
+        } the Material Master. You can change it again later.`}
         confirmText={currentStatus ? "Deactivate" : "Activate"}
         danger={currentStatus}
         isLoading={isDeActivating}

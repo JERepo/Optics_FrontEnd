@@ -848,7 +848,6 @@ const ContactLens = () => {
   if (newItem.CLDetailId && !searchFethed) {
     inputTableColumns.push("Avl.Qty", "Order Qty", "Action");
   }
-  console.log(mainClDetails);
 
 
   const downloadFile = (blob, filename) => {

@@ -295,6 +295,7 @@ const OrderView = () => {
       };
 
       const res = await cancelItem({ id, payload }).unwrap();
+      
       if (res?.otpRequired) {
         setSelectedDiscountItem(id);
         setShowOtp(true);
@@ -311,6 +312,8 @@ const OrderView = () => {
     }
   };
   const handleCancelOrder = async () => {
+        setSelectedItemId(orderId);
+
     try {
       const payload = {
         proceedAfterWarnings: false,
@@ -321,6 +324,11 @@ const OrderView = () => {
         id: parseInt(orderId),
         payload,
       }).unwrap();
+      if (res?.otpRequired) {
+        setSelectedDiscountItem(orderId);
+        setShowOtp(true);
+        return;
+      }
       if (res?.status == "warning") {
         setWarningMessage(res?.warnings[0]);
         setIsCancelOrder(true);
@@ -333,6 +341,8 @@ const OrderView = () => {
     }
   };
   const handleGenerateInvoiceConfirm = async (order) => {
+        console.log("order",order)
+
     const discountedSellingPrice =
       parseFloat(order?.DiscountedSellingPrice) || 0;
     const orderQty = parseFloat(order?.OrderQty) || 0;
@@ -342,10 +352,9 @@ const OrderView = () => {
 
     const totalFittingGST = fittingPrice * (fittingGST / 100);
     const totalvalue =
-      discountedSellingPrice * orderQty +
+      (discountedSellingPrice * orderQty )+
       totalFittingGST +
-      fittingPrice -
-      advance;
+      fittingPrice
     const payload = {
       invoiceItems: [
         {
@@ -388,6 +397,7 @@ const OrderView = () => {
       // if()
       toast.success("Invoice Generated successfully!");
       setSelectedOrder(null);
+      setOpenInvoiceWarning(false);
     } catch (error) {
       console.log(error);
       setErrors(
@@ -413,10 +423,9 @@ const OrderView = () => {
 
     const totalFittingGST = fittingPrice * (fittingGST / 100);
     const totalvalue =
-      discountedSellingPrice * orderQty +
+      (discountedSellingPrice * orderQty) +
       totalFittingGST +
-      fittingPrice -
-      advance;
+      fittingPrice
     const payload = {
       invoiceItems: [
         {
@@ -473,6 +482,8 @@ const OrderView = () => {
       );
       setErrorModalOpen(true);
       setSelectedOrder(null);
+      setOpenInvoiceWarning(false);
+
       return;
     }
   };
@@ -509,7 +520,6 @@ const OrderView = () => {
   columns.push("Total", "Status", "Action");
   const handlePrintPdf = async (item) => {
     setPrintingId(item.id);
-    console.log("ite", item);
 
     try {
       const blob = await generatePrint({
@@ -538,7 +548,6 @@ const OrderView = () => {
   };
 
   const handlePrint = async (item) => {
-    console.log("ite", item);
     setPrintingId(item.OrderDetailId);
 
     try {
@@ -568,6 +577,7 @@ const OrderView = () => {
       setPrintingId(null);
     }
   };
+  // console.log("dd",selectedDiscountItem)
   if (isViewLoading || isLoading) {
     return (
       <div>
@@ -665,6 +675,10 @@ const OrderView = () => {
           <Info
             label="Order Reference"
             value={customerDataById?.data.data?.OrderReference || "N/A"}
+          />
+           <Info
+            label="Comment"
+            value={customerDataById?.data.data?.Comment || "N/A"}
           />
         </div>
 
@@ -882,14 +896,7 @@ const OrderView = () => {
         )}
       </div>
       <Modal isOpen={showOtp} onClose={() => setShowOtp(false)}>
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Secure Verification
-          </h2>
-          <p className="text-gray-600">
-            Enter the verification code sent to your Email or Whatsapp
-          </p>
-        </div>
+        
         <OTPScreen
           length={6}
           onComplete={handleOtpComplete}

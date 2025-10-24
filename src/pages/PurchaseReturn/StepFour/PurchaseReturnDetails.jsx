@@ -86,42 +86,108 @@ const getProductName = (item) => {
     ];
     return lines.filter(Boolean).join("\n");
   }
+  if (type === 3) {
+    const barcode = clean(detail.barcode);
+    const expiry = clean(detail.Stock[0]?.Expiry);
+    const batchcode = clean(detail.BatchCode);
+    let specsObj = {};
 
-  // For Contact Lens (type = 3)
+    // handle string or object
+    if (typeof PowerSpecs === "string") {
+      PowerSpecs.split(",").forEach((pair) => {
+        let [key, value] = pair.split(":").map((s) => s.trim());
+        if (value === "null") value = null;
+        specsObj[key] = value;
+      });
+    } else if (typeof PowerSpecs === "object" && PowerSpecs !== null) {
+      specsObj = PowerSpecs;
+    }
+
+    // Now you can safely access
+    const sph = formatPowerValue(specsObj.Sph);
+    const cyld = formatPowerValue(specsObj.Cyl);
+    const axis = clean(specsObj.Axis);
+    const addl = formatPowerValue(specsObj.Add);
+    const clr = clean(colour || Colour);
+
+    const specsList = [
+      sph && `SPH: ${sph}`,
+      cyld && `CYL: ${cyld}`,
+      axis && `Axis: ${axis}`,
+      addl && `Add: ${addl}`,
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    return [
+      productName,
+      specsList,
+      barcode && `Barcode: ${barcode}`,
+      batchcode && `Batch Code: ${batchcode || "-"}`,
+      expiry && `Expiry : ${expiry.split("-").reverse().join("/")}`,
+      HSN && `HSN: ${HSN}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
   if (type === 0) {
-    const productName = clean(detail.productName);
-    const colour = detail.colour || detail.ProductDetails?.colour;
-    const barcode = detail.barcode || detail.ProductDetails?.barcode;
-    const hsncode = detail.HSN || detail.ProductDetails?.HSN;
+    const detailsArray = Array.isArray(detail) ? detail : [detail];
 
-    const stock = detail.Stock || detail.ProductDetails?.Stock || {};
-   
+    return detailsArray
+      .map((d) => {
+        const olLine = clean(d.productDescName);
 
-    const specs = detail.Specs
-      ? [
-          detail.Specs.Spherical
-            ? `Sph: ${formatPowerValue(detail.Specs.Spherical)}`
-            : "",
-          detail.Specs.Cylinder
-            ? `Cyl: ${formatPowerValue(detail.Specs.Cylinder)}`
-            : "",
-          detail.Specs.Diameter
-            ? `Dia: ${formatPowerValue(detail.Specs.Diameter)}`
-            : "",
-        ]
-          .filter(Boolean)
-          .join(", ")
-      : "";
+        // AddOns & Tint
+        const addonNames = d.specs?.addOn?.addOnName;
+        const tintName = d.specs?.tint?.tintName;
 
-    const lines = [
-      productName && `${productName}`,
-      specs ? `${specs}` : "",
-      // clean(colour) ? `Colour: ${clean(colour)}` : "",
-      // barcode ? `Barcode: ${barcode}` : "",
-      clean(hsncode) ? `HSN: ${hsncode}` : "",
-    ];
+        // Power formatting
+        const joinNonEmpty = (arr, sep = " ") => arr.filter(Boolean).join(sep);
+        const formatPower = (eye) =>
+          joinNonEmpty(
+            [
+              formatPowerValue(eye?.sphericalPower) &&
+                `SPH: ${formatPowerValue(eye?.sphericalPower)}`,
+              formatPowerValue(eye?.addition) &&
+                `Add: ${formatPowerValue(eye?.addition)}`,
+              clean(eye?.diameter) && `Dia: ${clean(eye?.diameter)}`,
+            ],
+            ", "
+          );
 
-    return lines.filter(Boolean).join("\n");
+        const pd = d?.specs?.powerDetails || {};
+        const rightParts = formatPower(pd.right || {});
+        const leftParts = formatPower(pd.left || {});
+        const powerLine = joinNonEmpty(
+          [rightParts && `R: ${rightParts}`, leftParts && `L: ${leftParts}`],
+          "\n"
+        );
+
+        // Fitting price
+        let fittingLine = "";
+        const fitPrice = parseFloat(item?.FittingReturnPrice || 0);
+        const gstPerc = parseFloat(item?.FittingTaxPercentage || 0);
+        if (!isNaN(fitPrice) && !isNaN(gstPerc) && fitPrice > 0) {
+          fittingLine = `Fitting Price: ₹${(
+            fitPrice *
+            (1 + gstPerc / 100)
+          ).toFixed(2)}`;
+        }
+
+        return joinNonEmpty(
+          [
+            olLine,
+            powerLine,
+            addonNames && `AddOn: ${addonNames}`,
+            tintName && `Tint: ${tintName}`,
+            fittingLine,
+            clean(d.hSN) && `HSN: ${clean(d.hSN)}`,
+          ],
+          "\n"
+        );
+      })
+      .join("\n\n"); // join multiple products if array
   }
 
   return "";
@@ -223,6 +289,7 @@ const CompleteStockTransfer = () => {
         prId: purchaseDraftData.Id,
         userId: user.Id,
         locationId: customerPurchase.locationId,
+        vendorId: customerPurchase?.customerData?.Id,
         payload,
       }).unwrap();
       toast.success("Deleted successfully");
@@ -237,9 +304,13 @@ const CompleteStockTransfer = () => {
       const unitPrice = parseFloat(item.DNPrice);
       const gstRate = parseFloat(item.ProductTaxPercentage) / 100;
 
+      const fittingPrice = parseFloat(item.FittingReturnPrice || 0);
+      const fgst = parseFloat(item.FittingTaxPercentage || 0);
+      const fittingTotal = fittingPrice * (fgst/100);
+
       const basicValue = unitPrice * qty;
-      const gst = unitPrice * qty * gstRate;
-      const returnTotal = basicValue + gst;
+      const gst = unitPrice * qty * gstRate + fittingTotal;
+      const returnTotal = basicValue + gst +fittingPrice;
 
       acc.totalQty += qty;
       acc.totalGST += gst;
@@ -271,7 +342,7 @@ const CompleteStockTransfer = () => {
         prId: purchaseDraftData.Id || purchaseDraftData[0].Id,
         userId: user.Id,
         locationId: customerPurchase.locationId,
-        vendorId :customerPurchase?.customerData?.Id,
+        vendorId: customerPurchase?.customerData?.Id,
         payload,
       }).unwrap();
       const eInvoicePayload = {
@@ -360,10 +431,12 @@ const CompleteStockTransfer = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                   ( parseFloat(item.DNPrice) * item.DNQty +
+                    parseFloat(item.DNPrice) * item.DNQty + parseFloat(item?.FittingReturnPrice || 0)+
                       parseFloat(item.DNPrice) *
                         item.DNQty *
-                        (parseFloat(item.ProductTaxPercentage) / 100) + parseFloat(item.FittingReturnPrice || 0)* (parseFloat(item.FittingTaxPercentage || 0)/100) )
+                        (parseFloat(item.ProductTaxPercentage) / 100) +
+                      parseFloat(item.FittingReturnPrice || 0) *
+                        (parseFloat(item.FittingTaxPercentage || 0) / 100)
                   )}
                 </TableCell>
 
@@ -429,8 +502,8 @@ const CompleteStockTransfer = () => {
               <Button
                 className="bg-blue-600 hover:bg-blue-700 text-white"
                 onClick={handleSaveStockTransferOut}
-                isLoading={isPRUpdating}
-                disabled={isPRUpdating}
+                isLoading={isPRUpdating || isInvoiceCreating}
+                disabled={isPRUpdating || isInvoiceCreating}
               >
                 Complete Purchase Return
               </Button>

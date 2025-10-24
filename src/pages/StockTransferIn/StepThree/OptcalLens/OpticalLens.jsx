@@ -814,10 +814,10 @@ const OpticalLens = () => {
       }
 
       const res = await getPowerByOl({ payload }).unwrap();
-      if (res?.data.Quantity <= 0) {
-        toast.error("Stock Quantity must be greater than 0!");
-        return;
-      }
+      // if (res?.data.Quantity <= 0) {
+      //   toast.error("Stock Quantity must be greater than 0!");
+      //   return;
+      // }
 
       setBarcodeData((prev) => {
         // Find existing item in state
@@ -925,7 +925,11 @@ const OpticalLens = () => {
                 <div className="flex items-center gap-5">
                   <Radio
                     value="0"
-                    onChange={() => setBarCodeOrProduct(0)}
+                    onChange={() => {
+                      setBarCodeOrProduct(0)
+                     handleRefresh()
+
+                    }}
                     checked={barCodeOrproduct === 0}
                     label="Stock lenses(By barcode)"
                   />

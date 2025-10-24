@@ -64,9 +64,6 @@ const reportTypes = [
   { value: 50, label: "Vendor" },
 ];
 
-
-
-
 const dateOptions = [
   { value: "today", label: "Today" },
   { value: "yesterday", label: "Yesterday" },
@@ -178,16 +175,25 @@ const AuditReport = () => {
       fromDate: formatDate(fromDate),
       toDate: formatDate(toDate),
     };
+    const selectedReportLabels = reportTypes
+      .filter((item) =>
+        Array.isArray(payload.reportType)
+          ? payload.reportType.includes(item.value)
+          : item.value === payload.reportType
+      )
+      .map((item) => item.label)
+      .join(",");
+
     try {
       const blob = await getReport({
         fromDate: payload.fromDate,
         toDate: payload.toDate,
-        page:  reportTypes?.find(item => item.value == payload.reportType)?.label,
-        type: payload.reportType,
+        page: selectedReportLabels,
+        type: 0,
       }).unwrap();
       downloadFile(blob, "AuditReport.xlsx");
       toast.success("Audit Report Generated successfully!");
-            setDateType("today")
+      setDateType("today");
 
       setFromDate(new Date());
       setToDate(new Date());

@@ -675,6 +675,10 @@ export const router = createBrowserRouter([
         path: "vendor/edit/:id",
         element: <EditVendor />,
       },
+       {
+        path: "vendor/view/:id",
+        element: <EditVendor />,
+      },
 
       {
         path: "order-list",

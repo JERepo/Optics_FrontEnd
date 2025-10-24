@@ -63,7 +63,7 @@ export const reportApi = createApi({
     }),
     getStockOutReport: builder.query({
       query: ({ fromDate, toDate, userId, type }) => ({
-        url: `/api/v1/report/stout-report?fromDate=${fromDate}&toDate=${toDate}&userId=${userId}&type=${type}`,
+        url: `/api/v1/report/stoutreport?fromDate=${fromDate}&toDate=${toDate}&userId=${userId}&type=${type}`,
         method: "GET",
         responseHandler: (response) => response.blob(),
       }),

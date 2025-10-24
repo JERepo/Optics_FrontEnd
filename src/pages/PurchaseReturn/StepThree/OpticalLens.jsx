@@ -29,11 +29,11 @@ const getProductName = (order) => {
     returnFittingPrice,
   } = order;
 
-   const detail = Array.isArray(productDetails)
-      ? productDetails[0]
-      : productDetails;
+  const detail = Array.isArray(productDetails)
+    ? productDetails[0]
+    : productDetails;
 
-    if (!detail) return "";
+  if (!detail) return "";
 
   if (!detail) return "";
 
@@ -55,57 +55,56 @@ const getProductName = (order) => {
 
   const joinNonEmpty = (arr, sep = " ") => arr.filter(Boolean).join(sep);
 
-   if (order.ProductType === 0) {
-      const olLine = clean(detail.productDescName);
-      // AddOns
-      const addonNames = detail.specs?.addOn?.addOnName;
-      const tintName = detail.specs?.tint?.tintName;
+  if (order.ProductType === 0) {
+    const olLine = clean(detail.productDescName);
+    // AddOns
+    const addonNames = detail.specs?.addOn?.addOnName;
+    const tintName = detail.specs?.tint?.tintName;
 
-      // for yes
-      const formatPower = (eye) =>
-        joinNonEmpty(
-          [
-            cleanPower(eye?.sphericalPower) &&
-              `SPH: ${cleanPower(eye?.sphericalPower)}`,
-            cleanPower(eye?.addition) && `Add: ${cleanPower(eye?.addition)}`,
-            clean(eye?.diameter) && `Dia: ${clean(eye?.diameter)}`,
-          ],
-          ", "
-        );
-
-      const pd = detail?.specs?.powerDetails || {};
-
-      const rightParts = formatPower(pd.right || {});
-      const leftParts = formatPower(pd.left || {});
-
-      const powerLine = joinNonEmpty(
-        [rightParts && `R: ${rightParts}`, leftParts && `L: ${leftParts}`],
-        "\n"
-      );
-
-      let fittingLine = "";
-      const fitPrice = parseFloat(returnFittingPrice);
-      const gstPerc = parseFloat(fittingGSTPercentage);
-      if (!isNaN(fitPrice) && !isNaN(gstPerc) && fitPrice > 0) {
-        fittingLine = `Fitting Price: ₹${(
-          fitPrice *
-          (1 + gstPerc / 100)
-        ).toFixed(2)}`;
-      }
-
-      return joinNonEmpty(
+    // for yes
+    const formatPower = (eye) =>
+      joinNonEmpty(
         [
-          olLine && olLine,
-          powerLine,
-          // clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
-          addonNames && `AddOn: ${addonNames}`,
-          tintName && `Tint: ${tintName}`,
-          fittingLine,
-          clean(detail.hSN) && `HSN: ${clean(clean(detail.hSN))}`,
+          cleanPower(eye?.sphericalPower) &&
+            `SPH: ${cleanPower(eye?.sphericalPower)}`,
+          cleanPower(eye?.addition) && `Add: ${cleanPower(eye?.addition)}`,
+          clean(eye?.diameter) && `Dia: ${clean(eye?.diameter)}`,
         ],
-        "\n"
+        ", "
       );
+
+    const pd = detail?.specs?.powerDetails || {};
+
+    const rightParts = formatPower(pd.right || {});
+    const leftParts = formatPower(pd.left || {});
+
+    const powerLine = joinNonEmpty(
+      [rightParts && `R: ${rightParts}`, leftParts && `L: ${leftParts}`],
+      "\n"
+    );
+
+    let fittingLine = "";
+    const fitPrice = parseFloat(returnFittingPrice);
+    const gstPerc = parseFloat(fittingGSTPercentage);
+    if (!isNaN(fitPrice) && !isNaN(gstPerc) && fitPrice > 0) {
+      fittingLine = `Fitting Price: ₹${(fitPrice * (1 + gstPerc / 100)).toFixed(
+        2
+      )}`;
     }
+
+    return joinNonEmpty(
+      [
+        olLine && olLine,
+        powerLine,
+        // clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
+        addonNames && `AddOn: ${addonNames}`,
+        tintName && `Tint: ${tintName}`,
+        fittingLine,
+        clean(detail.hSN) && `HSN: ${clean(clean(detail.hSN))}`,
+      ],
+      "\n"
+    );
+  }
 
   return "";
 };
@@ -246,134 +245,130 @@ const OpticalLens = () => {
       )
     );
   };
-const formatProductDetails = (order) => {
-  const {
-    productType,
-    ProductType,
-    productDetails,
-    fittingPrice,
-    fittingGSTPercentage,
-    batchCode,
-    expiry,
-    Spherical,
-    Cylinder,
-    Diameter,
-    AddOnData,
-    returnFittingPrice,
-  } = order;
+  const formatProductDetails = (order) => {
+    const {
+      productType,
+      ProductType,
+      productDetails,
+      fittingPrice,
+      fittingGSTPercentage,
+      batchCode,
+      expiry,
+      Spherical,
+      Cylinder,
+      Diameter,
+      AddOnData,
+      returnFittingPrice,
+    } = order;
 
-  const detail = Array.isArray(productDetails)
-    ? productDetails[0]
-    : productDetails;
+    const detail = Array.isArray(productDetails)
+      ? productDetails[0]
+      : productDetails;
 
-  if (!detail) return "";
+    if (!detail) return "";
 
-  // Utility helpers
-  const clean = (val) =>
-    val == null ||
-    val === "undefined" ||
-    val === "null" ||
-    val === "" ||
-    val === "N/A"
-      ? ""
-      : String(val).trim();
+    // Utility helpers
+    const clean = (val) =>
+      val == null ||
+      val === "undefined" ||
+      val === "null" ||
+      val === "" ||
+      val === "N/A"
+        ? ""
+        : String(val).trim();
 
-  const cleanPower = (val) => {
-    const cleaned = clean(val);
-    if (!cleaned) return "";
-    const num = parseFloat(cleaned);
-    return isNaN(num) ? "" : num >= 0 ? `+${num}` : `${num}`;
-  };
+    const cleanPower = (val) => {
+      const cleaned = clean(val);
+      if (!cleaned) return "";
+      const num = parseFloat(cleaned);
+      return isNaN(num) ? "" : num >= 0 ? `+${num}` : `${num}`;
+    };
 
-  const joinNonEmpty = (arr, sep = " ") => arr.filter(Boolean).join(sep);
+    const joinNonEmpty = (arr, sep = " ") => arr.filter(Boolean).join(sep);
 
-  // 🟦 TYPE 0 (Optical Lens)
-  if (order.ProductType === 0) {
-    const olLine = clean(detail.productDescName);
-    const addonNames = detail.specs?.addOn?.addOnName;
-    const tintName = detail.specs?.tint?.tintName;
+    // 🟦 TYPE 0 (Optical Lens)
+    if (order.ProductType === 0) {
+      const olLine = clean(detail.productDescName);
+      const addonNames = detail.specs?.addOn?.addOnName;
+      const tintName = detail.specs?.tint?.tintName;
 
-    // Format each eye’s specs
-    const formatPower = (eye) =>
-      joinNonEmpty(
-        [
-          cleanPower(eye?.sphericalPower) &&
-            `SPH: ${cleanPower(eye?.sphericalPower)}`,
-          cleanPower(eye?.addition) && `Add: ${cleanPower(eye?.addition)}`,
-          clean(eye?.diameter) && `Dia: ${clean(eye?.diameter)}`,
-        ],
-        ", "
+      // Format each eye’s specs
+      const formatPower = (eye) =>
+        joinNonEmpty(
+          [
+            cleanPower(eye?.sphericalPower) &&
+              `SPH: ${cleanPower(eye?.sphericalPower)}`,
+            cleanPower(eye?.addition) && `Add: ${cleanPower(eye?.addition)}`,
+            clean(eye?.diameter) && `Dia: ${clean(eye?.diameter)}`,
+          ],
+          ", "
+        );
+
+      const pd = detail?.specs?.powerDetails || {};
+
+      const rightParts = formatPower(pd.right || {});
+      const leftParts = formatPower(pd.left || {});
+
+      const powerLine = joinNonEmpty(
+        [rightParts && `R: ${rightParts}`, leftParts && `L: ${leftParts}`],
+        "  "
       );
 
-    const pd = detail?.specs?.powerDetails || {};
+      // Fitting line
+      let fittingLine = "";
+      const fitPrice = parseFloat(returnFittingPrice || fittingPrice);
+      const gstPerc = parseFloat(fittingGSTPercentage);
+      if (!isNaN(fitPrice) && !isNaN(gstPerc) && fitPrice > 0) {
+        fittingLine = `Fitting Price: ₹${(
+          fitPrice *
+          (1 + gstPerc / 100)
+        ).toFixed(2)}`;
+      }
 
-    const rightParts = formatPower(pd.right || {});
-    const leftParts = formatPower(pd.left || {});
-
-    const powerLine = joinNonEmpty(
-      [rightParts && `R: ${rightParts}`, leftParts && `L: ${leftParts}`],
-      "  "
-    );
-
-    // Fitting line
-    let fittingLine = "";
-    const fitPrice = parseFloat(returnFittingPrice || fittingPrice);
-    const gstPerc = parseFloat(fittingGSTPercentage);
-    if (!isNaN(fitPrice) && !isNaN(gstPerc) && fitPrice > 0) {
-      fittingLine = `Fitting Price: ₹${(
-        fitPrice *
-        (1 + gstPerc / 100)
-      ).toFixed(2)}`;
+      // Final return string
+      return joinNonEmpty(
+        [
+          olLine && olLine,
+          powerLine,
+          addonNames && `AddOn: ${addonNames}`,
+          tintName && `Tint: ${tintName}`,
+          fittingLine,
+          clean(detail.hSN) && `HSN: ${clean(detail.hSN)}`,
+        ],
+        "  "
+      );
     }
 
-    // Final return string
+    const productName = clean(detail.productName);
+    const brandName = clean(detail.brandName);
+    const colour = clean(detail.colour);
+    const barcode = clean(detail.barcode);
+    const hsn = clean(detail.HSN);
+    const specs = detail.Specs
+      ? [
+          detail.Specs.Spherical
+            ? `Sph: ${cleanPower(detail.Specs.Spherical)}`
+            : "",
+          detail.Specs.Cylinder
+            ? `Cyl: ${cleanPower(detail.Specs.Cylinder)}`
+            : "",
+          detail.Specs.Diameter ? `Dia: ${clean(detail.Specs.Diameter)}` : "",
+        ]
+          .filter(Boolean)
+          .join(", ")
+      : "";
+
     return joinNonEmpty(
       [
-        olLine && olLine,
-        powerLine,
-        addonNames && `AddOn: ${addonNames}`,
-        tintName && `Tint: ${tintName}`,
-        fittingLine,
-        clean(detail.hSN) && `HSN: ${clean(detail.hSN)}`,
+        productName && `${productName}`,
+        specs && specs,
+        // barcode && `Barcode: ${barcode}`,
+        // colour && `Colour: ${colour}`,
+        hsn && `HSN: ${hsn}`,
       ],
-      "  "
+      "\n"
     );
-  }
-
- 
-  const productName = clean(detail.productName);
-  const brandName = clean(detail.brandName);
-  const colour = clean(detail.colour);
-  const barcode = clean(detail.barcode);
-  const hsn = clean(detail.HSN);
-  const specs = detail.Specs
-    ? [
-        detail.Specs.Spherical
-          ? `Sph: ${cleanPower(detail.Specs.Spherical)}`
-          : "",
-        detail.Specs.Cylinder
-          ? `Cyl: ${cleanPower(detail.Specs.Cylinder)}`
-          : "",
-        detail.Specs.Diameter
-          ? `Dia: ${clean(detail.Specs.Diameter)}`
-          : "",
-      ]
-        .filter(Boolean)
-        .join(", ")
-    : "";
-
-  return joinNonEmpty(
-    [
-      productName && `${productName}`,
-      specs && specs,
-      // barcode && `Barcode: ${barcode}`,
-      // colour && `Colour: ${colour}`,
-      hsn && `HSN: ${hsn}`,
-    ],
-    "\n"
-  );
-};
-
+  };
 
   const handleDelete = (index) => {
     setItems((prev) => prev.filter((_, idx) => idx !== index));
@@ -405,7 +400,7 @@ const formatProductDetails = (order) => {
     const returnQty = Number(lensData.returnQty);
     const returnFittingPrice = Number(lensData.returnFittingPrice) || 0;
 
-    if (returnPrice > selectedVendor.GRNPrice) {
+    if (returnPrice > selectedVendor.GRNPrice * selectedVendor.GRNQty) {
       toast.error("Return product price cannot exceed GRN price!");
       return;
     }
@@ -417,10 +412,12 @@ const formatProductDetails = (order) => {
       toast.error("Return price and quantity must be valid numbers!");
       return;
     }
-
+    const qty = parseFloat(lensData.returnQty || 0);
+    const totalPrice = parseFloat(lensData.returnProductPrice || 0);
+    const unitPrice = qty > 0 ? totalPrice / qty : 0;
     const newItem = {
       ...selectedVendor,
-      returnPrice,
+      returnPrice: unitPrice,
       returnQty,
       returnFittingPrice,
       ProductType: 0,
@@ -439,12 +436,24 @@ const formatProductDetails = (order) => {
     });
     setSelectedVendor(null);
   };
+  useEffect(() => {
+    if (selectedVendor) {
+      setLensData({
+        supplier: selectedVendor,
+        returnProductPrice: (
+          (selectedVendor?.GRNPrice || 0) * (selectedVendor?.GRNQty || 0)
+        ).toFixed(2),
+        returnFittingPrice: selectedVendor?.FittingPrice || 0,
+        returnQty: selectedVendor?.GRNQty || "",
+      });
+    }
+  }, [selectedVendor]);
+
   const handleSaveData = async () => {
     if (!Array.isArray(items) || items.length === 0) {
       console.warn("No details to save");
       return;
     }
-    console.log("items", items);
     try {
       const payload = {
         products: items.map((item) => {
@@ -466,16 +475,14 @@ const formatProductDetails = (order) => {
           };
         }),
       };
-      console.log(payload);
       await savePR({ payload }).unwrap();
       toast.success("Optical lens Purchase return successfully added!");
       goToPurchaseStep(4);
     } catch (error) {
-      toast.error(error?.data.error);
+      toast.error(error?.data.error  || "Please try again after some time!");
     }
   };
 
-  console.log(selectedVendor, lensData);
   return (
     <div>
       <div className="max-w-8xl h-auto">
@@ -629,16 +636,20 @@ const formatProductDetails = (order) => {
                             item.returnPrice * (item.TaxPercent / 100)
                           )}
                         </TableCell>
-                        <TableCell>
-                          ₹
-                          {formatINR(
-                            item.returnQty *
-                              (item.returnPrice +
-                                (item.returnPrice * item.TaxPercent) / 100) +
-                              item.fittingPrice *
-                                (item.fittingGSTPercentage / 100)
-                          )}
-                        </TableCell>
+                       <TableCell>
+  ₹
+  {formatINR(
+    // Product total (price × qty)
+    (item.returnPrice * item.returnQty) +
+    // Product GST
+    ((item.returnPrice * item.returnQty) * (item.TaxPercent / 100)) +
+    // Fitting total (fitting price × qty)
+    (parseFloat(item.returnFittingPrice || 0) ) +
+    // Fitting GST
+    ((parseFloat(item.returnFittingPrice || 0)) * (parseFloat(item.fittingGSTPercentage || 0) / 100))
+  )}
+</TableCell>
+
                         <TableCell>
                           <button
                             onClick={() => handleDelete(index)}
@@ -705,18 +716,18 @@ const formatProductDetails = (order) => {
                   <Input
                     className="col-span-3"
                     label="Product Name"
-                    value={
-                      formatProductDetails(
-                        selectedVendor
-                      ) || ""
-                    }
+                    value={formatProductDetails(selectedVendor) || ""}
                     readOnly
                     disabled
                   />
                   <Input
                     label="Total Product Price"
                     value={
-                      selectedVendor?.GRNPrice * selectedVendor.GRNQty || ""
+                      selectedVendor?.GRNPrice * selectedVendor.GRNQty
+                        ? (
+                            selectedVendor?.GRNPrice * selectedVendor.GRNQty
+                          ).toFixed(2)
+                        : ""
                     }
                     readOnly
                     disabled
@@ -733,8 +744,10 @@ const formatProductDetails = (order) => {
                     readOnly
                     disabled
                   />
+
+                  {/* ✅ Editable Total Return Product Price */}
                   <Input
-                    label="Return Product Price"
+                    label="Return Product Price (Total)"
                     value={lensData.returnProductPrice || ""}
                     onChange={(e) =>
                       setLensData((prev) => ({
@@ -742,15 +755,8 @@ const formatProductDetails = (order) => {
                         returnProductPrice: e.target.value,
                       }))
                     }
-                    onBlur={() =>
-                      setLensData((prev) => ({
-                        ...prev,
-                        returnProductPrice:
-                          (parseFloat(prev.returnProductPrice) || 0) *
-                          (parseFloat(prev.returnQty) || 0),
-                      }))
-                    }
                     type="number"
+                    placeholder="Total Return Product Price"
                   />
 
                   <Input
@@ -775,36 +781,41 @@ const formatProductDetails = (order) => {
                     }
                     type="number"
                   />
+
+                  {/* ✅ Correct GST calculation */}
                   <Input
                     label="Return Product GST"
                     value={
                       selectedVendor
                         ? (
                             parseFloat(lensData.returnProductPrice || 0) *
-                            parseInt(lensData.returnQty) *
                             (parseFloat(selectedVendor?.TaxPercent || 0) / 100)
                           ).toFixed(2)
-                        : 0
+                        : "0.00"
                     }
                     readOnly
                     disabled
                   />
+
                   <Input
                     label="Return Fitting GST"
                     value={
                       selectedVendor
                         ? (
                             parseFloat(lensData.returnFittingPrice || 0) *
-                            (parseFloat(selectedVendor?.FittingGSTPercentage) /
+                            (parseFloat(
+                              selectedVendor?.FittingGSTPercentage || 0
+                            ) /
                               100)
                           ).toFixed(2)
-                        : ""
+                        : "0.00"
                     }
                     readOnly
                     disabled
                   />
                 </div>
               )}
+
               {selectedVendor && <Button onClick={handleAddItem}>Add</Button>}
             </div>
           </div>

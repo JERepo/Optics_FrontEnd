@@ -205,6 +205,11 @@ const StockTransferInView = () => {
     if (id === 0) return "OL";
     return "";
   };
+  const statusMap = {
+    0: "Draft",
+    1: "Completed",
+    2: "Cancelled",
+  };
   const totals = (stockDetails?.data?.StockTransferInDetails || []).reduce(
     (acc, item) => {
       const qty = item.STQtyIn || 0;
@@ -250,17 +255,28 @@ const StockTransferInView = () => {
             </Button>
           </div>
         </div>
-        {/* Order Details */}
+
         <div className="grid grid-cols-3 gap-3">
           <Info
-            label="Location Name"
-            value={stockDetails?.data?.Company?.LocationName}
+            label="STIN No"
+            value={`${stockDetails?.data?.STInPrefix}/${stockDetails?.data?.STInNo}`}
+          />
+          <Info
+            label="From Location"
+            value={`${stockDetails?.data?.Company?.CompanyName || ""} ${stockDetails?.data?.Company?.BillingAddress1 ?? ""} ${
+              stockDetails?.data?.Company?.BillingCity ?? ""
+            } ${stockDetails?.data?.Company?.BillingZipCode ?? ""}`}
           />
           <Info
             label="Address"
-            value={`${stockDetails?.data?.Company?.BillingAddress1 ?? ""} ${
-              stockDetails?.data?.Company?.BillingCity ?? ""
-            } ${stockDetails?.data?.Company?.BillingZipCode ?? ""}`}
+            value={
+              stockDetails?.data?.STInCreateDate
+                ? format(
+                    new Date(stockDetails?.data?.STInCreateDate),
+                    "dd/MM/yyyy"
+                  )
+                : ""
+            }
           />
           <Info
             label="Date"
@@ -273,6 +289,12 @@ const StockTransferInView = () => {
                 : ""
             }
           />
+          <Info
+            label="Status"
+            value={statusMap[stockDetails?.data?.Status] || "Unknown"}
+          />
+
+          <Info label="Comments" value={stockDetails?.data?.Comment || ""} />
         </div>
 
         {/* Product Table */}
@@ -303,7 +325,7 @@ const StockTransferInView = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                   parseFloat(item.TransferPrice) *
+                    parseFloat(item.TransferPrice) *
                       (parseFloat(item.ProductTaxPercentage) / 100)
                   )}
                   ({parseFloat(item.ProductTaxPercentage)}%)
@@ -313,7 +335,7 @@ const StockTransferInView = () => {
                   ₹
                   {formatINR(
                     parseFloat(item.TransferPrice) * item.STQtyIn +
-                     parseFloat(item.TransferPrice) *
+                      parseFloat(item.TransferPrice) *
                         (parseFloat(item.ProductTaxPercentage) / 100) *
                         item.STQtyIn
                   )}

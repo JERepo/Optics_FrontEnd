@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   useGetAllLocationsQuery,
   useGetLocationByIdQuery,
@@ -41,6 +41,8 @@ const Section = ({ title, children }) => (
 const EditVendor = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const locations = useLocation();
+  const isView = locations.pathname.includes("/view");
   const { vendorFormData, setVendorFormData } = useCustomerContext();
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
   const [location, setLocation] = useState(null);
@@ -583,6 +585,7 @@ const EditVendor = () => {
               states={allStates?.country}
               isVerifyGSTLoading={isVerifyGSTLoading}
               countryIsd={countryIsd}
+              isView={isView}
             />
           </div>
 
@@ -592,7 +595,7 @@ const EditVendor = () => {
               <h3 className="text-xl font-semibold text-gray-800">
                 Other Contact Details
               </h3>
-              <Button onClick={() => setIsModalOpen(true)}>Add Contact</Button>
+             {!isView && <Button onClick={() => setIsModalOpen(true)}>Add Contact</Button>}
             </div>
             <Table
               columns={[
@@ -669,6 +672,7 @@ const EditVendor = () => {
                   FittingPrice: e.target.checked ? 1 : 0,
                 }))
               }
+                disabled={isView}
             />
             {vendorFormData.FittingPrice === 1 && (
               <div className="space-y-6 mt-4">
@@ -688,6 +692,7 @@ const EditVendor = () => {
                   value="0"
                   onChange={handleChange}
                   checked={vendorFormData.pOApproval === 0}
+                    disabled={isView}
                 />
                 <Radio
                   label="Yes"
@@ -695,6 +700,7 @@ const EditVendor = () => {
                   value="1"
                   onChange={handleChange}
                   checked={vendorFormData.pOApproval === 1}
+                    disabled={isView}
                 />
               </div>
               <div className="flex flex-col gap-4">
@@ -706,6 +712,7 @@ const EditVendor = () => {
                     value="0"
                     onChange={handleChange}
                     checked={vendorFormData.multiDelivery === 0}
+                      disabled={isView}
                   />
                   <Radio
                     label="Yes"
@@ -713,6 +720,7 @@ const EditVendor = () => {
                     value="1"
                     onChange={handleChange}
                     checked={vendorFormData.multiDelivery === 1}
+                      disabled={isView}
                   />
                 </div>
                 {vendorFormData.multiDelivery === 0 && (
@@ -732,11 +740,11 @@ const EditVendor = () => {
                       }
                       defaultOption="Select Location"
                       error={errors.deliveryLocationId}
+                        disabled={isView}
                     />
                   </div>
                 )}
               </div>
-             
             </div>
           </Section>
           {/* credit charge details */}
@@ -754,6 +762,7 @@ const EditVendor = () => {
                       value="0"
                       checked={vendorFormData.credit_form === 0}
                       onChange={handleChange}
+                        disabled={isView}
                     />
                     <Radio
                       label="Invoice date"
@@ -761,6 +770,7 @@ const EditVendor = () => {
                       value="1"
                       checked={vendorFormData.credit_form === 1}
                       onChange={handleChange}
+                        disabled={isView}
                     />
                   </div>
                 </div>
@@ -773,6 +783,7 @@ const EditVendor = () => {
                       onChange={handleChange}
                       placeholder="Enter Credit days"
                       error={errors.credit_days}
+                        disabled={isView}
                     />
                   </div>
                   <div>
@@ -783,6 +794,7 @@ const EditVendor = () => {
                       onChange={handleChange}
                       placeholder="Enter Opening balance"
                       error={errors.opening_balance}
+                        disabled={isView}
                     />
                   </div>
                   <div className="flex gap-3 items-center">
@@ -793,6 +805,7 @@ const EditVendor = () => {
                         value="0"
                         checked={vendorFormData.OBType === 0}
                         onChange={handleChange}
+                          disabled={isView}
                       />
                       <Radio
                         label="CR"
@@ -800,6 +813,7 @@ const EditVendor = () => {
                         value="1"
                         checked={vendorFormData.OBType === 1}
                         onChange={handleChange}
+                          disabled={isView}
                       />
                     </div>
                   </div>
@@ -807,7 +821,7 @@ const EditVendor = () => {
               </div>
             </div>
           </Section>
-          <div className="mt-8 flex justify-end">
+        {!isView &&  <div className="mt-8 flex justify-end">
             <Button
               onClick={handleSave}
               loadingText={
@@ -818,7 +832,7 @@ const EditVendor = () => {
             >
               {id ? "Update" : "Save"}
             </Button>
-          </div>
+          </div>}
 
           {/* GST Address Selector Modal */}
           {isGstModalOpen && GSTData?.data?.data && (
