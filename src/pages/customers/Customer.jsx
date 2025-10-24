@@ -61,6 +61,7 @@ const Customer = ({ isPop, onSubmit }) => {
   const { id } = useParams();
   const isCreate = location.pathname.includes("/create");
   const isEdit = location.pathname.includes("/edit");
+  const isEnabled=location.pathname.includes("/view")
   const { formData, setFormData, constructPayload, resetFormForCustomerType } =
     useCustomerContext();
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
@@ -959,6 +960,7 @@ const Customer = ({ isPop, onSubmit }) => {
             isVerifyGSTLoading={isVerifyGSTLoading}
             invoice={invoice}
             isEdit={isEdit}
+            isView={isEnabled}
             customerData={customerById?.data?.data}
           />
 
@@ -969,7 +971,7 @@ const Customer = ({ isPop, onSubmit }) => {
                   ? "Other Contact details"
                   : "Patient Details"}
               </h2>
-              <Button onClick={() => setIsModalOpen(true)}>Add Details</Button>
+             {!isEnabled && <Button onClick={() => setIsModalOpen(true)}>Add Details</Button>}
             </div>
 
             <Table
@@ -1001,8 +1003,8 @@ const Customer = ({ isPop, onSubmit }) => {
 
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <FiEye className="text-xl cursor-pointer text-blue-500 hover:text-blue-700" />
-                      <button
+                      {/* <FiEye className="text-xl cursor-pointer text-blue-500 hover:text-blue-700" /> */}
+                    {!isEnabled &&  <button
                         className="text-neutral-600 hover:text-green-600"
                         aria-label="Edit"
                         onClick={() => {
@@ -1011,16 +1013,16 @@ const Customer = ({ isPop, onSubmit }) => {
                         }}
                       >
                         <FiEdit2 size={18} />
-                      </button>
+                      </button>}
                       {/* <HasPermission module="Customer" action="deactivate"> */}
-                      <Toggle
+                    {!isEnabled && <Toggle
                         enabled={detail.IsActive === 1}
                         onToggle={() =>
                           requestToggle(detail.Id, detail.IsActive)
                         }
-                      />
+                      />}
                       {/* </HasPermission> */}
-                      {!isEdit && (
+                      {( !isEnabled) && (
                         <button
                           className="text-neutral-600 hover:text-red-600"
                           aria-label="Delete"
@@ -1072,6 +1074,7 @@ const Customer = ({ isPop, onSubmit }) => {
             countryIsd={countryIsd}
             formData={formData}
             locationData={locationById?.data}
+            isView={isEnabled}
           />
 
           <div className="mt-10">
@@ -1089,7 +1092,8 @@ const Customer = ({ isPop, onSubmit }) => {
                     checked={fittingType === 0}
                     onChange={() => setFittingType(0)}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  />
+                  disabled={isEnabled}
+                 />
                   <span className="ml-2 text-gray-700">Standard Price</span>
                 </label>
                 <label className="inline-flex items-center">
@@ -1101,7 +1105,7 @@ const Customer = ({ isPop, onSubmit }) => {
                     onChange={() => setFittingType(1)}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                     disabled={
-                      companySettings?.data.data.FittingChargesSales === 0
+                      companySettings?.data.data.FittingChargesSales === 0 || isEnabled
                     }
                   />
                   <span className="ml-2 text-gray-700">Fixed Price</span>
@@ -1128,7 +1132,9 @@ const Customer = ({ isPop, onSubmit }) => {
                   checked={enableLoyalty === 1}
                   onChange={() => setEnableLoyalty(1)}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                />
+                                 disabled={isEnabled}
+
+               />
                 <span className="ml-2 text-gray-700">Enable</span>
               </label>
               <label className="inline-flex items-center">
@@ -1139,6 +1145,8 @@ const Customer = ({ isPop, onSubmit }) => {
                   checked={enableLoyalty === 0}
                   onChange={() => setEnableLoyalty(0)}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                  disabled={isEnabled}
+
                 />
                 <span className="ml-2 text-gray-700">Disable</span>
               </label>
@@ -1156,6 +1164,8 @@ const Customer = ({ isPop, onSubmit }) => {
                   checked={billingMethod === 0}
                   onChange={() => setBillingMethod(0)}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                  disabled={isEnabled}
+
                 />
                 <span className="ml-2 text-gray-700">Invoice</span>
               </label>
@@ -1167,7 +1177,8 @@ const Customer = ({ isPop, onSubmit }) => {
                   checked={billingMethod === 1}
                   onChange={() => setBillingMethod(1)}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  disabled={companySettings?.data.data.DCBilling === 0}
+                  disabled={companySettings?.data.data.DCBilling === 0 || isEnabled}
+                
                 />
                 <span className="ml-2 text-gray-700">Direct challan(DC)</span>
               </label>
@@ -1179,7 +1190,7 @@ const Customer = ({ isPop, onSubmit }) => {
               <h2 className="text-xl font-semibold text-gray-800 mb-4">
                 Credit Billing
               </h2>
-              {customerById?.data?.data.CreditBilling === 1 && (
+              {(customerById?.data?.data.CreditBilling === 1 && !isEnabled) && (
                 <div onClick={handleOpenCredit}>
                   <Button
                     variant="outline"
@@ -1206,6 +1217,8 @@ const Customer = ({ isPop, onSubmit }) => {
                     onChange={() => setEnableCreditBilling(1)}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                     disabled={companySettings?.data.data.CreditBilling === 0}
+                                    disabled={isEnabled}
+
                   />
                   <span className="ml-2 text-gray-700">Yes</span>
                 </label>
@@ -1217,6 +1230,8 @@ const Customer = ({ isPop, onSubmit }) => {
                     checked={enableCreditBilling === 0}
                     onChange={() => setEnableCreditBilling(0)}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                    disabled={isEnabled}
+
                   />
                   <span className="ml-2 text-gray-700">No</span>
                 </label>
@@ -1237,7 +1252,7 @@ const Customer = ({ isPop, onSubmit }) => {
                       onChange={handleCreditDetailChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       min="0"
-                      disabled={customerById?.data?.data?.CreditBilling === 1}
+                      disabled={customerById?.data?.data?.CreditBilling === 1 || isEnabled}
                     />
                     {errors.openingBalance && (
                       <p className="text-red-500 text-sm mt-1">
@@ -1259,7 +1274,7 @@ const Customer = ({ isPop, onSubmit }) => {
                           onChange={() => setCreditBalanceType("Dr")}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                           disabled={
-                            customerById?.data?.data?.CreditBilling === 1
+                            customerById?.data?.data?.CreditBilling === 1 || isEnabled
                           }
                         />
                         <span className="ml-2 text-gray-700">Debit (Dr)</span>
@@ -1273,7 +1288,7 @@ const Customer = ({ isPop, onSubmit }) => {
                           onChange={() => setCreditBalanceType("Cr")}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                           disabled={
-                            customerById?.data?.data?.CreditBilling === 1
+                            customerById?.data?.data?.CreditBilling === 1 || isEnabled
                           }
                         />
                         <span className="ml-2 text-gray-700">Credit (Cr)</span>
@@ -1298,7 +1313,7 @@ const Customer = ({ isPop, onSubmit }) => {
                       onChange={handleCreditDetailChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       min="0"
-                      disabled={customerById?.data?.data?.CreditBilling === 1}
+                      disabled={customerById?.data?.data?.CreditBilling === 1 || isEnabled}
                     />
                     {errors.creditLimit && (
                       <p className="text-red-500 text-sm mt-1">
@@ -1317,6 +1332,7 @@ const Customer = ({ isPop, onSubmit }) => {
                       onChange={handleCreditDetailChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       min="0"
+                      disabled={isEnabled}
                     />
                     {errors.creditDays && (
                       <p className="text-red-500 text-sm mt-1">
@@ -1336,13 +1352,14 @@ const Customer = ({ isPop, onSubmit }) => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     rows={3}
                     placeholder="Enter payment terms and conditions"
-                  />
+                    disabled={isEnabled}
+                 />
                 </div>
               </div>
             )}
           </div>
 
-          <div className="mt-8 flex justify-end">
+          {!isEnabled &&<div className="mt-8 flex justify-end">
             <Button
               onClick={handleSave}
               loadingText={
@@ -1355,7 +1372,7 @@ const Customer = ({ isPop, onSubmit }) => {
                 ? "Save Customer Information"
                 : "Update Customer Information"}
             </Button>
-          </div>
+          </div>}
         </div>
       )}
       <ApplyCreditLimit

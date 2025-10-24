@@ -157,15 +157,16 @@ const PaymentFlow = ({
         hasMultipleLocations.includes(link.CompanyID)
       )
   );
-
   const filteredBankAccounts = bankAccountDetails?.data.data.filter(
     (b) =>
       b.IsActive === 1 &&
       b.LinkedCompanies.some((link) =>
-        hasMultipleLocations.includes(String(link.CompanyID))
+        Array.isArray(hasMultipleLocations)
+          ? hasMultipleLocations.includes(String(link.CompanyID))
+          : hasMultipleLocations == link.CompanyID
       )
   );
-
+console.log("f",filteredBankAccounts)
   useEffect(() => {
     if (selectedPaymentMethod && updatedDetails.RemainingToPay > 0) {
       setNewPayment((prev) => ({
@@ -352,11 +353,11 @@ const PaymentFlow = ({
     ) {
       validationErrors.amount = "Amount cannot exceed remaining balance";
     }
-        if (Object.keys(validationErrors).length) {
-  setErrors(validationErrors);
-  toast.error("Please fill all required fields");
-  return;
-}
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors);
+      toast.error("Please fill all required fields");
+      return;
+    }
     const isDuplicatePayment = (conditionFn) => {
       return (
         fullPaymentDetails.some(conditionFn) || fullPayments.some(conditionFn)
@@ -824,7 +825,7 @@ const MethodForm = ({
 
   const uniqueAccounts = useMemo(() => {
     return Array.from(
-      new Map(accounts?.map((item) => [item.AccountNumber, item])).values()
+      new Map(accounts?.map((item) => [item.AccountNo, item])).values()
     );
   }, [accounts]);
 

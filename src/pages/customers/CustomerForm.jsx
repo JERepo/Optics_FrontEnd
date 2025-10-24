@@ -16,6 +16,7 @@ const CustomerForm = ({
   isVerifyGSTLoading,
   invoice,
   isEdit,
+  isView,
   customerData
 }) => {
   // Auto-fill country code when countryIsd is available
@@ -199,7 +200,7 @@ const CustomerForm = ({
                   onChange={handleInputChange}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                   disabled={
-                    invoice?.Status == 1 
+                    invoice?.Status == 1 || isView
                   }
                 />
                 <span className="ml-2 text-gray-700">Individual (B2C)</span>
@@ -213,7 +214,7 @@ const CustomerForm = ({
                   onChange={handleInputChange}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                   disabled={
-                    invoice?.Status === 1 
+                    invoice?.Status === 1 || isView
                   }
                 />
                 <span className="ml-2 text-gray-700">Business (B2B)</span>
@@ -234,6 +235,7 @@ const CustomerForm = ({
                 value={formData.name}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={isView}
               />
               {errors.name && (
                 <p className="text-red-500 text-sm mt-1">{errors.name}</p>
@@ -260,7 +262,7 @@ const CustomerForm = ({
                           onChange={handleInputChange}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                           disabled={
-                            invoice?.Status === 1 && customerData?.CustomerType == 1
+                            (invoice?.Status === 1 && customerData?.CustomerType == 1) || isView
                           }
                         />
                         <span className="ml-2 text-gray-700">Registered</span>
@@ -273,7 +275,7 @@ const CustomerForm = ({
                           checked={formData.GSTINType == 0}
                           onChange={handleInputChange}
                           disabled={
-                            invoice?.Status === 1 && customerData?.CustomerType == 1
+                            (invoice?.Status === 1 && customerData?.CustomerType == 1) || isView
                           }
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                         />
@@ -296,7 +298,7 @@ const CustomerForm = ({
                             value={formData.GSTNumber?.toUpperCase()}
                             onChange={handleInputChange}
                             disabled={
-                              invoice?.Status === 1 && customerData?.CustomerType == 1
+                              (invoice?.Status === 1 && customerData?.CustomerType == 1) || isView
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
@@ -306,7 +308,7 @@ const CustomerForm = ({
                               type="button"
                               className="whitespace-nowrap px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm font-medium disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                               onClick={handleVerifyGST}
-                              disabled={formData.GSTNumber?.length !== 15}
+                              disabled={formData.GSTNumber?.length !== 15 || isView}
                             >
                               {isVerifyGSTLoading
                                 ? "Getting data.."
@@ -335,7 +337,7 @@ const CustomerForm = ({
                       disabled={
                         formData.GSTNumber?.length === 15 ||
                         (invoice?.Status === 1 && 
-                              formData?.customerType == "B2B")
+                              formData?.customerType == "B2B") || isView
                       }
                     />
                     {errors.PANNumber && (
@@ -357,8 +359,8 @@ const CustomerForm = ({
                     name="legalName"
                     value={formData.legalName}
                     onChange={handleInputChange}
-                    disabled={invoice?.Status === 1 &&
-                              formData?.customerType == "B2B"}
+                    disabled={(invoice?.Status === 1 &&
+                              formData?.customerType == "B2B") || isView}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   {errors.legalName && (
@@ -381,6 +383,7 @@ const CustomerForm = ({
                       value={formData.BrandName}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={isView}
                     />
                     {errors.BrandName && (
                       <p className="text-red-500 text-sm mt-1">
@@ -399,6 +402,7 @@ const CustomerForm = ({
                       value={formData.customerUniqueId}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={isView}
                     />
                     {errors.customerUniqueId && (
                       <p className="text-red-500 text-sm mt-1">
@@ -418,6 +422,7 @@ const CustomerForm = ({
                       onChange={handleInputChange}
                       placeholder=""
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={isView}
                     />
                     {errors.whatsAppGroupId && (
                       <p className="text-red-500 text-sm mt-1">
@@ -432,6 +437,7 @@ const CustomerForm = ({
                           checked={formData.whatsappAlert}
                           onChange={handleInputChange}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          disabled={isView}
                         />
                         <span className="ml-2 text-sm text-gray-700">
                           Send whatsapp alerts
@@ -454,6 +460,7 @@ const CustomerForm = ({
               value={formData.customerGroup}
               onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isView}
             >
               <option value="">Select customer group</option>
               {customerGroups?.map((group) => (
@@ -481,6 +488,7 @@ const CustomerForm = ({
                 onChange={handleInputChange}
                 placeholder="Telephone number"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                 disabled={isView}
               />
             </div>
             {errors.telPhone && (
@@ -497,6 +505,7 @@ const CustomerForm = ({
                 name="countryCode"
                 value={formData.countryCode}
                 onChange={handleInputChange}
+               disabled={isView}
                 className="w-28 px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select code</option>
@@ -514,6 +523,7 @@ const CustomerForm = ({
                 onChange={handleInputChange}
                 placeholder="Phone number"
                 className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+               disabled={isView}
               />
             </div>
             {errors.phone && (
@@ -527,6 +537,7 @@ const CustomerForm = ({
                   checked={formData.sendPhoneAlert}
                   onChange={handleInputChange}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                 disabled={isView}
                 />
                 <span className="ml-2 text-sm text-gray-700">
                   Send phone alerts
@@ -546,6 +557,7 @@ const CustomerForm = ({
               onChange={handleInputChange}
               placeholder="customer@example.com"
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+             disabled={isView}
             />
             {errors.email && (
               <p className="text-red-500 text-sm mt-1">{errors.email}</p>
@@ -558,7 +570,8 @@ const CustomerForm = ({
                   checked={formData.sendAlert}
                   onChange={handleInputChange}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
+                disabled={isView}
+               />
                 <span className="ml-2 text-sm text-gray-700">
                   Send email alerts
                 </span>
