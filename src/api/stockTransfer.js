@@ -34,7 +34,7 @@ export const stockTransferApi = createApi({
       query: ({ mainId, locationId }) => ({
         url: `/api/v1/stock-transfer/bymainid/${mainId}?locationId=${locationId}`,
       }),
-      providesTags: ["StockTransfer"],
+      providesTags: ["StockTransfer","StockTransferIn"],
     }),
     updateStockTransferOut: builder.mutation({
       query: ({ payload }) => ({

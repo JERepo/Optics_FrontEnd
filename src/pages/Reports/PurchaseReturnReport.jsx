@@ -13,7 +13,7 @@ import toast from "react-hot-toast";
 const reportTypes = [
   { value: 0, label: "Detailed Purchase Return" },
   // { value: 1, label: "Tally Purchase Return" },
-  { value: 2, label: "Purchase Return by product Type" },
+  { value: 1, label: "Purchase Return by Product Type" },
 ];
 
 const dateOptions = [

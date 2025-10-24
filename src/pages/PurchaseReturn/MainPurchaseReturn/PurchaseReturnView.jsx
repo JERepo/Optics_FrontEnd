@@ -351,10 +351,37 @@ const PurchaseReturnView = () => {
           </div>
         </div>
         {/* Order Details */}
+        {/* PR:
+1. PR NO
+2. Vendor Name
+3. Vendor Mob no
+4. Vendor Address
+5. Vendor GST, if GST is not NULL
+6. Date
+7. Status=1 Confirmed
+8. Comments */}
+
         <div className="grid grid-cols-3 gap-3">
+          <Info
+            label="PR No"
+            value={`${PRDetails?.data.data?.DNPrefix}/${PRDetails?.data.data?.DNNo}`}
+          />
           <Info
             label="Vendor Name"
             value={PRDetails?.data.data.Vendor.VendorName}
+          />
+          <Info
+            label="Vendor Mob No"
+            value={PRDetails?.data.data.Vendor.MobNumber}
+          />
+          <Info
+            label="Address"
+            value={
+              (PRDetails?.data.data.Vendor.Address1 &&
+                PRDetails?.data.data.Vendor.Landmark) ||
+              (PRDetails?.data.data.Vendor.City &&
+                `${PRDetails?.data.data.Vendor.Address1} ${PRDetails?.data.data.Vendor.Landmark} ${PRDetails?.data.data.Vendor.City}`)
+            }
           />
 
           {PRDetails?.data.data.Vendor.TAXRegisteration === 1 && (
@@ -365,18 +392,23 @@ const PurchaseReturnView = () => {
                 label="PAN Number"
                 value={PRDetails?.data.data.Vendor.PANNumber}
               />
-
-              <Info
-                label="Address"
-                value={
-                  (PRDetails?.data.data.Vendor.Address1 &&
-                    PRDetails?.data.data.Vendor.Landmark) ||
-                  (PRDetails?.data.data.Vendor.City &&
-                    `${PRDetails?.data.data.Vendor.Address1} ${PRDetails?.data.data.Vendor.Landmark} ${PRDetails?.data.data.Vendor.City}`)
-                }
-              />
             </>
           )}
+          <Info
+            label="Date"
+            value={
+              PRDetails?.data.data.PurchaseReturnDate
+                ? format(
+                    new Date(PRDetails?.data.data.PurchaseReturnDate),
+                    "dd/MM/yyyy"
+                  )
+                : ""
+            }
+          />
+           <Info
+            label="Status"
+            value="Confirmed"
+          />
         </div>
 
         {/* Product Table */}
@@ -423,7 +455,8 @@ const PurchaseReturnView = () => {
                         item.DNQty *
                         (parseFloat(item.ProductTaxPercentage) / 100) +
                       parseFloat(item.FittingReturnPrice || 0) *
-                        (parseFloat(item.FittingTaxPercentage || 0) / 100) + parseFloat(item.FittingReturnPrice)
+                        (parseFloat(item.FittingTaxPercentage || 0) / 100) +
+                      parseFloat(item.FittingReturnPrice)
                   )}
                 </TableCell>
               </TableRow>

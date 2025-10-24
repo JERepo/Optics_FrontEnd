@@ -254,6 +254,14 @@ const StockTransferView = () => {
     if (id === 0) return "OL";
     return "";
   };
+  const statusMap = {
+    0: "Draft",
+    1: "Stock Transfer Out Req Created",
+    2: "Cancelled",
+    3: "Partial Stock In",
+    4: "Stock Transfer In Complete",
+  };
+
   const getEInvoiceData = async () => {
     const eInvoicePayload = {
       recordId: parseInt(stockOut) ?? null,
@@ -289,7 +297,7 @@ const StockTransferView = () => {
       const url = window.URL.createObjectURL(
         new Blob([blob], { type: "application/pdf" })
       );
-       const link = document.createElement("a");
+      const link = document.createElement("a");
       link.href = url;
       link.download = `StockOut_${stockDetails?.data?.result?.STOutNo} (${stockDetails?.data?.result?.STOutPrefix}/${stockDetails?.data?.result?.STOutNo}).pdf`;
       document.body.appendChild(link);
@@ -366,22 +374,40 @@ const StockTransferView = () => {
             {stockDetails?.data?.result.details?.some(
               (item) => item.FrameDetailId || item.AccessoryDetailId
             ) && (
-              <Button onClick={handleLabels} isLoading={isLabelsFetching} >
+              <Button onClick={handleLabels} isLoading={isLabelsFetching}>
                 Print Labels
               </Button>
             )}
           </div>
         </div>
-        {/* Order Details */}
+
         <div className="grid grid-cols-3 gap-3">
           <Info
-            label="From Location Name"
-            value={stockDetails?.data?.result?.FromCompany?.LocationName}
+            label="Stock Out No"
+            value={`${stockDetails?.data?.result?.STOutPrefix}/${stockDetails?.data?.result?.STOutNo}`}
           />
           <Info
-            label="To Location Name"
-            value={stockDetails?.data?.result?.ToCompany?.LocationName}
+            label="From Company"
+            value={`${
+              stockDetails?.data?.result?.FromCompany?.CompanyName || ""
+            }, ${
+              stockDetails?.data?.result?.FromCompany?.BillingAddress1 || ""
+            }, ${stockDetails?.data?.result?.FromCompany?.BillingCity || ""}-${
+              stockDetails?.data?.result?.FromCompany?.BillingStateCode || ""
+            }`}
           />
+
+          <Info
+            label="To Company"
+            value={`${
+              stockDetails?.data?.result?.ToCompany?.CompanyName || ""
+            }, ${
+              stockDetails?.data?.result?.ToCompany?.BillingAddress1 || ""
+            }, ${stockDetails?.data?.result?.ToCompany?.BillingCity || ""}-${
+              stockDetails?.data?.result?.ToCompany?.BillingStateCode || ""
+            }`}
+          />
+
           <Info
             label="Date"
             value={
@@ -394,8 +420,13 @@ const StockTransferView = () => {
             }
           />
           <Info
-            label="Stock Out No"
-            value={`${stockDetails?.data?.result?.STOutPrefix}/${stockDetails?.data?.result?.STOutNo}`}
+            label="Status"
+            value={statusMap[stockDetails?.data?.result?.Status] || "Unknown"}
+          />
+
+          <Info
+            label="Comments"
+            value={stockDetails?.data?.result?.Comment || ""}
           />
         </div>
 
@@ -410,7 +441,7 @@ const StockTransferView = () => {
               "transfer price",
               "gst",
               "stock out qty",
-             
+
               "total amount",
             ]}
             data={stockDetails?.data?.result.details || []}

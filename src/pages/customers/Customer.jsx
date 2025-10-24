@@ -910,7 +910,7 @@ const Customer = ({ isPop, onSubmit }) => {
     <div className="max-w-6xl p-6 bg-white rounded-lg shadow-md">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">
-          {isCreate ? "Create Customer" : "Update Customer"}
+          {isCreate ? "Create Customer" : isEnabled ? "View Customer" :"Update Customer"}
         </h2>
         {!isPop && (
           <Button className="" variant="outline" onClick={() => navigate(-1)}>

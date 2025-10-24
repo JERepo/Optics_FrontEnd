@@ -540,6 +540,10 @@ const InvoiceView = () => {
             label="Patient Mobile No"
             value={invoiceDetails?.Patient?.MobNumber}
           />
+            <Info
+            label="Comment"
+            value={invoiceDetails?.Comment}
+          />
         </div>
 
         {/* Product Table */}

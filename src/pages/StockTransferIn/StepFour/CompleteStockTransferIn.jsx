@@ -284,7 +284,6 @@ const CompleteStockTransferIn = () => {
       };
 
       await updateStockTI({ payload }).unwrap();
-      console.log(payload);
       toast.success("Stock TransferIn successfully updated");
       navigate("/stock-transferin");
       updateCurrentSTINStep(1);

@@ -413,7 +413,6 @@ const OrderView = () => {
     }
   };
   const handleGenerateInvoice = async (order) => {
-    console.log("order",order)
     setSelectedOrder(order);
     const discountedSellingPrice =
       parseFloat(order?.DiscountedSellingPrice) || 0;
@@ -676,6 +675,10 @@ const OrderView = () => {
           <Info
             label="Order Reference"
             value={customerDataById?.data.data?.OrderReference || "N/A"}
+          />
+           <Info
+            label="Comment"
+            value={customerDataById?.data.data?.Comment || "N/A"}
           />
         </div>
 
