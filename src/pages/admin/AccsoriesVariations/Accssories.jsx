@@ -222,10 +222,10 @@ const Accssories = () => {
         onConfirm={handleConfirmToggle}
         title={`Are you sure you want to ${
           currentStatus ? "deactivate" : "activate"
-        } this pool?`}
+        } this Accessory?`}
         message={`This will ${
           currentStatus ? "deactivate" : "activate"
-        } the pool. You can change it again later.`}
+        } the Accessory. You can change it again later.`}
         confirmText={currentStatus ? "Deactivate" : "Activate"}
         danger={currentStatus}
         isLoading={isDeActivating}

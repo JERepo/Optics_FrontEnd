@@ -198,10 +198,10 @@ const BankAccountDetails = () => {
         onConfirm={handleConfirmToggle}
         title={`Are you sure you want to ${
           currentStatus ? "deactivate" : "activate"
-        } this pool?`}
+        } this Bank Account Details?`}
         message={`This will ${
           currentStatus ? "deactivate" : "activate"
-        } the pool. You can change it again later.`}
+        } the Bank Account Details. You can change it again later.`}
         confirmText={currentStatus ? "Deactivate" : "Activate"}
         danger={currentStatus}
         isLoading={isDeActivating}

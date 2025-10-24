@@ -224,10 +224,10 @@ const BrandCategory = () => {
         onConfirm={handleConfirmToggle}
         title={`Are you sure you want to ${
           currentStatus ? "deactivate" : "activate"
-        } this pool?`}
+        } this Brand Category?`}
         message={`This will ${
           currentStatus ? "deactivate" : "activate"
-        } the pool. You can change it again later.`}
+        } the Brand Category. You can change it again later.`}
         confirmText={currentStatus ? "Deactivate" : "Activate"}
         danger={currentStatus}
         isLoading={isDeActivating}

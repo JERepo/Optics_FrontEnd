@@ -162,7 +162,7 @@ const PaymentFlow = ({
     (b) =>
       b.IsActive === 1 &&
       b.LinkedCompanies.some((link) =>
-        hasMultipleLocations.includes(link.CompanyID)
+        hasMultipleLocations.includes(String(link.CompanyID))
       )
   );
 

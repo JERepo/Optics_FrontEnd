@@ -200,10 +200,10 @@ const ShapeMaster = () => {
         onConfirm={handleConfirmToggle}
         title={`Are you sure you want to ${
           currentStatus ? "deactivate" : "activate"
-        } this pool?`}
+        } this Shape Master?`}
         message={`This will ${
           currentStatus ? "deactivate" : "activate"
-        } the pool. You can change it again later.`}
+        } the Shape Master. You can change it again later.`}
         confirmText={currentStatus ? "Deactivate" : "Activate"}
         danger={currentStatus}
         isLoading={isDeActivating}

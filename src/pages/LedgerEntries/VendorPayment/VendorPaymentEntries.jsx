@@ -276,7 +276,7 @@ const VendorPaymentEntries = ({
         payload: finalStructure,
       }).unwrap();
       toast.success("Payments created Successfully");
-      navigate("/customer-payment");
+      navigate("/vendor-payment");
     } catch (error) {
       console.log("error");
       toast.error("Please try again!");

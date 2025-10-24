@@ -310,7 +310,7 @@ const CompleteStockTransfer = () => {
 
       const basicValue = unitPrice * qty;
       const gst = unitPrice * qty * gstRate + fittingTotal;
-      const returnTotal = basicValue + gst +fittingPrice +fittingTotal;
+      const returnTotal = basicValue + gst +fittingPrice;
 
       acc.totalQty += qty;
       acc.totalGST += gst;
@@ -431,7 +431,7 @@ const CompleteStockTransfer = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    parseFloat(item.DNPrice) * item.DNQty + parseFloat(item.FittingReturnPrice)+
+                    parseFloat(item.DNPrice) * item.DNQty + parseFloat(item?.FittingReturnPrice || 0)+
                       parseFloat(item.DNPrice) *
                         item.DNQty *
                         (parseFloat(item.ProductTaxPercentage) / 100) +

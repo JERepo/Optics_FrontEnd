@@ -225,7 +225,7 @@ const VendorCollectAdvace = ({
     try {
       await saveFinalPayment({ payload: finalStructure }).unwrap();
       toast.success("Advance taken Successfully");
-      navigate("/customer-payment");
+      navigate("/vendor-payment");
     } catch (error) {
       toast.error("Please try again!");
     }

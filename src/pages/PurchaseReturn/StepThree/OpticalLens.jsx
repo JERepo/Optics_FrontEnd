@@ -454,7 +454,6 @@ const OpticalLens = () => {
       console.warn("No details to save");
       return;
     }
-    console.log("items", items);
     try {
       const payload = {
         products: items.map((item) => {
@@ -476,7 +475,6 @@ const OpticalLens = () => {
           };
         }),
       };
-      console.log(payload);
       await savePR({ payload }).unwrap();
       toast.success("Optical lens Purchase return successfully added!");
       goToPurchaseStep(4);
