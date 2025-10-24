@@ -16,10 +16,22 @@ export const searchStock = createApi({
         url: `/api/v1/other-products/get/stocks${queryString}`,
       }),
     }),
+    getCLStock: builder.query({
+      query: (queryString) => ({
+        url: `/api/v1/contact-lens/get/stocksamebarcode${queryString}`,
+      }),
+    }),
+    getAllCLStock: builder.query({
+      query: (queryString) => ({
+        url: `/api/v1/contact-lens/get/clstock${queryString}`,
+      }),
+    }),
   }),
 });
 
-export const { 
+export const {
   useGetFrameStockQuery,
-  useLazyGetAccessoryStockQuery
+  useLazyGetAccessoryStockQuery,
+  useLazyGetCLStockQuery,
+  useLazyGetAllCLStockQuery
 } = searchStock;
