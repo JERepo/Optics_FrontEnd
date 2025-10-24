@@ -118,6 +118,7 @@ import VendorPayment from "../pages/LedgerEntries/VendorPayment/VendorPayment";
 import StockAgeingReport from "../pages/Reports/StockAgeingReport";
 import VendorPaymentList from "../pages/LedgerEntries/VendorPayment/VendorPaymentList";
 import UserProfile from "../pages/Profile/UserProfile";
+import SearchContactLens from "../pages/SearchStock/SearchCLStock";
 import VendorPaymentView from "../pages/LedgerEntries/VendorPayment/VendorPaymentView";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
@@ -942,7 +943,7 @@ export const router = createBrowserRouter([
         path: "offer",
         element: <OfferMainPage />,
       },
-       {
+      {
         path: "offer/view",
         element: <OfferViewPage />,
       },
@@ -975,8 +976,8 @@ export const router = createBrowserRouter([
         element: <VendorPaymentList />,
       },
       {
-        path : "vendor-payment/create",
-        element : <VendorPayment />
+        path: "vendor-payment/create",
+        element: <VendorPayment />
       },
        {
         path : "vendor-payment/view",
@@ -1022,7 +1023,7 @@ export const router = createBrowserRouter([
         path: "stout-report",
         element: <STOUTReport />,
       },
-       {
+      {
         path: "stock-ageing-report",
         element: <StockAgeingReport />,
       },
@@ -1055,8 +1056,12 @@ export const router = createBrowserRouter([
         element: <WhatsappTemplates />,
       },
       {
-        path : "profile",
-        element : <UserProfile />
+        path: "profile",
+        element: <UserProfile />
+      },
+      {
+        path: "search-stock/contact-lens",
+        element: <SearchContactLens />
       }
     ],
   },
