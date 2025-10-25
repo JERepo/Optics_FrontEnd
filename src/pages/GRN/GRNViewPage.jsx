@@ -50,38 +50,83 @@ export function GRNViewPage() {
     const [grnViewDetails, setGrnViewDetails] = useState([]);
 
 
+    // useEffect(() => {
+    //     const fetchGRNDetails = async () => {
+    //         const payload = {
+    //             companyId: grnData?.CompanyID,
+    //             grnMain: grnData?.id,
+    //             // againstPo: String(grnData?.AgainstPO),
+    //             // applicationUserId: grnData?.applicationUser,
+    //             status: 1,
+    //             view: true
+    //         }
+
+    //         try {
+
+    //             console.log("fetchGRNDetails payload -------------- ", payload);
+    //             const response = await getGRNDetails(payload);
+
+    //             if (response?.data) {
+    //                 console.log("getAllGRNDetails response -------------- ", response?.data);
+
+    //                 setGrnViewDetails(response?.data?.data || []);
+    //                 // updateStep1Data({
+    //                 //     GrnMainId: response?.data?.data[0]?.GRNMainId || null,
+    //                 // });
+    //             }
+    //         } catch (error) {
+    //             console.error("Error fetching GRN details:", error);
+    //             toast.error("Failed to fetch GRN details. Please try again.");
+    //         }
+    //     }
+
+    //     fetchGRNDetails();
+    // }, [grnData]);
+
+
     useEffect(() => {
+        // Add a flag to prevent double execution
+        let isMounted = true;
+
         const fetchGRNDetails = async () => {
+            // Validate required fields before making API call
+            if (!grnData?.CompanyID || !grnData?.id) {
+                console.error("Missing required grnData fields:", grnData);
+                toast.error("Invalid GRN data");
+                return;
+            }
+
             const payload = {
-                companyId: grnData?.CompanyID,
-                grnMain: grnData?.id,
-                // againstPo: String(grnData?.AgainstPO),
-                // applicationUserId: grnData?.applicationUser,
+                companyId: grnData.CompanyID,
+                grnMain: grnData.id,
                 status: 1,
                 view: true
             }
 
             try {
-
                 console.log("fetchGRNDetails payload -------------- ", payload);
                 const response = await getGRNDetails(payload);
 
+                if (!isMounted) return; // Check before updating state
+
                 if (response?.data) {
                     console.log("getAllGRNDetails response -------------- ", response?.data);
-
                     setGrnViewDetails(response?.data?.data || []);
-                    // updateStep1Data({
-                    //     GrnMainId: response?.data?.data[0]?.GRNMainId || null,
-                    // });
                 }
             } catch (error) {
+                if (!isMounted) return; // Check before showing error
                 console.error("Error fetching GRN details:", error);
                 toast.error("Failed to fetch GRN details. Please try again.");
             }
         }
 
         fetchGRNDetails();
-    }, [grnData]);
+
+        // Cleanup function to prevent state updates after unmount
+        return () => {
+            isMounted = false;
+        };
+    }, []); // Empty dependency array - runs only once on mount
 
     console.log("poreviewDetails --------------------- ", poreviewDetails);
 

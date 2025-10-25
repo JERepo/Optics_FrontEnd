@@ -14,10 +14,11 @@ export const vendorApi = createApi({
       }),
       providesTags: ["Vendor"],
     }),
-    getAllvendorByLocation : builder.query({
-      query : ({id}) => ({
-        url : `/api/v1/vendor/all-vendors/${id}`
-      })
+    getAllvendorByLocation: builder.query({
+      query: ({ id }) => ({
+        url: `/api/v1/vendor/all-vendors/${id}`
+      }),
+      providesTags: ["Vendor"],
     }),
     deActivate: builder.mutation({
       query: ({ id, appId, payload }) => ({

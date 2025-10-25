@@ -4,10 +4,13 @@ import { useGRNDC } from "../../features/GRNDcContext";
 import GRNDCStep1 from "./Step1";
 import GRNDCStep2 from "./Step2";
 import GRNDCStep3 from "./Step3";
+import { useNavigate } from "react-router";
 
 export default function GRNDcMain() {
     // Context
     const { grnData, currentStep, updateStep1Data, nextStep, prevStep, resetGRN } = useGRNDC();
+    const navigate = useNavigate();
+
 
     const renderCurrentStep = () => {
         switch (currentStep) {
@@ -43,7 +46,9 @@ export default function GRNDcMain() {
                         className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 p-4"
                     >
                         <div className="">
-                            <button className="text-[#000060] hover:text-[#0000a0] transition-colors flex items-center mb-3">
+                            <button className="text-[#000060] hover:text-[#0000a0] transition-colors flex items-center mb-3"
+                                onClick={navigate(`/grn-dc`)}
+                            >
                                 <ArrowLeft className="w-5 h-5 mr-2" />
                                 Back to dashboard
                             </button>

@@ -33,7 +33,7 @@ export const purchaseReturnApi = createApi({
     }),
     getPurchaseDetails: builder.query({
       query: ({ mainId, locationId }) => ({
-        url: `/api/v1/purchase-Return/getPrdetails/${mainId}?locationId=${locationId}`,
+        url: `/api/v1/purchase-Return/getPrdetails/${mainId}?locationId=${locationId}&view=${true}`,
       }),
       providesTags: ["PurchaseReturn"],
     }),

@@ -46,48 +46,137 @@ export function POViewPage() {
   const [printingId, setPrintingId] = useState(null);
   const [generatePrint, { isFetching: isPrinting }] = useLazyPrintPdfQuery();
 
+  // useEffect(() => {
+  //   const fetchOrderDetails = async () => {
+  //     try {
+  //       // Skip if poData.id is not available
+  //       if (
+  //         !poData.id ||
+  //         !poData.createdCompanyID ||
+  //         !poData.applicationUser ||
+  //         !poData.vendor?.Id
+  //       ) {
+  //         console.error("Missing required poData fields:", poData);
+  //         toast.error("Invalid purchase order data");
+  //         return;
+  //       }
+
+  //       const payload = {
+  //         locationId: poData.createdCompanyID,
+  //         ApplicationUserId: poData.applicationUser,
+  //         vendorId: poData.vendor.Id,
+  //         againstOrder: String(poData.againstOrder),
+  //         status: poData.status === "Approved" ? 2 : 1,
+  //         poMainId: poData.id,
+  //         poMain: poData.id,
+  //       };
+
+  //       // Fetch PO details
+  //       let poDetailsResponse;
+  //       if (poData.againstOrder === 1) {
+  //         poDetailsResponse = await getAllPoDetails(payload);
+  //         console.log("poDetailsResponse-----", poDetailsResponse);
+  //         setPoreviewDetails(poDetailsResponse.data || []);
+  //         setPoMainStatus(poDetailsResponse?.data[0]?.Status || null);
+  //       } else if (poData.againstOrder === 0) {
+  //         poDetailsResponse = await getAllPoDetailsForNewOrder(payload);
+  //         console.log("poDetailsResponse-----", poDetailsResponse);
+  //         setPoreviewDetails(poDetailsResponse.data?.data || []);
+  //         setPoMainStatus(poDetailsResponse.data?.data[0]?.Status || null);
+  //       }
+
+  //       // Fetch PurchaseOrderMain data for calculation summary
+  //       const poMainRes = await fetchPoMain({ poMainId: poData.id, view: true }).unwrap();
+  //       console.log("poMainRes (initial load)", poMainRes);
+  //       if (
+  //         poMainRes.status === "success" &&
+  //         poMainRes.data &&
+  //         poMainRes.data[0]
+  //       ) {
+  //         const mainData = poMainRes.data[0];
+  //         setPoData((prev) => ({
+  //           ...prev,
+  //           vendor: prev.vendor || {}, // Preserve vendor object
+  //           totalQty: mainData.TotalQty || 0,
+  //           totalGrossValue: mainData.TotalBasicValue || 0,
+  //           totalGSTValue: mainData.TotalGSTValue || 0,
+  //           totalValue: mainData.TotalValue || 0,
+  //         }));
+  //       } else {
+  //         console.error("Invalid poMainRes structure:", poMainRes);
+  //         toast.error("Failed to fetch purchase order summary");
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching PO details:", error);
+  //       toast.error("Error loading purchase order data");
+  //     }
+  //   };
+
+  //   fetchOrderDetails();
+  // }, [
+  //   poData.id,
+  //   poData.createdCompanyID,
+  //   poData.applicationUser,
+  //   poData.vendor?.Id,
+  //   poData.againstOrder,
+  //   poData.poMain,
+  //   poData.poMainId
+  // ]);
+
   useEffect(() => {
+    // Add a flag to prevent double execution
+    let isMounted = true;
+
     const fetchOrderDetails = async () => {
       try {
         // Skip if poData.id is not available
         if (
-          !poData.id ||
-          !poData.createdCompanyID ||
-          !poData.applicationUser ||
-          !poData.vendor?.Id
+          !initialPoData?.id ||
+          !initialPoData?.createdCompanyID ||
+          !initialPoData?.applicationUser ||
+          !initialPoData?.vendor?.Id
         ) {
-          console.error("Missing required poData fields:", poData);
+          console.error("Missing required poData fields:", initialPoData);
           toast.error("Invalid purchase order data");
           return;
         }
 
         const payload = {
-          locationId: poData.createdCompanyID,
-          ApplicationUserId: poData.applicationUser,
-          vendorId: poData.vendor.Id,
-          againstOrder: String(poData.againstOrder),
-          status: poData.status === "Approved" ? 2 : 1,
-          poMainId: poData.id,
-          poMain: poData.id,
+          locationId: initialPoData.createdCompanyID,
+          ApplicationUserId: initialPoData.applicationUser,
+          vendorId: initialPoData.vendor.Id,
+          againstOrder: String(initialPoData.againstOrder),
+          status: initialPoData.status === "Approved" ? 2 : 1,
+          poMainId: initialPoData.id,
+          poMain: initialPoData.id,
         };
 
         // Fetch PO details
         let poDetailsResponse;
-        if (poData.againstOrder === 1) {
+        if (initialPoData.againstOrder === 1) {
           poDetailsResponse = await getAllPoDetails(payload);
           console.log("poDetailsResponse-----", poDetailsResponse);
+          if (!isMounted) return; // Check before updating state
           setPoreviewDetails(poDetailsResponse.data || []);
           setPoMainStatus(poDetailsResponse?.data[0]?.Status || null);
-        } else if (poData.againstOrder === 0) {
+        } else if (initialPoData.againstOrder === 0) {
           poDetailsResponse = await getAllPoDetailsForNewOrder(payload);
           console.log("poDetailsResponse-----", poDetailsResponse);
+          if (!isMounted) return; // Check before updating state
           setPoreviewDetails(poDetailsResponse.data?.data || []);
           setPoMainStatus(poDetailsResponse.data?.data[0]?.Status || null);
         }
 
         // Fetch PurchaseOrderMain data for calculation summary
-        const poMainRes = await fetchPoMain({ poMainId: poData.id, view: true }).unwrap();
+        const poMainRes = await fetchPoMain({
+          poMainId: initialPoData.id,
+          view: true
+        }).unwrap();
+
         console.log("poMainRes (initial load)", poMainRes);
+
+        if (!isMounted) return; // Check before updating state
+
         if (
           poMainRes.status === "success" &&
           poMainRes.data &&
@@ -107,21 +196,19 @@ export function POViewPage() {
           toast.error("Failed to fetch purchase order summary");
         }
       } catch (error) {
+        if (!isMounted) return;
         console.error("Error fetching PO details:", error);
         toast.error("Error loading purchase order data");
       }
     };
 
     fetchOrderDetails();
-  }, [
-    poData.id,
-    poData.createdCompanyID,
-    poData.applicationUser,
-    poData.vendor?.Id,
-    poData.againstOrder,
-    poData.poMain,
-    poData.poMainId
-  ]);
+
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Empty dependency array - runs only once on mount
 
   const approvePo = async () => {
     try {
