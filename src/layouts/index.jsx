@@ -119,6 +119,7 @@ import StockAgeingReport from "../pages/Reports/StockAgeingReport";
 import VendorPaymentList from "../pages/LedgerEntries/VendorPayment/VendorPaymentList";
 import UserProfile from "../pages/Profile/UserProfile";
 import SearchContactLens from "../pages/SearchStock/SearchCLStock";
+import VendorPaymentView from "../pages/LedgerEntries/VendorPayment/VendorPaymentView";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -977,6 +978,10 @@ export const router = createBrowserRouter([
       {
         path: "vendor-payment/create",
         element: <VendorPayment />
+      },
+       {
+        path : "vendor-payment/view",
+        element : <VendorPaymentView />
       },
       {
         path: "order-report",

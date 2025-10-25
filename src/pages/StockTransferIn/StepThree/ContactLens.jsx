@@ -385,10 +385,10 @@ const ContactLens = () => {
             return;
           }
         } else if (data.CLBatchCode === 0) {
-          if (data.stock[0]?.quantity <= 0) {
-            toast.error("Stock quantity must be greater than 0!");
-            return;
-          }
+          // if (data.stock[0]?.quantity <= 0) {
+          //   toast.error("Stock quantity must be greater than 0!");
+          //   return;
+          // }
           const STOProduct = stockOutData?.data?.details?.find(
             (item) => item.ContactLensDetailId === data.CLDetailId
           );

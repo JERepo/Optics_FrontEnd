@@ -676,10 +676,7 @@ const OrderView = () => {
             label="Order Reference"
             value={customerDataById?.data.data?.OrderReference || "N/A"}
           />
-           <Info
-            label="Comment"
-            value={customerDataById?.data.data?.Comment || "N/A"}
-          />
+          
         </div>
 
         {/* Product Table */}
@@ -812,6 +809,11 @@ const OrderView = () => {
         {/* Summary Section */}
         {orderDetails && (
           <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200">
+            <div className="flex justify-between">
+             <Info
+            label="Comment"
+            value={customerDataById?.data.data?.Comment || "N/A"}
+          />
             <div className="flex gap-30 justify-end">
               <div className="flex flex-col">
                 <span className="text-neutral-700 font-semibold text-lg">
@@ -891,6 +893,7 @@ const OrderView = () => {
                   </div>
                 )}
               </div>
+            </div>
             </div>
           </div>
         )}

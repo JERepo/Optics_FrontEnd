@@ -29,11 +29,11 @@ export const customerRefundApi = createApi({
       }),
     }),
 
-    getCRById :builder.query({
-      query : (id) => ({
-        url : `/api/v1/customer-refund/getCRById/${id}`
-      })
-    })
+    getCRById: builder.query({
+      query: (id) => ({
+        url: `/api/v1/customer-refund/getCRById/${id}`,
+      }),
+    }),
   }),
 });
 
@@ -42,5 +42,5 @@ export const {
   useCreateCustomerRefundMutation,
   useGetAdvanceDataForInvoiceQuery,
   useGetAllCRQuery,
-  useGetCRByIdQuery
+  useGetCRByIdQuery,
 } = customerRefundApi;

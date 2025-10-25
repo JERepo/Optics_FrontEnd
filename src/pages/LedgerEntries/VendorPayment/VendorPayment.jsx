@@ -211,6 +211,7 @@ const VendorPayment = () => {
   const handleCollectAdvance = (e) => {
     setCollectPayment(e.target.checked);
     setItems([]);
+    setAgainstPO(false)
   };
   const totalReceivable = items.reduce((sum, item) => {
     if (selectedProducts.includes(item.Id)) {
@@ -281,16 +282,18 @@ const VendorPayment = () => {
                 onChange={handleCollectAdvance}
                 label="Collect Advance"
               />
-              <div className="text-lg text-neutral-900">
-                <Checkbox
-                  checked={againstPO}
-                  onChange={(e) => {
-                    setAgainstPO(e.target.checked);
-                    setItems([]);
-                  }}
-                  label="Collect Against PO"
-                />
-              </div>
+              {collectPayment && (
+                <div className="text-lg text-neutral-900">
+                  <Checkbox
+                    checked={againstPO}
+                    onChange={(e) => {
+                      setAgainstPO(e.target.checked);
+                      setItems([]);
+                    }}
+                    label="Collect Against PO"
+                  />
+                </div>
+              )}
             </div>
 
             {!againstPO && (

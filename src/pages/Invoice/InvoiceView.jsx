@@ -299,7 +299,7 @@ const InvoiceView = () => {
     const fittingGst = parseFloat(item.FittingGSTPercentage || 0);
     const FittingAmt = fittingPrice * (fittingGst / 100);
     return (
-      sum + 
+      sum +
       FittingAmt +
       (invoicePrice * qty +
         (item.ProductType == 0 ? parseFloat(fittingPrice) : 0))
@@ -425,7 +425,7 @@ const InvoiceView = () => {
     }
     try {
       const res = await cancelInvoice({ payload }).unwrap();
-      console.log("res",res)
+      console.log("res", res);
       if (res?.otpRequired) {
         setIsCancelOpen(false);
         setOtpValue(null);
@@ -540,10 +540,6 @@ const InvoiceView = () => {
             label="Patient Mobile No"
             value={invoiceDetails?.Patient?.MobNumber}
           />
-            <Info
-            label="Comment"
-            value={invoiceDetails?.Comment}
-          />
         </div>
 
         {/* Product Table */}
@@ -604,7 +600,9 @@ const InvoiceView = () => {
 
         {/* Summary Section */}
         {invoiceDetails && (
-          <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200 flex justify-end">
+          <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200  ">
+            <div className="flex justify-between">
+            <Info label="Comment" value={invoiceDetails?.Comment} />
             <div className="grid md:grid-cols-4 gap-5">
               <div className="flex flex-col">
                 <span className="text-neutral-700 font-semibold text-lg">
@@ -622,7 +620,7 @@ const InvoiceView = () => {
                   ₹{formatINR(gstAmount) || "0"}
                 </span>
               </div>
-               <div className="flex flex-col">
+              <div className="flex flex-col">
                 <span className="text-neutral-700 font-semibold text-lg">
                   Round Off
                 </span>
@@ -635,9 +633,13 @@ const InvoiceView = () => {
                   Total Amount
                 </span>
                 <span className="text-neutral-600 text-xl font-medium">
-                  ₹{formatINR(grandTotal + parseFloat(invoiceDetails?.RoundOff || 0)) || "0"}
+                  ₹
+                  {formatINR(
+                    grandTotal + parseFloat(invoiceDetails?.RoundOff || 0)
+                  ) || "0"}
                 </span>
               </div>
+            </div>
             </div>
           </div>
         )}
@@ -694,7 +696,6 @@ const InvoiceView = () => {
             </div>
           )}
         <Modal isOpen={showOtp} onClose={() => setShowOtp(false)}>
-          
           <OTPScreen
             length={6}
             onComplete={handleOtpComplete}

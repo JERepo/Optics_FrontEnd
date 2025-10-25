@@ -35,9 +35,10 @@ export const cusomerPaymentApi = createApi({
     }),
     getPaymentsById:builder.query({
       query :(id) => ({
-        url : `/api/v1/customer-payment/getCPDetailById/${id}`
+        url : `/api/v1/customer-payment/payment-details/${id}`
       })
-    })
+    }),
+
   }),
 });
 
