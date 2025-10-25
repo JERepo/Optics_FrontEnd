@@ -6,7 +6,7 @@ import { enGB } from "date-fns/locale";
 import React, { useState } from "react";
 import { format, subDays, subMonths, startOfDay, endOfDay } from "date-fns";
 import Button from "../../components/ui/Button";
-import { useLazyGetPurchaseReturnReportQuery, useLazyGetSalesReturnReportQuery } from "../../api/reportApi";
+import { useLazyGetPurchaseReturnReportQuery } from "../../api/reportApi";
 import { useSelector } from "react-redux";
 import toast from "react-hot-toast";
 

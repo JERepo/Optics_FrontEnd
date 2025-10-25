@@ -25,7 +25,7 @@ import Input from "../../../components/Form/Input";
 import { toast } from "react-hot-toast";
 import Radio from "../../../components/Form/Radio";
 
-import { useLazyGetBatchDetailsQuery } from "../../../api/InvoiceApi";
+import { useLazyGetBatchDetailsForStinQuery, useLazyGetBatchDetailsQuery } from "../../../api/InvoiceApi";
 import { useSelector } from "react-redux";
 import { useGetBatchBarCodeMutation } from "../../../api/salesReturnApi";
 import { formatINR } from "../../../utils/formatINR";
@@ -226,7 +226,9 @@ const ContactLens = () => {
     { skip: !lensData.productId }
   );
 
-  const [getCLBatches, { data: CLBatches }] = useLazyGetBatchDetailsQuery();
+  // const [getCLBatches, { data: CLBatches }] = useLazyGetBatchDetailsQuery();
+    const [getCLBatches, { data: CLBatches }] = useLazyGetBatchDetailsForStinQuery();
+
   const [getPowerDetails, { isLoading: isPowerDetailsLoading }] =
     useGetPowerDetailsMutation();
 
@@ -287,7 +289,6 @@ const ContactLens = () => {
       powerData: null,
     });
     setSelectedBatchCode(null);
-    setProductSearch(1);
     setDetailId(false);
     setProductCodeInput("");
   };
@@ -374,9 +375,13 @@ const ContactLens = () => {
         setSearchFetched(true);
         if (data.CLBatchCode === 1) {
           try {
+            // await getCLBatches({
+            //   clBatchId: data.CLDetailId,
+            //   locationId: parseInt(hasMultipleLocations[0]),
+            // }).unwrap();
             await getCLBatches({
-              clBatchId: data.CLDetailId,
-              locationId: parseInt(hasMultipleLocations[0]),
+              mainId: parseInt(stockOutData?.data?.STOutMainId),
+              CLDetailId: data.CLDetailId,
             }).unwrap();
             setDetailId(true);
             setOpenBatch(true);
@@ -676,9 +681,13 @@ const ContactLens = () => {
         }
         setProductCodeInput("");
       } else if (response?.data.data.CLBatchCode === 1) {
+        // const batchCodeData = await getCLBatches({
+        //   clBatchId: response?.data.data.CLDetailId,
+        //   locationId: parseInt(hasMultipleLocations[0]),
+        // }).unwrap();
         const batchCodeData = await getCLBatches({
-          clBatchId: response?.data.data.CLDetailId,
-          locationId: parseInt(hasMultipleLocations[0]),
+          mainId: parseInt(stockOutData?.data?.STOutMainId),
+          CLDetailId: response?.data.data.CLDetailId,
         }).unwrap();
         if (batchCodeData) {
           setDetailId(true);
@@ -879,7 +888,11 @@ const ContactLens = () => {
       toast.success("Contact Lens stock transferin successfully added");
       goToStockTransferInStep(4);
     } catch (error) {
-      toast.error(error?.data.error.message || error?.data?.error || "Please try again after some time!");
+      toast.error(
+        error?.data.error.message ||
+          error?.data?.error ||
+          "Please try again after some time!"
+      );
     }
   };
 
@@ -1118,6 +1131,7 @@ const ContactLens = () => {
               label="Enter Product Barcode"
               value="1"
               onChange={() => {
+                handleRefresh();
                 setProductSearch(1);
               }}
               checked={productSearch === 1}
@@ -1125,10 +1139,11 @@ const ContactLens = () => {
             <Radio
               name="productSearch"
               label="Search Product"
+              value="0"
               onChange={() => {
+                handleRefresh();
                 setProductSearch(0);
               }}
-              value="0"
               checked={productSearch === 0}
             />
           </div>

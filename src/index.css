@@ -33,7 +33,9 @@ a {
 .MuiInputBase-input {
   color: #000 !important;  /* force black text */
 }
-
+.animate-pulse-slow {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
 /* Placeholder text color */
 .MuiInputBase-input::placeholder {
   color: #666 !important;  /* make placeholder readable */

@@ -662,7 +662,7 @@ const VendorPaymentEntries = ({
                     onClick={handleSave}
                     className="flex items-center gap-2"
                   >
-                    Complete Customer Payment
+                    Complete Vendor Payment
                   </Button>
                 </div>
               )}

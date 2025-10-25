@@ -18,6 +18,7 @@ export const Table = ({
   freeze = false,
   expand = false,
   name,
+  isLoading = false,
 }) => {
   const expandingColumns = [
     "Product Details",
@@ -29,8 +30,8 @@ export const Table = ({
     // "s.no",
     "brand group",
     "brand name",
-    "cat",
-    "type",
+    // "cat",
+    // "type",
     "model no",
     "colour code",
     "size-dbl-length",
@@ -72,16 +73,26 @@ export const Table = ({
             </tr>
           </thead>
 
-          <tbody className="bg-white divide-y divide-neutral-200">
-            {data?.length > 0 ? (
+          <tbody className="bg-white divide-y divide-gray-200">
+            {isLoading ? (
+              Array.from({ length: pageSize }, (_, i) => (
+                <tr key={`skeleton-${i}`} className="animate-pulse">
+                  {columns.map((_, colIndex) => (
+                    <td key={colIndex} className="px-4 py-3">
+                      <div className="h-3 bg-gray-200 rounded-full"></div>
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : data?.length > 0 ? (
               data.map((item, rowIndex) => renderRow(item, rowIndex))
             ) : (
               <tr>
                 <td
                   colSpan={columns.length}
-                  className="px-6 py-4 text-center text-sm text-neutral-500"
+                  className="px-6 py-4 text-center text-sm text-gray-500"
                 >
-                  {emptyMessage}
+                  No data found
                 </td>
               </tr>
             )}
