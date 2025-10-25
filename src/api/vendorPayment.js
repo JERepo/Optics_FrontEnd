@@ -53,6 +53,11 @@ export const vendorPaymentApi = createApi({
         url: `/api/v1/vendor-payment/alppayments/${id}`,
       }),
     }),
+      getStockHistory: builder.query({
+      query: ({ companyId, productType, detailId }) => ({
+        url: `/api/v1/vendor-payment/getstockhistory?companyId=${companyId}&productType=${productType}&detailId=${detailId}`,
+      }),
+    }),
   }),
 });
 
@@ -63,5 +68,7 @@ export const {
   useGetAdvanceDataForVendorQuery,
   useGetPODetailsQuery,
   useGetAllVPQuery,
-  useGetPaymentsQuery
+  useGetPaymentsQuery,
+    useLazyGetStockHistoryQuery
+  
 } = vendorPaymentApi;

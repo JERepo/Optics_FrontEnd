@@ -22,13 +22,13 @@ import { Table, TableCell, TableRow } from "../../components/Table";
 import { useGetFrameSizesQuery } from "../../api/frameMasterApi";
 import {
   useGetFrameStockQuery,
-  useLazyGetStockHistoryQuery,
 } from "../../api/searchStock";
 import { useSelector } from "react-redux";
 import { useLazyPrintLabelsQuery } from "../../api/reportApi";
 import { toast } from "react-hot-toast";
 import Modal from "../../components/ui/Modal";
 import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
+import { useLazyGetStockHistoryQuery } from "../../api/vendorPayment";
 
 const toTitleCase = (str) =>
   str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
@@ -594,7 +594,7 @@ const SearchFrameStock = () => {
     useLazyPrintLabelsQuery();
   const [getStockHistory, { data: stockData }] = useLazyGetStockHistoryQuery();
   const [printId, setprintId] = useState(null);
-    const [stockId, setstockId] = useState(null);
+  const [stockId, setstockId] = useState(null);
 
   const handleLabels = async (detailId) => {
     setprintId(detailId);
@@ -628,16 +628,18 @@ const SearchFrameStock = () => {
     setstockId(id);
     try {
       await getStockHistory({
-        companyId: selectedLocation ? selectedLocation : parseInt(hasMultipleLocations[0]),
+        companyId: selectedLocation
+          ? selectedLocation
+          : parseInt(hasMultipleLocations[0]),
         productType: 1,
         detailId: id,
       }).unwrap();
-      setStockOpen(true)
+      setStockOpen(true);
       setstockId(null);
     } catch (error) {
       console.log(error);
       setstockId(null);
-      setStockOpen(false)
+      setStockOpen(false);
     }
   };
   // Get column value for filtering and display
@@ -1352,6 +1354,7 @@ const SearchFrameStock = () => {
                     icon={FiActivity}
                     onClick={() => handleStockHistory(item.DetailId)}
                     isLoading={stockId === item.DetailId}
+                    loadingText=""
                   ></Button>
                 </TableCell>
               </TableRow>
@@ -1368,39 +1371,43 @@ const SearchFrameStock = () => {
           totalItems={framData?.total ?? 0}
         />
 
-        <Modal isOpen={stockOpen} onClose={() => setStockOpen(false)}>
-          <Table
-            expand={true}
-            freeze={true}
-            columns={[
-              "s.no",
-              "transaction date",
-              "grn qty",
-              "stin qty",
-              "sr qty",
-              "salesqty",
-              "stout qty",
-              "prqty",
-            ]}
-            data={stockData?.data || []}
-            renderHeader={renderHeader}
-            renderRow={(item, index) => {
-              return (
-                <TableRow key={item.DetailId}>
-                  <TableCell>{index + 1}</TableCell>
-                  <TableCell>
-                    {item?.TransactionDate?.split("-").reverse().join("/")}
-                  </TableCell>
-                  <TableCell>{item?.GRNQty}</TableCell>
-                  <TableCell>{item?.STInQty}</TableCell>
-                  <TableCell>{item?.SRQty}</TableCell>
-                  <TableCell>{item?.SalesQty}</TableCell>
-                  <TableCell>{item?.STOutQty}</TableCell>
-                  <TableCell>{item?.PRQty}</TableCell>
-                </TableRow>
-              );
-            }}
-          />
+        <Modal isOpen={stockOpen} onClose={() => setStockOpen(false)} width="max-w-4xl">
+        
+          <div className="my-5 mx-3">
+              <div className="my-5 text-lg text-neutral-800 font-semibold">Transaction History</div>
+            <Table
+              expand={true}
+              freeze={true}
+              columns={[
+                "s.no",
+                "transaction date",
+                "grn qty",
+                "stin qty",
+                "sr qty",
+                "salesqty",
+                "stout qty",
+                "pr qty",
+              ]}
+              data={stockData?.data || []}
+            
+              renderRow={(item, index) => {
+                return (
+                  <TableRow key={item.DetailId}>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>
+                      {item?.TransactionDate?.split("-").reverse().join("/")}
+                    </TableCell>
+                    <TableCell>{item?.GRNQty}</TableCell>
+                    <TableCell>{item?.STInQty}</TableCell>
+                    <TableCell>{item?.SRQty}</TableCell>
+                    <TableCell>{item?.SalesQty}</TableCell>
+                    <TableCell>{item?.STOutQty}</TableCell>
+                    <TableCell>{item?.PRQty}</TableCell>
+                  </TableRow>
+                );
+              }}
+            />
+          </div>
         </Modal>
       </div>
     </div>

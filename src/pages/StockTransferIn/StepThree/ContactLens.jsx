@@ -242,9 +242,10 @@ const ContactLens = () => {
   const [saveStockTransfer, { isLoading: isStockTransferLoading }] =
     useSaveSTIMutation();
 
-  const getCurrentProposedQty = (clDetailId) => {
+    console.log("main",mainClDetails)
+  const getCurrentProposedQty = (clDetailId,batchcode) => {
     return mainClDetails.reduce((sum, item) => {
-      if (item.CLDetailId === clDetailId) {
+      if ((item.CLDetailId === clDetailId) && item.BatchCode == batchcode) {
         return sum + item.tiq;
       }
       return sum;
@@ -511,8 +512,9 @@ const ContactLens = () => {
     const newQty = Number(qty);
     const existing = mainClDetails[index];
     const clDetailId = existing.CLDetailId;
+    const batchcode = existing.BatchCode;
     const oldTiq = existing.tiq;
-    const currentProposed = getCurrentProposedQty(clDetailId);
+    const currentProposed = getCurrentProposedQty(clDetailId,batchcode);
     const alreadyReceived = existing.STQtyIn;
     const maxAllowed = existing.STQtyOut - alreadyReceived;
     const effectiveRemaining = maxAllowed - (currentProposed - oldTiq);
@@ -698,13 +700,15 @@ const ContactLens = () => {
       toast.error(error?.data.error);
     }
   };
+  console.log("batc",selectedBatchCode,stockOutData,batchBarCodeDetails?.data.data)
   const handleSaveBatchData = async () => {
     let sub;
     let STOProduct;
     let clDetailId;
+    
     if ((!detailId || openBatch) && productSearch == 0) {
       STOProduct = stockOutData?.data?.details?.find(
-        (item) => item.ContactLensDetailId === newItem.CLDetailId
+        (item) => ((item.ContactLensDetailId === newItem.CLDetailId) && (selectedBatchCode?.CLBatchCode == item.BatchCode))
       );
       clDetailId = newItem.CLDetailId;
       if (!STOProduct) {
@@ -719,7 +723,7 @@ const ContactLens = () => {
     } else if (detailId && productSearch == 1) {
       STOProduct = stockOutData?.data?.details?.find(
         (item) =>
-          item.ContactLensDetailId === batchBarCodeDetails?.data.data.CLDetailId
+          (item.ContactLensDetailId === batchBarCodeDetails?.data.data.CLDetailId) && (selectedBatchCode?.CLBatchCode == item.BatchCode)
       );
       clDetailId = batchBarCodeDetails?.data.data.CLDetailId;
       if (!STOProduct) {
