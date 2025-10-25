@@ -31,10 +31,16 @@ import { useGetBatchBarCodeMutation } from "../../../api/salesReturnApi";
 import { formatINR } from "../../../utils/formatINR";
 import Modal from "../../../components/ui/Modal";
 import { useSaveStockDetailsMutation } from "../../../api/stockTransfer";
-import { useSavePurchaseReturnProductMutation, useBulkUploadContactLensMutation } from "../../../api/purchaseReturn";
+import {
+  useSavePurchaseReturnProductMutation,
+  useBulkUploadContactLensMutation,
+} from "../../../api/purchaseReturn";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle, FileText, Upload } from "lucide-react";
-import { useLazyDownloadAccessorySampleExcelQuery, useLazyDownloadFrameSampleExcelQuery } from "../../../api/purchaseOrderApi";
+import {
+  useLazyDownloadAccessorySampleExcelQuery,
+  useLazyDownloadFrameSampleExcelQuery,
+} from "../../../api/purchaseOrderApi";
 import { useLazyDownloadCLSampleExcelQuery } from "../../../api/grnApi";
 
 // Validation helpers
@@ -155,7 +161,7 @@ const getProductName = (order) => {
       clr && `Color: ${clr}`,
       barcodeVal && `Barcode: ${barcodeVal}`,
       (batchIsZero || batchBar) &&
-      `Batch Code: ${batchBar || batchIsZero || "-"}`,
+        `Batch Code: ${batchBar || batchIsZero || "-"}`,
       expiry && `Expiry : ${expiry.split("-").reverse().join("/")}`,
       hsn && `HSN: ${hsn}`,
     ]
@@ -190,7 +196,6 @@ const ContactLens = () => {
   const [detailId, setDetailId] = useState(false);
   const [openBatch, setOpenBatch] = useState(false);
   const fileInputRef = useRef(null);
-
 
   const [lensData, setLensData] = useState({
     orderReference: null,
@@ -293,7 +298,6 @@ const ContactLens = () => {
       powerData: null,
     });
     setSelectedBatchCode(null);
-    setProductSearch(1);
     setDetailId(false);
     setProductCodeInput("");
   };
@@ -849,7 +853,6 @@ const ContactLens = () => {
     inputTableColumns.push("Avl.Qty", "Order Qty", "Action");
   }
 
-
   const downloadFile = (blob, filename) => {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -860,7 +863,6 @@ const ContactLens = () => {
     link.remove();
     window.URL.revokeObjectURL(url);
   };
-
 
   const handleDownloadSampleExcel = async (selectedOption) => {
     try {
@@ -876,11 +878,14 @@ const ContactLens = () => {
       }
       toast.success("Sample excel downloaded successfully.");
     } catch (error) {
-      console.error('Failed to download sample excel:', error);
-      toast.error(error.data?.message || error.message || "Failed to download sample excel");
+      console.error("Failed to download sample excel:", error);
+      toast.error(
+        error.data?.message ||
+          error.message ||
+          "Failed to download sample excel"
+      );
     }
-  }
-
+  };
 
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
@@ -889,8 +894,6 @@ const ContactLens = () => {
     setSelectedFile(file);
     toast.success("File selected successfully");
   };
-
-
 
   const handleUpload = async (selectedOption) => {
     if (!selectedFile) {
@@ -907,7 +910,7 @@ const ContactLens = () => {
         res = await uploadContactLensFile({
           formData: formData,
           applicationUserId: user?.Id,
-          prMainId: purchaseDraftData.Id || purchaseDraftData[0].Id
+          prMainId: purchaseDraftData.Id || purchaseDraftData[0].Id,
         }).unwrap();
       }
 
@@ -915,17 +918,18 @@ const ContactLens = () => {
 
       if (res.status === "success") {
         // Generic success
-        toast.success(res?.data?.message || res?.message || "File uploaded successfully!");
+        toast.success(
+          res?.data?.message || res?.message || "File uploaded successfully!"
+        );
         goToPurchaseStep(4);
-
       }
-
     } catch (error) {
       console.error("Upload error:", error);
-      toast.error(error?.data?.error || error?.data?.message || "Upload failed");
+      toast.error(
+        error?.data?.error || error?.data?.message || "Upload failed"
+      );
     }
   };
-
 
   return (
     <div className="max-w-8xl h-auto">
@@ -1103,7 +1107,7 @@ const ContactLens = () => {
                       ₹
                       {formatINR(
                         parseFloat(item.BuyingPrice) * item.stkQty +
-                        calculateStockGST(item).gstAmount * item.stkQty
+                          calculateStockGST(item).gstAmount * item.stkQty
                       )}
                       {/* ({calculateStockGST(item).gstPercent}%) */}
                     </TableCell>
@@ -1143,6 +1147,7 @@ const ContactLens = () => {
               label="Enter Product Barcode"
               value="1"
               onChange={() => {
+                handleRefresh();
                 setProductSearch(1);
               }}
               checked={productSearch === 1}
@@ -1150,10 +1155,11 @@ const ContactLens = () => {
             <Radio
               name="productSearch"
               label="Search Product"
+              value="0"
               onChange={() => {
+                handleRefresh();
                 setProductSearch(0);
               }}
-              value="0"
               checked={productSearch === 0}
             />
             <Radio
@@ -1421,7 +1427,9 @@ const ContactLens = () => {
                 {/* Top info banner */}
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-8 py-4 border-b border-gray-200">
                   <p className="text-sm text-gray-700">
-                    <span className="font-semibold text-gray-800">Tip:</span> Download the sample file to see the correct format for your bulk upload
+                    <span className="font-semibold text-gray-800">Tip:</span>{" "}
+                    Download the sample file to see the correct format for your
+                    bulk upload
                   </p>
                 </div>
 
@@ -1433,7 +1441,9 @@ const ContactLens = () => {
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => handleDownloadSampleExcel(selectedPurchaseProduct.label)}
+                      onClick={() =>
+                        handleDownloadSampleExcel(selectedPurchaseProduct.label)
+                      }
                       className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50 flex items-center justify-center flex-1 sm:flex-none"
                     >
                       <>
@@ -1466,7 +1476,9 @@ const ContactLens = () => {
                       <motion.button
                         // whileHover={{ scale: 1.02 }}
                         // whileTap={{ scale: 0.98 }}
-                        onClick={() => handleUpload(selectedPurchaseProduct.label)}
+                        onClick={() =>
+                          handleUpload(selectedPurchaseProduct.label)
+                        }
                         // disabled={!selectedFile || isFrameFileUploading || isAccessoryFileUploading || isContactLensFileUploading}
                         className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50 flex items-center justify-center flex-1 sm:flex-none"
                       >
@@ -1495,7 +1507,6 @@ const ContactLens = () => {
                         </motion.button>
                       )}
                     </div>
-
                   </div>
 
                   {/* Selected file display below */}
@@ -1509,7 +1520,9 @@ const ContactLens = () => {
                       <div className="flex items-center gap-3 flex-1">
                         <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
                         <div className="min-w-0">
-                          <p className="font-semibold text-gray-800 truncate">{selectedFile.name}</p>
+                          <p className="font-semibold text-gray-800 truncate">
+                            {selectedFile.name}
+                          </p>
                           <p className="text-xs text-gray-600">
                             {(selectedFile.size / 1024).toFixed(2)} KB
                           </p>

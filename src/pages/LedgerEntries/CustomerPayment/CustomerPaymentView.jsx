@@ -68,12 +68,12 @@ const CustomerPaymentView = () => {
                   <TableCell>{c.type || ""}</TableCell>
                   <TableCell>₹{formatINR(Math.abs(c.amount))}</TableCell>
                   <TableCell>
-                    {c?.data?.ApprCode || c?.ReferenceNo || "-"}
+                    {c?.data?.ApprCode || c?.data?.ReferenceNo || "-"}
                   </TableCell>
                   <TableCell>
                     {c?.data?.PaymentMachine?.MachineName || "-"}
                   </TableCell>
-                  <TableCell>{c?.data?.BankMaster?.BankName || "-"}</TableCell>
+                  <TableCell>{(c?.data?.BankMaster?.BankName || c?.data?.BankAccountDetail?.Bank?.BankName) || "-"}</TableCell>
                   <TableCell className="whitespace-pre-wrap">
                     {c?.data?.ChequeNo || c?.data?.ChequeDate ? (
                       <>

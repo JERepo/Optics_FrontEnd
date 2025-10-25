@@ -460,10 +460,10 @@ const ContactLens = () => {
       powerData: null,
     });
     setSelectedBatchCode(null);
-    setProductSearch(1);
     setDetailId(false);
     setProductCodeInput("");
   };
+  
 
   const handleRefeshPowerTable = () => {
     setNewItem({
@@ -1505,28 +1505,31 @@ console.log(mainClDetails)
             </Modal>
           </div>
         )}
-        <div className="p-6">
-          <div className="flex items-center gap-4">
-            <Radio
-              name="productSearch"
-              label="Enter Product Barcode"
-              value="1"
-              onChange={() => {
-                setProductSearch(1);
-              }}
-              checked={productSearch === 1}
-            />
-            <Radio
-              name="productSearch"
-              label="Search Product"
-              onChange={() => {
-                setProductSearch(0);
-              }}
-              value="0"
-              checked={productSearch === 0}
-            />
-          </div>
-        </div>
+      
+          <div className="p-6">
+                  <div className="flex items-center gap-4">
+                    <Radio
+                      name="productSearch"
+                      label="Enter Product Barcode"
+                      value="1"
+                      onChange={() => {
+                        handleRefresh();
+                        setProductSearch(1);
+                      }}
+                      checked={productSearch === 1}
+                    />
+                    <Radio
+                      name="productSearch"
+                      label="Search Product"
+                      value="0"
+                      onChange={() => {
+                        handleRefresh();
+                        setProductSearch(0);
+                      }}
+                      checked={productSearch === 0}
+                    />
+                  </div>
+                </div>
 
         {productSearch === 0 && (
           <div className="p-6">

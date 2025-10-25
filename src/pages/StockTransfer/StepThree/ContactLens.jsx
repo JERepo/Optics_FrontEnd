@@ -71,7 +71,7 @@ const getProductName = (order) => {
     CLBatchBarCode,
     sbatchbarCode,
     Spherical,
-    Cylindrical
+    Cylindrical,
   } = order;
 
   const clean = (val) => {
@@ -246,6 +246,7 @@ const ContactLens = () => {
       return newEditMode;
     });
   }, [mainClDetails]);
+
   const handleRefresh = () => {
     setLensData({
       orderReference: null,
@@ -267,7 +268,6 @@ const ContactLens = () => {
       powerData: null,
     });
     setSelectedBatchCode(null);
-    setProductSearch(1);
     setDetailId(false);
     setProductCodeInput("");
   };
@@ -372,12 +372,12 @@ const ContactLens = () => {
             ...data,
             // stkQty: 1,
             // Quantity: parseInt(data.AvlQty),
-             Quantity : data.stock[0]?.quantity,
+            Quantity: data.stock[0]?.quantity,
             BuyingPrice: parseFloat(data?.priceMaster.buyingPrice),
             stkQty: 1,
-            sbatchCode :data.stock[0]?.batchCode,
-            ExpiryDate :data.stock[0]?.CLBatchExpiry,
-            MRP:parseFloat(data?.priceMaster.mrp)
+            sbatchCode: data.stock[0]?.batchCode,
+            ExpiryDate: data.stock[0]?.CLBatchExpiry,
+            MRP: parseFloat(data?.priceMaster.mrp),
           };
           const existingIndex = mainClDetails.findIndex(
             (item) => item.Barcode == data.Barcode
@@ -603,8 +603,8 @@ const ContactLens = () => {
             response?.data.data.CLBatchCode === 0
               ? parseFloat(response?.data.data.price.BuyingPrice)
               : parseFloat(response?.data.data.stock.BuyingPrice),
-          sbatchCode :response?.data.data.stock.BatchCode,
-          ExpiryDate :response?.data.data.stock.Expiry
+          sbatchCode: response?.data.data.stock.BatchCode,
+          ExpiryDate: response?.data.data.stock.Expiry,
         };
         const existingIndex = mainClDetails.findIndex(
           (item) => item.Barcode == response?.data.data.Barcode
@@ -791,7 +791,7 @@ const ContactLens = () => {
       toast.success("Contact lens transfer out successfully added");
       goToStockStep(4);
     } catch (error) {
-      console.log(error)
+      console.log(error);
       toast.error("Stock Transfer Out Contact Lens unable to save!");
     }
   };
@@ -947,7 +947,7 @@ const ContactLens = () => {
                           />
                           <button
                             onClick={() =>
-                              toggleEditMode(item.Barcode, index, "qty","save")
+                              toggleEditMode(item.Barcode, index, "qty", "save")
                             }
                             className="text-neutral-400 transition"
                             title="Save"
@@ -956,7 +956,12 @@ const ContactLens = () => {
                           </button>
                           <button
                             onClick={() =>
-                              toggleEditMode(item.Barcode, index, "qty","cancel")
+                              toggleEditMode(
+                                item.Barcode,
+                                index,
+                                "qty",
+                                "cancel"
+                              )
                             }
                             className="text-neutral-400 transition"
                             title="Cancel"
@@ -983,10 +988,9 @@ const ContactLens = () => {
                     <TableCell>
                       ₹
                       {formatINR(
-                        (parseFloat(item.BuyingPrice) * item.stkQty) +
+                        parseFloat(item.BuyingPrice) * item.stkQty +
                           calculateStockGST(item).gstAmount * item.stkQty
                       )}
-
                     </TableCell>
                     <TableCell>
                       <button
@@ -1021,6 +1025,7 @@ const ContactLens = () => {
               label="Enter Product Barcode"
               value="1"
               onChange={() => {
+                handleRefresh();
                 setProductSearch(1);
               }}
               checked={productSearch === 1}
@@ -1028,10 +1033,11 @@ const ContactLens = () => {
             <Radio
               name="productSearch"
               label="Search Product"
+              value="0"
               onChange={() => {
+                handleRefresh();
                 setProductSearch(0);
               }}
-              value="0"
               checked={productSearch === 0}
             />
           </div>

@@ -20,30 +20,44 @@ import { useGetAllBrandsQuery } from "../../api/brandsApi";
 import { useGetAllBrandGroupsQuery } from "../../api/brandGroup";
 import { Table, TableCell, TableRow } from "../../components/Table";
 import { useGetFrameSizesQuery } from "../../api/frameMasterApi";
-import { useGetFrameStockQuery } from "../../api/searchStock";
+import {
+  useGetFrameStockQuery,
+} from "../../api/searchStock";
 import { useSelector } from "react-redux";
 import { useLazyPrintLabelsQuery } from "../../api/reportApi";
-import {toast} from 'react-hot-toast'
+import { toast } from "react-hot-toast";
+import Modal from "../../components/ui/Modal";
+import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
+import { useLazyGetStockHistoryQuery } from "../../api/vendorPayment";
 
 const toTitleCase = (str) =>
   str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
 
 const typesOptions = [
+  { Id: "F", Name: "Full Rim(F)" },
+  { Id: "H", Name: "Half Rim(H)" },
+  { Id: "R", Name: "Rim Less(R)" },
+];
+const rimOptions = [
   { Id: "F", Name: "Full Rim" },
   { Id: "H", Name: "Half Rim" },
   { Id: "R", Name: "Rim Less" },
 ];
 
 const categoryOptions = [
-  { Id: 0, Name: "Frame" },
-  { Id: 1, Name: "Sunglass" },
+  { Id: 0, Name: "Frame(O)" },
+  { Id: 1, Name: "Sunglass(S)" },
 ];
 
 const othersOptions = [
-  { Id: "Rxable", Name: "Rxable" },
-  { Id: "Photochromatic", Name: "Photochromatic" },
-  { Id: "Polarised", Name: "Polarised" },
-  { Id: "ClipOn", Name: "ClipOn" },
+  { Id: "Rxable", Name: "Rxable(Rx)", apiKey: "isRxable" },
+  {
+    Id: "Photochromatic",
+    Name: "Photochromatic(Ph)",
+    apiKey: "isPhotochromatic",
+  },
+  { Id: "Polarised", Name: "Polarised(Po)", apiKey: "isPolarised" },
+  { Id: "ClipOn", Name: "ClipOn(Cl)", apiKey: "isClipOn" },
 ];
 
 const debounce = (func, delay) => {
@@ -58,8 +72,10 @@ const buildQueryParams = ({
   brandGroupDropdown,
   brandNameDropdown,
   columnSearchTerms,
+  selectedOthers,
   category,
   type,
+  modelNo,
   colourCode,
   frameColour,
   barcode,
@@ -73,6 +89,8 @@ const buildQueryParams = ({
   isRxable,
   isClipOn,
   noOfClips,
+  page,
+  requiredRow,
 }) => {
   const combineDropdownAndSearch = (dropdownValues, searchTerm, keyName) => {
     const names = dropdownValues?.map((v) => v[keyName]) || [];
@@ -83,56 +101,63 @@ const buildQueryParams = ({
         .filter((t) => t !== "");
       names.push(...searchTerms);
     }
-    return names.length > 0 ? names.join(",") : "null";
+    return names.length > 0 ? names.join(",") : null; // return null if empty
   };
 
-  const add = (key, value) =>
-    `${key}=${
-      value !== undefined && value !== null && value !== "" ? value : "null"
-    }`;
+  const flags = {
+    isRxable: null,
+    isClipOn: null,
+    isPhotochromatic: null,
+    isPolarised: null,
+  };
 
-  const params = [
-    add(
-      "brandGroup",
-      combineDropdownAndSearch(
-        brandGroupDropdown,
-        columnSearchTerms["brand group"],
-        "BrandGroupName"
-      )
-    ),
-    add(
-      "brandName",
-      combineDropdownAndSearch(
-        brandNameDropdown,
-        columnSearchTerms["brand name"],
-        "BrandName"
-      )
-    ),
-    add(
-      "category",
-      category?.map((c) => c.Id)
-    ),
-    add(
-      "type",
-      type?.map((t) => t.Name)
-    ),
-    add("colourCode", colourCode),
-    add("frameColour", frameColour),
-    add("barcode", barcode),
-    add("location", location),
-    add("size", size),
-    add("dbl", dbl),
-    add("templeLength", templeLength),
-    add("frameFrontColor", frameFrontColor),
-    add("templeColor", templeColor),
-    add("lensColor", lensColor),
-    add("isRxable", isRxable),
-    add("isClipOn", isClipOn),
-    add("noOfClips", noOfClips),
-  ];
+  selectedOthers?.forEach((o) => {
+    const key = o.apiKey;
+    if (key in flags) flags[key] = 1;
+  });
 
-  // Keep spaces as-is
-  return `?${params.join("&")}`;
+  const paramsObj = {
+    brandGroup: combineDropdownAndSearch(
+      brandGroupDropdown,
+      columnSearchTerms["brand group"],
+      "BrandGroupName"
+    ),
+    brandName: combineDropdownAndSearch(
+      brandNameDropdown,
+      columnSearchTerms["brand name"],
+      "BrandName"
+    ),
+    category: category?.map((c) => c.Id)?.join(",") || null,
+    FrameRimType: type?.map((t) => t.Name)?.join(",") || null,
+    colourCode: colourCode || null,
+    frameColour: frameColour || null,
+    barcode: barcode || null,
+    location: location || null,
+    size: size?.join(",") || null,
+    dbl: dbl || null,
+    modelNo: modelNo || null,
+    templeLength: templeLength || null,
+    frameFrontColor: frameFrontColor || null,
+    templeColor: templeColor || null,
+    lensColor: lensColor || null,
+    isRxable: flags.isRxable,
+    isClipOn: flags.isClipOn,
+    photochromatic: flags.isPhotochromatic,
+    isPolarised: flags.isPolarised,
+    noOfClips: noOfClips || null,
+    page: page || null,
+    requiredRow: requiredRow || null,
+  };
+
+  // Only include keys that have a value
+  const queryString = Object.entries(paramsObj)
+    .filter(
+      ([_, value]) => value !== null && value !== undefined && value !== ""
+    )
+    .map(([key, value]) => `${key}=${value}`)
+    .join("&");
+
+  return queryString ? `?${queryString}` : "";
 };
 
 const SearchFrameStock = () => {
@@ -179,6 +204,7 @@ const SearchFrameStock = () => {
     stock: "",
     "stock avl": "",
   });
+
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
 
@@ -193,8 +219,10 @@ const SearchFrameStock = () => {
       brandGroupDropdown: selectedBrandGroups,
       brandNameDropdown: selectedBrands,
       columnSearchTerms,
+      selectedOthers,
       category: selectedCategories,
       type: selectedTypes,
+      modelNo: columnSearchTerms["model no"] || null,
       colourCode: columnSearchTerms["colour code"] || null,
       frameColour: columnSearchTerms["frame colour"] || null,
       barcode: columnSearchTerms["barcode"] || null,
@@ -208,6 +236,8 @@ const SearchFrameStock = () => {
       isRxable: null,
       isClipOn: null,
       noOfClips: null,
+      page: currentPage,
+      requiredRow: pageSize,
     });
   }, [
     selectedBrands,
@@ -215,17 +245,21 @@ const SearchFrameStock = () => {
     selectedCategories,
     selectedTypes,
     selectedSizes,
+    selectedOthers,
     columnSearchTerms,
     hasMultipleLocations,
+    currentPage,
+    pageSize,
   ]);
-
-  console.log("ff", selectedBrandGroups);
   const [columnInput, setColumnInput] = useState({ ...columnSearchTerms });
+  const [stockOpen, setStockOpen] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState(null);
 
   // On input change
   const handleColumnInputChange = (column, value) => {
     setColumnInput((prev) => ({ ...prev, [column]: value }));
   };
+  const { data: allLocations } = useGetAllLocationsQuery();
 
   // Debounce effect: updates columnSearchTerms after 500ms of inactivity
   useEffect(() => {
@@ -238,8 +272,8 @@ const SearchFrameStock = () => {
 
   const {
     data: framData,
-    isFetching,
-    isLoading: isDataLoading,
+    isFetching: isDataLoading,
+    isLoading,
     refetch,
   } = useGetFrameStockQuery(queryString);
 
@@ -555,12 +589,20 @@ const SearchFrameStock = () => {
     // Re-fetch original (unfiltered) data
     // refetch();
   };
-  const [getlabels,{isFetching :isLabelsFetching}]= useLazyPrintLabelsQuery();
-  const [printId,setprintId] = useState(null)
+
+  const [getlabels, { isFetching: isLabelsFetching }] =
+    useLazyPrintLabelsQuery();
+  const [getStockHistory, { data: stockData }] = useLazyGetStockHistoryQuery();
+  const [printId, setprintId] = useState(null);
+  const [stockId, setstockId] = useState(null);
+
   const handleLabels = async (detailId) => {
-   setprintId(detailId)
+    setprintId(detailId);
     try {
-      const blob = await getlabels({frameDetailId : detailId, companyId: parseInt(hasMultipleLocations[0]), }).unwrap();
+      const blob = await getlabels({
+        frameDetailId: detailId,
+        companyId: parseInt(hasMultipleLocations[0]),
+      }).unwrap();
 
       const url = window.URL.createObjectURL(
         new Blob([blob], { type: "application/pdf" })
@@ -572,11 +614,32 @@ const SearchFrameStock = () => {
           newWindow.print();
         };
       }
+      setprintId(null);
     } catch (error) {
       console.log(error);
       toast.error(
         "Unable to print the frame label please try again after some time!"
       );
+      setprintId(null);
+    }
+  };
+
+  const handleStockHistory = async (id) => {
+    setstockId(id);
+    try {
+      await getStockHistory({
+        companyId: selectedLocation
+          ? selectedLocation
+          : parseInt(hasMultipleLocations[0]),
+        productType: 1,
+        detailId: id,
+      }).unwrap();
+      setStockOpen(true);
+      setstockId(null);
+    } catch (error) {
+      console.log(error);
+      setstockId(null);
+      setStockOpen(false);
     }
   };
   // Get column value for filtering and display
@@ -588,8 +651,13 @@ const SearchFrameStock = () => {
         return item.BrandName || "";
       case "cat":
         return item.Category === 0 ? "O" : "S";
-      case "type":
-        return item.FrameRimType || "";
+      case "type": {
+        const typeObj = rimOptions.find((t) => t.Name == item.FrameRimType);
+        console.log("rim", typesOptions);
+
+        return typeObj ? typeObj.Id : "";
+      }
+
       case "model no":
         return item.ModelNo || "";
       case "colour code":
@@ -617,24 +685,21 @@ const SearchFrameStock = () => {
         return "";
     }
   };
-  const locallyFiltered = useMemo(() => {
-    const raw = framData?.data || [];
-    return raw.filter((item) =>
-      Object.entries(columnSearchTerms).every(([col, term]) => {
-        if (!term) return true;
-        const val = getColumnValue(item, col).toString().toLowerCase();
-        return val.includes(term.toLowerCase());
-      })
-    );
-  }, [framData?.data, columnSearchTerms]);
 
-  const startIndex = (currentPage - 1) * pageSize;
-  const paginatedData = locallyFiltered.slice(
-    startIndex,
-    startIndex + pageSize
-  );
-  const totalPages = Math.ceil(locallyFiltered.length / pageSize);
+  const paginatedData = framData?.data || [];
 
+  const totalPages = useMemo(() => {
+    if (!framData?.total || !framData?.requiredRow) return 1;
+    return Math.ceil(framData.total / framData.requiredRow);
+  }, [framData]);
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+  };
+
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(newSize);
+    // page will be reset by the effect above
+  };
   const renderHeader = (column) => (
     <div className="flex flex-col">
       {toTitleCase(column)}
@@ -656,22 +721,59 @@ const SearchFrameStock = () => {
     </div>
   );
 
-  if (isDataLoading) {
-    return <div>Loading...</div>;
-  }
-
   return (
     <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-sm p-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold text-gray-800">Frame Stock</h2>
-          <div className="flex gap-3 items-center">
-            <Button variant="outline" className="flex items-center gap-2">
-              <FiChevronDown className="transform rotate-90" />
-              Back
-            </Button>
-            <Button onClick={handleRefresh}>Refresh</Button>
+          <h2 className="text-2xl font-semibold text-gray-800">
+            Frame Stock Search
+          </h2>
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-3 items-center">
+              <Button variant="outline" className="flex items-center gap-2">
+                <FiChevronDown className="transform rotate-90" />
+                Back
+              </Button>
+              <Button onClick={handleRefresh}>Refresh</Button>
+            </div>
+            <div className="">
+              {Array.isArray(hasMultipleLocations) &&
+                hasMultipleLocations.length > 1 && (
+                  <div className="">
+                    <Autocomplete
+                      options={
+                        allLocations?.data?.filter((loc) =>
+                          hasMultipleLocations.includes(loc.Id)
+                        ) || []
+                      }
+                      getOptionLabel={(option) => option.LocationName}
+                      onChange={(event, newValue) => {
+                        if (newValue) {
+                          setSelectedLocation(newValue?.Id);
+                        }
+                      }}
+                      value={
+                        allLocations?.data?.find(
+                          (b) => b.Id === selectedLocation
+                        ) || null
+                      }
+                      isOptionEqualToValue={(option, value) =>
+                        option.Id === value.Id
+                      }
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Select Location"
+                          variant="outlined"
+                          fullWidth
+                        />
+                      )}
+                      sx={{ width: 400 }}
+                    />
+                  </div>
+                )}
+            </div>
           </div>
         </div>
 
@@ -1198,67 +1300,115 @@ const SearchFrameStock = () => {
           ]}
           data={paginatedData || []}
           renderHeader={renderHeader}
-          renderRow={(item, index) => (
-            <TableRow key={item.id}>
-              <TableCell>{index + 1}</TableCell>
-              <TableCell>{getColumnValue(item, "brand group")}</TableCell>
-              <TableCell>{getColumnValue(item, "brand name")}</TableCell>
-              <TableCell>{getColumnValue(item, "cat")}</TableCell>
-              <TableCell>{getColumnValue(item, "type")}</TableCell>
-              <TableCell>{getColumnValue(item, "model no")}</TableCell>
-              <TableCell>{getColumnValue(item, "colour code")}</TableCell>
-              <TableCell>{getColumnValue(item, "size-dbl-length")}</TableCell>
-              <TableCell>{getColumnValue(item, "barcode")}</TableCell>
-              <TableCell>{getColumnValue(item, "frame colour")}</TableCell>
-              <TableCell className="w-[80px]">
-                <div className="grid grid-cols-2 gap-2 w-auto">
-                  {[
-                    item.PO == 1 ? "PH" : null,
-                    item.Ph == 1 ? "PO" : null,
-                    item.NoOfClips ? `CL: ${item.Cl}` : null,
-                    item.IsRxable == "Yes" ? "Rx" : null,
-                  ]
-                    .filter(Boolean)
-                    .map((val, idx) => (
-                      <div key={idx}>{val}</div>
-                    ))}
-                </div>
-              </TableCell>
-              <TableCell>{getColumnValue(item, "mrp")}</TableCell>
-              <TableCell>{getColumnValue(item, "stock")}</TableCell>
-              <TableCell className="flex gap-1 justify-center">
-                <Button
-                  size="xs"
-                  variant="outline"
-                  title="Barcode Label Printing"
-                  icon={FiTag}
-                  onClick={() => handleLabels(item)}
-                  isLoading={printId === item.FrameDetailId}
-                ></Button>
-                <Button
-                  size="xs"
-                  variant="outline"
-                  title="Stock History"
-                  icon={FiBox}
-                ></Button>
-                <Button
-                  size="xs"
-                  variant="outline"
-                  title="Transaction History"
-                  icon={FiActivity}
-                ></Button>
-              </TableCell>
-            </TableRow>
-          )}
+          renderRow={(item, index) => {
+            const startRow = (currentPage - 1) * pageSize + 1;
+            return (
+              <TableRow key={item.id}>
+                <TableCell>{index + startRow}</TableCell>
+                <TableCell>{getColumnValue(item, "brand group")}</TableCell>
+                <TableCell>{getColumnValue(item, "brand name")}</TableCell>
+                <TableCell>{getColumnValue(item, "cat")}</TableCell>
+                <TableCell>{getColumnValue(item, "type")}</TableCell>
+                <TableCell>{getColumnValue(item, "model no")}</TableCell>
+                <TableCell>{getColumnValue(item, "colour code")}</TableCell>
+                <TableCell>{getColumnValue(item, "size-dbl-length")}</TableCell>
+                <TableCell>{getColumnValue(item, "barcode")}</TableCell>
+                <TableCell>{getColumnValue(item, "frame colour")}</TableCell>
+                <TableCell className="w-[80px]">
+                  <div className="grid grid-cols-2 gap-2 w-auto">
+                    {[
+                      item.PO == 1 ? "PH" : null,
+                      item.Ph == 1 ? "PO" : null,
+                      item.NoOfClips ? `CL: ${item.Cl}` : null,
+                      item.IsRxable == "Yes" ? "Rx" : null,
+                    ]
+                      .filter(Boolean)
+                      .map((val, idx) => (
+                        <div key={idx}>{val}</div>
+                      ))}
+                  </div>
+                </TableCell>
+                <TableCell>{getColumnValue(item, "mrp")}</TableCell>
+                <TableCell>{getColumnValue(item, "stock")}</TableCell>
+                <TableCell className="flex gap-1 justify-center">
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    title="Barcode Label Printing"
+                    icon={FiTag}
+                    onClick={() => handleLabels(item.DetailId)}
+                    isLoading={printId === item.DetailId}
+                    loadingText=""
+                  ></Button>
+
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    title="Stock History"
+                    icon={FiBox}
+                  ></Button>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    title="Transaction History"
+                    icon={FiActivity}
+                    onClick={() => handleStockHistory(item.DetailId)}
+                    isLoading={stockId === item.DetailId}
+                    loadingText=""
+                  ></Button>
+                </TableCell>
+              </TableRow>
+            );
+          }}
           emptyMessage={isDataLoading ? "Loading..." : "No data found"}
+          isLoading={isDataLoading}
           pagination={true}
           currentPage={currentPage}
           totalPages={totalPages}
-          onPageChange={setCurrentPage}
+          onPageChange={handlePageChange}
           pageSize={pageSize}
-          onPageSizeChange={setPageSize}
-          totalItems={paginatedData}
+          onPageSizeChange={handlePageSizeChange}
+          totalItems={framData?.total ?? 0}
         />
+
+        <Modal isOpen={stockOpen} onClose={() => setStockOpen(false)} width="max-w-4xl">
+        
+          <div className="my-5 mx-3">
+              <div className="my-5 text-lg text-neutral-800 font-semibold">Transaction History</div>
+            <Table
+              expand={true}
+              freeze={true}
+              columns={[
+                "s.no",
+                "transaction date",
+                "grn qty",
+                "stin qty",
+                "sr qty",
+                "salesqty",
+                "stout qty",
+                "pr qty",
+              ]}
+              data={stockData?.data || []}
+            
+              renderRow={(item, index) => {
+                return (
+                  <TableRow key={item.DetailId}>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>
+                      {item?.TransactionDate?.split("-").reverse().join("/")}
+                    </TableCell>
+                    <TableCell>{item?.GRNQty}</TableCell>
+                    <TableCell>{item?.STInQty}</TableCell>
+                    <TableCell>{item?.SRQty}</TableCell>
+                    <TableCell>{item?.SalesQty}</TableCell>
+                    <TableCell>{item?.STOutQty}</TableCell>
+                    <TableCell>{item?.PRQty}</TableCell>
+                  </TableRow>
+                );
+              }}
+            />
+          </div>
+        </Modal>
       </div>
     </div>
   );

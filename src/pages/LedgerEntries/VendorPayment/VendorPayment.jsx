@@ -280,7 +280,7 @@ const VendorPayment = () => {
               <Checkbox
                 checked={collectPayment}
                 onChange={handleCollectAdvance}
-                label="Collect Advance"
+                label="Pay Advance"
               />
               {collectPayment && (
                 <div className="text-lg text-neutral-900">
@@ -470,7 +470,7 @@ const VendorPayment = () => {
             />
           </div>
         </Modal>
-        {collectPayment && (
+        {(collectPayment && !againstPO) && (
           <div className="mt-5">
             <VendorCollectAdvace
               totalValue={totalReceivable || 0}

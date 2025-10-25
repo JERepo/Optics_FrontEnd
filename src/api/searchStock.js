@@ -26,6 +26,7 @@ export const searchStock = createApi({
         url: `/api/v1/contact-lens/get/clstock${queryString}`,
       }),
     }),
+  
   }),
 });
 
@@ -33,5 +34,5 @@ export const {
   useGetFrameStockQuery,
   useLazyGetAccessoryStockQuery,
   useLazyGetCLStockQuery,
-  useLazyGetAllCLStockQuery
+  useLazyGetAllCLStockQuery,
 } = searchStock;

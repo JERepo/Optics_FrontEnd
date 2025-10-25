@@ -424,10 +424,7 @@ const StockTransferView = () => {
             value={statusMap[stockDetails?.data?.result?.Status] || "Unknown"}
           />
 
-          <Info
-            label="Comments"
-            value={stockDetails?.data?.result?.Comment || ""}
-          />
+        
         </div>
 
         {/* Product Table */}

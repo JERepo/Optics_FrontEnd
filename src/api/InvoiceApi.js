@@ -22,6 +22,11 @@ export const InvoiceApi = createApi({
         url: `/api/v1/invoice/BatchDetails/${clBatchId}?Location=${locationId}`,
       }),
     }),
+     getBatchDetailsForStin: builder.query({
+      query: ({ mainId, CLDetailId }) => ({
+        url: `/api/v1/invoice/BatchDetails?mainId=${mainId}&CLDetailId=${CLDetailId}`,
+      }),
+    }),
 
     // getProductDetails: builder.mutation({
     //   query: ({ payload }) => ({
@@ -138,5 +143,6 @@ export const {
   useGetPaymentDetailsQuery,
   useCancelInvoiceMutation,
   useLazyPrintPdfQuery,
-  useInvoiceConfirmMutation
+  useInvoiceConfirmMutation,
+  useLazyGetBatchDetailsForStinQuery
 } = InvoiceApi;
