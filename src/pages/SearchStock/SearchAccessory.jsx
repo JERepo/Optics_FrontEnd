@@ -19,7 +19,7 @@ const debounce = (func, delay) => {
   };
 };
 
-const buildQueryParams = ({ brandName, ProductName, barcode, variation, page, requiredRow }) => {
+const buildQueryParams = ({ brandName, ProductName, barcode, variation, location, page, requiredRow }) => {
   const add = (key, value) =>
     `${key}=${value !== undefined && value !== null && value !== "" ? encodeURIComponent(value) : ""}`;
 
@@ -28,6 +28,7 @@ const buildQueryParams = ({ brandName, ProductName, barcode, variation, page, re
     add("ProductName", ProductName),
     add("barcode", barcode),
     add("variation", variation),
+    add("location", location),
     add("page", page),
     add("requiredRow", requiredRow),
   ];
@@ -65,7 +66,7 @@ const SearchAccessory = () => {
   console.log("hasLocation ----- ", hasLocation);
 
 
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
 
   const [triggerFetchAccessoryStock, { isLoading }] =
     useLazyGetAccessoryStockQuery();
@@ -99,7 +100,7 @@ const SearchAccessory = () => {
       if (result.status === "success" && result.data) {
         setSearchData(result.data);
         setTotalItems(result.total || 0);
-        toast.success("Data fetched successfully");
+        // toast.success("Data fetched successfully");
       } else {
         setSearchData([]);
         setTotalItems(0);
@@ -177,7 +178,7 @@ const SearchAccessory = () => {
             setSearchData(result.data);
             setTotalItems(result.total || 0);
             console.log("Response - ", result);
-            toast.success("Data fetched successfully");
+            // toast.success("Data fetched successfully");
           }
         })
         .catch((err) => {
@@ -315,7 +316,7 @@ const SearchAccessory = () => {
               <TableCell>
                 {item.OPMRP ? `₹${parseFloat(item.OPMRP).toFixed(2)}` : "-"}
               </TableCell>
-              <TableCell>
+              {/* <TableCell>
                 <span
                   className={`font-semibold ${item.Quantity > 10
                     ? "text-green-600"
@@ -326,7 +327,9 @@ const SearchAccessory = () => {
                 >
                   {item.Quantity !== undefined ? item.Quantity : 0}
                 </span>
-              </TableCell>
+              </TableCell> */}
+              <TableCell>{item.Quantity !== undefined ? item.Quantity : 0}</TableCell>
+
               <TableCell>
                 <Button variant="outline" size="sm">
                   <EyeIcon className="w-4 h-4" />

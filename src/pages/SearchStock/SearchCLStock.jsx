@@ -19,7 +19,7 @@ const debounce = (func, delay) => {
     };
 };
 
-const buildQueryParams = ({ BrandName, ProductName, Colour, SphericalPower, CylindricalPower, Axis, Addition, Barcode, page, requiredRow }) => {
+const buildQueryParams = ({ BrandName, ProductName, Colour, SphericalPower, CylindricalPower, Axis, Addition, Barcode, location, page, requiredRow }) => {
     const add = (key, value) =>
         `${key}=${value !== undefined && value !== null && value !== "" ? encodeURIComponent(value) : ""}`;
 
@@ -32,6 +32,7 @@ const buildQueryParams = ({ BrandName, ProductName, Colour, SphericalPower, Cyli
         add("Axis", Axis),
         add("Addition", Addition),
         add("Barcode", Barcode),
+        add("location", location),
         add("page", page),
         add("requiredRow", requiredRow)
     ];
@@ -75,7 +76,7 @@ const SearchContactLens = () => {
     console.log("user ----- ", user);
     console.log("hasLocation ----- ", hasLocation);
 
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [itemsPerPage, setItemsPerPage] = useState(50);
 
     // Auto select location if it has only 1.
     useEffect(() => {
@@ -126,7 +127,7 @@ const SearchContactLens = () => {
                 setSearchData(result.data);
                 setTotalItems(result.total || 0);
                 console.log("Response - ", result);
-                toast.success("Data fetched successfully");
+                // toast.success("Data fetched successfully");
             } else {
                 setSearchData([]);
                 setTotalItems(0);
@@ -219,7 +220,7 @@ const SearchContactLens = () => {
                         setSearchData(result.data);
                         setTotalItems(result.total || 0);
                         console.log("Response - ", result);
-                        toast.success("Data fetched successfully");
+                        // toast.success("Data fetched successfully");
                     }
                 })
                 .catch((err) => {
@@ -336,7 +337,7 @@ const SearchContactLens = () => {
                     <TableCell>
                         {item.CLMRP ? `₹${parseFloat(item.CLMRP).toFixed(2)}` : "-"}
                     </TableCell>
-                    <TableCell>
+                    {/* <TableCell>
                         <span
                             className={`font-semibold ${item.Quantity > 10
                                 ? "text-green-600"
@@ -347,7 +348,8 @@ const SearchContactLens = () => {
                         >
                             {item.Quantity !== undefined ? item.Quantity : 0}
                         </span>
-                    </TableCell>
+                    </TableCell> */}
+                    <TableCell>{item.Quantity !== undefined ? item.Quantity : 0}</TableCell>
                     <TableCell>
                         <Button variant="outline" size="sm">
                             <EyeIcon className="w-4 h-4" />
@@ -375,7 +377,7 @@ const SearchContactLens = () => {
                     <TableCell>
                         {item.CLMRP ? `₹${parseFloat(item.CLMRP).toFixed(2)}` : "-"}
                     </TableCell>
-                    <TableCell>
+                    {/* <TableCell>
                         <span
                             className={`font-semibold ${item.Quantity > 10
                                 ? "text-green-600"
@@ -386,7 +388,8 @@ const SearchContactLens = () => {
                         >
                             {item.Quantity !== undefined ? item.Quantity : 0}
                         </span>
-                    </TableCell>
+                    </TableCell> */}
+                    <TableCell>{item.Quantity !== undefined ? item.Quantity : 0}</TableCell>
                     <TableCell>
                         <Button variant="outline" size="sm">
                             <EyeIcon className="w-4 h-4" />
@@ -469,14 +472,14 @@ const SearchContactLens = () => {
                         variant={activeTab === "all" ? "default" : "outline"}
                         disabled={isLoading}
                     >
-                        All
+                        With BatchCode + Expiry
                     </Button>
                     <Button
                         onClick={() => handleTabChange("barcode")}
                         variant={activeTab === "barcode" ? "default" : "outline"}
                         disabled={isLoading}
                     >
-                        Barcode Specific
+                        Summary
                     </Button>
                 </div>
 
