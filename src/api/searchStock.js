@@ -26,6 +26,11 @@ export const searchStock = createApi({
         url: `/api/v1/contact-lens/get/clstock${queryString}`,
       }),
     }),
+    getStockHistory: builder.query({
+      query: ({ companyId, productType, detailId }) => ({
+        url: `/api/v1/vendor-payment/getstockhistory?companyId=${companyId}&productType=${productType}&detailId=${detailId}`,
+      }),
+    }),
   }),
 });
 
@@ -33,5 +38,6 @@ export const {
   useGetFrameStockQuery,
   useLazyGetAccessoryStockQuery,
   useLazyGetCLStockQuery,
-  useLazyGetAllCLStockQuery
+  useLazyGetAllCLStockQuery,
+  useLazyGetStockHistoryQuery
 } = searchStock;

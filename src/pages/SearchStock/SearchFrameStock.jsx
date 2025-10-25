@@ -20,15 +20,25 @@ import { useGetAllBrandsQuery } from "../../api/brandsApi";
 import { useGetAllBrandGroupsQuery } from "../../api/brandGroup";
 import { Table, TableCell, TableRow } from "../../components/Table";
 import { useGetFrameSizesQuery } from "../../api/frameMasterApi";
-import { useGetFrameStockQuery } from "../../api/searchStock";
+import {
+  useGetFrameStockQuery,
+  useLazyGetStockHistoryQuery,
+} from "../../api/searchStock";
 import { useSelector } from "react-redux";
 import { useLazyPrintLabelsQuery } from "../../api/reportApi";
 import { toast } from "react-hot-toast";
+import Modal from "../../components/ui/Modal";
+import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
 
 const toTitleCase = (str) =>
   str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
 
 const typesOptions = [
+  { Id: "F", Name: "Full Rim(F)" },
+  { Id: "H", Name: "Half Rim(H)" },
+  { Id: "R", Name: "Rim Less(R)" },
+];
+const rimOptions = [
   { Id: "F", Name: "Full Rim" },
   { Id: "H", Name: "Half Rim" },
   { Id: "R", Name: "Rim Less" },
@@ -91,8 +101,9 @@ const buildQueryParams = ({
         .filter((t) => t !== "");
       names.push(...searchTerms);
     }
-    return names.length > 0 ? names.join(",") : "null";
+    return names.length > 0 ? names.join(",") : null; // return null if empty
   };
+
   const flags = {
     isRxable: null,
     isClipOn: null,
@@ -105,58 +116,48 @@ const buildQueryParams = ({
     if (key in flags) flags[key] = 1;
   });
 
-  const add = (key, value) =>
-    `${key}=${
-      value !== undefined && value !== null && value !== "" ? value : "null"
-    }`;
+  const paramsObj = {
+    brandGroup: combineDropdownAndSearch(
+      brandGroupDropdown,
+      columnSearchTerms["brand group"],
+      "BrandGroupName"
+    ),
+    brandName: combineDropdownAndSearch(
+      brandNameDropdown,
+      columnSearchTerms["brand name"],
+      "BrandName"
+    ),
+    category: category?.map((c) => c.Id)?.join(",") || null,
+    FrameRimType: type?.map((t) => t.Name)?.join(",") || null,
+    colourCode: colourCode || null,
+    frameColour: frameColour || null,
+    barcode: barcode || null,
+    location: location || null,
+    size: size?.join(",") || null,
+    dbl: dbl || null,
+    modelNo: modelNo || null,
+    templeLength: templeLength || null,
+    frameFrontColor: frameFrontColor || null,
+    templeColor: templeColor || null,
+    lensColor: lensColor || null,
+    isRxable: flags.isRxable,
+    isClipOn: flags.isClipOn,
+    photochromatic: flags.isPhotochromatic,
+    isPolarised: flags.isPolarised,
+    noOfClips: noOfClips || null,
+    page: page || null,
+    requiredRow: requiredRow || null,
+  };
 
-  const params = [
-    add(
-      "brandGroup",
-      combineDropdownAndSearch(
-        brandGroupDropdown,
-        columnSearchTerms["brand group"],
-        "BrandGroupName"
-      )
-    ),
-    add(
-      "brandName",
-      combineDropdownAndSearch(
-        brandNameDropdown,
-        columnSearchTerms["brand name"],
-        "BrandName"
-      )
-    ),
-    add(
-      "category",
-      category?.map((c) => c.Id)
-    ),
-    add(
-      "FrameRimType",
-      type?.map((t) => t.Name)
-    ),
-    add("colourCode", colourCode),
-    add("frameColour", frameColour),
-    add("barcode", barcode),
-    add("location", location),
-    add("size", size),
-    add("dbl", dbl),
-    add("ModelNo",modelNo),
-    add("templeLength", templeLength),
-    add("frameFrontColor", frameFrontColor),
-    add("templeColor", templeColor),
-    add("lensColor", lensColor),
-    add("isRxable", flags.isRxable),
-    add("isClipOn", flags.isClipOn),
-    add("photochromatic ", flags.isPhotochromatic),
-    add("isPolarised", flags.isPolarised),
-    add("noOfClips", noOfClips),
-    add("page", page),
-    add("requiredRow", requiredRow),
-  ];
+  // Only include keys that have a value
+  const queryString = Object.entries(paramsObj)
+    .filter(
+      ([_, value]) => value !== null && value !== undefined && value !== ""
+    )
+    .map(([key, value]) => `${key}=${value}`)
+    .join("&");
 
-  // Keep spaces as-is
-  return `?${params.join("&")}`;
+  return queryString ? `?${queryString}` : "";
 };
 
 const SearchFrameStock = () => {
@@ -221,7 +222,7 @@ const SearchFrameStock = () => {
       selectedOthers,
       category: selectedCategories,
       type: selectedTypes,
-      modelNo :columnSearchTerms["model no"] || null,
+      modelNo: columnSearchTerms["model no"] || null,
       colourCode: columnSearchTerms["colour code"] || null,
       frameColour: columnSearchTerms["frame colour"] || null,
       barcode: columnSearchTerms["barcode"] || null,
@@ -250,13 +251,15 @@ const SearchFrameStock = () => {
     currentPage,
     pageSize,
   ]);
-  console.log(selectedOthers);
   const [columnInput, setColumnInput] = useState({ ...columnSearchTerms });
+  const [stockOpen, setStockOpen] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState(null);
 
   // On input change
   const handleColumnInputChange = (column, value) => {
     setColumnInput((prev) => ({ ...prev, [column]: value }));
   };
+  const { data: allLocations } = useGetAllLocationsQuery();
 
   // Debounce effect: updates columnSearchTerms after 500ms of inactivity
   useEffect(() => {
@@ -586,9 +589,13 @@ const SearchFrameStock = () => {
     // Re-fetch original (unfiltered) data
     // refetch();
   };
+
   const [getlabels, { isFetching: isLabelsFetching }] =
     useLazyPrintLabelsQuery();
+  const [getStockHistory, { data: stockData }] = useLazyGetStockHistoryQuery();
   const [printId, setprintId] = useState(null);
+    const [stockId, setstockId] = useState(null);
+
   const handleLabels = async (detailId) => {
     setprintId(detailId);
     try {
@@ -616,6 +623,23 @@ const SearchFrameStock = () => {
       setprintId(null);
     }
   };
+
+  const handleStockHistory = async (id) => {
+    setstockId(id);
+    try {
+      await getStockHistory({
+        companyId: selectedLocation ? selectedLocation : parseInt(hasMultipleLocations[0]),
+        productType: 1,
+        detailId: id,
+      }).unwrap();
+      setStockOpen(true)
+      setstockId(null);
+    } catch (error) {
+      console.log(error);
+      setstockId(null);
+      setStockOpen(false)
+    }
+  };
   // Get column value for filtering and display
   const getColumnValue = (item, column) => {
     switch (column) {
@@ -625,8 +649,13 @@ const SearchFrameStock = () => {
         return item.BrandName || "";
       case "cat":
         return item.Category === 0 ? "O" : "S";
-      case "type":
-        return item.FrameRimType || "";
+      case "type": {
+        const typeObj = rimOptions.find((t) => t.Name == item.FrameRimType);
+        console.log("rim", typesOptions);
+
+        return typeObj ? typeObj.Id : "";
+      }
+
       case "model no":
         return item.ModelNo || "";
       case "colour code":
@@ -654,19 +683,8 @@ const SearchFrameStock = () => {
         return "";
     }
   };
-  const locallyFiltered = useMemo(() => {
-    const raw = framData?.data || [];
-    return raw.filter((item) =>
-      Object.entries(columnSearchTerms).every(([col, term]) => {
-        if (!term) return true;
-        const val = getColumnValue(item, col).toString().toLowerCase();
-        return val.includes(term.toLowerCase());
-      })
-    );
-  }, [framData?.data, columnSearchTerms]);
 
-  const startIndex = (currentPage - 1) * pageSize;
-  const paginatedData = locallyFiltered || []; // <-- changed
+  const paginatedData = framData?.data || [];
 
   const totalPages = useMemo(() => {
     if (!framData?.total || !framData?.requiredRow) return 1;
@@ -706,13 +724,54 @@ const SearchFrameStock = () => {
       <div className="bg-white rounded-xl shadow-sm p-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold text-gray-800">Frame Stock Search</h2>
-          <div className="flex gap-3 items-center">
-            <Button variant="outline" className="flex items-center gap-2">
-              <FiChevronDown className="transform rotate-90" />
-              Back
-            </Button>
-            <Button onClick={handleRefresh}>Refresh</Button>
+          <h2 className="text-2xl font-semibold text-gray-800">
+            Frame Stock Search
+          </h2>
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-3 items-center">
+              <Button variant="outline" className="flex items-center gap-2">
+                <FiChevronDown className="transform rotate-90" />
+                Back
+              </Button>
+              <Button onClick={handleRefresh}>Refresh</Button>
+            </div>
+            <div className="">
+              {Array.isArray(hasMultipleLocations) &&
+                hasMultipleLocations.length > 1 && (
+                  <div className="">
+                    <Autocomplete
+                      options={
+                        allLocations?.data?.filter((loc) =>
+                          hasMultipleLocations.includes(loc.Id)
+                        ) || []
+                      }
+                      getOptionLabel={(option) => option.LocationName}
+                      onChange={(event, newValue) => {
+                        if (newValue) {
+                          setSelectedLocation(newValue?.Id);
+                        }
+                      }}
+                      value={
+                        allLocations?.data?.find(
+                          (b) => b.Id === selectedLocation
+                        ) || null
+                      }
+                      isOptionEqualToValue={(option, value) =>
+                        option.Id === value.Id
+                      }
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Select Location"
+                          variant="outlined"
+                          fullWidth
+                        />
+                      )}
+                      sx={{ width: 400 }}
+                    />
+                  </div>
+                )}
+            </div>
           </div>
         </div>
 
@@ -1291,6 +1350,8 @@ const SearchFrameStock = () => {
                     variant="outline"
                     title="Transaction History"
                     icon={FiActivity}
+                    onClick={() => handleStockHistory(item.DetailId)}
+                    isLoading={stockId === item.DetailId}
                   ></Button>
                 </TableCell>
               </TableRow>
@@ -1306,6 +1367,41 @@ const SearchFrameStock = () => {
           onPageSizeChange={handlePageSizeChange}
           totalItems={framData?.total ?? 0}
         />
+
+        <Modal isOpen={stockOpen} onClose={() => setStockOpen(false)}>
+          <Table
+            expand={true}
+            freeze={true}
+            columns={[
+              "s.no",
+              "transaction date",
+              "grn qty",
+              "stin qty",
+              "sr qty",
+              "salesqty",
+              "stout qty",
+              "prqty",
+            ]}
+            data={stockData?.data || []}
+            renderHeader={renderHeader}
+            renderRow={(item, index) => {
+              return (
+                <TableRow key={item.DetailId}>
+                  <TableCell>{index + 1}</TableCell>
+                  <TableCell>
+                    {item?.TransactionDate?.split("-").reverse().join("/")}
+                  </TableCell>
+                  <TableCell>{item?.GRNQty}</TableCell>
+                  <TableCell>{item?.STInQty}</TableCell>
+                  <TableCell>{item?.SRQty}</TableCell>
+                  <TableCell>{item?.SalesQty}</TableCell>
+                  <TableCell>{item?.STOutQty}</TableCell>
+                  <TableCell>{item?.PRQty}</TableCell>
+                </TableRow>
+              );
+            }}
+          />
+        </Modal>
       </div>
     </div>
   );
