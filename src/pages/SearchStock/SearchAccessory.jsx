@@ -5,6 +5,8 @@ import { Table, TableCell, TableRow } from "../../components/Table";
 import { EyeClosedIcon, EyeIcon, PrinterIcon, RefreshCcw } from "lucide-react";
 import { useLazyGetAccessoryStockQuery } from "../../api/searchStock";
 import toast from "react-hot-toast";
+import { useSelector } from "react-redux";
+import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
 
 const toTitleCase = (str) =>
   str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
@@ -17,7 +19,7 @@ const debounce = (func, delay) => {
   };
 };
 
-const buildQueryParams = ({ brandName, ProductName, barcode, variation }) => {
+const buildQueryParams = ({ brandName, ProductName, barcode, variation, page, requiredRow }) => {
   const add = (key, value) =>
     `${key}=${value !== undefined && value !== null && value !== "" ? encodeURIComponent(value) : ""}`;
 
@@ -26,6 +28,8 @@ const buildQueryParams = ({ brandName, ProductName, barcode, variation }) => {
     add("ProductName", ProductName),
     add("barcode", barcode),
     add("variation", variation),
+    add("page", page),
+    add("requiredRow", requiredRow),
   ];
 
   return `?${params.join("&")}`;
@@ -45,14 +49,36 @@ const SearchAccessory = () => {
   const [searchData, setSearchData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState(null);
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [totalItems, setTotalItems] = useState(0);
+  const { data: allLocations } = useGetAllLocationsQuery();
+
+  const { user, hasMultipleLocations } = useSelector((state) => state.auth);
+
+  // User assigned locations
+  const hasLocation = allLocations?.data ? allLocations?.data?.filter(loc =>
+    hasMultipleLocations.includes(loc.Id)
+  ) : [];
+
+  console.log("hasMultipleLocations ----- ", hasMultipleLocations);
+  console.log("user ----- ", user);
+  console.log("hasLocation ----- ", hasLocation);
+
 
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  const [triggerFetchAccessoryStock, { isLoading, data: apiData, error: apiError }] =
+  const [triggerFetchAccessoryStock, { isLoading }] =
     useLazyGetAccessoryStockQuery();
 
+  // Auto select location if it has only 1.
+  useEffect(() => {
+    if (hasLocation?.length === 1) {
+      setSelectedLocation(hasLocation[0].Id.toString());
+    }
+  }, [hasLocation]);
+
   // Fetch accessories from API with current search terms
-  const fetchAccessories = useCallback(async (searchTerms) => {
+  const fetchAccessories = useCallback(async (searchTerms, page, pageSize) => {
     setError(null);
 
     try {
@@ -61,6 +87,9 @@ const SearchAccessory = () => {
         ProductName: searchTerms["product name"],
         barcode: searchTerms["barcode"],
         variation: searchTerms["variation"],
+        location: selectedLocation,
+        page: page,
+        requiredRow: pageSize
       });
 
       console.log("Fetching with params:", queryString); // Debug log
@@ -69,34 +98,46 @@ const SearchAccessory = () => {
 
       if (result.status === "success" && result.data) {
         setSearchData(result.data);
+        setTotalItems(result.total || 0);
+        toast.success("Data fetched successfully");
       } else {
         setSearchData([]);
+        setTotalItems(0);
       }
-      toast.success("Data fetched successfully");
     } catch (err) {
       console.error("Error fetching accessories:", err);
       toast.error(err?.data?.error || err?.message || "Failed to fetch data");
       setSearchData([]);
+      setTotalItems(0);
     }
   }, [triggerFetchAccessoryStock]);
 
   // Debounced search function
   const debouncedSearch = useMemo(
-    () => debounce((searchTerms) => {
-      fetchAccessories(searchTerms);
+    () => debounce((searchTerms, page, pageSize) => {
+      fetchAccessories(searchTerms, page, pageSize);
     }, 500),
     [fetchAccessories]
   );
 
   // Initial load
   useEffect(() => {
-    fetchAccessories(columnSearchTerms);
-  }, []);
+    fetchAccessories(columnSearchTerms, 1, itemsPerPage);
+  }, []); // Empty dependency array - only run once on mount
 
-  // Reset current page when search data changes (e.g., after a new search)
+  // Fetch data when page changes (but not on initial mount)
+  useEffect(() => {
+    // Skip if it's the initial render (page 1)
+    if (currentPage !== 1 || searchData.length > 0) {
+      fetchAccessories(columnSearchTerms, currentPage, itemsPerPage);
+    }
+  }, [currentPage]); // Only currentPage dependency
+
+  // Fetch data when page size changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchData]);
+    fetchAccessories(columnSearchTerms, 1, itemsPerPage);
+  }, [itemsPerPage]); // Only itemsPerPage dependency
 
   // Handle search input changes
   const handleColumnSearch = (column, value) => {
@@ -105,7 +146,8 @@ const SearchAccessory = () => {
       [column]: value,
     };
     setColumnSearchTerms(updatedTerms);
-    debouncedSearch(updatedTerms);
+    setCurrentPage(1); // Reset to page 1 when searching
+    debouncedSearch(updatedTerms, 1, itemsPerPage);
   };
 
   // Clear all filters and reload
@@ -115,6 +157,7 @@ const SearchAccessory = () => {
       return acc;
     }, {});
     setColumnSearchTerms(clearedTerms);
+    setCurrentPage(1);
 
     // Immediately fetch with cleared filters
     setTimeout(() => {
@@ -123,12 +166,17 @@ const SearchAccessory = () => {
         ProductName: "",
         barcode: "",
         variation: "",
+        location: selectedLocation,
+        page: 1,
+        requiredRow: itemsPerPage
       });
       triggerFetchAccessoryStock(clearedQueryString)
         .unwrap()
         .then((result) => {
           if (result.status === "success" && result.data) {
             setSearchData(result.data);
+            setTotalItems(result.total || 0);
+            console.log("Response - ", result);
             toast.success("Data fetched successfully");
           }
         })
@@ -137,6 +185,18 @@ const SearchAccessory = () => {
           toast.error(err?.data?.error || "Failed to clear filters");
         });
     }, 100);
+  };
+
+  // Handle page change
+  const handlePageChange = (newPage) => {
+    console.log("Changing to page:", newPage);
+    setCurrentPage(newPage);
+  };
+
+  // Handle page size change
+  const handlePageSizeChange = (newSize) => {
+    console.log("Changing page size to:", newSize);
+    setItemsPerPage(newSize);
   };
 
   const renderHeader = (column) => (
@@ -159,14 +219,10 @@ const SearchAccessory = () => {
     </div>
   );
 
-  // Calculate paginated data
-  const totalPages = Math.ceil(searchData.length / itemsPerPage);
-  const paginatedData = searchData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  // Calculate total pages based on server response
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-  if (isLoading) {
+  if (isLoading && searchData.length === 0) {
     return <div>Loading...</div>;
   }
 
@@ -182,17 +238,38 @@ const SearchAccessory = () => {
           <h1 className="text-3xl lg:text-4xl font-bold text-[#000060] mb-2">
             Accessory Stock
           </h1>
-          <Button
-            onClick={handleClearFilters}
-            variant="outline"
-            disabled={isLoading}
-          >
-            <RefreshCcw className={isLoading ? "animate-spin" : ""} />
-            Clear Filters
-          </Button>
+          <div className="flex gap-4">
+            {(hasLocation && hasLocation.length > 1) && (
+              <div className="flex items-center space-x-6 mb-6">
+                <label className="text-sm font-medium text-gray-700">
+                  Select Location:
+                </label>
+                <select
+                  value={selectedLocation}
+                  onChange={(e) => setSelectedLocation(e.target.value)}
+                  className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select a location</option>
+                  {hasLocation.map((loc) => (
+                    <option key={loc.Id} value={loc.Id}>
+                      {loc.LocationName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <Button
+              onClick={handleClearFilters}
+              variant="outline"
+              disabled={isLoading}
+            >
+              <RefreshCcw className={isLoading ? "animate-spin" : ""} />
+              Refresh
+            </Button>
+          </div>
         </div>
         <p className="text-gray-600 text-sm mt-2">
-          Search results: {searchData.length} items found
+          Search results: {totalItems} items found
         </p>
       </div>
 
@@ -224,7 +301,7 @@ const SearchAccessory = () => {
             "stock",
             "action",
           ]}
-          data={paginatedData || []}
+          data={searchData || []}
           renderHeader={renderHeader}
           renderRow={(item, index) => (
             <TableRow key={item.DetailId || index}>
@@ -252,10 +329,10 @@ const SearchAccessory = () => {
               </TableCell>
               <TableCell>
                 <Button variant="outline" size="sm">
-                  <EyeIcon className="w-4 h-4"/>
+                  <EyeIcon className="w-4 h-4" />
                 </Button>
                 <Button variant="outline" size="sm">
-                  <PrinterIcon className="w-4 h-4"/>
+                  <PrinterIcon className="w-4 h-4" />
                 </Button>
               </TableCell>
             </TableRow>
@@ -264,34 +341,11 @@ const SearchAccessory = () => {
           pagination={true}
           currentPage={currentPage}
           totalPages={totalPages}
-          onPageChange={setCurrentPage}
+          onPageChange={handlePageChange}
           pageSize={itemsPerPage}
-          onPageSizeChange={setItemsPerPage}
-          totalItems={paginatedData}
+          onPageSizeChange={handlePageSizeChange}
+          totalItems={totalItems}
         />
-        {/* {searchData.length > 0 && (
-          <div className="flex justify-between items-center mt-4">
-            <Button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              variant="outline"
-              disabled={currentPage === 1 || isLoading}
-            >
-              Previous
-            </Button>
-            <span className="text-gray-600">
-              Page {currentPage} of {totalPages}
-            </span>
-            <Button
-              onClick={() =>
-                setCurrentPage((p) => Math.min(totalPages, p + 1))
-              }
-              variant="outline"
-              disabled={currentPage === totalPages || isLoading}
-            >
-              Next
-            </Button>
-          </div>
-        )} */}
       </div>
     </motion.div>
   );

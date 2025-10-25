@@ -5,6 +5,8 @@ import { Table, TableCell, TableRow } from "../../components/Table";
 import { EyeClosedIcon, EyeIcon, PrinterIcon, RefreshCcw } from "lucide-react";
 import { useLazyGetAllCLStockQuery, useLazyGetCLStockQuery } from "../../api/searchStock";
 import toast from "react-hot-toast";
+import { useSelector } from "react-redux";
+import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
 
 const toTitleCase = (str) =>
     str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
@@ -55,12 +57,32 @@ const SearchContactLens = () => {
         "Stock": ""
     });
 
+    const { data: allLocations } = useGetAllLocationsQuery();
+
     const [searchData, setSearchData] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
+    const [selectedLocation, setSelectedLocation] = useState(null);
     const [error, setError] = useState(null);
 
+    const { user, hasMultipleLocations } = useSelector((state) => state.auth);
+    // User assigned locations
+    const hasLocation = allLocations?.data ? allLocations?.data?.filter(loc =>
+        hasMultipleLocations.includes(loc.Id)
+    ) : [];
+
+    console.log("hasMultipleLocations ----- ", hasMultipleLocations);
+    console.log("user ----- ", user);
+    console.log("hasLocation ----- ", hasLocation);
+
     const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    // Auto select location if it has only 1.
+    useEffect(() => {
+        if (hasLocation?.length === 1) {
+            setSelectedLocation(hasLocation[0].Id.toString());
+        }
+    }, [hasLocation]);
 
     const [triggerFetchCLStock, { isLoading: isBarcodeLoading }] =
         useLazyGetCLStockQuery();
@@ -86,6 +108,7 @@ const SearchContactLens = () => {
                 Axis: searchTerms["Axis"],
                 Addition: searchTerms["Addition"],
                 Barcode: searchTerms["barcode"],
+                location: selectedLocation,
                 page: page,
                 requiredRow: pageSize
             });
@@ -178,6 +201,7 @@ const SearchContactLens = () => {
                 Axis: "",
                 Addition: "",
                 Barcode: "",
+                location: selectedLocation,
                 page: 1,
                 requiredRow: itemsPerPage
             });
@@ -392,14 +416,35 @@ const SearchContactLens = () => {
                     <h1 className="text-3xl lg:text-4xl font-bold text-[#000060] mb-2">
                         Contact Lens Stock
                     </h1>
-                    <Button
-                        onClick={handleClearFilters}
-                        variant="outline"
-                        disabled={isLoading}
-                    >
-                        <RefreshCcw className={isLoading ? "animate-spin" : ""} />
-                        Clear Filters
-                    </Button>
+                    <div className="flex gap-4">
+                        {(hasLocation && hasLocation.length > 1) && (
+                            <div className="flex items-center space-x-6 mb-6">
+                                <label className="text-sm font-medium text-gray-700">
+                                    Select Location:
+                                </label>
+                                <select
+                                    value={selectedLocation}
+                                    onChange={(e) => setSelectedLocation(e.target.value)}
+                                    className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="">Select a location</option>
+                                    {hasLocation.map((loc) => (
+                                        <option key={loc.Id} value={loc.Id}>
+                                            {loc.LocationName}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                        <Button
+                            onClick={handleClearFilters}
+                            variant="outline"
+                            disabled={isLoading}
+                        >
+                            <RefreshCcw className={isLoading ? "animate-spin" : ""} />
+                            Refresh
+                        </Button>
+                    </div>
                 </div>
                 <p className="text-gray-600 text-sm mt-2">
                     Search results: {totalItems} items found
