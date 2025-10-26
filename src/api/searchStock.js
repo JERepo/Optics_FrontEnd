@@ -45,6 +45,6 @@ export const {
   useLazyGetAccessoryStockQuery,
   useLazyGetCLStockQuery,
   useLazyGetAllCLStockQuery,
-  useLazySyncClQuery
+  useLazySyncClQuery,
   useLazyGetFreshDataQuery
 } = searchStock;
