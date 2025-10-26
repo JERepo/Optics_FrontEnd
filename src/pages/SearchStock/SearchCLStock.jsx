@@ -25,37 +25,23 @@ const debounce = (func, delay) => {
   };
 };
 
-const buildQueryParams = ({
-  BrandName,
-  ProductName,
-  Colour,
-  SphericalPower,
-  CylindricalPower,
-  Axis,
-  Addition,
-  Barcode,
-  page,
-  requiredRow,
-}) => {
-  const add = (key, value) =>
-    `${key}=${
-      value !== undefined && value !== null && value !== ""
-        ? encodeURIComponent(value)
-        : ""
-    }`;
+const buildQueryParams = ({ BrandName, ProductName, Colour, SphericalPower, CylindricalPower, Axis, Addition, Barcode, location, page, requiredRow }) => {
+    const add = (key, value) =>
+        `${key}=${value !== undefined && value !== null && value !== "" ? encodeURIComponent(value) : ""}`;
 
-  const params = [
-    add("BrandName", BrandName),
-    add("ProductName", ProductName),
-    add("Colour", Colour),
-    add("SphericalPower", SphericalPower),
-    add("CylindricalPower", CylindricalPower),
-    add("Axis", Axis),
-    add("Addition", Addition),
-    add("Barcode", Barcode),
-    add("page", page),
-    add("requiredRow", requiredRow),
-  ];
+    const params = [
+        add("BrandName", BrandName),
+        add("ProductName", ProductName),
+        add("Colour", Colour),
+        add("SphericalPower", SphericalPower),
+        add("CylindricalPower", CylindricalPower),
+        add("Axis", Axis),
+        add("Addition", Addition),
+        add("Barcode", Barcode),
+        add("location", location),
+        add("page", page),
+        add("requiredRow", requiredRow)
+    ];
 
   return `?${params.join("&")}`;
 };
@@ -97,7 +83,7 @@ const SearchContactLens = () => {
   console.log("user ----- ", user);
   console.log("hasLocation ----- ", hasLocation);
 
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [itemsPerPage, setItemsPerPage] = useState(50);
 
   // Auto select location if it has only 1.
   useEffect(() => {
@@ -169,30 +155,22 @@ const SearchContactLens = () => {
           result = await triggerFetchCLStock(queryString).unwrap();
         }
 
-        if (result.status === true && result.data) {
-          setSearchData(result.data);
-          setTotalItems(result.total || 0);
-          console.log("Response - ", result);
-          toast.success("Data fetched successfully");
-        } else {
-          setSearchData([]);
-          setTotalItems(0);
+            if (result.status === true && result.data) {
+                setSearchData(result.data);
+                setTotalItems(result.total || 0);
+                console.log("Response - ", result);
+                // toast.success("Data fetched successfully");
+            } else {
+                setSearchData([]);
+                setTotalItems(0);
+            }
+        } catch (err) {
+            console.error("Error fetching data:", err);
+            toast.error(err?.data?.error || err?.message || "Failed to fetch data");
+            setSearchData([]);
+            setTotalItems(0);
         }
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        toast.error(err?.data?.error || err?.message || "Failed to fetch data");
-        setSearchData([]);
-        setTotalItems(0);
-      }
-    },
-    [
-      triggerFetchCLStock,
-      triggerFetchAllCLStock,
-      activeTab,
-      currentPage,
-      itemsPerPage,
-    ]
-  );
+    }, [triggerFetchCLStock, triggerFetchAllCLStock, activeTab, currentPage, itemsPerPage]);
 
   // Debounced search function
   const debouncedSearch = useMemo(
@@ -266,22 +244,22 @@ const SearchContactLens = () => {
 
       setSearchData([]);
 
-      fetchFunction(clearedQueryString)
-        .unwrap()
-        .then((result) => {
-          if (result.status === true && result.data) {
-            setSearchData(result.data);
-            setTotalItems(result.total || 0);
-            console.log("Response - ", result);
-            toast.success("Data fetched successfully");
-          }
-        })
-        .catch((err) => {
-          console.error("Error clearing filters:", err);
-          toast.error(err?.data?.error || "Failed to clear filters");
-        });
-    }, 100);
-  };
+            fetchFunction(clearedQueryString)
+                .unwrap()
+                .then((result) => {
+                    if (result.status === true && result.data) {
+                        setSearchData(result.data);
+                        setTotalItems(result.total || 0);
+                        console.log("Response - ", result);
+                        // toast.success("Data fetched successfully");
+                    }
+                })
+                .catch((err) => {
+                    console.error("Error clearing filters:", err);
+                    toast.error(err?.data?.error || "Failed to clear filters");
+                });
+        }, 100);
+    };
 
   // Handle tab change
   const handleTabChange = (tab) => {
@@ -369,106 +347,92 @@ const SearchContactLens = () => {
   // Calculate total pages based on server response
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-  // Render row based on active tab
-  const renderRow = (item, index) => {
-    if (activeTab === "all") {
-      return (
-        <TableRow key={item.DetailId || index}>
-          <TableCell>{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
-          <TableCell>{item.BrandName || "-"}</TableCell>
-          <TableCell>{item.ProductName || "-"}</TableCell>
-          <TableCell>{item.Colour || "-"}</TableCell>
-          <TableCell>{item.SphericalPower || "-"}</TableCell>
-          <TableCell>{item.CylindricalPower || "-"}</TableCell>
-          <TableCell>{item.Axis || "-"}</TableCell>
-          <TableCell>{item.Addition || "-"}</TableCell>
-          <TableCell>{item.Barcode || "-"}</TableCell>
-          <TableCell>{item.CLBatchCode || "-"}</TableCell>
-          <TableCell>{item.CLBatchExpiry || "-"}</TableCell>
-          <TableCell>
-            {item.CLMRP ? `₹${parseFloat(item.CLMRP).toFixed(2)}` : "-"}
-          </TableCell>
-          <TableCell>
-            <span
-              className={`font-semibold ${
-                item.Quantity > 10
-                  ? "text-green-600"
-                  : item.Quantity > 0
-                  ? "text-yellow-600"
-                  : "text-red-600"
-              }`}
-            >
-              {item.Quantity !== undefined ? item.Quantity : 0}
-            </span>
-          </TableCell>
-          <TableCell className="flex gap-1">
-            <Button variant="outline" size="xs">
-              <EyeIcon className="w-4 h-4" />
-            </Button>
-            <Button variant="outline" size="xs">
-              <PrinterIcon className="w-4 h-4" />
-            </Button>
-            <Button
-              size="xs"
-              variant="outline"
-              title="Transaction History"
-              icon={FiActivity}
-              onClick={() => handleStockHistory(item.DetailId)}
-              isLoading={stockId === item.DetailId}
-              loadingText=""
-            ></Button>
-          </TableCell>
-        </TableRow>
-      );
-    } else {
-      return (
-        <TableRow key={item.DetailId || index}>
-          <TableCell>{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
-          <TableCell>{item.BrandName || "-"}</TableCell>
-          <TableCell>{item.ProductName || "-"}</TableCell>
-          <TableCell>{item.Colour || "-"}</TableCell>
-          <TableCell>{item.SphericalPower || "-"}</TableCell>
-          <TableCell>{item.CylindricalPower || "-"}</TableCell>
-          <TableCell>{item.Axis || "-"}</TableCell>
-          <TableCell>{item.Addition || "-"}</TableCell>
-          <TableCell>{item.Barcode || "-"}</TableCell>
-          <TableCell>
-            {item.CLMRP ? `₹${parseFloat(item.CLMRP).toFixed(2)}` : "-"}
-          </TableCell>
-          <TableCell>
-            <span
-              className={`font-semibold ${
-                item.Quantity > 10
-                  ? "text-green-600"
-                  : item.Quantity > 0
-                  ? "text-yellow-600"
-                  : "text-red-600"
-              }`}
-            >
-              {item.Quantity !== undefined ? item.Quantity : 0}
-            </span>
-          </TableCell>
-         <TableCell className="flex gap-1">
-            <Button variant="outline" size="xs">
-              <EyeIcon className="w-4 h-4" />
-            </Button>
-            <Button variant="outline" size="xs">
-              <PrinterIcon className="w-4 h-4" />
-            </Button>
-            <Button
-              size="xs"
-              variant="outline"
-              title="Transaction History"
-              icon={FiActivity}
-              onClick={() => handleStockHistory(item.DetailId)}
-              isLoading={stockId === item.DetailId}
-              loadingText=""
-            ></Button>
-          </TableCell>
-        </TableRow>
-      );
-    }
-  };
+    // Render row based on active tab
+    const renderRow = (item, index) => {
+        if (activeTab === "all") {
+            return (
+                <TableRow key={item.DetailId || index}>
+                    <TableCell>
+                        {((currentPage - 1) * itemsPerPage) + index + 1}
+                    </TableCell>
+                    <TableCell>{item.BrandName || "-"}</TableCell>
+                    <TableCell>{item.ProductName || "-"}</TableCell>
+                    <TableCell>{item.Colour || "-"}</TableCell>
+                    <TableCell>{item.SphericalPower || "-"}</TableCell>
+                    <TableCell>{item.CylindricalPower || "-"}</TableCell>
+                    <TableCell>{item.Axis || "-"}</TableCell>
+                    <TableCell>{item.Addition || "-"}</TableCell>
+                    <TableCell>{item.Barcode || "-"}</TableCell>
+                    <TableCell>{item.CLBatchCode || "-"}</TableCell>
+                    <TableCell>{item.CLBatchExpiry || "-"}</TableCell>
+                    <TableCell>
+                        {item.CLMRP ? `₹${parseFloat(item.CLMRP).toFixed(2)}` : "-"}
+                    </TableCell>
+                    {/* <TableCell>
+                        <span
+                            className={`font-semibold ${item.Quantity > 10
+                                ? "text-green-600"
+                                : item.Quantity > 0
+                                    ? "text-yellow-600"
+                                    : "text-red-600"
+                                }`}
+                        >
+                            {item.Quantity !== undefined ? item.Quantity : 0}
+                        </span>
+                    </TableCell> */}
+                    <TableCell>{item.Quantity !== undefined ? item.Quantity : 0}</TableCell>
+                    <TableCell>
+                        <Button variant="outline" size="sm">
+                            <EyeIcon className="w-4 h-4" />
+                        </Button>
+                        <Button variant="outline" size="sm">
+                            <PrinterIcon className="w-4 h-4" />
+                        </Button>
+                    </TableCell>
+                </TableRow>
+            );
+        } else {
+            return (
+                <TableRow key={item.DetailId || index}>
+                    <TableCell>
+                        {(currentPage - 1) * itemsPerPage + index + 1}
+                    </TableCell>
+                    <TableCell>{item.BrandName || "-"}</TableCell>
+                    <TableCell>{item.ProductName || "-"}</TableCell>
+                    <TableCell>{item.Colour || "-"}</TableCell>
+                    <TableCell>{item.SphericalPower || "-"}</TableCell>
+                    <TableCell>{item.CylindricalPower || "-"}</TableCell>
+                    <TableCell>{item.Axis || "-"}</TableCell>
+                    <TableCell>{item.Addition || "-"}</TableCell>
+                    <TableCell>{item.Barcode || "-"}</TableCell>
+                    <TableCell>
+                        {item.CLMRP ? `₹${parseFloat(item.CLMRP).toFixed(2)}` : "-"}
+                    </TableCell>
+                    {/* <TableCell>
+                        <span
+                            className={`font-semibold ${item.Quantity > 10
+                                ? "text-green-600"
+                                : item.Quantity > 0
+                                    ? "text-yellow-600"
+                                    : "text-red-600"
+                                }`}
+                        >
+                            {item.Quantity !== undefined ? item.Quantity : 0}
+                        </span>
+                    </TableCell> */}
+                    <TableCell>{item.Quantity !== undefined ? item.Quantity : 0}</TableCell>
+                    <TableCell>
+                        <Button variant="outline" size="sm">
+                            <EyeIcon className="w-4 h-4" />
+                        </Button>
+                        <Button variant="outline" size="sm">
+                            <PrinterIcon className="w-4 h-4" />
+                        </Button>
+                    </TableCell>
+                </TableRow>
+            );
+        }
+    };
 
   if (isLoading && searchData.length === 0) {
     return <div>Loading...</div>;
@@ -532,23 +496,23 @@ const SearchContactLens = () => {
           </div>
         )}
 
-        {/* Tabs */}
-        <div className="flex gap-4 mb-4">
-          <Button
-            onClick={() => handleTabChange("all")}
-            variant={activeTab === "all" ? "default" : "outline"}
-            disabled={isLoading}
-          >
-            All
-          </Button>
-          <Button
-            onClick={() => handleTabChange("barcode")}
-            variant={activeTab === "barcode" ? "default" : "outline"}
-            disabled={isLoading}
-          >
-            Barcode Specific
-          </Button>
-        </div>
+                {/* Tabs */}
+                <div className="flex gap-4 mb-4">
+                    <Button
+                        onClick={() => handleTabChange("all")}
+                        variant={activeTab === "all" ? "default" : "outline"}
+                        disabled={isLoading}
+                    >
+                        With BatchCode + Expiry
+                    </Button>
+                    <Button
+                        onClick={() => handleTabChange("barcode")}
+                        variant={activeTab === "barcode" ? "default" : "outline"}
+                        disabled={isLoading}
+                    >
+                        Summary
+                    </Button>
+                </div>
 
         <Table
           expand={true}

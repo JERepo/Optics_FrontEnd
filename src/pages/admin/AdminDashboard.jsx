@@ -113,6 +113,8 @@ const AdminDashboard = () => {
   const dispatch = useDispatch();
   const { hasMultipleLocations } = useSelector((state) => state.auth);
 
+  console.log("Hi")
+
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   const authUser = useSelector((state) => state.auth.user);
   const { data: allLocations } = useGetAllLocationsQuery();
@@ -136,7 +138,11 @@ const AdminDashboard = () => {
   } = useGetUserByIdQuery(
     { id: userId },
     { skip: !isAuthenticated || !userId }
+    // { skip: !userId }
+
   );
+
+  console.log("userLocationData - ", userLocationData);
 
   const { data: locationById, isLoading: isLocationLoading } =
     useGetLocationByIdQuery({ id: location }, { skip: !location });

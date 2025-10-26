@@ -23,14 +23,7 @@ const debounce = (func, delay) => {
   };
 };
 
-const buildQueryParams = ({
-  brandName,
-  ProductName,
-  barcode,
-  variation,
-  page,
-  requiredRow,
-}) => {
+const buildQueryParams = ({ brandName, ProductName, barcode, variation, location, page, requiredRow }) => {
   const add = (key, value) =>
     `${key}=${
       value !== undefined && value !== null && value !== ""
@@ -43,6 +36,7 @@ const buildQueryParams = ({
     add("ProductName", ProductName),
     add("barcode", barcode),
     add("variation", variation),
+    add("location", location),
     add("page", page),
     add("requiredRow", requiredRow),
   ];
@@ -81,7 +75,8 @@ const SearchAccessory = () => {
   console.log("user ----- ", user);
   console.log("hasLocation ----- ", hasLocation);
 
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  const [itemsPerPage, setItemsPerPage] = useState(50);
 
   const [triggerFetchAccessoryStock, { isLoading }] =
     useLazyGetAccessoryStockQuery();
@@ -164,23 +159,21 @@ const SearchAccessory = () => {
 
         const result = await triggerFetchAccessoryStock(queryString).unwrap();
 
-        if (result.status === "success" && result.data) {
-          setSearchData(result.data);
-          setTotalItems(result.total || 0);
-          toast.success("Data fetched successfully");
-        } else {
-          setSearchData([]);
-          setTotalItems(0);
-        }
-      } catch (err) {
-        console.error("Error fetching accessories:", err);
-        toast.error(err?.data?.error || err?.message || "Failed to fetch data");
+      if (result.status === "success" && result.data) {
+        setSearchData(result.data);
+        setTotalItems(result.total || 0);
+        // toast.success("Data fetched successfully");
+      } else {
         setSearchData([]);
         setTotalItems(0);
       }
-    },
-    [triggerFetchAccessoryStock]
-  );
+    } catch (err) {
+      console.error("Error fetching accessories:", err);
+      toast.error(err?.data?.error || err?.message || "Failed to fetch data");
+      setSearchData([]);
+      setTotalItems(0);
+    }
+  }, [triggerFetchAccessoryStock]);
 
   // Debounced search function
   const debouncedSearch = useMemo(
@@ -248,7 +241,7 @@ const SearchAccessory = () => {
             setSearchData(result.data);
             setTotalItems(result.total || 0);
             console.log("Response - ", result);
-            toast.success("Data fetched successfully");
+            // toast.success("Data fetched successfully");
           }
         })
         .catch((err) => {
@@ -386,7 +379,7 @@ const SearchAccessory = () => {
               <TableCell>
                 {item.OPMRP ? `₹${parseFloat(item.OPMRP).toFixed(2)}` : "-"}
               </TableCell>
-              <TableCell>
+              {/* <TableCell>
                 <span
                   className={`font-semibold ${
                     item.Quantity > 10
@@ -398,18 +391,11 @@ const SearchAccessory = () => {
                 >
                   {item.Quantity !== undefined ? item.Quantity : 0}
                 </span>
-              </TableCell>
-              <TableCell className="flex gap-1">
-                <Button
-                  size="xs"
-                  variant="outline"
-                  title="Barcode Label Printing"
-                  icon={FiTag}
-                  onClick={() => handleLabels(item.DetailId)}
-                  isLoading={printId === item.DetailId}
-                  loadingText=""
-                ></Button>
-                <Button variant="outline" size="xs">
+              </TableCell> */}
+              <TableCell>{item.Quantity !== undefined ? item.Quantity : 0}</TableCell>
+
+              <TableCell>
+                <Button variant="outline" size="sm">
                   <EyeIcon className="w-4 h-4" />
                 </Button>
                 <Button variant="outline" size="xs">

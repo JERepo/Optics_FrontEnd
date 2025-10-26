@@ -42,6 +42,19 @@ const Login = () => {
       if (res.status === "success") {
         dispatch(setCredentials(res.data));
         setUserId(res.data.Id);
+        console.log("REs kjanda - -", res.data);
+
+        const locationArray = res.data.Locations.split(",").map(Number);
+
+        if (locationArray.length > 1) {
+          // setAccLocations(locationArray);
+          dispatch(setLocations(locationArray));
+        } else {
+          // setAccLocations(locationArray);
+          // setLocation(userLocationData.data.Locations[0]);
+          dispatch(setLocations(res.data.Locations));
+        }
+
         localStorage.setItem("auth", JSON.stringify(res.data.accessToken));
         toast.success(`Welcome ${res.data?.FullName}`);
       } else {

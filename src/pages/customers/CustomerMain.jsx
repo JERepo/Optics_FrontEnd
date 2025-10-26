@@ -31,8 +31,12 @@ const CustomerMain = () => {
   const [isCreditLimitOpened, setIsCreditLimitOpened] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
 
+  console.log("hasMultipleLocations : ", hasMultipleLocations);
+  console.log("user : ", user);
+
+
   const { data, isLoading } = useGetAllCustomerByIdQuery({
-    id: hasMultipleLocations[0],
+    id: hasMultipleLocations,
   });
   const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
   const { data: allLocations } = useGetAllLocationsQuery();
