@@ -227,7 +227,7 @@ const SearchContactLens = () => {
                 column !== "Stock" &&
                 column !== "MRP" &&
                 column !== "batch code" &&
-                column !== "Expiry date" && (
+                column !== "Expiry Date" && (
                     <div className="relative mt-1">
                         <input
                             type="text"
@@ -495,7 +495,7 @@ const SearchContactLens = () => {
           onPageSizeChange={handlePageSizeChange}
           totalItems={totalItems}
         />
-        <Modal
+        {/* <Modal
           isOpen={stockOpen}
           onClose={() => setStockOpen(false)}
           width="max-w-4xl"
@@ -536,7 +536,7 @@ const SearchContactLens = () => {
               }}
             />
           </div>
-        </Modal>
+        </Modal> */}
       </div>
     </motion.div>
   );
