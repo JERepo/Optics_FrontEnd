@@ -20,7 +20,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
 export default function GRNStep1() {
 
-    const navigate = useNavigate();
+    // const navigate = useNavigate();
 
     // Context
     const { grnData, setGRNData, currentStep, setCurrentStep, updateStep1Data, nextStep } = useGRN();
@@ -360,7 +360,6 @@ export default function GRNStep1() {
 
                 // Move to next step
                 nextStep();
-                // navigate('/grn/create/step2'); // Or use your routing structure
 
             } else {
                 toast.error("Failed to create GRN main entry");

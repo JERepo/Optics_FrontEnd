@@ -3,10 +3,7 @@ import Button from "../../components/ui/Button";
 import { motion } from "framer-motion";
 import { Table, TableCell, TableRow } from "../../components/Table";
 import { EyeClosedIcon, EyeIcon, PrinterIcon, RefreshCcw } from "lucide-react";
-import {
-  useLazyGetAllCLStockQuery,
-  useLazyGetCLStockQuery,
-} from "../../api/searchStock";
+import { useLazyGetAllCLStockQuery, useLazyGetCLStockQuery, useLazySyncClQuery } from "../../api/searchStock";
 import toast from "react-hot-toast";
 import { useSelector } from "react-redux";
 import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
@@ -65,29 +62,29 @@ const buildQueryParams = ({
 const SearchContactLens = () => {
   const [activeTab, setActiveTab] = useState("all"); // "all" or "barcode"
 
-  const [columnSearchTerms, setColumnSearchTerms] = useState({
-    "brand name": "",
-    "product name": "",
-    Color: "",
-    "Sp Power": "",
-    "Cyl Power": "",
-    Axis: "",
-    Addition: "",
-    barcode: "",
-    "Batch Code": "",
-    "Expiry Date": "",
-    MRP: "",
-    Stock: "",
-  });
+    const [columnSearchTerms, setColumnSearchTerms] = useState({
+        "brand name": "",
+        "product name": "",
+        "Colour": "",
+        "Sph Power": "",
+        "Cyl Power": "",
+        "Axis": "",
+        "Add Power": "",
+        "barcode": "",
+        "Batch Code": "",
+        "Expiry Date": "",
+        "MRP": "",
+        "Stock": ""
+    });
 
   const { data: allLocations } = useGetAllLocationsQuery();
 
-  const [searchData, setSearchData] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
-  const [selectedLocation, setSelectedLocation] = useState(null);
-  const [error, setError] = useState(null);
-  const [stockOpen, setStockOpen] = useState(false);
+    const [searchData, setSearchData] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const [selectedLocation, setSelectedLocation] = useState(null);
+    const [error, setError] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
 
   const { user, hasMultipleLocations } = useSelector((state) => state.auth);
   // User assigned locations
@@ -108,59 +105,29 @@ const SearchContactLens = () => {
     }
   }, [hasLocation]);
 
-  const [triggerFetchCLStock, { isLoading: isBarcodeLoading }] =
-    useLazyGetCLStockQuery();
+    const [triggerFetchCLStock] = useLazyGetCLStockQuery();
+    const [triggerFetchAllCLStock] = useLazyGetAllCLStockQuery();
+    const [triggerClSync] = useLazySyncClQuery();
 
-  const [triggerFetchAllCLStock, { isLoading: isAllLoading }] =
-    useLazyGetAllCLStockQuery();
-  const [getStockHistory, { data: stockData }] = useLazyGetStockHistoryQuery();
-  const [stockId, setstockId] = useState(null);
-  const handleStockHistory = async (id) => {
-    setstockId(id);
-    try {
-      await getStockHistory({
-        companyId: selectedLocation
-          ? selectedLocation
-          : parseInt(hasMultipleLocations[0]),
-        productType: 3,
-        detailId: id,
-      }).unwrap();
-      setStockOpen(true);
-      setstockId(null);
-    } catch (error) {
-      console.log(error);
-      setstockId(null);
-      setStockOpen(false);
-    }
-  };
-  // Determine which loading state to use based on active tab
-  const isLoading = activeTab === "all" ? isAllLoading : isBarcodeLoading;
+    // Fetch data based on active tab
+    const fetchData = useCallback(async (searchTerms, tab, page, pageSize) => {
+        setIsLoading(true);
+        setError(null);
 
-  // Fetch data based on active tab
-  const fetchData = useCallback(
-    async (
-      searchTerms,
-      tab = activeTab,
-      page = currentPage,
-      pageSize = itemsPerPage
-    ) => {
-      setSearchData([]);
-      setError(null);
-
-      try {
-        const queryString = buildQueryParams({
-          BrandName: searchTerms["brand name"],
-          ProductName: searchTerms["product name"],
-          Colour: searchTerms["Color"],
-          SphericalPower: searchTerms["Sp Power"],
-          CylindricalPower: searchTerms["Cyl Power"],
-          Axis: searchTerms["Axis"],
-          Addition: searchTerms["Addition"],
-          Barcode: searchTerms["barcode"],
-          location: selectedLocation,
-          page: page,
-          requiredRow: pageSize,
-        });
+        try {
+            const queryString = buildQueryParams({
+                BrandName: searchTerms["brand name"],
+                ProductName: searchTerms["product name"],
+                Colour: searchTerms["Colour"],
+                SphericalPower: searchTerms["Sph Power"],
+                CylindricalPower: searchTerms["Cyl Power"],
+                Axis: searchTerms["Axis"],
+                Addition: searchTerms["Add Power"],
+                Barcode: searchTerms["barcode"],
+                location: selectedLocation,
+                page: page,
+                requiredRow: pageSize
+            });
 
         console.log(`Fetching ${tab} tab with params:`, queryString);
 
@@ -171,30 +138,23 @@ const SearchContactLens = () => {
           result = await triggerFetchCLStock(queryString).unwrap();
         }
 
-        if (result.status === true && result.data) {
-          setSearchData(result.data);
-          setTotalItems(result.total || 0);
-          console.log("Response - ", result);
-          // toast.success("Data fetched successfully");
-        } else {
-          setSearchData([]);
-          setTotalItems(0);
+            if (result.status === true && result.data) {
+                setSearchData(result.data);
+                setTotalItems(result.total || 0);
+                console.log("Response - ", result);
+            } else {
+                setSearchData([]);
+                setTotalItems(0);
+            }
+        } catch (err) {
+            console.error("Error fetching data:", err);
+            toast.error(err?.data?.error || err?.message || "Failed to fetch data");
+            setSearchData([]);
+            setTotalItems(0);
+        } finally {
+            setIsLoading(false);
         }
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        toast.error(err?.data?.error || err?.message || "Failed to fetch data");
-        setSearchData([]);
-        setTotalItems(0);
-      }
-    },
-    [
-      triggerFetchCLStock,
-      triggerFetchAllCLStock,
-      activeTab,
-      currentPage,
-      itemsPerPage,
-    ]
-  );
+    }, [triggerFetchCLStock, triggerFetchAllCLStock, selectedLocation]);
 
   // Debounced search function
   const debouncedSearch = useMemo(
@@ -205,27 +165,19 @@ const SearchContactLens = () => {
     [fetchData]
   );
 
-  // Initial load
-  useEffect(() => {
-    fetchData(columnSearchTerms, activeTab, 1, itemsPerPage);
-  }, []);
+    // Initial load - only fetch once on mount when location is available
+    useEffect(() => {
+        if (selectedLocation) {
+            fetchData(columnSearchTerms, activeTab, 1, itemsPerPage);
+        }
+    }, [selectedLocation]);
 
-  // Fetch data when tab changes
-  useEffect(() => {
-    setCurrentPage(1);
-    fetchData(columnSearchTerms, activeTab, 1, itemsPerPage);
-  }, [activeTab]);
-
-  // Fetch data when page changes
-  useEffect(() => {
-    fetchData(columnSearchTerms, activeTab, currentPage, itemsPerPage);
-  }, [currentPage]);
-
-  // Fetch data when page size changes
-  useEffect(() => {
-    setCurrentPage(1);
-    fetchData(columnSearchTerms, activeTab, 1, itemsPerPage);
-  }, [itemsPerPage]);
+    // Fetch data when page changes (but not on mount)
+    useEffect(() => {
+        if (currentPage !== 1 && selectedLocation) {
+            fetchData(columnSearchTerms, activeTab, currentPage, itemsPerPage);
+        }
+    }, [currentPage]);
 
   // Handle search input changes
   const handleColumnSearch = (column, value) => {
@@ -238,247 +190,181 @@ const SearchContactLens = () => {
     debouncedSearch(updatedTerms, activeTab, 1, itemsPerPage);
   };
 
-  // Clear all filters and reload
-  const handleClearFilters = () => {
-    const clearedTerms = Object.keys(columnSearchTerms).reduce((acc, key) => {
-      acc[key] = "";
-      return acc;
-    }, {});
-    setColumnSearchTerms(clearedTerms);
-    setCurrentPage(1);
+    // Clear all filters and reload
+    const handleClearFilters = async () => {
 
-    // Immediately fetch with cleared filters
-    setTimeout(() => {
-      const clearedQueryString = buildQueryParams({
-        BrandName: "",
-        ProductName: "",
-        Colour: "",
-        SphericalPower: "",
-        CylindricalPower: "",
-        Axis: "",
-        Addition: "",
-        Barcode: "",
-        location: selectedLocation,
-        page: 1,
-        requiredRow: itemsPerPage,
-      });
+        // Sync CL trigger
+        await triggerClSync();
 
-      const fetchFunction =
-        activeTab === "all" ? triggerFetchAllCLStock : triggerFetchCLStock;
+        const clearedTerms = Object.keys(columnSearchTerms).reduce((acc, key) => {
+            acc[key] = "";
+            return acc;
+        }, {});
+        setColumnSearchTerms(clearedTerms);
+        setCurrentPage(1);
 
-      setSearchData([]);
+        // Fetch with cleared filters
+        fetchData(clearedTerms, activeTab, 1, itemsPerPage);
+    };
 
-      fetchFunction(clearedQueryString)
-        .unwrap()
-        .then((result) => {
-          if (result.status === true && result.data) {
-            setSearchData(result.data);
-            setTotalItems(result.total || 0);
-            console.log("Response - ", result);
-            // toast.success("Data fetched successfully");
-          }
-        })
-        .catch((err) => {
-          console.error("Error clearing filters:", err);
-          toast.error(err?.data?.error || "Failed to clear filters");
-        });
-    }, 100);
-  };
+    // Handle tab change
+    const handleTabChange = (tab) => {
+        setActiveTab(tab);
+        setCurrentPage(1);
 
-  // Handle tab change
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    setCurrentPage(1);
-    // Clear search terms when switching tabs
-    // const clearedTerms = Object.keys(columnSearchTerms).reduce((acc, key) => {
-    //     acc[key] = "";
-    //     return acc;
-    // }, {});
-    // setColumnSearchTerms(clearedTerms);
-  };
+        // Clear search terms when switching tabs
+        const clearedTerms = Object.keys(columnSearchTerms).reduce((acc, key) => {
+            acc[key] = "";
+            return acc;
+        }, {});
+        setColumnSearchTerms(clearedTerms);
+
+        // Fetch data with cleared filters for new tab
+        fetchData(clearedTerms, tab, 1, itemsPerPage);
+    };
 
   // Handle page change
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
   };
 
-  // Handle page size change
-  const handlePageSizeChange = (newSize) => {
-    setItemsPerPage(newSize);
-  };
+    // Handle page size change
+    const handlePageSizeChange = (newSize) => {
+        setItemsPerPage(newSize);
+        setCurrentPage(1);
+        fetchData(columnSearchTerms, activeTab, 1, newSize);
+    };
 
-  const renderHeader = (column) => (
-    <div className="flex flex-col">
-      {toTitleCase(column)}
-      {column !== "action" &&
-        column !== "s.no" &&
-        column !== "stock" &&
-        column !== "mrp" &&
-        column !== "batch code" &&
-        column !== "expiry date" && (
-          <div className="relative mt-1">
-            <input
-              type="text"
-              placeholder={`Search ${toTitleCase(column)}...`}
-              className="w-full pl-2 pr-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-              value={columnSearchTerms[column]}
-              onChange={(e) => handleColumnSearch(column, e.target.value)}
-            />
-          </div>
-        )}
-    </div>
-  );
+    const renderHeader = (column) => (
+        <div className="flex flex-col">
+            {toTitleCase(column)}
+            {column !== "action" &&
+                column !== "s.no" &&
+                column !== "Stock" &&
+                column !== "MRP" &&
+                column !== "batch code" &&
+                column !== "Expiry Date" && (
+                    <div className="relative mt-1">
+                        <input
+                            type="text"
+                            placeholder={`Search ${toTitleCase(column)}...`}
+                            className="w-full pl-2 pr-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            value={columnSearchTerms[column]}
+                            onChange={(e) => handleColumnSearch(column, e.target.value)}
+                        />
+                    </div>
+                )}
+        </div>
+    );
 
-  // Get columns based on active tab
-  const getColumns = () => {
-    if (activeTab === "all") {
-      return [
-        "s.no",
-        "brand name",
-        "product name",
-        "Color",
-        "Sp Power",
-        "Cyl Power",
-        "Axis",
-        "Addition",
-        "barcode",
-        "Batch Code",
-        "Expiry Date",
-        "MRP",
-        "Stock",
-        "action",
-      ];
-    } else {
-      return [
-        "s.no",
-        "brand name",
-        "product name",
-        "Color",
-        "Sp Power",
-        "Cyl Power",
-        "Axis",
-        "Addition",
-        "barcode",
-        "MRP",
-        "Stock",
-        "action",
-      ];
-    }
-  };
+    // Get columns based on active tab
+    const getColumns = () => {
+        if (activeTab === "all") {
+            return [
+                "s.no",
+                "brand name",
+                "product name",
+                "Colour",
+                "Sph Power",
+                "Cyl Power",
+                "Axis",
+                "Add Power",
+                "barcode",
+                "Batch Code",
+                "Expiry Date",
+                "MRP",
+                "Stock",
+                "action",
+            ];
+        } else {
+            return [
+                "s.no",
+                "brand name",
+                "product name",
+                "Colour",
+                "Sph Power",
+                "Cyl Power",
+                "Axis",
+                "Add Power",
+                "barcode",
+                "MRP",
+                "Stock",
+                "action",
+            ];
+        }
+    };
 
   console.log("searchData ", searchData);
 
   // Calculate total pages based on server response
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-  // Render row based on active tab
-  const renderRow = (item, index) => {
-    if (activeTab === "all") {
-      return (
-        <TableRow key={item.DetailId || index}>
-          <TableCell>{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
-          <TableCell>{item.BrandName || "-"}</TableCell>
-          <TableCell>{item.ProductName || "-"}</TableCell>
-          <TableCell>{item.Colour || "-"}</TableCell>
-          <TableCell>{item.SphericalPower || "-"}</TableCell>
-          <TableCell>{item.CylindricalPower || "-"}</TableCell>
-          <TableCell>{item.Axis || "-"}</TableCell>
-          <TableCell>{item.Addition || "-"}</TableCell>
-          <TableCell>{item.Barcode || "-"}</TableCell>
-          <TableCell>{item.CLBatchCode || "-"}</TableCell>
-          <TableCell>{item.CLBatchExpiry || "-"}</TableCell>
-          <TableCell>
-            {item.CLMRP ? `₹${parseFloat(item.CLMRP).toFixed(2)}` : "-"}
-          </TableCell>
-          {/* <TableCell>
-                        <span
-                            className={`font-semibold ${item.Quantity > 10
-                                ? "text-green-600"
-                                : item.Quantity > 0
-                                    ? "text-yellow-600"
-                                    : "text-red-600"
-                                }`}
-                        >
-                            {item.Quantity !== undefined ? item.Quantity : 0}
-                        </span>
-                    </TableCell> */}
-          <TableCell>
-            {item.Quantity !== undefined ? item.Quantity : 0}
-          </TableCell>
-          <TableCell>
-            <Button variant="outline" size="sm">
-              <EyeIcon className="w-4 h-4" />
-            </Button>
-            <Button variant="outline" size="sm">
-              <PrinterIcon className="w-4 h-4" />
-            </Button>
-            <Button
-              size="xs"
-              variant="outline"
-              title="Transaction History"
-              icon={FiActivity}
-              onClick={() => handleStockHistory(item.DetailId)}
-              isLoading={stockId === item.DetailId}
-              loadingText=""
-            ></Button>
-          </TableCell>
-        </TableRow>
-      );
-    } else {
-      return (
-        <TableRow key={item.DetailId || index}>
-          <TableCell>{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
-          <TableCell>{item.BrandName || "-"}</TableCell>
-          <TableCell>{item.ProductName || "-"}</TableCell>
-          <TableCell>{item.Colour || "-"}</TableCell>
-          <TableCell>{item.SphericalPower || "-"}</TableCell>
-          <TableCell>{item.CylindricalPower || "-"}</TableCell>
-          <TableCell>{item.Axis || "-"}</TableCell>
-          <TableCell>{item.Addition || "-"}</TableCell>
-          <TableCell>{item.Barcode || "-"}</TableCell>
-          <TableCell>
-            {item.CLMRP ? `₹${parseFloat(item.CLMRP).toFixed(2)}` : "-"}
-          </TableCell>
-          {/* <TableCell>
-                        <span
-                            className={`font-semibold ${item.Quantity > 10
-                                ? "text-green-600"
-                                : item.Quantity > 0
-                                    ? "text-yellow-600"
-                                    : "text-red-600"
-                                }`}
-                        >
-                            {item.Quantity !== undefined ? item.Quantity : 0}
-                        </span>
-                    </TableCell> */}
-          <TableCell>
-            {item.Quantity !== undefined ? item.Quantity : 0}
-          </TableCell>
-          <TableCell>
-            <Button variant="outline" size="xs">
-              <EyeIcon className="w-4 h-4" />
-            </Button>
-            <Button variant="outline" size="xs">
-              <PrinterIcon className="w-4 h-4" />
-            </Button>
-            <Button
-              size="xs"
-              variant="outline"
-              title="Transaction History"
-              icon={FiActivity}
-              onClick={() => handleStockHistory(item.DetailId)}
-              isLoading={stockId === item.DetailId}
-              loadingText=""
-            ></Button>
-          </TableCell>
-        </TableRow>
-      );
-    }
-  };
+    // Render row based on active tab
+    const renderRow = (item, index) => {
+        // Calculate correct serial number
+        const serialNo = ((currentPage - 1) * itemsPerPage) + index + 1;
 
-  if (isLoading && searchData.length === 0) {
-    return <div>Loading...</div>;
-  }
+        if (activeTab === "all") {
+            return (
+                <TableRow key={`${item.DetailId}-${index}`}>
+                    <TableCell>{serialNo}</TableCell>
+                    <TableCell>{item.BrandName || "-"}</TableCell>
+                    <TableCell>{item.ProductName || "-"}</TableCell>
+                    <TableCell>{item.Colour || "-"}</TableCell>
+                    <TableCell>{item.SphericalPower || "-"}</TableCell>
+                    <TableCell>{item.CylindricalPower || "-"}</TableCell>
+                    <TableCell>{item.Axis || "-"}</TableCell>
+                    <TableCell>{item.Addition || "-"}</TableCell>
+                    <TableCell>{item.Barcode || "-"}</TableCell>
+                    <TableCell>{item.CLBatchCode || "-"}</TableCell>
+                    <TableCell>
+                        {item.CLBatchExpiry
+                            ? item.CLBatchExpiry.split('-').reverse().join('-')
+                            : "-"
+                        }
+                    </TableCell>
+                    <TableCell>
+                        {item.CLMRP ? `₹${parseFloat(item.CLMRP).toFixed(2)}` : "-"}
+                    </TableCell>
+                    <TableCell>{item.Quantity !== undefined ? item.Quantity : 0}</TableCell>
+                    <TableCell>
+                        <Button variant="outline" size="sm">
+                            <EyeIcon className="w-4 h-4" />
+                        </Button>
+                        <Button variant="outline" size="sm">
+                            <PrinterIcon className="w-4 h-4" />
+                        </Button>
+                    </TableCell>
+                </TableRow>
+            );
+        } else {
+            return (
+                <TableRow key={`${item.DetailId}-${index}`}>
+                    <TableCell>{serialNo}</TableCell>
+                    <TableCell>{item.BrandName || "-"}</TableCell>
+                    <TableCell>{item.ProductName || "-"}</TableCell>
+                    <TableCell>{item.Colour || "-"}</TableCell>
+                    <TableCell>{item.SphericalPower || "-"}</TableCell>
+                    <TableCell>{item.CylindricalPower || "-"}</TableCell>
+                    <TableCell>{item.Axis || "-"}</TableCell>
+                    <TableCell>{item.Addition || "-"}</TableCell>
+                    <TableCell>{item.Barcode || "-"}</TableCell>
+                    <TableCell>
+                        {item.CLMRP ? `₹${parseFloat(item.CLMRP).toFixed(2)}` : "-"}
+                    </TableCell>
+                    <TableCell>{item.Quantity !== undefined ? item.Quantity : 0}</TableCell>
+                    <TableCell>
+                        <Button variant="outline" size="sm">
+                            <EyeIcon className="w-4 h-4" />
+                        </Button>
+                        <Button variant="outline" size="sm">
+                            <PrinterIcon className="w-4 h-4" />
+                        </Button>
+                    </TableCell>
+                </TableRow>
+            );
+        }
+    };
 
   return (
     <motion.div
@@ -538,23 +424,77 @@ const SearchContactLens = () => {
           </div>
         )}
 
-        {/* Tabs */}
-        <div className="flex gap-4 mb-4">
-          <Button
-            onClick={() => handleTabChange("all")}
-            variant={activeTab === "all" ? "default" : "outline"}
-            disabled={isLoading}
-          >
-            With BatchCode + Expiry
-          </Button>
-          <Button
-            onClick={() => handleTabChange("barcode")}
-            variant={activeTab === "barcode" ? "default" : "outline"}
-            disabled={isLoading}
-          >
-            Summary
-          </Button>
-        </div>
+                {/* Tabs */}
+                <div className="flex border-b border-gray-200 mb-6">
+                    <button
+                        onClick={() => handleTabChange("all")}
+                        disabled={isLoading}
+                        className={`
+            relative px-6 py-3 font-medium text-sm transition-all duration-200
+            ${activeTab === "all"
+                                ? "text-blue-600 border-t-2 border-l border-r border-blue-600 rounded-t-lg -mb-px bg-blue-200"
+                                : "text-gray-600 hover:text-gray-800 hover:bg-gray-50 border-b border-transparent rounded-t-lg bg-blue-100"
+                            }
+            disabled:opacity-50 disabled:cursor-not-allowed
+        `}
+                    >
+                        <span className="flex items-center gap-2">
+                            <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                />
+                            </svg>
+                            With BatchCode + Expiry
+                        </span>
+                        {activeTab === "all" && (
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
+                        )}
+                    </button>
+
+                    <button
+                        onClick={() => handleTabChange("barcode")}
+                        disabled={isLoading}
+                        className={`
+            relative px-6 py-3 font-medium text-sm transition-all duration-200
+            ${activeTab === "barcode"
+                                ? "text-blue-600 border-t-2 border-l border-r border-blue-600 rounded-t-lg -mb-px bg-blue-200"
+                                : "text-gray-600 hover:text-gray-800 hover:bg-gray-50 border-b border-transparent rounded-t-lg bg-blue-100"
+                            }
+            disabled:opacity-50 disabled:cursor-not-allowed
+        `}
+                    >
+                        <span className="flex items-center gap-2">
+                            <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                />
+                            </svg>
+                            Summary
+                        </span>
+                        {activeTab === "barcode" && (
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
+                        )}
+                    </button>
+
+                    {/* Empty space to complete the border */}
+                    <div className="flex-1 border-b border-gray-200"></div>
+                </div>
 
         <Table
           expand={true}
@@ -571,7 +511,7 @@ const SearchContactLens = () => {
           onPageSizeChange={handlePageSizeChange}
           totalItems={totalItems}
         />
-        <Modal
+        {/* <Modal
           isOpen={stockOpen}
           onClose={() => setStockOpen(false)}
           width="max-w-4xl"
@@ -612,7 +552,7 @@ const SearchContactLens = () => {
               }}
             />
           </div>
-        </Modal>
+        </Modal> */}
       </div>
     </motion.div>
   );

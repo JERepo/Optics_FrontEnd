@@ -48,11 +48,11 @@ const SearchAccessory = () => {
   const [columnSearchTerms, setColumnSearchTerms] = useState({
     "s.no": "",
     "brand name": "",
-    "product name": "",
-    barcode: "",
-    variation: "",
-    mrp: "",
-    stock: "",
+    "product name": "Lens",
+    "barcode": "",
+    "variation": "",
+    "mrp": "",
+    "stock": "",
   });
 
   const [searchData, setSearchData] = useState([]);
@@ -134,35 +134,33 @@ const SearchAccessory = () => {
 
   // Auto select location if it has only 1.
   useEffect(() => {
+    console.log("hasLocation - ", hasLocation);
     if (hasLocation?.length === 1) {
       setSelectedLocation(hasLocation[0].Id.toString());
     }
   }, [hasLocation]);
 
   // Fetch accessories from API with current search terms
-  const fetchAccessories = useCallback(
-    async (searchTerms, page, pageSize) => {
-      setError(null);
+  const fetchAccessories = useCallback(async (searchTerms, page, pageSize) => {
+    setError(null);
+    try {
+      const queryString = buildQueryParams({
+        brandName: searchTerms["brand name"],
+        ProductName: searchTerms["product name"],
+        barcode: searchTerms["barcode"],
+        variation: searchTerms["variation"],
+        location: selectedLocation, // will now be up-to-date
+        page: page,
+        requiredRow: pageSize
+      });
 
-      try {
-        const queryString = buildQueryParams({
-          brandName: searchTerms["brand name"],
-          ProductName: searchTerms["product name"],
-          barcode: searchTerms["barcode"],
-          variation: searchTerms["variation"],
-          location: selectedLocation,
-          page: page,
-          requiredRow: pageSize,
-        });
-
-        console.log("Fetching with params:", queryString); // Debug log
+      console.log("Fetching with location:", selectedLocation); // Debug
 
         const result = await triggerFetchAccessoryStock(queryString).unwrap();
 
       if (result.status === "success" && result.data) {
         setSearchData(result.data);
         setTotalItems(result.total || 0);
-        // toast.success("Data fetched successfully");
       } else {
         setSearchData([]);
         setTotalItems(0);
@@ -173,7 +171,7 @@ const SearchAccessory = () => {
       setSearchData([]);
       setTotalItems(0);
     }
-  }, [triggerFetchAccessoryStock]);
+  }, [triggerFetchAccessoryStock, selectedLocation]);
 
   // Debounced search function
   const debouncedSearch = useMemo(
@@ -183,6 +181,15 @@ const SearchAccessory = () => {
       }, 500),
     [fetchAccessories]
   );
+
+
+  // Trigger fetch when location changes
+  useEffect(() => {
+    if (selectedLocation) {
+      setCurrentPage(1);
+      fetchAccessories(columnSearchTerms, 1, itemsPerPage);
+    }
+  }, [selectedLocation, fetchAccessories, columnSearchTerms, itemsPerPage]);
 
   // Initial load
   useEffect(() => {
