@@ -30,7 +30,7 @@ const FrameMaster = () => {
   });
   const [brandFilter, setBrandFilter] = useState(null);
   const [isBrandPopupOpen, setIsBrandPopupOpen] = useState(false);
-  const locale = navigator.language || navigator.languages[0] || "en-IN";
+  const locale = navigator.language || navigator.languages[0] || "en-GB";
 
   const [selectedBrandId, setSelectedBrandId] = useState(null);
   const [currentStatus, setCurrentStatus] = useState(null);
