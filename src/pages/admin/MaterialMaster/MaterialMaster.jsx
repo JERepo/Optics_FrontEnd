@@ -23,7 +23,7 @@ const MaterialMaster = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const locale = navigator.language || navigator.languages[0] || "en-IN";
+  const locale = navigator.language || navigator.languages[0] || "en-GB";
   const [sortOrder, setSortOrder] = useState("asc");
 
   const [selectedBrandId, setSelectedBrandId] = useState(null);

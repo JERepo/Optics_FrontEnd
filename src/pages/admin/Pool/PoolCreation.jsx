@@ -23,7 +23,7 @@ import { PoolCat } from "../../../utils/constants/PoolCategory";
 
 const PoolCreation = () => {
   const navigate = useNavigate();
-  const locale = "en";
+  const locale = "en-GB";
 
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);

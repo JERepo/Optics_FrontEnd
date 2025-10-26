@@ -7,16 +7,19 @@ import { useLazyGetAllCLStockQuery, useLazyGetCLStockQuery, useLazySyncClQuery }
 import toast from "react-hot-toast";
 import { useSelector } from "react-redux";
 import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
+import Modal from "../../components/ui/Modal";
+import { useLazyGetStockHistoryQuery } from "../../api/vendorPayment";
+import { FiActivity } from "react-icons/fi";
 
 const toTitleCase = (str) =>
-    str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+  str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
 
 const debounce = (func, delay) => {
-    let timer;
-    return (...args) => {
-        clearTimeout(timer);
-        timer = setTimeout(() => func(...args), delay);
-    };
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => func(...args), delay);
+  };
 };
 
 const buildQueryParams = ({ BrandName, ProductName, Colour, SphericalPower, CylindricalPower, Axis, Addition, Barcode, location, page, requiredRow }) => {
@@ -37,11 +40,11 @@ const buildQueryParams = ({ BrandName, ProductName, Colour, SphericalPower, Cyli
         add("requiredRow", requiredRow)
     ];
 
-    return `?${params.join("&")}`;
+  return `?${params.join("&")}`;
 };
 
 const SearchContactLens = () => {
-    const [activeTab, setActiveTab] = useState("all"); // "all" or "barcode"
+  const [activeTab, setActiveTab] = useState("all"); // "all" or "barcode"
 
     const [columnSearchTerms, setColumnSearchTerms] = useState({
         "brand name": "",
@@ -58,7 +61,7 @@ const SearchContactLens = () => {
         "Stock": ""
     });
 
-    const { data: allLocations } = useGetAllLocationsQuery();
+  const { data: allLocations } = useGetAllLocationsQuery();
 
     const [searchData, setSearchData] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -67,24 +70,24 @@ const SearchContactLens = () => {
     const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    const { user, hasMultipleLocations } = useSelector((state) => state.auth);
-    // User assigned locations
-    const hasLocation = allLocations?.data ? allLocations?.data?.filter(loc =>
-        hasMultipleLocations.includes(loc.Id)
-    ) : [];
+  const { user, hasMultipleLocations } = useSelector((state) => state.auth);
+  // User assigned locations
+  const hasLocation = allLocations?.data
+    ? allLocations?.data?.filter((loc) => hasMultipleLocations.includes(loc.Id))
+    : [];
 
-    console.log("hasMultipleLocations ----- ", hasMultipleLocations);
-    console.log("user ----- ", user);
-    console.log("hasLocation ----- ", hasLocation);
+  console.log("hasMultipleLocations ----- ", hasMultipleLocations);
+  console.log("user ----- ", user);
+  console.log("hasLocation ----- ", hasLocation);
 
     const [itemsPerPage, setItemsPerPage] = useState(50);
 
-    // Auto select location if it has only 1.
-    useEffect(() => {
-        if (hasLocation?.length === 1) {
-            setSelectedLocation(hasLocation[0].Id.toString());
-        }
-    }, [hasLocation]);
+  // Auto select location if it has only 1.
+  useEffect(() => {
+    if (hasLocation?.length === 1) {
+      setSelectedLocation(hasLocation[0].Id.toString());
+    }
+  }, [hasLocation]);
 
     const [triggerFetchCLStock] = useLazyGetCLStockQuery();
     const [triggerFetchAllCLStock] = useLazyGetAllCLStockQuery();
@@ -110,14 +113,14 @@ const SearchContactLens = () => {
                 requiredRow: pageSize
             });
 
-            console.log(`Fetching ${tab} tab with params:`, queryString);
+        console.log(`Fetching ${tab} tab with params:`, queryString);
 
-            let result;
-            if (tab === "all") {
-                result = await triggerFetchAllCLStock(queryString).unwrap();
-            } else {
-                result = await triggerFetchCLStock(queryString).unwrap();
-            }
+        let result;
+        if (tab === "all") {
+          result = await triggerFetchAllCLStock(queryString).unwrap();
+        } else {
+          result = await triggerFetchCLStock(queryString).unwrap();
+        }
 
             if (result.status === true && result.data) {
                 setSearchData(result.data);
@@ -137,13 +140,14 @@ const SearchContactLens = () => {
         }
     }, [triggerFetchCLStock, triggerFetchAllCLStock, selectedLocation]);
 
-    // Debounced search function
-    const debouncedSearch = useMemo(
-        () => debounce((searchTerms, tab, page, pageSize) => {
-            fetchData(searchTerms, tab, page, pageSize);
-        }, 500),
-        [fetchData]
-    );
+  // Debounced search function
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((searchTerms, tab, page, pageSize) => {
+        fetchData(searchTerms, tab, page, pageSize);
+      }, 500),
+    [fetchData]
+  );
 
     // Initial load - only fetch once on mount when location is available
     useEffect(() => {
@@ -159,16 +163,16 @@ const SearchContactLens = () => {
         }
     }, [currentPage]);
 
-    // Handle search input changes
-    const handleColumnSearch = (column, value) => {
-        const updatedTerms = {
-            ...columnSearchTerms,
-            [column]: value,
-        };
-        setColumnSearchTerms(updatedTerms);
-        setCurrentPage(1);
-        debouncedSearch(updatedTerms, activeTab, 1, itemsPerPage);
+  // Handle search input changes
+  const handleColumnSearch = (column, value) => {
+    const updatedTerms = {
+      ...columnSearchTerms,
+      [column]: value,
     };
+    setColumnSearchTerms(updatedTerms);
+    setCurrentPage(1);
+    debouncedSearch(updatedTerms, activeTab, 1, itemsPerPage);
+  };
 
     // Clear all filters and reload
     const handleClearFilters = async () => {
@@ -203,10 +207,10 @@ const SearchContactLens = () => {
         fetchData(clearedTerms, tab, 1, itemsPerPage);
     };
 
-    // Handle page change
-    const handlePageChange = (newPage) => {
-        setCurrentPage(newPage);
-    };
+  // Handle page change
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+  };
 
     // Handle page size change
     const handlePageSizeChange = (newSize) => {
@@ -274,10 +278,10 @@ const SearchContactLens = () => {
         }
     };
 
-    console.log("searchData ", searchData);
+  console.log("searchData ", searchData);
 
-    // Calculate total pages based on server response
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
+  // Calculate total pages based on server response
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
 
     // Render row based on active tab
     const renderRow = (item, index) => {
@@ -346,63 +350,63 @@ const SearchContactLens = () => {
         }
     };
 
-    return (
-        <motion.div
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="bg-white rounded-2xl shadow-xl p-6"
-        >
-            <div className="items-center mb-4">
-                <div className="flex items-center justify-between">
-                    <h1 className="text-3xl lg:text-4xl font-bold text-[#000060] mb-2">
-                        Contact Lens Stock
-                    </h1>
-                    <div className="flex gap-4">
-                        {(hasLocation && hasLocation.length > 1) && (
-                            <div className="flex items-center space-x-6 mb-6">
-                                <label className="text-sm font-medium text-gray-700">
-                                    Select Location:
-                                </label>
-                                <select
-                                    value={selectedLocation}
-                                    onChange={(e) => setSelectedLocation(e.target.value)}
-                                    className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                    <option value="">Select a location</option>
-                                    {hasLocation.map((loc) => (
-                                        <option key={loc.Id} value={loc.Id}>
-                                            {loc.LocationName}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
-                        <Button
-                            onClick={handleClearFilters}
-                            variant="outline"
-                            disabled={isLoading}
-                        >
-                            <RefreshCcw className={isLoading ? "animate-spin" : ""} />
-                            Refresh
-                        </Button>
-                    </div>
-                </div>
-                <p className="text-gray-600 text-sm mt-2">
-                    Search results: {totalItems} items found
-                </p>
-            </div>
+  return (
+    <motion.div
+      initial={{ y: -20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.5, delay: 0.2 }}
+      className="bg-white rounded-2xl shadow-xl p-6"
+    >
+      <div className="items-center mb-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl lg:text-4xl font-bold text-[#000060] mb-2">
+            Contact Lens Stock
+          </h1>
+          <div className="flex gap-4">
+            {hasLocation && hasLocation.length > 1 && (
+              <div className="flex items-center space-x-6 mb-6">
+                <label className="text-sm font-medium text-gray-700">
+                  Select Location:
+                </label>
+                <select
+                  value={selectedLocation}
+                  onChange={(e) => setSelectedLocation(e.target.value)}
+                  className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select a location</option>
+                  {hasLocation.map((loc) => (
+                    <option key={loc.Id} value={loc.Id}>
+                      {loc.LocationName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <Button
+              onClick={handleClearFilters}
+              variant="outline"
+              disabled={isLoading}
+            >
+              <RefreshCcw className={isLoading ? "animate-spin" : ""} />
+              Refresh
+            </Button>
+          </div>
+        </div>
+        <p className="text-gray-600 text-sm mt-2">
+          Search results: {totalItems} items found
+        </p>
+      </div>
 
-            <div className="mt-6 relative">
-                <h3 className="text-lg font-semibold mb-4">Contact Lens Items</h3>
-                {isLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 z-10">
-                        <div className="text-center">
-                            <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-                            <p className="mt-2 text-gray-600">Loading contact lens...</p>
-                        </div>
-                    </div>
-                )}
+      <div className="mt-6 relative">
+        <h3 className="text-lg font-semibold mb-4">Contact Lens Items</h3>
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 z-10">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+              <p className="mt-2 text-gray-600">Loading contact lens...</p>
+            </div>
+          </div>
+        )}
 
                 {/* Tabs */}
                 <div className="flex border-b border-gray-200 mb-6">
@@ -476,24 +480,66 @@ const SearchContactLens = () => {
                     <div className="flex-1 border-b border-gray-200"></div>
                 </div>
 
-                <Table
-                    expand={true}
-                    columns={getColumns()}
-                    data={searchData || []}
-                    renderHeader={renderHeader}
-                    renderRow={renderRow}
-                    emptyMessage={isLoading ? "Loading..." : "No data found"}
-                    pagination={true}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={handlePageChange}
-                    pageSize={itemsPerPage}
-                    onPageSizeChange={handlePageSizeChange}
-                    totalItems={totalItems}
-                />
+        <Table
+          expand={true}
+          columns={getColumns()}
+          data={searchData || []}
+          renderHeader={renderHeader}
+          renderRow={renderRow}
+          emptyMessage={isLoading ? "Loading..." : "No data found"}
+          pagination={true}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          pageSize={itemsPerPage}
+          onPageSizeChange={handlePageSizeChange}
+          totalItems={totalItems}
+        />
+        <Modal
+          isOpen={stockOpen}
+          onClose={() => setStockOpen(false)}
+          width="max-w-4xl"
+        >
+          <div className="my-5 mx-3">
+            <div className="my-5 text-lg text-neutral-800 font-semibold">
+              Transaction History
             </div>
-        </motion.div>
-    );
+            <Table
+              expand={true}
+              freeze={true}
+              columns={[
+                "s.no",
+                "transaction date",
+                "grn qty",
+                "stin qty",
+                "sr qty",
+                "salesqty",
+                "stout qty",
+                "pr qty",
+              ]}
+              data={stockData?.data || []}
+              renderRow={(item, index) => {
+                return (
+                  <TableRow key={item.DetailId}>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>
+                      {item?.TransactionDate?.split("-").reverse().join("/")}
+                    </TableCell>
+                    <TableCell>{item?.GRNQty}</TableCell>
+                    <TableCell>{item?.STInQty}</TableCell>
+                    <TableCell>{item?.SRQty}</TableCell>
+                    <TableCell>{item?.SalesQty}</TableCell>
+                    <TableCell>{item?.STOutQty}</TableCell>
+                    <TableCell>{item?.PRQty}</TableCell>
+                  </TableRow>
+                );
+              }}
+            />
+          </div>
+        </Modal>
+      </div>
+    </motion.div>
+  );
 };
 
 export default SearchContactLens;

@@ -7,6 +7,10 @@ import { useLazyGetAccessoryStockQuery } from "../../api/searchStock";
 import toast from "react-hot-toast";
 import { useSelector } from "react-redux";
 import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
+import Modal from "../../components/ui/Modal";
+import { useLazyGetStockHistoryQuery } from "../../api/vendorPayment";
+import { FiActivity, FiTag } from "react-icons/fi";
+import { useLazyPrintLabelsQuery } from "../../api/reportApi";
 
 const toTitleCase = (str) =>
   str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
@@ -21,7 +25,11 @@ const debounce = (func, delay) => {
 
 const buildQueryParams = ({ brandName, ProductName, barcode, variation, location, page, requiredRow }) => {
   const add = (key, value) =>
-    `${key}=${value !== undefined && value !== null && value !== "" ? encodeURIComponent(value) : ""}`;
+    `${key}=${
+      value !== undefined && value !== null && value !== ""
+        ? encodeURIComponent(value)
+        : ""
+    }`;
 
   const params = [
     add("brandName", brandName),
@@ -52,14 +60,16 @@ const SearchAccessory = () => {
   const [error, setError] = useState(null);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [totalItems, setTotalItems] = useState(0);
+  const [stockOpen, setStockOpen] = useState(false);
+
   const { data: allLocations } = useGetAllLocationsQuery();
 
   const { user, hasMultipleLocations } = useSelector((state) => state.auth);
 
   // User assigned locations
-  const hasLocation = allLocations?.data ? allLocations?.data?.filter(loc =>
-    hasMultipleLocations.includes(loc.Id)
-  ) : [];
+  const hasLocation = allLocations?.data
+    ? allLocations?.data?.filter((loc) => hasMultipleLocations.includes(loc.Id))
+    : [];
 
   console.log("hasMultipleLocations ----- ", hasMultipleLocations);
   console.log("user ----- ", user);
@@ -70,6 +80,57 @@ const SearchAccessory = () => {
 
   const [triggerFetchAccessoryStock, { isLoading }] =
     useLazyGetAccessoryStockQuery();
+  const [getlabels, { isFetching: isLabelsFetching }] =
+    useLazyPrintLabelsQuery();
+  const [getStockHistory, { data: stockData }] = useLazyGetStockHistoryQuery();
+  const [stockId, setstockId] = useState(null);
+  const [printId, setprintId] = useState(null);
+
+  const handleLabels = async (detailId) => {
+    setprintId(detailId);
+    try {
+      const blob = await getlabels({
+        frameDetailId: detailId,
+        companyId: parseInt(hasMultipleLocations[0]),
+      }).unwrap();
+
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "application/pdf" })
+      );
+      const newWindow = window.open(url);
+      if (newWindow) {
+        newWindow.onload = () => {
+          newWindow.focus();
+          newWindow.print();
+        };
+      }
+      setprintId(null);
+    } catch (error) {
+      console.log(error);
+      toast.error(
+        "Unable to print the frame label please try again after some time!"
+      );
+      setprintId(null);
+    }
+  };
+  const handleStockHistory = async (id) => {
+    setstockId(id);
+    try {
+      await getStockHistory({
+        companyId: selectedLocation
+          ? selectedLocation
+          : parseInt(hasMultipleLocations[0]),
+        productType: 3,
+        detailId: id,
+      }).unwrap();
+      setStockOpen(true);
+      setstockId(null);
+    } catch (error) {
+      console.log(error);
+      setstockId(null);
+      setStockOpen(false);
+    }
+  };
 
   // Auto select location if it has only 1.
   useEffect(() => {
@@ -95,7 +156,7 @@ const SearchAccessory = () => {
 
       console.log("Fetching with location:", selectedLocation); // Debug
 
-      const result = await triggerFetchAccessoryStock(queryString).unwrap();
+        const result = await triggerFetchAccessoryStock(queryString).unwrap();
 
       if (result.status === "success" && result.data) {
         setSearchData(result.data);
@@ -114,9 +175,10 @@ const SearchAccessory = () => {
 
   // Debounced search function
   const debouncedSearch = useMemo(
-    () => debounce((searchTerms, page, pageSize) => {
-      fetchAccessories(searchTerms, page, pageSize);
-    }, 500),
+    () =>
+      debounce((searchTerms, page, pageSize) => {
+        fetchAccessories(searchTerms, page, pageSize);
+      }, 500),
     [fetchAccessories]
   );
 
@@ -177,7 +239,7 @@ const SearchAccessory = () => {
         variation: "",
         location: selectedLocation,
         page: 1,
-        requiredRow: itemsPerPage
+        requiredRow: itemsPerPage,
       });
       triggerFetchAccessoryStock(clearedQueryString)
         .unwrap()
@@ -248,7 +310,7 @@ const SearchAccessory = () => {
             Accessory Stock
           </h1>
           <div className="flex gap-4">
-            {(hasLocation && hasLocation.length > 1) && (
+            {hasLocation && hasLocation.length > 1 && (
               <div className="flex items-center space-x-6 mb-6">
                 <label className="text-sm font-medium text-gray-700">
                   Select Location:
@@ -326,12 +388,13 @@ const SearchAccessory = () => {
               </TableCell>
               {/* <TableCell>
                 <span
-                  className={`font-semibold ${item.Quantity > 10
-                    ? "text-green-600"
-                    : item.Quantity > 0
+                  className={`font-semibold ${
+                    item.Quantity > 10
+                      ? "text-green-600"
+                      : item.Quantity > 0
                       ? "text-yellow-600"
                       : "text-red-600"
-                    }`}
+                  }`}
                 >
                   {item.Quantity !== undefined ? item.Quantity : 0}
                 </span>
@@ -342,9 +405,18 @@ const SearchAccessory = () => {
                 <Button variant="outline" size="sm">
                   <EyeIcon className="w-4 h-4" />
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="xs">
                   <PrinterIcon className="w-4 h-4" />
                 </Button>
+                <Button
+                  size="xs"
+                  variant="outline"
+                  title="Transaction History"
+                  icon={FiActivity}
+                  onClick={() => handleStockHistory(item.DetailId)}
+                  isLoading={stockId === item.DetailId}
+                  loadingText=""
+                ></Button>
               </TableCell>
             </TableRow>
           )}
@@ -358,6 +430,48 @@ const SearchAccessory = () => {
           totalItems={totalItems}
         />
       </div>
+      <Modal
+        isOpen={stockOpen}
+        onClose={() => setStockOpen(false)}
+        width="max-w-4xl"
+      >
+        <div className="my-5 mx-3">
+          <div className="my-5 text-lg text-neutral-800 font-semibold">
+            Transaction History
+          </div>
+          <Table
+            expand={true}
+            freeze={true}
+            columns={[
+              "s.no",
+              "transaction date",
+              "grn qty",
+              "stin qty",
+              "sr qty",
+              "salesqty",
+              "stout qty",
+              "pr qty",
+            ]}
+            data={stockData?.data || []}
+            renderRow={(item, index) => {
+              return (
+                <TableRow key={item.DetailId}>
+                  <TableCell>{index + 1}</TableCell>
+                  <TableCell>
+                    {item?.TransactionDate?.split("-").reverse().join("/")}
+                  </TableCell>
+                  <TableCell>{item?.GRNQty}</TableCell>
+                  <TableCell>{item?.STInQty}</TableCell>
+                  <TableCell>{item?.SRQty}</TableCell>
+                  <TableCell>{item?.SalesQty}</TableCell>
+                  <TableCell>{item?.STOutQty}</TableCell>
+                  <TableCell>{item?.PRQty}</TableCell>
+                </TableRow>
+              );
+            }}
+          />
+        </div>
+      </Modal>
     </motion.div>
   );
 };

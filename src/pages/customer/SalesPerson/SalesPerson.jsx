@@ -25,7 +25,7 @@ const SalesPerson = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const locale = navigator.language || navigator.languages[0] || "en-IN";
+  const locale = navigator.language || navigator.languages[0] || "en-GB";
 
   const [selectedBrandId, setSelectedBrandId] = useState(null);
   const [currentStatus, setCurrentStatus] = useState(null);
