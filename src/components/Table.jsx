@@ -31,7 +31,7 @@ export const Table = ({
     "brand group",
     "brand name",
     // "cat",
-    // "type",
+    "type",
     "model no",
     "colour code",
     "size-dbl-length",

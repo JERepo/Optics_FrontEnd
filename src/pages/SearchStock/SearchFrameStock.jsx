@@ -22,6 +22,7 @@ import { Table, TableCell, TableRow } from "../../components/Table";
 import { useGetFrameSizesQuery } from "../../api/frameMasterApi";
 import {
   useGetFrameStockQuery,
+  useLazyGetFreshDataQuery,
 } from "../../api/searchStock";
 import { useSelector } from "react-redux";
 import { useLazyPrintLabelsQuery } from "../../api/reportApi";
@@ -41,7 +42,7 @@ const typesOptions = [
 const rimOptions = [
   { Id: "F", Name: "Full Rim" },
   { Id: "H", Name: "Half Rim" },
-  { Id: "R", Name: "Rim Less" },
+  { Id: "R", Name: "Rimless" },
 ];
 
 const categoryOptions = [
@@ -116,6 +117,24 @@ const buildQueryParams = ({
     if (key in flags) flags[key] = 1;
   });
 
+  const typeFromDropdown = type?.map((t) => t.Name) || [];
+  const typeFromTable = columnSearchTerms["type"]?.trim();
+  const finalTypeList = [
+    ...typeFromDropdown,
+    ...(typeFromTable && typeFromTable.length >= 2 ? [typeFromTable] : []),
+  ];
+  const FrameRimType =
+    finalTypeList.length > 0 ? finalTypeList.join(",") : null;
+  const catFromDropdown = category?.map((c) => c.Id) || [];
+  const catFromTable = columnSearchTerms["cat"]?.trim();
+  const finalCatList = [
+    ...catFromDropdown,
+    ...(catFromTable && (catFromTable === "0" || catFromTable === "1")
+      ? [parseInt(catFromTable)]
+      : []),
+  ];
+  const categoryParam = finalCatList.length > 0 ? finalCatList.join(",") : null;
+
   const paramsObj = {
     brandGroup: combineDropdownAndSearch(
       brandGroupDropdown,
@@ -127,17 +146,17 @@ const buildQueryParams = ({
       columnSearchTerms["brand name"],
       "BrandName"
     ),
-    category: category?.map((c) => c.Id)?.join(",") || null,
-    FrameRimType: type?.map((t) => t.Name)?.join(",") || null,
+    category: categoryParam, // will be set below
+    FrameRimType,
     colourCode: colourCode || null,
-    frameColour: frameColour || null,
+    frameFrontColor: frameColour || null,
     barcode: barcode || null,
     location: location || null,
     size: size?.join(",") || null,
     dbl: dbl || null,
     modelNo: modelNo || null,
     templeLength: templeLength || null,
-    frameFrontColor: frameFrontColor || null,
+    // frameFrontColor: frameFrontColor || null,
     templeColor: templeColor || null,
     lensColor: lensColor || null,
     isRxable: flags.isRxable,
@@ -193,7 +212,7 @@ const SearchFrameStock = () => {
     "brand group": "",
     "brand name": "",
     cat: "",
-    type: "",
+    FrameRimType: "",
     "model no": "",
     "colour code": "",
     "size-dbl-length": "",
@@ -254,12 +273,34 @@ const SearchFrameStock = () => {
   const [columnInput, setColumnInput] = useState({ ...columnSearchTerms });
   const [stockOpen, setStockOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const [catInputError, setCatInputError] = useState(false);
+const handleCatInputChange = (value) => {
+  const cleaned = value.trim().toUpperCase();
+  setColumnInput((prev) => ({ ...prev, cat: value }));
+
+  if (cleaned === "") {
+    setCatInputError(false);
+    setColumnSearchTerms((prev) => ({ ...prev, cat: "" }));
+  } else if (cleaned === "F") {
+    setCatInputError(false);
+    setColumnSearchTerms((prev) => ({ ...prev, cat: "0" })); // Frame
+  } else if (cleaned === "S") {
+    setCatInputError(false);
+    setColumnSearchTerms((prev) => ({ ...prev, cat: "1" })); // Sunglass
+  } else {
+    setCatInputError(true);
+    toast.error("Please enter 'F' for Frame or 'S' for Sunglass only.");
+  }
+};
+
 
   // On input change
   const handleColumnInputChange = (column, value) => {
+    console.log("type", column, value);
     setColumnInput((prev) => ({ ...prev, [column]: value }));
   };
   const { data: allLocations } = useGetAllLocationsQuery();
+  const [syncData, { refetch: refreshData }] = useLazyGetFreshDataQuery();
 
   // Debounce effect: updates columnSearchTerms after 500ms of inactivity
   useEffect(() => {
@@ -502,8 +543,8 @@ const SearchFrameStock = () => {
   // Filtered options
   const filteredTypes =
     typesSearchTerm.trim() === ""
-      ? typesOptions
-      : typesOptions.filter((type) =>
+      ? rimOptions
+      : rimOptions.filter((type) =>
           type.Name.toLowerCase().includes(typesSearchTerm.toLowerCase())
         );
 
@@ -550,7 +591,7 @@ const SearchFrameStock = () => {
             ) && validBrandGroupIds.has(brandGroup.Id)
         );
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     // Reset dropdown selections
     setSelectedBrands([]);
     setSelectedBrandGroups([]);
@@ -586,8 +627,11 @@ const SearchFrameStock = () => {
     // Reset pagination
     setCurrentPage(1);
 
-    // Re-fetch original (unfiltered) data
-    // refetch();
+    try {
+      await syncData().unwrap();
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const [getlabels, { isFetching: isLabelsFetching }] =
@@ -653,9 +697,8 @@ const SearchFrameStock = () => {
         return item.Category === 0 ? "O" : "S";
       case "type": {
         const typeObj = rimOptions.find((t) => t.Name == item.FrameRimType);
-        console.log("rim", typesOptions);
 
-        return typeObj ? typeObj.Id : "";
+        return typeObj ? typeObj.Name : "";
       }
 
       case "model no":
@@ -700,26 +743,35 @@ const SearchFrameStock = () => {
     setPageSize(newSize);
     // page will be reset by the effect above
   };
-  const renderHeader = (column) => (
-    <div className="flex flex-col">
-      {toTitleCase(column)}
-      {column !== "s.no" &&
-        column !== "others" &&
-        column !== "mrp" &&
-        column !== "stock" &&
-        column !== "action" && (
-          <div className="relative mt-1">
-            <input
-              type="text"
-              placeholder={`Search ${toTitleCase(column)}...`}
-              className="w-full pl-2 pr-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-              value={columnInput[column]}
-              onChange={(e) => handleColumnInputChange(column, e.target.value)}
-            />
-          </div>
-        )}
-    </div>
-  );
+const renderHeader = (column) => (
+  <div className="flex flex-col">
+    {toTitleCase(column)}
+    {column !== "s.no" &&
+      column !== "others" &&
+      column !== "mrp" &&
+      column !== "stock" &&
+      column !== "size-dbl-length" &&
+      column !== "action" && (
+        <div className="relative mt-1">
+          <input
+            type="text"
+            placeholder={`Search ${toTitleCase(column)}...`}
+            className={`w-full pl-2 pr-2 py-1 text-sm border rounded-md focus:outline-none focus:ring-1 ${
+              catInputError && column === "cat"
+                ? "border-red-500 focus:ring-red-500"
+                : "border-gray-300 focus:ring-blue-500"
+            }`}
+            value={columnInput[column]}
+            onChange={(e) => {
+              if (column === "cat") handleCatInputChange(e.target.value);
+              else handleColumnInputChange(column, e.target.value);
+            }}
+          />
+        </div>
+      )}
+  </div>
+);
+
 
   return (
     <div className="max-w-8xl">
@@ -1371,10 +1423,15 @@ const SearchFrameStock = () => {
           totalItems={framData?.total ?? 0}
         />
 
-        <Modal isOpen={stockOpen} onClose={() => setStockOpen(false)} width="max-w-4xl">
-        
+        <Modal
+          isOpen={stockOpen}
+          onClose={() => setStockOpen(false)}
+          width="max-w-4xl"
+        >
           <div className="my-5 mx-3">
-              <div className="my-5 text-lg text-neutral-800 font-semibold">Transaction History</div>
+            <div className="my-5 text-lg text-neutral-800 font-semibold">
+              Transaction History
+            </div>
             <Table
               expand={true}
               freeze={true}
@@ -1389,7 +1446,6 @@ const SearchFrameStock = () => {
                 "pr qty",
               ]}
               data={stockData?.data || []}
-            
               renderRow={(item, index) => {
                 return (
                   <TableRow key={item.DetailId}>

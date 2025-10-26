@@ -106,7 +106,7 @@ import { GRNDCListPage } from "../pages/GRN DC/GRNListPage";
 import { GRNDCViewPage } from "../pages/GRN DC/GRNDCView";
 import SalesReturnReport from "../pages/Reports/SalesReturnReport";
 import AuditReport from "../pages/Reports/AuditReport";
-import ProfitReport from "../pages/Reports/ProfileReport";
+import ProfitReport from "../pages/Reports/ProfitReport";
 import LoyaltySummary from "../pages/Reports/LoyaltySummary";
 import EmailTemplates from "../pages/EmailTemplates/EmailTemplates";
 import WhatsappTemplates from "../pages/EmailTemplates/WhatsappTemplates";
@@ -120,6 +120,7 @@ import VendorPaymentList from "../pages/LedgerEntries/VendorPayment/VendorPaymen
 import UserProfile from "../pages/Profile/UserProfile";
 import SearchContactLens from "../pages/SearchStock/SearchCLStock";
 import VendorPaymentView from "../pages/LedgerEntries/VendorPayment/VendorPaymentView";
+import CustomerPaymentReport from "../pages/Reports/CustomerPaymentReport";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -1026,6 +1027,10 @@ export const router = createBrowserRouter([
       {
         path: "stock-ageing-report",
         element: <StockAgeingReport />,
+      },
+      {
+        path: "daily-payments",
+        element: <CustomerPaymentReport />,
       },
       {
         path: "contact-lens-master",

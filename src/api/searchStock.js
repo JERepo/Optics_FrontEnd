@@ -27,6 +27,11 @@ export const searchStock = createApi({
       }),
     }),
   
+    getFreshData :builder.query({
+      query : () => ({
+        url :`/api/v1/frame-main/elastic`
+      })
+    })
   }),
 });
 
@@ -35,4 +40,5 @@ export const {
   useLazyGetAccessoryStockQuery,
   useLazyGetCLStockQuery,
   useLazyGetAllCLStockQuery,
+  useLazyGetFreshDataQuery
 } = searchStock;

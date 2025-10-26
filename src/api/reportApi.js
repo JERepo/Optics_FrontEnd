@@ -13,7 +13,7 @@ export const reportApi = createApi({
       }),
     }),
     getSalesReport: builder.query({
-      query: ({ fromDate, toDate, userId,type }) => ({
+      query: ({ fromDate, toDate, userId, type }) => ({
         url: `/api/v1/report/salesreport?fromDate=${fromDate}&toDate=${toDate}&type=${type}&userId=${userId}`,
         method: "GET",
         responseHandler: (response) => response.blob(),
@@ -76,18 +76,23 @@ export const reportApi = createApi({
       }),
     }),
     getStockAgeingReport: builder.query({
-      query: ({ companyId,productType }) => ({
+      query: ({ companyId, productType }) => ({
         url: `/api/v1/report/Stock-Ageing/${companyId}/${productType}`,
         method: "GET",
         responseHandler: (response) => response.blob(),
       }),
     }),
-     printLabels: builder.query({
+    printLabels: builder.query({
       query: ({ frameDetailId, companyId }) => ({
         url: `/api/v1/pdf/frame-qr?frameDetailId=${frameDetailId}&companyId=${companyId}`,
         responseHandler: (response) => response.blob(),
       }),
       transformResponse: (response) => response,
+    }),
+    getDailyPayments: builder.query({
+      query: () => ({
+        url: `/api/v1/report/daily-payment`,
+      }),
     }),
   }),
 });
@@ -104,5 +109,6 @@ export const {
   useLazyGetAuditReportQuery,
   useLazyGetStockOutReportQuery,
   useLazyGetStockAgeingReportQuery,
-  useLazyPrintLabelsQuery
+  useLazyPrintLabelsQuery,
+  useLazyGetDailyPaymentsQuery
 } = reportApi;

@@ -248,6 +248,12 @@ export const menuItems = [
         module: "Stock-Ageing",
         path: "/stock-ageing-report",
       },
+      {
+        name: "Daily Payment Report",
+        icon: IoConstructOutline,
+        module: "daily-payment-report",
+        path: "/daily-payments",
+      },
     ],
   },
   {

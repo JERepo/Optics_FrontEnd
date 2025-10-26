@@ -13,39 +13,39 @@ import toast from "react-hot-toast";
 const reportTypes = [
   { value: 0, label: "All Pages" },
   { value: 1, label: "Accessory Master" },
-  { value: 2, label: "Audit" },
+  // { value: 2, label: "Audit" },
   { value: 3, label: "Bank Account Details" },
   { value: 4, label: "Bank Master" },
   { value: 5, label: "Brand" },
   { value: 6, label: "Brand Category" },
   { value: 7, label: "Brand Group" },
-  { value: 8, label: "Communication" },
+  // { value: 8, label: "Communication" },
   { value: 9, label: "Companies" },
-  { value: 10, label: "Contact-Lens" },
+  // { value: 10, label: "Contact-Lens" },
   { value: 11, label: "Contact-Lens-Details" },
   { value: 12, label: "Customer" },
   { value: 13, label: "Customer Group" },
   { value: 14, label: "Customer-Payment" },
   { value: 15, label: "Customer-Refund" },
-  { value: 16, label: "Dashboard" },
+  // { value: 16, label: "Dashboard" },
   { value: 17, label: "Frame Master" },
-  { value: 18, label: "Frame Rim Type" },
+  // { value: 18, label: "Frame Rim Type" },
   { value: 19, label: "Gift-Voucher" },
-  { value: 20, label: "GRN" },
+  { value: 20, label: "GRN From Order" },
   { value: 21, label: "GRN DC" },
   { value: 22, label: "Invoice" },
   { value: 23, label: "Location-setting" },
   { value: 24, label: "Material Master" },
   { value: 25, label: "Offer" },
-  { value: 26, label: "OLFitting Standard Charges" },
-  { value: 27, label: "Optical-lens" },
+  // { value: 26, label: "OLFitting Standard Charges" },
+  // { value: 27, label: "Optical-lens" },
   { value: 28, label: "Order" },
   { value: 29, label: "Order-Report" },
-  { value: 30, label: "Page Management" },
+  // { value: 30, label: "Page Management" },
   { value: 31, label: "Payment Machine" },
   { value: 32, label: "Pool" },
   { value: 33, label: "Prescription" },
-  { value: 34, label: "Profit" },
+  { value: 34, label: "Profit Report" },
   { value: 35, label: "Purchase Order" },
   { value: 36, label: "Purchase-Report" },
   { value: 37, label: "Purchase-Return" },
@@ -58,10 +58,15 @@ const reportTypes = [
   { value: 44, label: "Season Master" },
   { value: 45, label: "Shape Master" },
   { value: 46, label: "StockTranserIn" },
-  { value: 47, label: "StockTransfer" },
+  // { value: 47, label: "StockTransfer" },
   { value: 48, label: "User Management" },
   { value: 49, label: "Variation Master" },
   { value: 50, label: "Vendor" },
+  { value: 51, label: "Stock Transfer Out" },
+  { value: 52, label: "Vendor Payment" },
+  { value: 53, label: "Contact Lens Master" },
+  { value: 54, label: "Email Template" },
+  { value: 55, label: "Whatsapp Template" },
 ];
 
 const dateOptions = [
@@ -89,7 +94,7 @@ const AuditReport = () => {
 
   const handleReportChange = (_, newValue) => {
     if (!newValue || newValue.length === 0) {
-      setSelectedReports([0]);
+      setSelectedReports([]);
       return;
     }
 
@@ -97,7 +102,7 @@ const AuditReport = () => {
     const allPagesSelected = newValue.some((item) => item.value === 0);
 
     if (allPagesSelected) {
-      setSelectedReports([0]);
+      setSelectedReports([]);
     } else {
       const filteredSelection = newValue.filter((item) => item.value !== 0);
       setSelectedReports(filteredSelection.map((item) => item.value));
@@ -124,18 +129,18 @@ const AuditReport = () => {
         break;
       case "yesterday":
         start = startOfDay(subDays(today, 1));
-        end = endOfDay(today);
+        end = endOfDay(subDays(today, 1));
         break;
       case "7days":
-        start = startOfDay(subDays(today, 7));
+        start = startOfDay(subDays(today, 6));
         end = endOfDay(today);
         break;
       case "30days":
-        start = startOfDay(subDays(today, 30));
+        start = startOfDay(subDays(today, 29));
         end = endOfDay(today);
         break;
       case "90days":
-        start = startOfDay(subDays(today, 90));
+        start = startOfDay(subDays(today, 89));
         end = endOfDay(today);
         break;
       case "6months":
@@ -147,9 +152,6 @@ const AuditReport = () => {
         end = endOfDay(today);
         break;
       case "custom":
-        start = today;
-        end = today;
-        break;
       default:
         start = today;
         end = today;
@@ -242,7 +244,7 @@ const AuditReport = () => {
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    label="Choose report types"
+                    label="Choose Page Types"
                     placeholder={
                       isAllPagesSelected
                         ? "All Pages selected"
