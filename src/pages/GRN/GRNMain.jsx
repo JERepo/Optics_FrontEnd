@@ -50,7 +50,7 @@ export default function GRNMain() {
                     >
                         <div className="">
                             <button className="text-[#000060] hover:text-[#0000a0] transition-colors flex items-center mb-3"
-                                onClick={navigate(`/grn`)}
+                                onClick={() => {navigate(`/grn`)}}
                             >
                                 <ArrowLeft className="w-5 h-5 mr-2" />
                                 Back to dashboard

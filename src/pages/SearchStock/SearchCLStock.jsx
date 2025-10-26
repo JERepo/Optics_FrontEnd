@@ -3,7 +3,7 @@ import Button from "../../components/ui/Button";
 import { motion } from "framer-motion";
 import { Table, TableCell, TableRow } from "../../components/Table";
 import { EyeClosedIcon, EyeIcon, PrinterIcon, RefreshCcw } from "lucide-react";
-import { useLazyGetAllCLStockQuery, useLazyGetCLStockQuery } from "../../api/searchStock";
+import { useLazyGetAllCLStockQuery, useLazyGetCLStockQuery, useLazySyncClQuery } from "../../api/searchStock";
 import toast from "react-hot-toast";
 import { useSelector } from "react-redux";
 import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
@@ -46,11 +46,11 @@ const SearchContactLens = () => {
     const [columnSearchTerms, setColumnSearchTerms] = useState({
         "brand name": "",
         "product name": "",
-        "Color": "",
-        "Sp Power": "",
+        "Colour": "",
+        "Sph Power": "",
         "Cyl Power": "",
         "Axis": "",
-        "Addition": "",
+        "Add Power": "",
         "barcode": "",
         "Batch Code": "",
         "Expiry Date": "",
@@ -65,6 +65,7 @@ const SearchContactLens = () => {
     const [totalItems, setTotalItems] = useState(0);
     const [selectedLocation, setSelectedLocation] = useState(null);
     const [error, setError] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
 
     const { user, hasMultipleLocations } = useSelector((state) => state.auth);
     // User assigned locations
@@ -85,29 +86,24 @@ const SearchContactLens = () => {
         }
     }, [hasLocation]);
 
-    const [triggerFetchCLStock, { isLoading: isBarcodeLoading }] =
-        useLazyGetCLStockQuery();
-
-    const [triggerFetchAllCLStock, { isLoading: isAllLoading }] =
-        useLazyGetAllCLStockQuery();
-
-    // Determine which loading state to use based on active tab
-    const isLoading = activeTab === "all" ? isAllLoading : isBarcodeLoading;
+    const [triggerFetchCLStock] = useLazyGetCLStockQuery();
+    const [triggerFetchAllCLStock] = useLazyGetAllCLStockQuery();
+    const [triggerClSync] = useLazySyncClQuery();
 
     // Fetch data based on active tab
-    const fetchData = useCallback(async (searchTerms, tab = activeTab, page = currentPage, pageSize = itemsPerPage) => {
-        setSearchData([]);
+    const fetchData = useCallback(async (searchTerms, tab, page, pageSize) => {
+        setIsLoading(true);
         setError(null);
 
         try {
             const queryString = buildQueryParams({
                 BrandName: searchTerms["brand name"],
                 ProductName: searchTerms["product name"],
-                Colour: searchTerms["Color"],
-                SphericalPower: searchTerms["Sp Power"],
+                Colour: searchTerms["Colour"],
+                SphericalPower: searchTerms["Sph Power"],
                 CylindricalPower: searchTerms["Cyl Power"],
                 Axis: searchTerms["Axis"],
-                Addition: searchTerms["Addition"],
+                Addition: searchTerms["Add Power"],
                 Barcode: searchTerms["barcode"],
                 location: selectedLocation,
                 page: page,
@@ -127,7 +123,6 @@ const SearchContactLens = () => {
                 setSearchData(result.data);
                 setTotalItems(result.total || 0);
                 console.log("Response - ", result);
-                // toast.success("Data fetched successfully");
             } else {
                 setSearchData([]);
                 setTotalItems(0);
@@ -137,8 +132,10 @@ const SearchContactLens = () => {
             toast.error(err?.data?.error || err?.message || "Failed to fetch data");
             setSearchData([]);
             setTotalItems(0);
+        } finally {
+            setIsLoading(false);
         }
-    }, [triggerFetchCLStock, triggerFetchAllCLStock, activeTab, currentPage, itemsPerPage]);
+    }, [triggerFetchCLStock, triggerFetchAllCLStock, selectedLocation]);
 
     // Debounced search function
     const debouncedSearch = useMemo(
@@ -148,27 +145,19 @@ const SearchContactLens = () => {
         [fetchData]
     );
 
-    // Initial load
+    // Initial load - only fetch once on mount when location is available
     useEffect(() => {
-        fetchData(columnSearchTerms, activeTab, 1, itemsPerPage);
-    }, []);
+        if (selectedLocation) {
+            fetchData(columnSearchTerms, activeTab, 1, itemsPerPage);
+        }
+    }, [selectedLocation]);
 
-    // Fetch data when tab changes
+    // Fetch data when page changes (but not on mount)
     useEffect(() => {
-        setCurrentPage(1);
-        fetchData(columnSearchTerms, activeTab, 1, itemsPerPage);
-    }, [activeTab]);
-
-    // Fetch data when page changes
-    useEffect(() => {
-        fetchData(columnSearchTerms, activeTab, currentPage, itemsPerPage);
+        if (currentPage !== 1 && selectedLocation) {
+            fetchData(columnSearchTerms, activeTab, currentPage, itemsPerPage);
+        }
     }, [currentPage]);
-
-    // Fetch data when page size changes
-    useEffect(() => {
-        setCurrentPage(1);
-        fetchData(columnSearchTerms, activeTab, 1, itemsPerPage);
-    }, [itemsPerPage]);
 
     // Handle search input changes
     const handleColumnSearch = (column, value) => {
@@ -182,7 +171,10 @@ const SearchContactLens = () => {
     };
 
     // Clear all filters and reload
-    const handleClearFilters = () => {
+    const handleClearFilters = async () => {
+
+        // Sync CL trigger
+        await triggerClSync();
 
         const clearedTerms = Object.keys(columnSearchTerms).reduce((acc, key) => {
             acc[key] = "";
@@ -191,55 +183,24 @@ const SearchContactLens = () => {
         setColumnSearchTerms(clearedTerms);
         setCurrentPage(1);
 
-        // Immediately fetch with cleared filters
-        setTimeout(() => {
-            const clearedQueryString = buildQueryParams({
-                BrandName: "",
-                ProductName: "",
-                Colour: "",
-                SphericalPower: "",
-                CylindricalPower: "",
-                Axis: "",
-                Addition: "",
-                Barcode: "",
-                location: selectedLocation,
-                page: 1,
-                requiredRow: itemsPerPage
-            });
-
-            const fetchFunction = activeTab === "all"
-                ? triggerFetchAllCLStock
-                : triggerFetchCLStock;
-
-            setSearchData([]);
-
-            fetchFunction(clearedQueryString)
-                .unwrap()
-                .then((result) => {
-                    if (result.status === true && result.data) {
-                        setSearchData(result.data);
-                        setTotalItems(result.total || 0);
-                        console.log("Response - ", result);
-                        // toast.success("Data fetched successfully");
-                    }
-                })
-                .catch((err) => {
-                    console.error("Error clearing filters:", err);
-                    toast.error(err?.data?.error || "Failed to clear filters");
-                });
-        }, 100);
+        // Fetch with cleared filters
+        fetchData(clearedTerms, activeTab, 1, itemsPerPage);
     };
 
     // Handle tab change
     const handleTabChange = (tab) => {
         setActiveTab(tab);
         setCurrentPage(1);
+
         // Clear search terms when switching tabs
-        // const clearedTerms = Object.keys(columnSearchTerms).reduce((acc, key) => {
-        //     acc[key] = "";
-        //     return acc;
-        // }, {});
-        // setColumnSearchTerms(clearedTerms);
+        const clearedTerms = Object.keys(columnSearchTerms).reduce((acc, key) => {
+            acc[key] = "";
+            return acc;
+        }, {});
+        setColumnSearchTerms(clearedTerms);
+
+        // Fetch data with cleared filters for new tab
+        fetchData(clearedTerms, tab, 1, itemsPerPage);
     };
 
     // Handle page change
@@ -250,6 +211,8 @@ const SearchContactLens = () => {
     // Handle page size change
     const handlePageSizeChange = (newSize) => {
         setItemsPerPage(newSize);
+        setCurrentPage(1);
+        fetchData(columnSearchTerms, activeTab, 1, newSize);
     };
 
     const renderHeader = (column) => (
@@ -257,10 +220,10 @@ const SearchContactLens = () => {
             {toTitleCase(column)}
             {column !== "action" &&
                 column !== "s.no" &&
-                column !== "stock" &&
-                column !== "mrp" &&
+                column !== "Stock" &&
+                column !== "MRP" &&
                 column !== "batch code" &&
-                column !== "expiry date" && (
+                column !== "Expiry date" && (
                     <div className="relative mt-1">
                         <input
                             type="text"
@@ -281,11 +244,11 @@ const SearchContactLens = () => {
                 "s.no",
                 "brand name",
                 "product name",
-                "Color",
-                "Sp Power",
+                "Colour",
+                "Sph Power",
                 "Cyl Power",
                 "Axis",
-                "Addition",
+                "Add Power",
                 "barcode",
                 "Batch Code",
                 "Expiry Date",
@@ -298,11 +261,11 @@ const SearchContactLens = () => {
                 "s.no",
                 "brand name",
                 "product name",
-                "Color",
-                "Sp Power",
+                "Colour",
+                "Sph Power",
                 "Cyl Power",
                 "Axis",
-                "Addition",
+                "Add Power",
                 "barcode",
                 "MRP",
                 "Stock",
@@ -318,12 +281,13 @@ const SearchContactLens = () => {
 
     // Render row based on active tab
     const renderRow = (item, index) => {
+        // Calculate correct serial number
+        const serialNo = ((currentPage - 1) * itemsPerPage) + index + 1;
+
         if (activeTab === "all") {
             return (
-                <TableRow key={item.DetailId || index}>
-                    <TableCell>
-                        {((currentPage - 1) * itemsPerPage) + index + 1}
-                    </TableCell>
+                <TableRow key={`${item.DetailId}-${index}`}>
+                    <TableCell>{serialNo}</TableCell>
                     <TableCell>{item.BrandName || "-"}</TableCell>
                     <TableCell>{item.ProductName || "-"}</TableCell>
                     <TableCell>{item.Colour || "-"}</TableCell>
@@ -333,22 +297,15 @@ const SearchContactLens = () => {
                     <TableCell>{item.Addition || "-"}</TableCell>
                     <TableCell>{item.Barcode || "-"}</TableCell>
                     <TableCell>{item.CLBatchCode || "-"}</TableCell>
-                    <TableCell>{item.CLBatchExpiry || "-"}</TableCell>
+                    <TableCell>
+                        {item.CLBatchExpiry
+                            ? item.CLBatchExpiry.split('-').reverse().join('-')
+                            : "-"
+                        }
+                    </TableCell>
                     <TableCell>
                         {item.CLMRP ? `₹${parseFloat(item.CLMRP).toFixed(2)}` : "-"}
                     </TableCell>
-                    {/* <TableCell>
-                        <span
-                            className={`font-semibold ${item.Quantity > 10
-                                ? "text-green-600"
-                                : item.Quantity > 0
-                                    ? "text-yellow-600"
-                                    : "text-red-600"
-                                }`}
-                        >
-                            {item.Quantity !== undefined ? item.Quantity : 0}
-                        </span>
-                    </TableCell> */}
                     <TableCell>{item.Quantity !== undefined ? item.Quantity : 0}</TableCell>
                     <TableCell>
                         <Button variant="outline" size="sm">
@@ -362,10 +319,8 @@ const SearchContactLens = () => {
             );
         } else {
             return (
-                <TableRow key={item.DetailId || index}>
-                    <TableCell>
-                        {(currentPage - 1) * itemsPerPage + index + 1}
-                    </TableCell>
+                <TableRow key={`${item.DetailId}-${index}`}>
+                    <TableCell>{serialNo}</TableCell>
                     <TableCell>{item.BrandName || "-"}</TableCell>
                     <TableCell>{item.ProductName || "-"}</TableCell>
                     <TableCell>{item.Colour || "-"}</TableCell>
@@ -377,18 +332,6 @@ const SearchContactLens = () => {
                     <TableCell>
                         {item.CLMRP ? `₹${parseFloat(item.CLMRP).toFixed(2)}` : "-"}
                     </TableCell>
-                    {/* <TableCell>
-                        <span
-                            className={`font-semibold ${item.Quantity > 10
-                                ? "text-green-600"
-                                : item.Quantity > 0
-                                    ? "text-yellow-600"
-                                    : "text-red-600"
-                                }`}
-                        >
-                            {item.Quantity !== undefined ? item.Quantity : 0}
-                        </span>
-                    </TableCell> */}
                     <TableCell>{item.Quantity !== undefined ? item.Quantity : 0}</TableCell>
                     <TableCell>
                         <Button variant="outline" size="sm">
@@ -402,10 +345,6 @@ const SearchContactLens = () => {
             );
         }
     };
-
-    if (isLoading && searchData.length === 0) {
-        return <div>Loading...</div>;
-    }
 
     return (
         <motion.div
@@ -466,21 +405,75 @@ const SearchContactLens = () => {
                 )}
 
                 {/* Tabs */}
-                <div className="flex gap-4 mb-4">
-                    <Button
+                <div className="flex border-b border-gray-200 mb-6">
+                    <button
                         onClick={() => handleTabChange("all")}
-                        variant={activeTab === "all" ? "default" : "outline"}
                         disabled={isLoading}
+                        className={`
+            relative px-6 py-3 font-medium text-sm transition-all duration-200
+            ${activeTab === "all"
+                                ? "text-blue-600 border-t-2 border-l border-r border-blue-600 rounded-t-lg -mb-px bg-blue-200"
+                                : "text-gray-600 hover:text-gray-800 hover:bg-gray-50 border-b border-transparent rounded-t-lg bg-blue-100"
+                            }
+            disabled:opacity-50 disabled:cursor-not-allowed
+        `}
                     >
-                        With BatchCode + Expiry
-                    </Button>
-                    <Button
+                        <span className="flex items-center gap-2">
+                            <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                />
+                            </svg>
+                            With BatchCode + Expiry
+                        </span>
+                        {activeTab === "all" && (
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
+                        )}
+                    </button>
+
+                    <button
                         onClick={() => handleTabChange("barcode")}
-                        variant={activeTab === "barcode" ? "default" : "outline"}
                         disabled={isLoading}
+                        className={`
+            relative px-6 py-3 font-medium text-sm transition-all duration-200
+            ${activeTab === "barcode"
+                                ? "text-blue-600 border-t-2 border-l border-r border-blue-600 rounded-t-lg -mb-px bg-blue-200"
+                                : "text-gray-600 hover:text-gray-800 hover:bg-gray-50 border-b border-transparent rounded-t-lg bg-blue-100"
+                            }
+            disabled:opacity-50 disabled:cursor-not-allowed
+        `}
                     >
-                        Summary
-                    </Button>
+                        <span className="flex items-center gap-2">
+                            <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                />
+                            </svg>
+                            Summary
+                        </span>
+                        {activeTab === "barcode" && (
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
+                        )}
+                    </button>
+
+                    {/* Empty space to complete the border */}
+                    <div className="flex-1 border-b border-gray-200"></div>
                 </div>
 
                 <Table
