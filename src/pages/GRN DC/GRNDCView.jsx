@@ -218,7 +218,11 @@ export function GRNDCViewPage() {
             </div>
 
             <div key={grnData.vendor.Id} className=" gap-12 my-10">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                    <p className="text-gray-700">
+                        <span className="font-bold flex">GRN No.</span>
+                        <span className="">{grnViewDetails[0]?.GRNPrefix}/{grnViewDetails[0]?.GRNNo}</span>
+                    </p>
                     <p className="text-gray-700 ">
                         <span className="font-bold flex">Vendor Name </span>
                         <span>{grnData.vendor.VendorName}</span>
@@ -235,6 +239,10 @@ export function GRNDCViewPage() {
                     <p className="text-gray-700">
                         <span className="font-bold flex">GST Number</span>
                         <span className="">{grnData.vendor.TAXNo}</span>
+                    </p>
+                    <p className="text-gray-700">
+                        <span className="font-bold flex">Status</span>
+                        <span className="">{grnViewDetails[0]?.GrnMainStatus === 0 ? `Draft` : grnViewDetails[0]?.GrnMainStatus === 1 ? `Confirmed` : grnViewDetails[0]?.GrnMainStatus === 3 ? `Cancelled` : `N/A`}</span>
                     </p>
                 </div>
             </div>
@@ -337,6 +345,13 @@ export function GRNDCViewPage() {
 
             {/* Calculation Summary Section */}
             <div className="flex mt-10 justify-between px-5 rounded-2xl shadow p-8">
+
+                <div className="flex justify-between gap-4">
+                    <span className="text-gray-600 font-bold text-lg">Comments :</span>
+                    <span className="font-bold text-lg">
+                        {grnViewDetails[0]?.GRNRemarks ? grnViewDetails[0]?.GRNRemarks : `N/A`}
+                    </span>
+                </div>
 
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total Quantity :</span>
