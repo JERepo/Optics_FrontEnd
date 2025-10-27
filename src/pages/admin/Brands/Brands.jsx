@@ -41,11 +41,15 @@ const Brands = () => {
 
   const getBrandActive = (data) => {
     if (!data) return "N/A";
-    if (data.FrameActive === 1) return "F/S";
-    if (data.ContactLensActive === 1) return "CL";
-    if (data.OpticalLensActive === 1) return "OL";
-    if (data.OthersProductsActive === 1) return "ACC";
-    return "N/A";
+
+    const activeCategories = [];
+
+    if (data.FrameActive === 1) activeCategories.push("F/S");
+    if (data.ContactLensActive === 1) activeCategories.push("CL");
+    if (data.OpticalLensActive === 1) activeCategories.push("OL");
+    if (data.OthersProductsActive === 1) activeCategories.push("ACC");
+
+    return activeCategories.length > 0 ? activeCategories.join(", ") : "N/A";
   };
 
   const brands = useMemo(() => {
@@ -57,21 +61,26 @@ const Brands = () => {
         id: brand.Id,
         name: brand.BrandName,
         brandActive: brand,
-        category, 
+        category,
         createdAt: new Intl.DateTimeFormat(locale, {
           day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
+          month: "2-digit",
+          year: "numeric",
         }).format(new Date(brand.CreatedDate)),
         enabled: brand.IsActive === 1,
       };
     });
 
+    // if (categoryFilter) {
+    //   processed = processed.filter(
+    //     (brand) =>
+    //       brand.category &&
+    //       brand.category.toLowerCase() === categoryFilter.toLowerCase()
+    //   );
+    // }
     if (categoryFilter) {
-      processed = processed.filter(
-        (brand) =>
-          brand.category &&
-          brand.category.toLowerCase() === categoryFilter.toLowerCase()
+      processed = processed.filter((brand) =>
+        brand.category && brand.category.includes(categoryFilter)
       );
     }
 
@@ -208,7 +217,7 @@ const Brands = () => {
                 <span>{column}</span>
                 <button onClick={() => handleSort("name")}>
                   {sortConfig.key === "name" &&
-                  sortConfig.direction === "asc" ? (
+                    sortConfig.direction === "asc" ? (
                     <FiArrowUp className="text-neutral-500 hover:text-primary" />
                   ) : (
                     <FiArrowDown className="text-neutral-500 hover:text-primary" />
@@ -244,7 +253,7 @@ const Brands = () => {
                   />
                 </HasPermission>
                 <HasPermission module="Brand" action="edit">
-                 <button
+                  <button
                     onClick={() => handleEdit(pool.id)}
                     className="text-neutral-600 hover:text-primary transition-colors"
                     aria-label="Edit"
@@ -267,8 +276,8 @@ const Brands = () => {
           isLoading
             ? "Loading brands..."
             : searchQuery
-            ? "No brands match your search criteria"
-            : "No brands found. Click 'Add brands' to create one."
+              ? "No brands match your search criteria"
+              : "No brands found. Click 'Add brands' to create one."
         }
         pagination={true}
         currentPage={currentPage}
@@ -283,12 +292,10 @@ const Brands = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onConfirm={handleConfirmToggle}
-        title={`Are you sure you want to ${
-          currentStatus ? "deactivate" : "activate"
-        } this Brands?`}
-        message={`This will ${
-          currentStatus ? "deactivate" : "activate"
-        } the Brands. You can change it again later.`}
+        title={`Are you sure you want to ${currentStatus ? "deactivate" : "activate"
+          } this Brands?`}
+        message={`This will ${currentStatus ? "deactivate" : "activate"
+          } the Brands. You can change it again later.`}
         confirmText={currentStatus ? "Deactivate" : "Activate"}
         danger={currentStatus}
         isLoading={isDeActivating}

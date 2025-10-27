@@ -83,19 +83,30 @@ const EditPool = () => {
       return;
     }
 
-    const poolExists = allPool?.data.find(
-      (p) =>
-        p.PoolName.toLowerCase().split(" ").join("") ===
-        poolName.toLowerCase().split(" ").join("")
-    );
+    const normalizedInput = poolName.toLowerCase().split(" ").join("");
+
+    // Check for duplicate pool name, but EXCLUDE current pool if updating
+    const poolExists = allPool?.data.find((p) => {
+      console.log("P ---- ", p);
+      const normalizedName = p.PoolName.toLowerCase().split(" ").join("");
+      const isSameName = normalizedName === normalizedInput;
+      // Convert both to numbers for comparison (or both to strings)
+      const isDifferentPool = Number(p.Id) !== Number(id); // FIX: Convert both to numbers
+
+      return isSameName && isDifferentPool;
+    });
+
+    console.log("poolExists - ", poolExists);
     if (poolExists) {
       toast.error("Pool name must be unique");
       return;
     }
+
     const payload = {
       PoolName: poolName,
-      PoolCategory: selectedCategoryId,
+      PoolCategory: String(selectedCategoryId),
     };
+
     try {
       if (id) {
         await updatePool({
@@ -114,9 +125,10 @@ const EditPool = () => {
       }
       navigate(-1);
     } catch (error) {
-      toast.error("Something went wrong!");
+      // Show API error message if available
+      const errorMessage = error?.data?.error || error?.message || "Something went wrong!";
+      toast.error(errorMessage);
       console.error(error);
-      throw new Error(error.message);
     }
   };
 
@@ -188,8 +200,8 @@ const EditPool = () => {
                     ? "Updating..."
                     : "Update Pool"
                   : isCreatingPool
-                  ? "Creating..."
-                  : "Create Pool"}
+                    ? "Creating..."
+                    : "Create Pool"}
               </Button>
             </HasPermission>
           )}

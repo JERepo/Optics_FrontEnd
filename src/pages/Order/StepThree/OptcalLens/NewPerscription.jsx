@@ -395,29 +395,58 @@ const NewPrescription = ({
   return (
     <div className="mt-5 space-y-4">
       {isPrescription && (
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-3 text-lg font-medium text-neutral-600">
-            Patient Name : {customerId.patientName}
+        <div className="flex items-center gap-3 justify-between">
+          <div className="flex gap-4">
+            <div className="flex items-center gap-3 text-lg font-medium text-neutral-600">
+              Patient Name : {customerId.patientName}
+            </div>
+            <div className="flex items-center gap-3 text-lg font-medium text-neutral-600">
+              Patient Mobile : {customerId.mobileNo}
+            </div>
           </div>
-          <div className="flex items-center gap-3 text-lg font-medium text-neutral-600">
-            Patient Mobile : {customerId.mobileNo}
-          </div>
+          {isPrescription && (
+            <Button variant="outline" onClick={onClose} size="sm">
+              Back
+            </Button>
+          )}
         </div>
       )}
       <div></div>
       {/* Brand Selection */}
-      <div className="flex justify-between w-full items-center">
-        <div className="w-1/2">
-          <label className="text-sm font-medium text-gray-700">
+      {/* Prescription Source & Optometrist */}
+      <div className="w-full space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+        {/* Header: Prescription Source + Back Button */}
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-6">
+            <Radio
+              label="Tested at store"
+              name="prescriptionFrom"
+              value="0"
+              checked={prescriptionData.prescriptionFrom === 0}
+              onChange={() => handleDataChange("prescriptionFrom", 0)}
+            />
+            <Radio
+              label="From Doctor"
+              name="prescriptionFrom"
+              value="1"
+              checked={prescriptionData.prescriptionFrom === 1}
+              onChange={() => handleDataChange("prescriptionFrom", 1)}
+            />
+          </div>
+        </div>
+
+        {/* Optometrist Selection */}
+        {prescriptionData.prescriptionFrom === 0 && (
+          <div className="flex items-center gap-3">
+          <label className="text-sm font-medium text-gray-700 whitespace-nowrap w-28">
             Optometrist
           </label>
           <Autocomplete
-            options={filteredData}
+            options={filteredData || []}
             getOptionLabel={(opt) => opt.PersonName || ""}
             value={
-              salesPersons?.data.data.find(
-                (p) => p.Id === prescriptionData.salesId
-              ) || null
+              salesPersons?.data.data.find((p) => p.Id === prescriptionData.salesId) ||
+              null
             }
             onChange={(_, val) => handleDataChange("salesId", val?.Id || null)}
             renderInput={(params) => (
@@ -425,38 +454,27 @@ const NewPrescription = ({
                 {...params}
                 size="small"
                 placeholder="Select Optometrist"
+                variant="outlined"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '6px',
+                    backgroundColor: 'white',
+                  },
+                }}
               />
             )}
             fullWidth
+            disablePortal
+            loading={salesPersons?.isLoading}
           />
         </div>
-        {isPrescription && (
-          <Button variant="outline" onClick={onClose}>
-            Back
-          </Button>
         )}
       </div>
 
       {/* Prescription Source */}
       <div className="w-1/2 space-y-2">
-        <div className="flex items-center gap-4">
-          <Radio
-            label="Tested at store"
-            name="from"
-            value="0"
-            checked={prescriptionData.prescriptionFrom === 0}
-            onChange={() => handleDataChange("prescriptionFrom", 0)}
-          />
-          <Radio
-            label="From Doctor"
-            name="from"
-            value="1"
-            checked={prescriptionData.prescriptionFrom === 1}
-            onChange={() => handleDataChange("prescriptionFrom", 1)}
-          />
-        </div>
 
-        {prescriptionData.prescriptionFrom === 1 && (
+        {/* {prescriptionData.prescriptionFrom === 1 && (
           <div>
             <label
               htmlFor="doctorFile"
@@ -482,7 +500,7 @@ const NewPrescription = ({
               </p>
             )}
           </div>
-        )}
+        )} */}
       </div>
 
       {/* Prescription Table */}
@@ -567,7 +585,7 @@ const NewPrescription = ({
       {/* Save Button */}
       <div className="flex justify-end mt-4">
         {isPrescription ? (
-          <HasPermission module="Prescription" action={["edit","create"]}>
+          <HasPermission module="Prescription" action={["edit", "create"]}>
             <Button
               onClick={handleSubmit}
               disabled={isSaving || isUpdating}
@@ -578,25 +596,25 @@ const NewPrescription = ({
                   ? "Updating..."
                   : "Saving..."
                 : isEditMode
-                ? "Update Prescription"
-                : "Save Prescription"}
+                  ? "Update Prescription"
+                  : "Save Prescription"}
             </Button>
           </HasPermission>
         ) : (
           // <HasPermission>
-            <Button
-              onClick={handleSubmit}
-              disabled={isSaving || isUpdating}
-              isLoading={isSaving || isUpdating}
-            >
-              {isSubmitting
-                ? isEditMode
-                  ? "Updating..."
-                  : "Saving..."
-                : isEditMode
+          <Button
+            onClick={handleSubmit}
+            disabled={isSaving || isUpdating}
+            isLoading={isSaving || isUpdating}
+          >
+            {isSubmitting
+              ? isEditMode
+                ? "Updating..."
+                : "Saving..."
+              : isEditMode
                 ? "Update Prescription"
                 : "Save Prescription"}
-            </Button>
+          </Button>
           // </HasPermission>
         )}
       </div>
@@ -633,23 +651,23 @@ const NewPrescription = ({
                       View
                     </button>
                     <HasPermission module="Prescription" action={["edit"]}>
-                    <button
-                      className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                      onClick={() => handleUpdate(p)}
-                    >
-                      <FiEdit className="mr-1.5" />
-                      Update
-                    </button>
+                      <button
+                        className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                        onClick={() => handleUpdate(p)}
+                      >
+                        <FiEdit className="mr-1.5" />
+                        Update
+                      </button>
                     </HasPermission>
                     <HasPermission module="Prescription" action="deactivate">
-                    <button
-                      className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-red-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                      onClick={() => handleDelete(p)}
-                      aria-label="Delete"
-                    >
-                      <FiTrash2 className="mr-1.5" />
-                      Delete
-                    </button>
+                      <button
+                        className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-red-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                        onClick={() => handleDelete(p)}
+                        aria-label="Delete"
+                      >
+                        <FiTrash2 className="mr-1.5" />
+                        Delete
+                      </button>
                     </HasPermission>
                   </TableCell>
                 </TableRow>

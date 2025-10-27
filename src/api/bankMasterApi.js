@@ -16,6 +16,10 @@ export const bankMasterApi = createApi({
       query: ({ id }) => ({
         url: `/api/v1/bank-master/${id}`,
       }),
+      providesTags: (result, error, { id }) => [
+        { type: "BankMaster", id },
+        "BankMaster"
+      ],
     }),
     createBankMaster: builder.mutation({
       query: ({ payload }) => ({
@@ -31,7 +35,10 @@ export const bankMasterApi = createApi({
         method: "PUT",
         body: payload,
       }),
-      invalidatesTags: ["BankMaster"],
+      invalidatesTags: (result, error, { id }) => [
+        "BankMaster",
+        { type: "BankMaster", id }
+      ],
     }),
     deActivate: builder.mutation({
       query: ({ id, payload }) => ({
@@ -39,7 +46,10 @@ export const bankMasterApi = createApi({
         method: "PUT",
         body: payload,
       }),
-      invalidatesTags: ["BankMaster"],
+      invalidatesTags: (result, error, { id }) => [
+        "BankMaster",
+        { type: "BankMaster", id }
+      ],
     }),
   }),
 });

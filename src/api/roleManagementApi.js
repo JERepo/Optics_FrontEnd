@@ -53,6 +53,10 @@ export const roleManageApi = createApi({
     }),
     getUserById: builder.query({
       query: ({ id }) => `/api/v1/user-management/${id}`,
+      providesTags: (result, error, { id }) => [
+        { type: "User Management", id },
+        "User Management"
+      ],
     }),
     updateUserManagement: builder.mutation({
       query: ({ id, payload }) => ({
@@ -60,7 +64,10 @@ export const roleManageApi = createApi({
         method: "PUT",
         body: payload,
       }),
-      invalidatesTags: ["User Management"],
+      invalidatesTags: (result, error, { id }) => [
+        "User Management",
+        { type: "User Management", id }
+      ],
     }),
     getAllUserData: builder.query({
       query: () => "/api/v1/user-management",
