@@ -32,7 +32,6 @@ const MaterialMaster = () => {
 
   const { data, isLoading } = useGetAllmaterialsQuery();
   const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
-  
 
   const brands = useMemo(() => {
     if (!data) return [];
@@ -42,9 +41,9 @@ const MaterialMaster = () => {
       name: brand.MaterialName,
       applicableFor: brand.MaterialFor == 0 ? "Frame" : "Contact Lens",
       createdAt: new Intl.DateTimeFormat(locale, {
+         day: "2-digit",
+        month: "2-digit",
         year: "numeric",
-        month: "short",
-        day: "2-digit",
       }).format(new Date(brand.CreatedDate)),
       enabled: brand.IsActive,
     }));
@@ -57,7 +56,7 @@ const MaterialMaster = () => {
       }
     });
 
-     if (searchQuery) {
+    if (searchQuery) {
       processed = processed.filter((brand) =>
         brand.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
@@ -176,7 +175,7 @@ const MaterialMaster = () => {
                   />
                 </HasPermission>
                 <HasPermission module="Material Master" action="edit">
-                 <button
+                  <button
                     onClick={() => handleEdit(pool.id)}
                     className="text-neutral-600 hover:text-primary transition-colors"
                     aria-label="Edit"

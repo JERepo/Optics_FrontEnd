@@ -102,7 +102,7 @@ const AuditReport = () => {
     const allPagesSelected = newValue.some((item) => item.value === 0);
 
     if (allPagesSelected) {
-      setSelectedReports([]);
+      setSelectedReports([0]);
     } else {
       const filteredSelection = newValue.filter((item) => item.value !== 0);
       setSelectedReports(filteredSelection.map((item) => item.value));

@@ -43,9 +43,9 @@ const PaymentMachine = () => {
         machineName: brand.MachineName,
         type: machineType.find((m) => m.value === brand.MachineType).label,
         createdAt: new Intl.DateTimeFormat(locale, {
-          year: "numeric",
-          month: "short",
-          day: "2-digit",
+           day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
         }).format(new Date(brand.CreatedDate)),
         enabled: brand.IsActive === 1,
       }))

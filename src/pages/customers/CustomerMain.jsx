@@ -54,9 +54,9 @@ const CustomerMain = () => {
         phone: customer.MobNumber,
         group: customer.CustomerGroup.GroupName,
         createdAt: new Intl.DateTimeFormat(locale, {
-          year: "numeric",
-          month: "short",
-          day: "2-digit",
+           day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
         }).format(new Date(customer.CreateDate)),
         enabled: customer.IsActive === 1,
       }))

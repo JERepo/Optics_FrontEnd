@@ -49,9 +49,9 @@ const FrameMaster = () => {
       RimType: acc.FrameRimType.FrameRimTypeName,
       RimShape: acc.FrameShapeMaster?.ShapeName,
       createdAt: new Intl.DateTimeFormat(locale, {
+         day: "2-digit",
+        month: "2-digit",
         year: "numeric",
-        month: "short",
-        day: "2-digit",
       }).format(new Date(acc.CreatedDate)),
       enabled: acc.IsActive === 1,
     }));

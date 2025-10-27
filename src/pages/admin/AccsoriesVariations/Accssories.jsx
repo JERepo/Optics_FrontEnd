@@ -45,9 +45,9 @@ const Accssories = () => {
       name: brand.VariationName,
 
       createdAt: new Intl.DateTimeFormat(locale, {
+         day: "2-digit",
+        month: "2-digit",
         year: "numeric",
-        month: "short",
-        day: "2-digit",
       }).format(new Date(brand.CreatedDate)),
       enabled: brand.IsActive === 1,
     }));
