@@ -58,46 +58,51 @@ const CLMain = () => {
 
     if (fromDate) {
       filtered = filtered.filter(
-        (order) => new Date(order.CreatedOn) >= fromDate
+        (cl) => new Date(cl.CreatedDate) >= fromDate  // Check your actual date field name
       );
     }
 
     if (toDate) {
+      const endOfDay = new Date(toDate);
+      endOfDay.setHours(23, 59, 59, 999);
       filtered = filtered.filter(
-        (order) => new Date(order.CreatedOn) <= toDate
+        (cl) => new Date(cl.CreatedDate) <= endOfDay
       );
     }
 
-    // if (searchQuery) {
-    //   filtered = filtered.filter((invoice) => {
-    //     const query = searchQuery.toLowerCase();
+    if (searchQuery) {
+      filtered = filtered.filter((cl) => {
+        const query = searchQuery.toLowerCase();
 
-    //     const customerName =
-    //       invoice.CustomerMaster?.CustomerName?.toLowerCase() || "";
-    //     const patientName = invoice.Patient?.CustomerName?.toLowerCase() || "";
-    //     const patientMobile =
-    //       invoice.CustomerMaster?.MobNumber?.toLowerCase() || "";
-    //     const invoiceNo = String(invoice.InvoiceNo)?.toLowerCase() || "";
+        const brandName = cl.Brand?.BrandName?.toLowerCase() || "";
+        const productCode = cl.ProductCode?.toLowerCase() || "";
+        const productName = cl.ProductName?.toLowerCase() || "";
 
-    //     return (
-    //       customerName.includes(query) ||
-    //       patientName.includes(query) ||
-    //       patientMobile.includes(query) ||
-    //       invoiceNo.includes(query)
-    //     );
-    //   });
-    // }
+        return (
+          brandName.includes(query) ||
+          productCode.includes(query) ||
+          productName.includes(query)
+        );
+      });
+    }
+
+    console.log("filtered -- ", filtered);
 
     return filtered.map((cl) => ({
       id: cl.Id,
       brandName: cl.Brand?.BrandName,
       productCode: cl.ProductCode,
       productName: cl.ProductName,
+      createdOn: new Date(cl.CreatedDate).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      }),
       enabled: cl.IsActive === 1,
       all: cl,
     }));
-    // .filter((order) => order.CompanyID === parseInt(hasMultipleLocations[0]));
   }, [allCL?.data, fromDate, toDate, searchQuery]);
+
 
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedOrders = clMasters.slice(startIndex, startIndex + pageSize);
@@ -200,7 +205,7 @@ const CLMain = () => {
                 <Button
                   icon={FiSearch}
                   className="bg-blue-600 hover:bg-blue-700 h-10 w-full md:w-auto justify-center"
-                  onClick={() => {}}
+                  onClick={() => { }}
                 >
                   Apply Filters
                 </Button>
@@ -259,6 +264,7 @@ const CLMain = () => {
               "brand name",
               "product code",
               "product name",
+              "Created On",
               "action",
             ]}
             data={paginatedOrders}
@@ -268,6 +274,7 @@ const CLMain = () => {
                 <TableCell>{item.brandName}</TableCell>
                 <TableCell>{item.productCode}</TableCell>
                 <TableCell>{item.productName}</TableCell>
+                <TableCell>{item.createdOn}</TableCell>
                 <TableCell className="flex items-center gap-2">
                   <button
                     onClick={() => handleEdit(item.id)}
@@ -301,12 +308,10 @@ const CLMain = () => {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onConfirm={handleConfirmToggle}
-          title={`Are you sure you want to ${
-            currentStatus ? "deactivate" : "activate"
-          } this Contact Lens Master?`}
-          message={`This will ${
-            currentStatus ? "deactivate" : "activate"
-          } the Contact Lens Master. You can change it again later.`}
+          title={`Are you sure you want to ${currentStatus ? "deactivate" : "activate"
+            } this Contact Lens Master?`}
+          message={`This will ${currentStatus ? "deactivate" : "activate"
+            } the Contact Lens Master. You can change it again later.`}
           confirmText={currentStatus ? "Deactivate" : "Activate"}
           danger={currentStatus}
           isLoading={isDeActivating}

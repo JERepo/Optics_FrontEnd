@@ -12,7 +12,7 @@ export const brandApi = createApi({
         method: "POST",
         body: payload,
       }),
-      invalidatesTags : ["Brand"]
+      invalidatesTags: ["Brand"]
     }),
     getAllBrandCats: builder.query({
       query: () => ({
@@ -24,6 +24,10 @@ export const brandApi = createApi({
       query: ({ id }) => ({
         url: `/api/v1/brand-category/${id}`,
       }),
+      providesTags: (result, error, { id }) => [
+        { type: "Brand", id },
+        "Brand"
+      ],
     }),
     updateBrandCategory: builder.mutation({
       query: ({ id, payload }) => ({
@@ -31,7 +35,10 @@ export const brandApi = createApi({
         method: "PUT",
         body: payload,
       }),
-      invalidatesTags : ["Brand"]
+      invalidatesTags: (result, error, { id }) => [
+        "Brand",
+        { type: "Brand", id }
+      ],
     }),
     deActivate: builder.mutation({
       query: ({ id, payload }) => ({
@@ -39,7 +46,10 @@ export const brandApi = createApi({
         method: "PUT",
         body: payload,
       }),
-      invalidatesTags: ["Brand"],
+      invalidatesTags: (result, error, { id }) => [
+        "Brand",
+        { type: "Brand", id }
+      ],
     }),
   }),
 });

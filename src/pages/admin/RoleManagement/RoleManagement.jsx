@@ -39,7 +39,6 @@ const RoleManagement = () => {
     try {
       if (selectedRole.IsActive) {
         await deactiveRole({ id: selectedRole.Id }).unwrap();
-
         toast.success("Role deactivated successfully");
       } else {
         await updateRole({
@@ -51,7 +50,9 @@ const RoleManagement = () => {
       refetch();
     } catch (error) {
       console.error("Failed to toggle role status", error);
-      toast.error("Failed to update role status");
+      // Access the error message from the API response
+      const errorMessage = error?.data?.error || error?.error || "Failed to update role status";
+      toast.error(errorMessage);
     } finally {
       setShowModal(false);
       setSelectedRole(null);
@@ -120,9 +121,8 @@ const RoleManagement = () => {
         onClose={() => setShowModal(false)}
         onConfirm={handleToggleStatus}
         title="Confirm Status Change"
-        message={`Are you sure you want to ${
-          selectedRole?.IsActive ? "deactivate" : "activate"
-        } the role "${selectedRole?.UserType}"?`}
+        message={`Are you sure you want to ${selectedRole?.IsActive ? "deactivate" : "activate"
+          } the role "${selectedRole?.UserType}"?`}
         isLoading={isRoleDeActivateLoading}
       />
     </div>

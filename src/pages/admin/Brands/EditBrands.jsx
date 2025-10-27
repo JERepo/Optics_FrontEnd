@@ -33,6 +33,9 @@ const EditBrands = () => {
     OthersProductsActive: false,
   });
 
+  const [isSelectedCLBatchCode, setIsSelectCLBatchCode] = useState(false);
+  const [isSelectedOLBarcode, setIsSelectOLBarcode] = useState(false);
+
   const {
     data: brand,
     isLoading: isBrandLoading,
@@ -49,6 +52,9 @@ const EditBrands = () => {
   useEffect(() => {
     if (id && isSuccess && brand?.data) {
       const data = brand.data;
+
+      console.log(data);
+
       setBrandName(data.BrandName || "");
       setSelectedBrandGroup(data.BrandGroupID || "");
       setSelectedBrandCat(data.BrandCategoryId || "");
@@ -59,6 +65,8 @@ const EditBrands = () => {
         FrameActive: data.FrameActive === 1,
         OthersProductsActive: data.OthersProductsActive === 1,
       });
+      setIsSelectCLBatchCode(data.CLBatchCode === 1);
+      setIsSelectOLBarcode(data.OLStockBarcode === 1);
     }
   }, [id, brand, isSuccess]);
 
@@ -93,10 +101,15 @@ const EditBrands = () => {
       OpticalLensActive: categoryToggles.OpticalLensActive ? 1 : 0,
       FrameActive: categoryToggles.FrameActive ? 1 : 0,
       OthersProductsActive: categoryToggles.OthersProductsActive ? 1 : 0,
+      CLBatchCode: isSelectedCLBatchCode ? 1 : 0,
+      OLStockBarcode: isSelectedOLBarcode ? 1 : 0
     };
 
     try {
       if (id) {
+
+        console.log("Payload - ", payload);
+
         await updateBrands({ id, payload }).unwrap();
         toast.success("Brand updated successfully");
       } else {
@@ -174,6 +187,45 @@ const EditBrands = () => {
             </div>
           ))}
         </div>
+        {(categoryToggles.ContactLensActive || categoryToggles.OpticalLensActive) && (
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            {/* <p className="text-sm font-medium text-gray-700 mb-3">
+              Additional Settings
+            </p> */}
+            <div className="flex flex-wrap gap-6">
+              {categoryToggles.ContactLensActive && (
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="clBatchCode"
+                    checked={isSelectedCLBatchCode || false}
+                    onChange={(e) => setIsSelectCLBatchCode(e.target.checked)}
+                    className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
+                    disabled={isEnabled}
+                  />
+                  <label htmlFor="clBatchCode" className="ml-2 text-sm text-gray-700">
+                    Maintain CLBatchCode
+                  </label>
+                </div>
+              )}
+              {categoryToggles.OpticalLensActive && (
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="olBarcode"
+                    checked={isSelectedOLBarcode || false}
+                    onChange={(e) => setIsSelectOLBarcode(e.target.checked)}
+                    className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
+                    disabled={isEnabled}
+                  />
+                  <label htmlFor="olBarcode" className="ml-2 text-sm text-gray-700">
+                    Maintain Barcode
+                  </label>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Brand Group Dropdown */}
         <div className="space-y-1">
@@ -187,7 +239,7 @@ const EditBrands = () => {
             className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition"
           >
             <option value="">Select Brand Group</option>
-           
+
             {allBrandGroups?.data
               .filter((group) => group.IsActive === 1)
               .sort((a, b) => a.BrandGroupName.localeCompare(b.BrandGroupName))
@@ -234,8 +286,8 @@ const EditBrands = () => {
                     ? "Updating..."
                     : "Update Brand"
                   : isBrandCreating
-                  ? "Creating..."
-                  : "Create Brand"}
+                    ? "Creating..."
+                    : "Create Brand"}
               </Button>
             </HasPermission>
           )}

@@ -62,12 +62,18 @@ const Vendor = () => {
       }))
       .filter((customer) => {
         const query = searchQuery.toLowerCase();
+
+        const name = customer.name?.toLowerCase() || "";
+        const emailId = customer.emailId?.toLowerCase() || "";
+        const phone = customer.phone?.toLowerCase() || "";
+
         return (
-          customer.name.toLowerCase().includes(query) ||
-          customer.emailId.toLowerCase().includes(query)
+          name.includes(query) ||
+          emailId.includes(query) ||
+          phone.includes(query)
         );
       });
-  }, [data, searchQuery, isLoading]);
+  }, [data, searchQuery]);
 
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedPools = customers.slice(startIndex, startIndex + pageSize);
@@ -168,7 +174,7 @@ const Vendor = () => {
                   />
                 </HasPermission>
                 <HasPermission module="Customer" action="edit">
-                 <button
+                  <button
                     onClick={() => handleEdit(pool.id)}
                     className="text-neutral-600 hover:text-primary transition-colors"
                     aria-label="Edit"
@@ -193,8 +199,8 @@ const Vendor = () => {
           isLoading
             ? "Loading vendors..."
             : searchQuery
-            ? "No vendors match your search criteria"
-            : "No vendors found. Click 'Add vendors' to create one."
+              ? "No vendors match your search criteria"
+              : "No vendors found. Click 'Add vendors' to create one."
         }
         pagination={true}
         currentPage={currentPage}
@@ -208,12 +214,10 @@ const Vendor = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onConfirm={handleConfirmToggle}
-        title={`Are you sure you want to ${
-          currentStatus ? "deactivate" : "activate"
-        } this Vendor?`}
-        message={`This will ${
-          currentStatus ? "deactivate" : "activate"
-        } the Vendor. You can change it again later.`}
+        title={`Are you sure you want to ${currentStatus ? "deactivate" : "activate"
+          } this Vendor?`}
+        message={`This will ${currentStatus ? "deactivate" : "activate"
+          } the Vendor. You can change it again later.`}
         confirmText={currentStatus ? "Deactivate" : "Activate"}
         danger={currentStatus}
         isLoading={isDeActivating}

@@ -25,6 +25,10 @@ export const brandGroup = createApi({
       query: ({ id }) => ({
         url: `/api/v1/brandgroup/getbyid/${id}`,
       }),
+      providesTags: (result, error, { id }) => [
+        { type: "Group", id },
+        "Group"
+      ],
     }),
     updateBrandGroup: builder.mutation({
       query: ({ id, payload }) => ({
@@ -32,7 +36,10 @@ export const brandGroup = createApi({
         method: "PUT",
         body: payload,
       }),
-      invalidatesTags: ["Group"],
+      invalidatesTags: (result, error, { id }) => [
+        "Group",
+        { type: "Group", id }
+      ],
     }),
     deActivate: builder.mutation({
       query: ({ id, payload }) => ({
@@ -40,7 +47,10 @@ export const brandGroup = createApi({
         method: "PUT",
         body: payload,
       }),
-      invalidatesTags: ["Group"],
+      invalidatesTags: (result, error, { id }) => [
+        "Group",
+        { type: "Group", id }
+      ],
     }),
   }),
 });

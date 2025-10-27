@@ -269,9 +269,10 @@ const CompanySettings = () => {
         invoiceDcPdf: 0, // 0 show MRP, 1 selling
         editInvoicePrice: 0,
         salesReturnAgainstInvoiceOnly: 0,
-        NoOfColumns: allLabels?.data?.find(
-          (item) => data?.BarcodeLabelId == item.Id
-        ).NoOfColumns,
+        // NoOfColumns: allLabels?.data?.find(
+        //   (item) => data?.BarcodeLabelId == item.Id
+        // ).NoOfColumns || null,
+        NoOfColumns: typeof allLabels.data.find(l => l.Id == data?.BarcodeLabelId)?.NoOfColumns === 'number' ? allLabels.data.find(l => l.Id == data?.BarcodeLabelId)?.NoOfColumns : null,
         accessoryLabel: data?.AccBarcodeLableId,
         accessoryColumn1: data.AccBL1,
         accessoryColumn2: data.AccBL2,
@@ -431,9 +432,8 @@ const CompanySettings = () => {
 
   const ExpandIcon = () => (
     <FiChevronDown
-      className={`transition-transform duration-300 ${
-        expandedSection ? "rotate-180" : ""
-      }`}
+      className={`transition-transform duration-300 ${expandedSection ? "rotate-180" : ""
+        }`}
     />
   );
 
@@ -1721,9 +1721,9 @@ const CompanySettings = () => {
                   value={
                     allLabels?.data
                       ? allLabels.data.find(
-                          (item) =>
-                            String(item.Id) === String(formData.frameLabel)
-                        ) || null
+                        (item) =>
+                          String(item.Id) === String(formData.frameLabel)
+                      ) || null
                       : null
                   }
                   onChange={(_, newValue) =>
@@ -1747,7 +1747,7 @@ const CompanySettings = () => {
               </div>
               {formData?.frameLabel && formData?.NoOfColumns && (
                 <div className="grid grid-cols-3 gap-5 w-full mt-5">
-                  {Array.from({ length: formData.NoOfColumns }).map(
+                  {Array.from({ length: formData?.NoOfColumns }).map(
                     (_, index) => (
                       <div key={index}>
                         <Autocomplete
@@ -1799,9 +1799,9 @@ const CompanySettings = () => {
                   value={
                     allLabels?.data
                       ? allLabels.data.find(
-                          (item) =>
-                            String(item.Id) === String(formData.accessoryLabel)
-                        ) || null
+                        (item) =>
+                          String(item.Id) === String(formData.accessoryLabel)
+                      ) || null
                       : null
                   }
                   onChange={(_, newValue) =>
@@ -1825,7 +1825,7 @@ const CompanySettings = () => {
               </div>
               {formData?.accessoryLabel && formData?.NoOfColumns && (
                 <div className="grid grid-cols-3 gap-5 w-full mt-5">
-                  {Array.from({ length: formData.NoOfColumns }).map(
+                  {Array.from({ length: formData?.NoOfColumns }).map(
                     (_, index) => (
                       <div key={index}>
                         <Autocomplete
