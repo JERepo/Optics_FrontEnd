@@ -64,11 +64,7 @@ const Brands = () => {
         name: brand.BrandName,
         brandActive: brand,
         category,
-        createdAt: new Intl.DateTimeFormat(locale, {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }).format(new Date(brand.CreatedDate)),
+        createdAt: format(new Date(brand.CreatedDate), 'dd/MM/yyyy'),
         enabled: brand.IsActive === 1,
       };
     });
