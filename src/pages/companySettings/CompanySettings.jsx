@@ -269,7 +269,9 @@ const CompanySettings = () => {
         invoiceDcPdf: 0, // 0 show MRP, 1 selling
         editInvoicePrice: 0,
         salesReturnAgainstInvoiceOnly: 0,
-        NoOfColumns :allLabels?.data?.find(item => data?.BarcodeLabelId == item.Id).NoOfColumns,
+        NoOfColumns: allLabels?.data?.find(
+          (item) => data?.BarcodeLabelId == item.Id
+        ).NoOfColumns,
         accessoryLabel: data?.AccBarcodeLableId,
         accessoryColumn1: data.AccBL1,
         accessoryColumn2: data.AccBL2,
@@ -286,7 +288,7 @@ const CompanySettings = () => {
         gvMultipleUse: data.GVMultipleUse,
         dcBilling: data.DCBilling,
         creditBilling: data.CreditBilling,
-        loyaltyEnable: data.LoyaltyEnable,
+        loyaltyEnable: data.EnableCustomerLoyalty,
         prefixRollOff: data.PrefixRollOff,
         clMinExpPeriod: data.CLMinExpiryPeriod,
         clExpiryGracePeriod: data.ClExpiryGracePeriod,
@@ -301,6 +303,7 @@ const CompanySettings = () => {
         EInvoiceInstanceID: data?.EInvoiceInstanceID,
         discountPercentage: data?.DiscountMaxSlabPerct,
         enableEInStockOut: data?.STEInvoiceEnable,
+        orderDiscountApproval: data?.DiscountApproval,
       });
       setLogoPreview(
         companySettingData?.data?.data?.Company?.Logo
@@ -518,7 +521,7 @@ const CompanySettings = () => {
       GVMultipleUse: formData.gvMultipleUse,
       DCBilling: formData.dcBilling,
       CreditBilling: formData.creditBilling,
-      LoyaltyEnable: formData.loyaltyEnable,
+      EnableCustomerLoyalty: formData.loyaltyEnable,
       PrefixRollOff: formData.prefixRollOff,
       CLMinExpiryPeriod: formData.clMinExpPeriod,
       ClExpiryGracePeriod: formData.clExpiryGracePeriod,
@@ -532,6 +535,7 @@ const CompanySettings = () => {
       EInvoiceInstanceID: formData.EInvoiceInstanceID,
       ClientEmail: formData.ClientEmail,
       DiscountMaxSlabPerct: formData?.discountPercentage,
+      DiscountApproval: formData?.orderDiscountApproval,
     };
 
     // If logo/QR need uploading (assuming multipart form)
@@ -954,17 +958,19 @@ const CompanySettings = () => {
                 label="No"
               />
             </div>
-            <div className="flex-grow flex">
-              <TextField
-                label="GST Search Instance ID"
-                placeholder="Enter GST Search Instance ID"
-                variant="outlined"
-                size="small"
-                fullWidth
-                value={formData.gstSearchInstanceId}
-                onChange={handleChange("gstSearchInstanceId")}
-              />
-            </div>
+            {formData?.enableGstVerification === 1 && (
+              <div className="flex-grow flex">
+                <TextField
+                  label="GST Search Instance ID"
+                  placeholder="Enter GST Search Instance ID"
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                  value={formData.gstSearchInstanceId}
+                  onChange={handleChange("gstSearchInstanceId")}
+                />
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-5">
             <label className="text-neutral-800 font-semibold text-base">
@@ -986,19 +992,20 @@ const CompanySettings = () => {
               label="No"
             />
           </div>
-          <div className="flex-grow flex">
-            <TextField
-              label="E-Invoice Instance ID"
-              placeholder="Enter E-Invoice Instance ID"
-              variant="outlined"
-              size="small"
-              fullWidth
-              value={formData.EInvoiceInstanceID}
-              onChange={handleChange("EInvoiceInstanceID")}
-            />
-          </div>
+
           {formData.enableEInvoice === 1 && (
             <>
+              <div className="flex-grow flex">
+                <TextField
+                  label="E-Invoice Instance ID"
+                  placeholder="Enter E-Invoice Instance ID"
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                  value={formData.EInvoiceInstanceID}
+                  onChange={handleChange("EInvoiceInstanceID")}
+                />
+              </div>
               <div className="grid grid-cols-4 gap-5">
                 <div>
                   <Autocomplete
@@ -1898,26 +1905,28 @@ const CompanySettings = () => {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <TextField
-                  label="Discount % above which Approval is Required"
-                  placeholder="Enter Discount %"
-                  variant="outlined"
-                  size="small"
-                  fullWidth
-                  value={formData.discountPercentage}
-                  onChange={handleChange("discountPercentage")}
-                />
-                <TextField
-                  label="Discount Value above which Approval is Required"
-                  placeholder="Enter Discount Value"
-                  variant="outlined"
-                  size="small"
-                  fullWidth
-                  value={formData.discountValue}
-                  onChange={handleChange("discountValue")}
-                />
-              </div>
+              {formData?.orderDiscountApproval == 1 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <TextField
+                    label="Discount % above which Approval is Required"
+                    placeholder="Enter Discount %"
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                    value={formData.discountPercentage}
+                    onChange={handleChange("discountPercentage")}
+                  />
+                  <TextField
+                    label="Discount Value above which Approval is Required"
+                    placeholder="Enter Discount Value"
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                    value={formData.discountValue}
+                    onChange={handleChange("discountValue")}
+                  />
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center gap-5">
                   <label className="text-neutral-800 font-semibold text-base">

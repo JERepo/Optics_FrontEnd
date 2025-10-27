@@ -251,7 +251,7 @@ export const menuItems = [
       {
         name: "Daily Payment Report",
         icon: IoConstructOutline,
-        module: "daily-payment-report",
+        module: "Daily-Payment-Report",
         path: "/daily-payments",
       },
     ],

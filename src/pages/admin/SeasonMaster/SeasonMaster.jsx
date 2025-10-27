@@ -30,9 +30,9 @@ const SeasonMaster = () => {
       id: brand.Id,
       name: brand.SeasonName,
       createdAt: new Intl.DateTimeFormat(locale, {
+         day: "2-digit",
+        month: "2-digit",
         year: "numeric",
-        month: "short",
-        day: "2-digit",
       }).format(new Date(brand.CreatedDate)),
       createdAtRaw: new Date(brand.CreatedDate), // Store raw date for sorting
       enabled: brand.IsActive,

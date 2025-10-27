@@ -32,9 +32,9 @@ const brands = useMemo(() => {
     id: brand.Id,
     name: brand.GroupName,
     createdAt: new Intl.DateTimeFormat(locale, {
-      year: "numeric",
-      month: "short",
-      day: "2-digit",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
     }).format(new Date(brand.CreatedDate)),
     enabled: brand.IsActive,
   }));

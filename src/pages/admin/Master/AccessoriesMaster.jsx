@@ -43,9 +43,9 @@ const AccessoriesMaster = () => {
       ProductName: acc.ProductName,
       code: acc.HSN,
       createdAt: new Intl.DateTimeFormat(locale, {
+         day: "2-digit",
+        month: "2-digit",
         year: "numeric",
-        month: "short",
-        day: "2-digit",
       }).format(new Date(acc.CreatedDate)),
       createdAtRaw: new Date(acc.CreatedDate),
       enabled: acc.IsActive === 1,

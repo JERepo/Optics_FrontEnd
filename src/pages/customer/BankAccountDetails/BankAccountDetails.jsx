@@ -44,9 +44,9 @@ const BankAccountDetails = () => {
         number: brand.AccountNo,
         type: accountType.find((a) => a.value === brand.Type).label,
         createdAt: new Intl.DateTimeFormat(locale, {
-          year: "numeric",
-          month: "short",
           day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
         }).format(new Date(brand.CreatedDate)),
         enabled: brand.IsActive,
       }))
