@@ -16,6 +16,7 @@ import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
 import { useSelector } from "react-redux";
 import Modal from "../../components/ui/Modal";
 import Input from "../../components/Form/Input";
+import { format } from "date-fns";
 
 const CustomerMain = () => {
   const navigate = useNavigate();
@@ -53,11 +54,7 @@ const CustomerMain = () => {
           .LocationName,
         phone: customer.MobNumber,
         group: customer.CustomerGroup.GroupName,
-        createdAt: new Intl.DateTimeFormat(locale, {
-           day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        }).format(new Date(customer.CreateDate)),
+        createdAt: format(new Date(customer.CreatedDate), 'dd/MM/yyyy'),
         enabled: customer.IsActive === 1,
       }))
       .filter((customer) => {

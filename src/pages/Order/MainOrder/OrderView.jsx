@@ -24,6 +24,7 @@ import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import HasPermission from "../../../components/HasPermission";
 import Modal from "../../../components/ui/Modal";
 import OTPScreen from "../../../components/OTPScreen";
+// 0- Order Placed  1- GRN Done 2- Partial Invoice 3- Invoice Completed 4- Cancelled 5- PO Raised 6- Stock Allocation Done for OL
 export const getOrderStatus = (statusCode) => {
   const statusMap = {
     0: "Order Placed",
@@ -62,6 +63,11 @@ const OrderView = () => {
   const [otpValue, setOtpValue] = useState(null);
   const [selectedDiscountItem, setSelectedDiscountItem] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [CancelOrderConfirmWarning, setIsCancelOrderConfirmWarning] =
+    useState(false);
+  const [CancelItemConfirmWarning, setIsCancelItemConfirmWarning] =
+    useState(false);
+  const [generateInvoiceWarning, setIsGenerateInvoiceWarning] = useState(false);
 
   const { data: orderDetails, isLoading } = useGetSavedOrderDetailsQuery(
     { orderId },
@@ -261,6 +267,7 @@ const OrderView = () => {
       toast.success("Item cancelled successfully");
       setSelectedItemId(null);
       setIsWarningOpen(false);
+      setIsCancelItemConfirmWarning(false);
       setWarningMessage("");
     } catch (error) {
       console.log(error);
@@ -281,30 +288,33 @@ const OrderView = () => {
       setSelectedItemId(null);
       setIsCancelOrder(false);
       setWarningMessage("");
+      setIsCancelOrderConfirmWarning(false);
     } catch (error) {
       console.log(error);
     }
   };
 
-  const handleCancelItem = async (id) => {
-    setSelectedItemId(id);
+  const handleCancelItem = async () => {
     try {
       const payload = {
         proceedAfterWarnings: false,
         applicationUserId: user.Id,
       };
 
-      const res = await cancelItem({ id, payload }).unwrap();
-      
+      const res = await cancelItem({ id: selectedItemId, payload }).unwrap();
+
       if (res?.otpRequired) {
-        setSelectedDiscountItem(id);
+        setSelectedDiscountItem(selectedItemId);
+        setIsCancelItemConfirmWarning(false);
         setShowOtp(true);
         return;
       }
       if (res?.status == "warning") {
         setWarningMessage(res?.warnings[0]);
+        setIsCancelItemConfirmWarning(false);
         setIsWarningOpen(true);
       }
+      setIsCancelItemConfirmWarning(false);
       toast.success("Item Cancelled Successfully!");
     } catch (error) {
       console.log(error);
@@ -312,7 +322,7 @@ const OrderView = () => {
     }
   };
   const handleCancelOrder = async () => {
-        setSelectedItemId(orderId);
+    setSelectedItemId(orderId);
 
     try {
       const payload = {
@@ -326,22 +336,27 @@ const OrderView = () => {
       }).unwrap();
       if (res?.otpRequired) {
         setSelectedDiscountItem(orderId);
+        setIsCancelOrderConfirmWarning(false);
         setShowOtp(true);
         return;
       }
       if (res?.status == "warning") {
         setWarningMessage(res?.warnings[0]);
+        setIsCancelOrderConfirmWarning(false);
         setIsCancelOrder(true);
+
         return;
       }
+      setIsCancelOrderConfirmWarning(false);
       toast.success("Order cancelled successfully");
     } catch (error) {
       console.log(error);
       toast.error(error?.data?.message || "Order already cancelled");
+      setIsCancelOrderConfirmWarning(false);
     }
   };
   const handleGenerateInvoiceConfirm = async (order) => {
-        console.log("order",order)
+    console.log("order", order);
 
     const discountedSellingPrice =
       parseFloat(order?.DiscountedSellingPrice) || 0;
@@ -352,9 +367,7 @@ const OrderView = () => {
 
     const totalFittingGST = fittingPrice * (fittingGST / 100);
     const totalvalue =
-      (discountedSellingPrice * orderQty )+
-      totalFittingGST +
-      fittingPrice
+      discountedSellingPrice * orderQty + totalFittingGST + fittingPrice;
     const payload = {
       invoiceItems: [
         {
@@ -391,12 +404,12 @@ const OrderView = () => {
         customerDataById?.data.data?.CustomerMaster?.CreditBilling === 1, // true or false
     };
 
-    console.log(payload);
     try {
       const res = await generateInvoice({ payload }).unwrap();
       // if()
       toast.success("Invoice Generated successfully!");
       setSelectedOrder(null);
+      setIsGenerateInvoiceWarning(false);
       setOpenInvoiceWarning(false);
     } catch (error) {
       console.log(error);
@@ -407,6 +420,7 @@ const OrderView = () => {
           ? [error?.data?.validationErrors]
           : []
       );
+      setIsGenerateInvoiceWarning(false);
       setErrorModalOpen(true);
       setOpenInvoiceWarning(false);
       return;
@@ -423,9 +437,7 @@ const OrderView = () => {
 
     const totalFittingGST = fittingPrice * (fittingGST / 100);
     const totalvalue =
-      (discountedSellingPrice * orderQty) +
-      totalFittingGST +
-      fittingPrice
+      discountedSellingPrice * orderQty + totalFittingGST + fittingPrice;
     const payload = {
       invoiceItems: [
         {
@@ -471,6 +483,7 @@ const OrderView = () => {
         return;
       }
       toast.success("Invoice Generated successfully!");
+      setIsGenerateInvoiceWarning(false);
       setSelectedOrder(null);
     } catch (error) {
       setErrors(
@@ -480,6 +493,7 @@ const OrderView = () => {
           ? [error?.data?.validationErrors]
           : []
       );
+      setIsGenerateInvoiceWarning(false);
       setErrorModalOpen(true);
       setSelectedOrder(null);
       setOpenInvoiceWarning(false);
@@ -487,15 +501,15 @@ const OrderView = () => {
       return;
     }
   };
-  const getOrderStatus = (status) => {
-    const types = {
-      1: "Confirmed",
-      2: "Partially Invoiced",
-      3: "Invoiced",
-      4: "Cancelled",
-    };
-    return types[status] || "Draft";
-  };
+  // const getOrderStatus = (status) => {
+  //   const types = {
+  //     1: "Confirmed",
+  //     2: "Partially Invoiced",
+  //     3: "Invoiced",
+  //     4: "Cancelled",
+  //   };
+  //   return types[status] || "Draft";
+  // };
   const handleOtpComplete = (otp) => {
     console.log("OTP Completed:", otp);
     setOtpValue(otp);
@@ -598,7 +612,7 @@ const OrderView = () => {
                 <HasPermission module="Order" action={["deactivate"]}>
                   <Button
                     variant="danger"
-                    onClick={handleCancelOrder}
+                    onClick={() => setIsCancelOrderConfirmWarning(true)}
                     size="md"
                     isLoading={isOrderCancelling}
                     disabled={isOrderCancelling || isItemCancelling}
@@ -676,7 +690,6 @@ const OrderView = () => {
             label="Order Reference"
             value={customerDataById?.data.data?.OrderReference || "N/A"}
           />
-          
         </div>
 
         {/* Product Table */}
@@ -757,7 +770,11 @@ const OrderView = () => {
                         <Button
                           size="sm"
                           icon={FiFileText}
-                          onClick={() => handleGenerateInvoice(order)}
+                          onClick={() => {
+                            setIsGenerateInvoiceWarning(true);
+                            setSelectedOrder(order);
+                          }}
+                          // onClick={() => {handleGenerateInvoice(order);setSelectedOrder(order)}}
                           title="Generate Invoice"
                           isLoading={isInvoiceGenerating}
                         ></Button>
@@ -767,7 +784,11 @@ const OrderView = () => {
                       <HasPermission module="Order" action="deactivate">
                         <Button
                           variant="danger"
-                          onClick={() => handleCancelItem(order.OrderDetailId)}
+                          onClick={() => {
+                            setIsCancelItemConfirmWarning(true);
+                            setSelectedItemId(order.OrderDetailId);
+                          }}
+                          // onClick={() => handleCancelItem(order.OrderDetailId)}
                           className="opacity-70"
                           size="sm"
                           isLoading={
@@ -793,7 +814,6 @@ const OrderView = () => {
                         ) : (
                           <div className="flex items-center">
                             <FiPrinter className="mr-1.5" />
-                            Print
                           </div>
                         )}
                       </button>
@@ -810,96 +830,95 @@ const OrderView = () => {
         {orderDetails && (
           <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200">
             <div className="flex justify-between">
-             <Info
-            label="Comment"
-            value={customerDataById?.data.data?.Comment || "N/A"}
-          />
-            <div className="flex gap-30 justify-end">
-              <div className="flex flex-col">
-                <span className="text-neutral-700 font-semibold text-lg">
-                  Total Qty
-                </span>
-                <span className="text-neutral-600 text-xl font-medium">
-                  {totalQty || "0"}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-neutral-700 font-semibold text-lg">
-                  Total GST
-                </span>
-                <span className="text-neutral-600 text-xl font-medium">
-                  ₹{formatINR(totalGST) || "0"}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-neutral-700 font-semibold text-lg">
-                  Total Basic Value
-                </span>
-                <span className="text-neutral-600 text-xl font-medium">
-                  ₹
-                  {formatINR(parseFloat(grandTotal) - parseFloat(totalGST)) ||
-                    "0"}
-                </span>
-              </div>
-              <div className="flex flex-col gap-3">
+              <Info
+                label="Comment"
+                value={customerDataById?.data.data?.Comment || "N/A"}
+              />
+              <div className="flex gap-30 justify-end">
                 <div className="flex flex-col">
                   <span className="text-neutral-700 font-semibold text-lg">
-                    Total Amount
+                    Total Qty
                   </span>
                   <span className="text-neutral-600 text-xl font-medium">
-                    ₹
-                    {formatINR(
-                      Number(
-                        grandTotal +
-                          parseFloat(
-                            customerDataById?.data?.data?.RoundOff || 0
-                          )
-                      )
-                    ) || "0"}
+                    {totalQty || "0"}
                   </span>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-neutral-700 font-semibold text-lg">
-                    Round Off
+                    Total GST
+                  </span>
+                  <span className="text-neutral-600 text-xl font-medium">
+                    ₹{formatINR(totalGST) || "0"}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-neutral-700 font-semibold text-lg">
+                    Total Basic Value
                   </span>
                   <span className="text-neutral-600 text-xl font-medium">
                     ₹
-                    {formatINR(
-                      Number(customerDataById?.data?.data?.RoundOff)
-                    ) || "0"}
+                    {formatINR(parseFloat(grandTotal) - parseFloat(totalGST)) ||
+                      "0"}
                   </span>
                 </div>
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col">
+                    <span className="text-neutral-700 font-semibold text-lg">
+                      Total Amount
+                    </span>
+                    <span className="text-neutral-600 text-xl font-medium">
+                      ₹
+                      {formatINR(
+                        Number(
+                          grandTotal +
+                            parseFloat(
+                              customerDataById?.data?.data?.RoundOff || 0
+                            )
+                        )
+                      ) || "0"}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-neutral-700 font-semibold text-lg">
+                      Round Off
+                    </span>
+                    <span className="text-neutral-600 text-xl font-medium">
+                      ₹
+                      {formatINR(
+                        Number(customerDataById?.data?.data?.RoundOff)
+                      ) || "0"}
+                    </span>
+                  </div>
 
-                {customerDataById?.data.data?.CustomerMaster?.CreditBilling ===
-                  0 && (
-                  <div className="flex flex-col">
-                    <span className="text-neutral-700 font-semibold text-lg">
-                      Total Advance Amount
-                    </span>
-                    <span className="text-neutral-600 text-xl font-medium">
-                      ₹{formatINR(Number(advanceAmount?.toFixed(2))) || "0"}
-                    </span>
-                  </div>
-                )}
-                {customerDataById?.data.data?.CustomerMaster?.CreditBilling ===
-                  0 && (
-                  <div className="flex flex-col">
-                    <span className="text-neutral-700 font-semibold text-lg">
-                      Total Balance Amount
-                    </span>
-                    <span className="text-neutral-600 text-xl font-medium">
-                      ₹{formatINR(Number(balanceAmount?.toFixed(2))) || "0"}
-                    </span>
-                  </div>
-                )}
+                  {customerDataById?.data.data?.CustomerMaster
+                    ?.CreditBilling === 0 && (
+                    <div className="flex flex-col">
+                      <span className="text-neutral-700 font-semibold text-lg">
+                        Total Advance Amount
+                      </span>
+                      <span className="text-neutral-600 text-xl font-medium">
+                        ₹{formatINR(Number(advanceAmount?.toFixed(2))) || "0"}
+                      </span>
+                    </div>
+                  )}
+                  {customerDataById?.data.data?.CustomerMaster
+                    ?.CreditBilling === 0 && (
+                    <div className="flex flex-col">
+                      <span className="text-neutral-700 font-semibold text-lg">
+                        Total Balance Amount
+                      </span>
+                      <span className="text-neutral-600 text-xl font-medium">
+                        ₹{formatINR(Number(balanceAmount?.toFixed(2))) || "0"}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
             </div>
           </div>
         )}
       </div>
       <Modal isOpen={showOtp} onClose={() => setShowOtp(false)}>
-        
         <OTPScreen
           length={6}
           onComplete={handleOtpComplete}
@@ -971,6 +990,39 @@ const OrderView = () => {
             ))}
           </div>
         }
+        confirmText="Yes, Proceed"
+        cancelText="Cancel"
+        danger={false}
+        isLoading={isInvoiceGenerating}
+      />
+      <ConfirmationModal
+        isOpen={CancelOrderConfirmWarning}
+        onClose={() => setIsCancelOrderConfirmWarning(false)}
+        onConfirm={handleCancelOrder}
+        title="Warning!"
+        message="Are you sure you want to cancel the Order?"
+        confirmText="Yes, Proceed"
+        cancelText="Cancel"
+        danger={false}
+        isLoading={isOrderCancelling}
+      />
+      <ConfirmationModal
+        isOpen={CancelItemConfirmWarning}
+        onClose={() => setIsCancelItemConfirmWarning(false)}
+        onConfirm={handleCancelItem}
+        title="Warning!"
+        message="Are you sure you want to cancel this Product?"
+        confirmText="Yes, Proceed"
+        cancelText="Cancel"
+        danger={false}
+        isLoading={isItemCancelling}
+      />
+      <ConfirmationModal
+        isOpen={generateInvoiceWarning}
+        onClose={() => setIsGenerateInvoiceWarning(false)}
+        onConfirm={() => handleGenerateInvoice(selectedOrder)}
+        title="Warning!"
+        message="Are you sure you want to Generate Invoice from Order?"
         confirmText="Yes, Proceed"
         cancelText="Cancel"
         danger={false}

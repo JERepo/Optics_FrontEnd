@@ -18,6 +18,8 @@ import {
   useGetAllBrandsQuery,
 } from "../../../api/brandsApi";
 import { IoFilter } from "react-icons/io5";
+import { format } from 'date-fns';
+
 
 const Brands = () => {
   const navigate = useNavigate();
@@ -57,12 +59,8 @@ const Brands = () => {
         id: brand.Id,
         name: brand.BrandName,
         brandActive: brand,
-        category, 
-        createdAt: new Intl.DateTimeFormat(locale, {
-          day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        }).format(new Date(brand.CreatedDate)),
+        category,
+        createdAt: format(new Date(brand.CreatedDate), 'dd/MM/yyyy'),
         enabled: brand.IsActive === 1,
       };
     });
@@ -244,7 +242,7 @@ const Brands = () => {
                   />
                 </HasPermission>
                 <HasPermission module="Brand" action="edit">
-                 <button
+                  <button
                     onClick={() => handleEdit(pool.id)}
                     className="text-neutral-600 hover:text-primary transition-colors"
                     aria-label="Edit"

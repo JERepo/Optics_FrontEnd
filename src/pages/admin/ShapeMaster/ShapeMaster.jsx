@@ -10,6 +10,7 @@ import {
   useDeActivateMutation,
   useGetAllShapesQuery,
 } from "../../../api/shapeMasterApi";
+import { format } from "date-fns";
 
 const ShapeMaster = () => {
   const navigate = useNavigate();
@@ -32,11 +33,7 @@ const ShapeMaster = () => {
     let sortedBrands = data.map((brand) => ({
       id: brand.Id,
       name: brand.ShapeName,
-      createdAt: new Intl.DateTimeFormat(locale, {
-         day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }).format(new Date(brand.CreatedDate)),
+      createdAt: format(new Date(brand.CreatedDate), 'dd/MM/yyyy'),
       enabled: brand.IsActive,
     }));
 

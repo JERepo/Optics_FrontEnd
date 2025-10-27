@@ -12,6 +12,7 @@ import {
   useDeActivateMutation,
   useGetAllBankMastersQuery,
 } from "../../../api/bankMasterApi";
+import { format } from "date-fns";
 
 const BankMaster = () => {
   const navigate = useNavigate();
@@ -34,11 +35,7 @@ const BankMaster = () => {
         id: brand.Id,
         name: brand.BankName,
 
-        createdAt: new Intl.DateTimeFormat(locale, {
-           day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        }).format(new Date(brand.CreatedDate)),
+        createdAt: format(new Date(brand.CreatedDate), 'dd/MM/yyyy'),
         enabled: brand.IsActive,
       }))
       .filter((bank) => {

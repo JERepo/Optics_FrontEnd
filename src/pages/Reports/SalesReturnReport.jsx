@@ -11,7 +11,7 @@ import { useSelector } from "react-redux";
 import toast from "react-hot-toast";
 
 const reportTypes = [
-  { value: 1, label: " Detailed Sales Return" },
+  { value: 1, label: "Detailed Sales Return" },
   // { value: 1, label: "Tally Sales Return" },
   { value: 0, label: "Sales Return by Product Type" },
  
@@ -32,7 +32,7 @@ const formatDate = (date) => format(date, "yyyy-MM-dd");
 
 const SalesReturnReport = () => {
   const { user } = useSelector((state) => state.auth);
-  const [reportType, setReportType] = useState(0);
+  const [reportType, setReportType] = useState(1);
   const [dateType, setDateType] = useState("today");
   const [fromDate, setFromDate] = useState(new Date());
   const [toDate, setToDate] = useState(new Date());
@@ -142,7 +142,7 @@ const handleDateTypeChange = (_, newValue) => {
               options={reportTypes}
               getOptionLabel={(option) => option.label}
               value={reportTypes.find((item) => item.value === reportType)}
-              onChange={(_, newValue) => setReportType(newValue?.value || null)}
+              onChange={(_, newValue) => setReportType(newValue?.value ?? null)}
               renderInput={(params) => (
                 <TextField
                   {...params}

@@ -18,6 +18,7 @@ import {
   useDeActivateMutation,
   useGetAllFrameMasterQuery,
 } from "../../../api/frameMasterApi";
+import { format } from "date-fns";
 
 const FrameMaster = () => {
   const navigate = useNavigate();
@@ -48,11 +49,7 @@ const FrameMaster = () => {
       ModelNo: acc.ModelNo,
       RimType: acc.FrameRimType.FrameRimTypeName,
       RimShape: acc.FrameShapeMaster?.ShapeName,
-      createdAt: new Intl.DateTimeFormat(locale, {
-         day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }).format(new Date(acc.CreatedDate)),
+      createdAt: format(new Date(acc.CreatedDate), 'dd/MM/yyyy'),
       enabled: acc.IsActive === 1,
     }));
 

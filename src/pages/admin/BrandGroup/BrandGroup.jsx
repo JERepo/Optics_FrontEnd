@@ -19,6 +19,7 @@ import {
   useDeActivateMutation,
   useGetAllBrandGroupsQuery,
 } from "../../../api/brandGroup";
+import { format } from "date-fns";
 
 const BrandGroup = () => {
   const navigate = useNavigate();
@@ -50,11 +51,7 @@ const BrandGroup = () => {
       //   month: "short",
       //   day: "2-digit",
       // }).format(new Date(brand.CreatedDate)),
-      createdAt: new Intl.DateTimeFormat(locale, {
-         day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }).format(new Date(brand.CreatedDate)),
+      createdAt: format(new Date(brand.CreatedDate), 'dd/MM/yyyy'),
       enabled: brand.IsActive,
     }));
     if (sortConfig.key === "name") {
