@@ -30,7 +30,6 @@ const FrameSunglass = () => {
     goToStep,
     setCustomerId,
   } = useOrder();
-  console.log("ds",customerId)
   const [barcode, setBarcode] = useState("");
   const [searchMode, setSearchMode] = useState(false);
   const [brandInput, setBrandInput] = useState(""); // for user typing

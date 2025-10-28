@@ -11,6 +11,7 @@ import {
   useGetAllBankAccountsQuery,
 } from "../../../api/BankAccountDetailsApi";
 import { useGetAllBankMastersQuery } from "../../../api/bankMasterApi";
+import { format } from "date-fns";
 
 const accountType = [
   { value: 0, label: "Savings" },
@@ -43,11 +44,7 @@ const BankAccountDetails = () => {
           .BankName,
         number: brand.AccountNo,
         type: accountType.find((a) => a.value === brand.Type).label,
-        createdAt: new Intl.DateTimeFormat(locale, {
-          day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        }).format(new Date(brand.CreatedDate)),
+        createdAt:format(new Date(brand.CreatedDate), 'dd/MM/yyyy'),
         enabled: brand.IsActive,
       }))
       .filter((master) => {

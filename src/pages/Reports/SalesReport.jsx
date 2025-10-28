@@ -14,9 +14,8 @@ import { useSelector } from "react-redux";
 import toast from "react-hot-toast";
 
 const reportTypes = [
-  { value: 1, label: "Detailed Sales" },
-  // { value: 1, label: "Tally Sales" },
   { value: 0, label: "Sales by Product Type" },
+  { value: 1, label: "Detailed Sales" },
 ];
 
 const dateOptions = [
@@ -34,7 +33,7 @@ const formatDate = (date) => format(date, "yyyy-MM-dd");
 
 const SalesReport = () => {
   const { user } = useSelector((state) => state.auth);
-  const [reportType, setReportType] = useState(0);
+  const [reportType, setReportType] = useState(1);
   const [dateType, setDateType] = useState("today");
   const [fromDate, setFromDate] = useState(new Date());
   const [toDate, setToDate] = useState(new Date());
@@ -42,51 +41,51 @@ const SalesReport = () => {
   const [getReport, { isFetching: isReportLoading }] =
     useLazyGetSalesReportQuery();
 
-const handleDateTypeChange = (_, newValue) => {
-  if (!newValue) return;
-  setDateType(newValue.value);
+  const handleDateTypeChange = (_, newValue) => {
+    if (!newValue) return;
+    setDateType(newValue.value);
 
-  const today = new Date();
-  let start, end;
+    const today = new Date();
+    let start, end;
 
-  switch (newValue.value) {
-    case "today":
-      start = startOfDay(today);
-      end = endOfDay(today);
-      break;
-    case "yesterday":
-      start = startOfDay(subDays(today, 1));
-      end = endOfDay(subDays(today, 1));
-      break;
-    case "7days":
-      start = startOfDay(subDays(today, 6));
-      end = endOfDay(today);
-      break;
-    case "30days":
-      start = startOfDay(subDays(today, 29)); 
-      end = endOfDay(today);
-      break;
-    case "90days":
-      start = startOfDay(subDays(today, 89)); 
-      end = endOfDay(today);
-      break;
-    case "6months":
-      start = startOfDay(subMonths(today, 6));
-      end = endOfDay(today); 
-      break;
-    case "1year":
-      start = startOfDay(subMonths(today, 12));
-      end = endOfDay(today); 
-      break;
-    case "custom":
-    default:
-      start = today;
-      end = today;
-  }
+    switch (newValue.value) {
+      case "today":
+        start = startOfDay(today);
+        end = endOfDay(today);
+        break;
+      case "yesterday":
+        start = startOfDay(subDays(today, 1));
+        end = endOfDay(subDays(today, 1));
+        break;
+      case "7days":
+        start = startOfDay(subDays(today, 6));
+        end = endOfDay(today);
+        break;
+      case "30days":
+        start = startOfDay(subDays(today, 29));
+        end = endOfDay(today);
+        break;
+      case "90days":
+        start = startOfDay(subDays(today, 89));
+        end = endOfDay(today);
+        break;
+      case "6months":
+        start = startOfDay(subMonths(today, 6));
+        end = endOfDay(today);
+        break;
+      case "1year":
+        start = startOfDay(subMonths(today, 12));
+        end = endOfDay(today);
+        break;
+      case "custom":
+      default:
+        start = today;
+        end = today;
+    }
 
-  setFromDate(start);
-  setToDate(end);
-};
+    setFromDate(start);
+    setToDate(end);
+  };
 
   const downloadFile = (blob, filename) => {
     const url = window.URL.createObjectURL(blob);
@@ -143,7 +142,7 @@ const handleDateTypeChange = (_, newValue) => {
               options={reportTypes}
               getOptionLabel={(option) => option.label}
               value={reportTypes.find((item) => item.value === reportType)}
-              onChange={(_, newValue) => setReportType(newValue?.value || null)}
+              onChange={(_, newValue) => setReportType(newValue?.value ?? null)}
               renderInput={(params) => (
                 <TextField
                   {...params}

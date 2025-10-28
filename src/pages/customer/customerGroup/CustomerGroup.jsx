@@ -9,6 +9,7 @@ import { PoolCat } from "../../../utils/constants/PoolCategory";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import HasPermission from "../../../components/HasPermission";
 import { useDeActivateMutation, useGetAllCustomerGroupsQuery } from "../../../api/customerGroup";
+import { format } from "date-fns";
 
 
 const CustomerGroup = () => {
@@ -31,11 +32,7 @@ const brands = useMemo(() => {
   let processed = data.data.data.map((brand) => ({
     id: brand.Id,
     name: brand.GroupName,
-    createdAt: new Intl.DateTimeFormat(locale, {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-    }).format(new Date(brand.CreatedDate)),
+    createdAt: format(new Date(brand.CreatedDate), 'dd/MM/yyyy'),
     enabled: brand.IsActive,
   }));
 

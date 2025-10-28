@@ -17,6 +17,7 @@ import {
   useDeActivateMutation,
   useGetAllmaterialsQuery,
 } from "../../../api/materialMaster";
+import { format } from "date-fns";
 
 const MaterialMaster = () => {
   const navigate = useNavigate();
@@ -40,11 +41,7 @@ const MaterialMaster = () => {
       id: brand.Id,
       name: brand.MaterialName,
       applicableFor: brand.MaterialFor == 0 ? "Frame" : "Contact Lens",
-      createdAt: new Intl.DateTimeFormat(locale, {
-         day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }).format(new Date(brand.CreatedDate)),
+      createdAt: format(new Date(brand.CreatedDate), 'dd/MM/yyyy'),
       enabled: brand.IsActive,
     }));
     // Sort by createdAtRaw based on sortOrder

@@ -7,6 +7,7 @@ import Toggle from "../../../components/ui/Toggle";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import HasPermission from "../../../components/HasPermission";
 import { useDeActivateMutation, useGetAllseasonsQuery } from "../../../api/seasonMaster";
+import { format } from "date-fns";
 
 const SeasonMaster = () => {
   const navigate = useNavigate();
@@ -29,11 +30,7 @@ const SeasonMaster = () => {
     let sortedBrands = data.data.map((brand) => ({
       id: brand.Id,
       name: brand.SeasonName,
-      createdAt: new Intl.DateTimeFormat(locale, {
-         day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }).format(new Date(brand.CreatedDate)),
+      createdAt: format(new Date(brand.CreatedDate), 'dd/MM/yyyy'),
       createdAtRaw: new Date(brand.CreatedDate), // Store raw date for sorting
       enabled: brand.IsActive,
     }));
