@@ -121,7 +121,7 @@ const getProductNameForNo = (order, referenceApplicable) => {
         specsList,
         clean(detail.colour) && `Color: ${clean(detail.colour)}`,
         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
-        (clean(bc || detail.BatchCode) || clean(ex || detail.ExpiryDate)) &&
+        ((clean(bc || detail.BatchCode) || clean(ex || detail.ExpiryDate)) && detail?.CLBatchCode === 1) &&
           `Batch Code: ${bc || detail.BatchCode || "-"} | Expiry: ${
             ex || detail.ExpiryDate
               ? ex.split("-").reverse().join("/") ||
@@ -283,7 +283,7 @@ const getProductNameForYes = (order, referenceApplicable) => {
         specListYes,
         clean(detail.colour) && `Color: ${clean(detail.colour)}`,
         clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
-        (clean(bc || detail.BatchCode) || clean(ex || detail.ExpiryDate)) &&
+        ((clean(bc || detail.BatchCode) || clean(ex || detail.ExpiryDate)) && detail.cLBatchCode === 1) &&
           `Batch Code: ${bc || detail.BatchCode || "-"} | Expiry: ${
             ex || detail.ExpiryDate
               ? ex.split("-").reverse().join("/") ||

@@ -166,7 +166,7 @@ const SalesView = () => {
           specsList,
           clean(detail.colour) && `Color: ${clean(detail.colour)}`,
           clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
-          (clean(bc || detail.BatchCode) || clean(ex || detail.ExpiryDate)) &&
+          ((clean(bc || detail.BatchCode) || clean(ex || detail.ExpiryDate))&& detail.CLBatchCode === 1) &&
             `Batch Code: ${bc || detail.BatchCode || "-"} | Expiry: ${
               ex || detail.ExpiryDate
                 ? ex.split("-").reverse().join("/") ||
@@ -351,7 +351,7 @@ const SalesView = () => {
           specListYes,
           clean(detail.colour) && `Color: ${clean(detail.colour)}`,
           clean(detail.barcode) && `Barcode: ${clean(detail.barcode)}`,
-          (clean(bc || detail.BatchCode) || clean(ex || detail.ExpiryDate)) &&
+          ((clean(bc || detail.BatchCode) || clean(ex || detail.ExpiryDate)) && detail.cLBatchCode === 1) &&
             `Batch Code: ${bc || detail.BatchCode || "-"} | Expiry: ${
               ex || detail.ExpiryDate
                 ? ex.split("-").reverse().join("/") ||
@@ -596,6 +596,7 @@ const SalesView = () => {
               "invoice no",
               "product type",
               "product details",
+              "srp",
               "return price",
               "gst amount",
               "return qty",
@@ -622,6 +623,7 @@ const SalesView = () => {
                       : getProductNameForNo(s)}
                   </div>
                 </TableCell>
+                <TableCell>₹{formatINR(s.SRP)}</TableCell>
                 <TableCell>₹{formatINR(s.ReturnPricePerUnit)}</TableCell>
                 <TableCell>
                   ₹

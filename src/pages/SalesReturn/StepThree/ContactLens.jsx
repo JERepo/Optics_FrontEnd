@@ -151,9 +151,9 @@ const getProductName = (order) => {
       specsList,
       clr && `Color: ${clr}`,
       barcodeVal && `Barcode: ${barcodeVal}`,
-      batchc && `BatchCode: ${batchc}`,
-      batchBar && `BatchBarCode: ${batchBar}`,
-      expiry && `Expiry : ${expiry.split("-").reverse().join("/")}`,
+      (batchc && CLBatchCode == 1) && `BatchCode: ${batchc}`,
+      (batchBar && CLBatchCode == 1) && `BatchBarCode: ${batchBar}`,
+      (expiry && CLBatchCode == 1) && `Expiry : ${expiry.split("-").reverse().join("/")}`,
       hsn && `HSN: ${hsn}`,
     ]
       .filter(Boolean)
@@ -181,6 +181,7 @@ const getProductNameYes = (data) => {
     CLBatchBarCode,
     sbatchbarCode,
     ExpiryDate,
+    CLBatchCode
   } = order;
   console.log("order in yes", order);
   const clean = (val) => {
@@ -244,9 +245,9 @@ const getProductNameYes = (data) => {
     specsList,
     clr && `Color: ${clr}`,
     barcodeVal && `Barcode: ${barcodeVal}`,
-    batchc && `BatchCode: ${batchc}`,
-    batchBar && `BatchBarCode: ${batchBar}`,
-    expiry && `Expiry : ${expiry.split("-").reverse().join("/")}`,
+    (batchc && CLBatchCode === 1) && `BatchCode: ${batchc}`,
+    (batchBar  && CLBatchCode === 1) && `BatchBarCode: ${batchBar}`,
+    (expiry  && CLBatchCode === 1) && `Expiry : ${expiry.split("-").reverse().join("/")}`,
     hsn && `HSN: ${hsn}`,
   ]
     .filter(Boolean)
@@ -617,6 +618,7 @@ const ContactLens = () => {
       }
     } catch (error) {
       console.error("error", error);
+      toast.error(error?.data?.error?.message || error?.data?.message)
       setSearchFetched(false);
       setDetailId(false);
       setOpenBatch(false);
@@ -822,7 +824,7 @@ const ContactLens = () => {
     } catch (error) {
       console.log(error);
       toast.error(
-        error?.data.error || "No eligible Invoice exists for the given product"
+        error?.data.error || error?.data?.message || "No eligible Invoice exists for the given product"
       );
     }
   };

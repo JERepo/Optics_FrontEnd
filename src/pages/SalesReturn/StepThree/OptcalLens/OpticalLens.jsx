@@ -773,7 +773,6 @@ const OpticalLens = () => {
       console.warn("No details to save");
       return;
     }
-    console.log(mainOLDetails);
     try {
       for (const detail of mainOLDetails) {
         const payload = {
@@ -822,6 +821,7 @@ const OpticalLens = () => {
     } catch (error) {
       console.log("error is triggering");
       console.error("Error saving detail:", error);
+      toast.error(error?.data?.error || error?.data?.message)
     }
   };
   // -----------------------------------------------------------------------------------
@@ -1491,7 +1491,8 @@ const OpticalLens = () => {
                             lensData.focality ||
                             lensData.family ||
                             lensData.design ||
-                            lensData.indexValues
+                            lensData.indexValues ||
+                            type.value === 1
                           )
                         }
                       />
@@ -1857,7 +1858,7 @@ const OpticalLens = () => {
                     </div>
                   </>
                 )}
-              {lensData.treatmentId && lensData.productType === 1 && (
+              {lensData.treatmentId && lensData.productType === 0 && (
                 <Button
                   onClick={handleAddToTable}
                   icon={FiPlus}
