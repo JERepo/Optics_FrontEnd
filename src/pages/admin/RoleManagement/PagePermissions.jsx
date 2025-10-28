@@ -22,6 +22,7 @@ import { hasPermission } from "../../../utils/permissionUtils";
 import { useSelector } from "react-redux";
 import HasPermission from "../../../components/HasPermission";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
+import { CheckCheckIcon, CheckCircle2Icon } from "lucide-react";
 
 const PagePermissions = () => {
   const navigate = useNavigate();
@@ -31,7 +32,7 @@ const PagePermissions = () => {
   const isNew = !id;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
-  const [searchTerm, setSearchTerm] = useState(""); 
+  const [searchTerm, setSearchTerm] = useState("");
 
   const { isLoading, data } = useGetPageByIdQuery(id, { skip: isNew });
   const { data: pageNames, isLoading: pageNamesLoading } =
@@ -123,6 +124,35 @@ const PagePermissions = () => {
     }));
   };
 
+
+  const handleSelectAll = () => {
+    if (!pageNames?.data) return;
+
+    // Check if all permissions are currently selected
+    const allSelected = pageNames.data.every((page) => {
+      const pageId = String(page.Id);
+      const perms = formState.permissions[pageId];
+      return perms?.view && perms?.create && perms?.edit && perms?.deactivate;
+    });
+
+    // Toggle: if all are selected, deselect all; otherwise select all
+    const newPermissions = {};
+    pageNames.data.forEach((page) => {
+      const pageId = String(page.Id);
+      newPermissions[pageId] = {
+        view: !allSelected,
+        create: !allSelected,
+        edit: !allSelected,
+        deactivate: !allSelected,
+      };
+    });
+
+    setFormState((prev) => ({
+      ...prev,
+      permissions: newPermissions,
+    }));
+  };
+
   const handleSubmit = async () => {
     if (isNew && !formState.name.trim()) {
       toast.error("Role is missing");
@@ -184,8 +214,8 @@ const PagePermissions = () => {
           {isNew
             ? "Add New Role"
             : isEnabled
-            ? "View All Permissions:"
-            : `Edit Permissions:`}
+              ? "View All Permissions:"
+              : `Edit Permissions:`}
         </h2>
         {!isNew && !isEnabled && (
           <div className="flex items-center gap-2 border border-neutral-300 rounded-md px-3 w-[250px] h-10 bg-white">
@@ -218,11 +248,40 @@ const PagePermissions = () => {
       )}
 
       <div className="mt-8">
-        <h3 className="text-2xl font-semibold text-neutral-700 mb-4">
-          Page Permissions
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-2xl font-semibold text-neutral-700">
+            Page Permissions
+          </h3>
+
+          {/* Select All / Deselect All button */}
+          {!isEnabled && (
+            <HasPermission module="Role Management" action="edit">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSelectAll}
+                className="flex items-center gap-1.5"
+              >
+                <CheckCheckIcon className="text-sm" />
+                {(() => {
+                  // Determine if **every** permission for **every** page is checked
+                  const allChecked =
+                    pageNames?.data?.length > 0 &&
+                    pageNames.data.every((page) => {
+                      const pid = String(page.Id);
+                      const p = formState.permissions[pid];
+                      return p?.view && p?.create && p?.edit && p?.deactivate;
+                    });
+
+                  return allChecked ? "Deselect All" : "Select All";
+                })()}
+              </Button>
+            </HasPermission>
+          )}
+        </div>
+
         <PermissionTable
-          data={filteredPageNames.map((page) => ({ // New: Pass filtered data
+          data={filteredPageNames.map((page) => ({
             Id: page.Id,
             Name: page.PageName,
             PageId: page.Id,
@@ -232,7 +291,7 @@ const PagePermissions = () => {
           onPermissionToggle={handlePermissionChange}
           isNew={isNew}
           isEnabled={isEnabled}
-          searchTerm={searchTerm} // New: Pass searchTerm for empty state
+          searchTerm={searchTerm}
         />
       </div>
 
@@ -249,8 +308,8 @@ const PagePermissions = () => {
                     ? "Creating"
                     : FiPlus
                   : isUpdatingRole
-                  ? "Updating"
-                  : FiPlus
+                    ? "Updating"
+                    : FiPlus
               }
               iconPosition="left"
               onClick={() => {
@@ -310,7 +369,7 @@ const PermissionTable = ({
     { key: "deactivate", label: "Deactivate", icon: <FiShield /> },
   ];
   const access = useSelector((state) => state.auth?.access);
-  
+
   // New: Updated empty state based on search
   if (!data || data.length === 0) {
     return (

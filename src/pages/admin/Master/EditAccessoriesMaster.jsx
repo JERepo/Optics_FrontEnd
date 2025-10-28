@@ -158,6 +158,8 @@ const EditFrameMaster = () => {
         const originalDetail = masterData?.data?.OtherProductsDetails?.[index];
         const isBarcodeChanged = variation.Barcode !== originalDetail?.Barcode;
 
+        console.log("stockData - ", stockData);
+
         const baseDetail = {
           Id: variation.id || null,
           SKUCode: variation.SKUCode || null,
@@ -195,8 +197,7 @@ const EditFrameMaster = () => {
         payload: { IsActive: variation.IsActive == 1 ? 0 : 1 },
       }).unwrap();
       toast.success(
-        `Variation ${
-          variation.IsActive ? "deactivated" : "activated"
+        `Variation ${variation.IsActive ? "deactivated" : "activated"
         } successfully`
       );
 
@@ -303,7 +304,8 @@ const EditFrameMaster = () => {
         ...newVariation.stock,
         FrameBatch: newVariation.stock.OPBatchCode || "1",
         FrameSRP: newVariation.stock.OPMRP || "0",
-        id: newVariation.stock.id || null,
+        // id: newVariation.stock.id || null,
+        OPDetailId: newVariation.stock.OPDetailId || stock[editingIndex]?.OPDetailId || null,
       };
 
       const updatedPricing = [...pricingData];
@@ -320,7 +322,7 @@ const EditFrameMaster = () => {
           ...newVariation.stock,
           FrameBatch: newVariation.stock.OPBatchCode || "1",
           FrameSRP: newVariation.stock.OPMRP || "0",
-          id: null,
+          OPDetailId: null,
         },
       ]);
       setPricingData([...pricingData, newVariation.pricing]);
@@ -520,8 +522,8 @@ const EditFrameMaster = () => {
                       ? "Updating"
                       : "Creating"
                     : id
-                    ? "Update Accessory"
-                    : "Save Accessory"}
+                      ? "Update Accessory"
+                      : "Save Accessory"}
                 </Button>
               </HasPermission>
             </div>
@@ -536,16 +538,14 @@ const EditFrameMaster = () => {
         }}
         onConfirm={handleToggleStatus}
         isLoading={isDeActivating}
-        title={`Confirm ${
-          variationData[confirmToggle.index]?.IsActive
+        title={`Confirm ${variationData[confirmToggle.index]?.IsActive
             ? "Deactivation"
             : "Activation"
-        }`}
-        message={`Are you sure you want to ${
-          variationData[confirmToggle.index]?.IsActive
+          }`}
+        message={`Are you sure you want to ${variationData[confirmToggle.index]?.IsActive
             ? "deactivate"
             : "activate"
-        } this variation?`}
+          } this variation?`}
         confirmText={
           variationData[confirmToggle.index]?.IsActive
             ? "Deactivate"

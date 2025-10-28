@@ -348,7 +348,7 @@ export function GRNViewPage() {
             <div className="mt-6">
                 <h3 className="text-lg font-semibold mb-4">GRN Items</h3>
                 <Table
-                    columns={["Sl No.", <>PO No.<br />(Order No.)</>, "Supplier Order No.", "Type", "Product Name", "MRP", "GST", "QTY", "Buying Price", "Total Amount"]}
+                    columns={["Sl No.", <>PO No.<br />(Order No.)</>, "Supplier Order No.", "Type", "Product Name", "GRN QTY", "MRP/Unit", "Buying Price", "GST", "Total Amount"]}
                     data={grnViewDetails}
                     renderRow={(item, index) => (
                         <TableRow key={item.Barcode || index}>
@@ -426,17 +426,19 @@ export function GRNViewPage() {
                                             </TableCell>
                                             : null
                             }
+                            <TableCell>{item.GRNQty}</TableCell>
                             {item?.ProductDetails?.ProductType === 1 ? (
                                 <TableCell>₹ {item?.ProductDetails?.Stock?.MRP}</TableCell>
                             ) : item?.ProductDetails?.ProductType === 2 ? (
                                 <TableCell>₹ {item?.ProductDetails?.Stock?.OPMRP}</TableCell>
                             ) : item?.ProductDetails?.ProductType === 3 ? (
                                 <TableCell>₹ {item?.ProductDetails?.Stock?.find(stock => stock.BatchCode === item.BatchCode)?.MRP || (item?.ProductDetails?.price?.MRP || item?.ProductDetails?.Stock?.MRP || item?.ProductDetails?.Stock?.OPMRP || null)}</TableCell>
+                            ) : item?.ProductDetails?.ProductType === 0 ? (
+                                <TableCell>₹ {item?.ProductDetails?.Stock?.MRP}</TableCell>
                             ) : <TableCell></TableCell>}
                             {/* <TableCell>₹ {item?.ProductDetails?.price?.MRP || item?.ProductDetails?.Stock?.MRP || item?.ProductDetails?.Stock?.OPMRP || null}</TableCell> */}
-                            <TableCell>₹{" "} {parseFloat(parseFloat(item?.GRNPrice) * (parseFloat(item?.ProductDetails?.GSTPercentage || item?.TaxPercent) / 100)).toFixed(2)}<br />{`(${item?.ProductDetails?.GSTPercentage || item?.TaxPercent}%)`}</TableCell>
-                            <TableCell>{item.GRNQty}</TableCell>
                             <TableCell>{(grnViewDetails[0]?.GRNType === 1 && grnViewDetails[0]?.DCGRNPrice === 1) ? '' : `₹ ${item.GRNPrice}`}</TableCell>
+                            <TableCell>₹{" "} {parseFloat(parseFloat(item?.GRNPrice) * (parseFloat(item?.ProductDetails?.GSTPercentage || item?.TaxPercent) / 100)).toFixed(2)}<br />{`(${item?.ProductDetails?.GSTPercentage || item?.TaxPercent}%)`}</TableCell>
                             {/* <TableCell>₹{" "}{parseFloat(parseInt(item?.GRNPrice * item?.GRNQty) * (parseInt(item?.TaxPercent) / 100)) + parseInt(item?.GRNPrice * item?.GRNQty)} </TableCell>*/}
                             <TableCell>{(grnViewDetails[0]?.GRNType === 1 && grnViewDetails[0]?.DCGRNPrice === 1) ? '' : `₹ ${(parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty) + parseFloat(item?.FittingPrice || 0) + ((parseFloat(item?.FittingPrice) * (parseFloat(item?.FittingGSTPercentage) / 100)) || 0)).toFixed(2)}`}</TableCell>
 
@@ -447,13 +449,6 @@ export function GRNViewPage() {
 
             {/* Calculation Summary Section */}
             <div className="flex mt-10 justify-between px-5 rounded-2xl shadow p-8">
-
-                <div className="flex justify-between gap-4">
-                    <span className="text-gray-600 font-bold text-lg">Comments :</span>
-                    <span className="font-bold text-lg">
-                        {grnViewDetails[0]?.GRNRemarks ? grnViewDetails[0]?.GRNRemarks : `N/A`}
-                    </span>
-                </div>
 
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total Quantity :</span>
@@ -557,6 +552,17 @@ export function GRNViewPage() {
                 </div>
 
 
+            </div>
+
+
+            <div className="flex justify-between px-5 rounded-2xl shadow p-8">
+
+                <div className="flex justify-between gap-4">
+                    <span className="text-gray-600 font-bold text-lg">Comments :</span>
+                    <span className="font-bold text-lg">
+                        {grnViewDetails[0]?.GRNRemarks ? grnViewDetails[0]?.GRNRemarks : `N/A`}
+                    </span>
+                </div>
             </div>
         </motion.div>
     );

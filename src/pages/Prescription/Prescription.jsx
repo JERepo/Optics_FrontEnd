@@ -106,8 +106,9 @@ const Prescription = () => {
             Axis: data[0].RAxis,
             ADD: data[0].RAddOn,
             Prism: data[0].RPrism,
-            Base: data[0].RBase,
-            VisualAcuity: data[0].RVisualAcuity,
+            Base: data[0].RBase === 0 ? `IN` : data[0].RBase === 1 ? `OUT` : data[0].RBase === 2 ? `UP` : data[0].RBase === 3 ? `DOWN` : ``,
+            VisualAcuityId: data[0].RVisualAcuity,
+            VisualAcuity: data[0].RightVisual.VisualAcuity,
           },
           L: {
             SPH: data[0].LSPH,
@@ -115,8 +116,9 @@ const Prescription = () => {
             Axis: data[0].LAxis,
             ADD: data[0].LAddOn,
             Prism: data[0].LPrism,
-            Base: data[0].LBase,
-            VisualAcuity: data[0].LVisualAcuity,
+            Base: data[0].LBase === 0 ? `IN` : data[0].LBase === 1 ? `OUT` : data[0].LBase === 2 ? `UP` : data[0].LBase === 3 ? `DOWN` : ``,
+            VisualAcuityId: data[0].LVisualAcuity,
+            VisualAcuity: data[0].LeftVisual.VisualAcuity,
           },
         },
       };

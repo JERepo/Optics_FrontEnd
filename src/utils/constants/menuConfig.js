@@ -126,13 +126,13 @@ export const menuItems = [
     // path: "/grn/",
     subItems: [
       {
-        name: "From Orders",
+        name: "New GRN",
         path: "/grn/",
         module: "GRN",
         icon: IoConstructOutline, // Suggests building/setup
       },
       {
-        name: "GRN DC",
+        name: "Convert DC",
         path: "/grn-dc",
         module: "GRN DC",
         icon: IoConstructOutline, // Suggests building/setup

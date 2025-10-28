@@ -164,7 +164,7 @@ export default function GRNStep3() {
                     (b) =>
                         b.FrameActive === 1 &&
                         b.IsActive === 1 &&
-                        b.BrandName.toLowerCase().includes(brandInput.toLowerCase())
+                        b?.BrandName?.toLowerCase().includes(brandInput?.toLowerCase())
                 );
                 setFilteredBrands(frameBrands);
             }
@@ -173,7 +173,7 @@ export default function GRNStep3() {
                     (b) =>
                         b.OthersProductsActive === 1 &&
                         b.IsActive === 1 &&
-                        b.BrandName.toLowerCase().includes(brandInput.toLowerCase())
+                        b?.BrandName?.toLowerCase().includes(brandInput?.toLowerCase())
                 );
                 setFilteredBrands(accessoriesBrands);
             }
@@ -182,7 +182,7 @@ export default function GRNStep3() {
                     (b) =>
                         b.ContactLensActive === 1 &&
                         b.IsActive === 1 &&
-                        b.BrandName.toLowerCase().includes(brandInput.toLowerCase())
+                        b?.BrandName?.toLowerCase().includes(brandInput?.toLowerCase())
                 );
                 setFilteredBrands(contactLensBrands);
             }
@@ -191,7 +191,7 @@ export default function GRNStep3() {
                     (b) =>
                         b.OpticalLensActive === 1 &&
                         b.IsActive === 1 &&
-                        b.BrandName.toLowerCase().includes(brandInput.toLowerCase())
+                        b?.BrandName?.toLowerCase().includes(brandInput?.toLowerCase())
                 );
                 setFilteredBrands(OlBrands);
             }
@@ -551,7 +551,7 @@ export default function GRNStep3() {
             }
         } catch (error) {
             console.error("Barcode scan failed:", error);
-            toast.error("Failed to add item. Please check the barcode and try again.");
+            toast.error(error.data.message || "Failed to add item. Please check the barcode and try again.");
         } finally {
             setIsLoading(false);
         }
@@ -616,10 +616,10 @@ export default function GRNStep3() {
         // const batches = CLBatches;
 
         const batches = CLBatches?.data;
-        console.log("CLBatches ----------- ", CLBatches);
-        console.log("selectedBatchCode --------------- ", selectedBatchCode);
+        console.log("CLBatches ----------- ", batches);
+        console.log("selectedBatchCode --------------- ", batchCodeInput);
         const isAvailable = batches?.find(
-            (b) => b.CLBatchCode.toLowerCase() === batchCodeInput.toLowerCase()
+            (b) => b?.CLBatchBarCode?.toLowerCase() === batchCodeInput?.toLowerCase()
         );
 
         if (!isAvailable) {
@@ -678,7 +678,7 @@ export default function GRNStep3() {
         console.log("selectedBatchCode --------------- ", selectedBatchCode);
 
         const isAvailable = batches?.find(
-            (b) => b.CLBatchCode.toLowerCase() === selectedBatchCode?.CLBatchCode.toLowerCase()
+            (b) => b?.CLBatchCode?.toLowerCase() === selectedBatchCode?.CLBatchCode?.toLowerCase()
         );
 
         if (!isAvailable) {
@@ -2004,13 +2004,13 @@ export default function GRNStep3() {
                                     error={
                                         batchCodeInput &&
                                         !CLBatches?.data?.find(
-                                            (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
+                                            (b) => b?.CLBatchBarCode?.toLowerCase() === batchCodeInput?.toLowerCase()
                                         )
                                     }
                                     helperText={
                                         batchCodeInput &&
                                             !CLBatches?.data?.find(
-                                                (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
+                                                (b) => b?.CLBatchBarCode?.toLowerCase() === batchCodeInput?.toLowerCase()
                                             )
                                             ? "Invalid batch barcode"
                                             : "Required"
@@ -2018,8 +2018,11 @@ export default function GRNStep3() {
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter" && batchCodeInput) {
                                             const isValidBatch = CLBatches?.data?.find(
-                                                (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
+                                                (b) => b?.CLBatchBarCode?.toLowerCase() === batchCodeInput?.toLowerCase()
                                             );
+                                            console.log("CLBatches - ", CLBatches);
+                                            console.log("batchCodeInput - ", batchCodeInput);
+
                                             if (isValidBatch) {
                                                 setSelectedBatchCode(isValidBatch);
                                                 handleGetBatchBarCodeDetails();
@@ -2034,7 +2037,7 @@ export default function GRNStep3() {
                                     onClick={() => {
                                         if (batchCodeInput) {
                                             const isValidBatch = CLBatches?.data?.find(
-                                                (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
+                                                (b) => b?.CLBatchBarCode?.toLowerCase() === batchCodeInput?.toLowerCase()
                                             );
                                             if (isValidBatch) {
                                                 setSelectedBatchCode(isValidBatch);

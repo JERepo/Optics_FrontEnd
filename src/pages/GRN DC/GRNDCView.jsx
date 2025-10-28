@@ -250,7 +250,7 @@ export function GRNDCViewPage() {
             <div className="mt-6">
                 <h3 className="text-lg font-semibold mb-4">GRN Items</h3>
                 <Table
-                    columns={["Sl No.", "Supplier Order No.", "Product Type", "Product Details", "MRP", "Buying Price", "GST", "GRN QTY", "Total Amount"]}
+                    columns={["Sl No.", "Supplier Order No.", "Product Type", "Product Details", "GRN Qty", "MRP/Unit", "Buying Price", "GST", "Total Amount"]}
                     data={grnViewDetails}
                     renderRow={(item, index) => (
                         <TableRow key={item.Barcode || index}>
@@ -326,10 +326,10 @@ export function GRNDCViewPage() {
                                             </TableCell>
                                             : null
                             }
+                            <TableCell>{item.GRNQty}</TableCell>
                             <TableCell>{item?.ProductDetails?.ProductType === 3 ? (item?.ProductDetails?.Stock?.find(stock => stock.BatchCode === item.BatchCode)?.MRP || item?.ProductDetails?.price?.MRP) : (item?.ProductDetails?.price?.MRP || item?.ProductDetails?.Stock?.MRP || item?.ProductDetails?.Stock?.OPMRP || null)}</TableCell>
                             <TableCell>₹{" "} {item.GRNPrice}</TableCell>
                             <TableCell>₹{" "} {parseFloat(parseFloat(item?.GRNPrice) * (parseFloat(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) / 100)).toFixed(2)} {`(${item.TaxPercent || item?.ProductDetails?.GSTPercentage}%)`}</TableCell>
-                            <TableCell>{item.GRNQty}</TableCell>
                             <TableCell>
                                 ₹{" "}
                                 {(parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent || item?.ProductDetails?.GSTPercentage) / 100)) +
@@ -345,13 +345,6 @@ export function GRNDCViewPage() {
 
             {/* Calculation Summary Section */}
             <div className="flex mt-10 justify-between px-5 rounded-2xl shadow p-8">
-
-                <div className="flex justify-between gap-4">
-                    <span className="text-gray-600 font-bold text-lg">Comments :</span>
-                    <span className="font-bold text-lg">
-                        {grnViewDetails[0]?.GRNRemarks ? grnViewDetails[0]?.GRNRemarks : `N/A`}
-                    </span>
-                </div>
 
                 <div className="flex justify-between gap-4">
                     <span className="text-gray-600 font-bold text-lg">Total Quantity :</span>
@@ -410,6 +403,17 @@ export function GRNDCViewPage() {
                             }, 0)
                             ?.toFixed?.(2) ?? '0.00'}
 
+                    </span>
+                </div>
+            </div>
+
+
+            <div className="flex justify-between px-5 rounded-2xl shadow p-8">
+
+                <div className="flex justify-between gap-4">
+                    <span className="text-gray-600 font-bold text-lg">Comments :</span>
+                    <span className="font-bold text-lg">
+                        {grnViewDetails[0]?.GRNRemarks ? grnViewDetails[0]?.GRNRemarks : `N/A`}
                     </span>
                 </div>
             </div>
