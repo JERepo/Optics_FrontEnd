@@ -199,13 +199,11 @@ const FrameSunglass = () => {
     setItems((prev) => prev.filter((i) => i.Barcode !== barcode));
     setSelectedRows((prev) => prev.filter((i) => i.Barcode !== barcode));
   };
-  console.log("war", warningPayload);
   const handleConfirmBypassWarnings = async () => {
     if (!warningPayload) return;
     const warnedIds = warningPayload.map((w) => w.frameDetailId);
-    console.log("warning pa", warnedIds);
-    console.log("items", items);
-    const finalItems = items.filter((item) => warnedIds.includes(item.Id));
+  
+    const finalItems = items;
     const newPayload = {
       products: finalItems.map((item) => ({
         frameDetailId: item.Id,

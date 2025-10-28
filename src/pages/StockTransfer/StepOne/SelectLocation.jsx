@@ -64,8 +64,8 @@ const SelectLocation = () => {
         return;
       }
     } catch (error) {
-      toast.error(error?.data.error);
-      return;
+      toast.error(error?.data?.error || error?.data?.message || error?.data || "Something went wrong please try later!");
+      // return;
     }
 
     try {

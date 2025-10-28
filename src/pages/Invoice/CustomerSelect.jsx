@@ -1284,7 +1284,7 @@ const CustomerSelect = () => {
                   "Order No.",
                   "Product Type",
                   "Product Details",
-                  "SRP",
+                  "MRP/Unit",
                   "Selling Price",
                   "Order Qty",
                   "To Bill Qty",
