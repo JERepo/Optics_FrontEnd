@@ -21,6 +21,8 @@ import { useGetCompanyIdQuery } from "../../../api/customerApi";
 
 const getProductName = (item) => {
   const type = item.ProductType;
+
+  console.log("item --", item);
   const detail = item ? item.ProductDetails : {};
   const {
     ProductName,
@@ -35,6 +37,8 @@ const getProductName = (item) => {
     Tint,
     AddOns,
     FittingPrice,
+    // BatchCode,
+    CLBatchCode,
     productName,
     barcode,
     hsncode,
@@ -123,8 +127,8 @@ const getProductName = (item) => {
       productName,
       specsList,
       barcode && `Barcode: ${barcode}`,
-      batchcode && `Batch Code: ${batchcode || "-"}`,
-      expiry && `Expiry : ${expiry.split("-").reverse().join("/")}`,
+      (item?.BatchCode && CLBatchCode) ? `Batch Code: ${item?.BatchCode || "-"}` : ``,
+      (expiry && CLBatchCode) ? `Expiry : ${expiry.split("-").reverse().join("/")}` : ``,
       HSN && `HSN: ${HSN}`,
     ]
       .filter(Boolean)
@@ -308,7 +312,7 @@ const CompleteStockTransfer = () => {
       const fgst = parseFloat(item.FittingTaxPercentage || 0);
       const fittingTotal = fittingPrice * (fgst/100);
 
-      const basicValue = unitPrice * qty;
+      const basicValue = (unitPrice * qty) + fittingTotal;
       const gst = unitPrice * qty * gstRate + fittingTotal;
       const returnTotal = basicValue + gst +fittingPrice;
 
