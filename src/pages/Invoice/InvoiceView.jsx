@@ -389,6 +389,7 @@ const InvoiceView = () => {
       const result = canCancelInvoice(invoiceDetails?.InvoiceDate);
       if (result.allowed) {
         setIsCancelOpen(true);
+        setIsCancelInvoiceWarning(false);
       } else {
         toast.error(result.message);
         return;
@@ -397,6 +398,7 @@ const InvoiceView = () => {
       const result = canCancelInvoice(invoiceDetails?.InvoiceDate);
       if (result.allowed) {
         setIsCancelOpen(true);
+        setIsCancelInvoiceWarning(false);
       } else {
         toast.error(result.message);
         return;
@@ -428,12 +430,13 @@ const InvoiceView = () => {
     try {
       const res = await cancelInvoice({ payload }).unwrap();
       if (res?.otpRequired) {
+        setIsCancelInvoiceWarning(false);
         setIsCancelOpen(false);
         setOtpValue(null);
         setShowOtp(true);
         return;
       }
-      setIsCancelInvoiceWarning(false)
+      setIsCancelInvoiceWarning(false);
       setIsCancelOpen(false);
       setShowOtp(null);
       setShowOtp(false);
@@ -495,7 +498,13 @@ const InvoiceView = () => {
                 <HasPermission module="Invoice" action="deactivate">
                   <Button
                     variant="danger"
-                    onClick={handleCancelInvoice}
+                    onClick={() => {
+                      if (paymentDetails?.data?.receiptDetails?.length) {
+                        handleCancelInvoice();
+                      } else {
+                        setIsCancelInvoiceWarning(true);
+                      }
+                    }}
                     disabled={cancelDisabled}
                     isLoading={!isCancelOpen ? isCancelling : false}
                   >

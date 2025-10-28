@@ -579,7 +579,7 @@ const SalesView = () => {
               <div className="flex gap-1">
                 <strong>Credit Limit Available:</strong>
                 {parseFloat(
-                  customerDataById?.data.CustomerMaster?.CreditLimit
+                  customerDataById?.data.CustomerMaster?.CustomerCreditLimit?.CreditLimitAvl || 0
                 ).toLocaleString()}
               </div>
             </>
