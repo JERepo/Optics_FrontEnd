@@ -101,8 +101,9 @@ const InvoiceList = () => {
       qty: invoice.TotalQty,
       amount: invoice.TotalValue,
       status: getOrderStatus(invoice.Status),
-    }));
-    // .filter((order) => order.CompanyID === parseInt(hasMultipleLocations[0]));
+      CompanyID :invoice?.CompanyID
+    }))
+    .filter((order) => order.CompanyID === parseInt(hasMultipleLocations[0]));
   }, [allOrders, fromDate, toDate, searchQuery]);
 
   const startIndex = (currentPage - 1) * pageSize;

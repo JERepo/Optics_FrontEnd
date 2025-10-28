@@ -187,8 +187,11 @@ const EmailTemplates = () => {
         Status: 1,
         IsActive: 1,
         IncludeAttachment: includeAttachment,
+        WATemplate :templateData?.data[0]?.WATemplate,
+        WAAttachment:templateData?.data[0]?.WAAttachment,
+        WAGroupTemplate:templateData?.data[0]?.WAGroupTemplate,
+        WAGroupAttachment:templateData?.data[0]?.WAGroupAttachment
       };
-      console.log("Payload:", payload);
       if (templateData?.data[0]?.CompanyID) {
         await updateEmail({ payload }).unwrap();
         toast.success("Email successfully updated!");

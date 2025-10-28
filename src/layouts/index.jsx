@@ -677,7 +677,7 @@ export const router = createBrowserRouter([
         path: "vendor/edit/:id",
         element: <EditVendor />,
       },
-       {
+      {
         path: "vendor/view/:id",
         element: <EditVendor />,
       },
@@ -763,9 +763,11 @@ export const router = createBrowserRouter([
       {
         path: "invoice",
         element: (
-          <PermissionRoute module="Invoice" action="view">
-            <InvoiceList />
-          </PermissionRoute>
+          <ErrorBoundary>
+            <PermissionRoute module="Invoice" action="view">
+              <InvoiceList />
+            </PermissionRoute>
+          </ErrorBoundary>
         ),
       },
       {
@@ -779,9 +781,11 @@ export const router = createBrowserRouter([
       {
         path: "invoice/create",
         element: (
-          <PermissionRoute module="Invoice" action="create">
-            <CustomerSelect />
-          </PermissionRoute>
+          <ErrorBoundary>
+            <PermissionRoute module="Invoice" action="create">
+              <CustomerSelect />
+            </PermissionRoute>
+          </ErrorBoundary>
         ),
       },
       {
@@ -978,11 +982,11 @@ export const router = createBrowserRouter([
       },
       {
         path: "vendor-payment/create",
-        element: <VendorPayment />
+        element: <VendorPayment />,
       },
-       {
-        path : "vendor-payment/view",
-        element : <VendorPaymentView />
+      {
+        path: "vendor-payment/view",
+        element: <VendorPaymentView />,
       },
       {
         path: "order-report",
@@ -1062,12 +1066,12 @@ export const router = createBrowserRouter([
       },
       {
         path: "profile",
-        element: <UserProfile />
+        element: <UserProfile />,
       },
       {
         path: "search-stock/contact-lens",
-        element: <SearchContactLens />
-      }
+        element: <SearchContactLens />,
+      },
     ],
   },
   {

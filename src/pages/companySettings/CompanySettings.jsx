@@ -49,6 +49,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { useGetAllCustomerGroupsQuery } from "../../api/customerGroup";
 import toast from "react-hot-toast";
 import { isValidNumericInput } from "../../utils/isValidNumericInput";
+import { useSelector } from "react-redux";
 
 const API_BASE = import.meta.env.VITE_LOCAL;
 
@@ -80,6 +81,7 @@ const AccOptions = [
 ];
 
 const CompanySettings = () => {
+  const {user,hasMultipleLocations}= useSelector(state => state.auth)
   const [expandedSection, setExpandedSection] = useState(null); // first accordion open
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [logo, setLogo] = useState(null);
@@ -1986,7 +1988,7 @@ const CompanySettings = () => {
                   onChange={handleChange("emailApproval")}
                 />
                 <div className="flex gap-4">
-                  <Autocomplete
+                  {/* <Autocomplete
                     options={countries?.country || []}
                     getOptionLabel={(option) =>
                       `${option.CountryName}(${option.ISDCode})`
@@ -2013,8 +2015,8 @@ const CompanySettings = () => {
                       />
                     )}
                     fullWidth
-                  />
-                  <TextField
+                  /> */}
+                  {/* <TextField
                     label="Mobile No For Whatsapp Approval"
                     placeholder="Enter Mobile No"
                     variant="outlined"
@@ -2022,7 +2024,7 @@ const CompanySettings = () => {
                     fullWidth
                     value={formData.mobileNoApproval}
                     onChange={handleChange("mobileNoApproval")}
-                  />
+                  /> */}
                 </div>
               </div>
             </div>
@@ -2337,7 +2339,7 @@ const CompanySettings = () => {
       {/* Accordion Sections */}
       <Paper elevation={0} className="">
         <Autocomplete
-          options={allLocations?.data || []}
+          options={allLocations?.data?.filter((loc) => hasMultipleLocations.includes(String(loc.Id))) || []}
           getOptionLabel={(option) => option.LocationName || ""}
           value={
             allLocations?.data?.find((loc) => loc.Id === selectedLocation) ||

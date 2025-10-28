@@ -269,6 +269,7 @@ const OrderView = () => {
       setIsWarningOpen(false);
       setIsCancelItemConfirmWarning(false);
       setWarningMessage("");
+      setShowOtp(false);
     } catch (error) {
       console.log(error);
     }
@@ -932,7 +933,11 @@ const OrderView = () => {
           <Button variant="outline" onClick={() => setShowOtp(false)}>
             Clear & Close
           </Button>
-          <Button onClick={() => handleConfirmWarnings(selectedDiscountItem)}>
+          <Button
+            onClick={() => handleConfirmWarnings(selectedDiscountItem)}
+            isLoading={isItemCancelling}
+            disabled={isItemCancelling}
+          >
             Submit
           </Button>
         </div>

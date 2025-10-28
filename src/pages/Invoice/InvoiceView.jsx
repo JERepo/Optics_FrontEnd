@@ -550,7 +550,7 @@ const InvoiceView = () => {
               "order no",
               "product type",
               "product details",
-              "srp",
+              "MRP/Unit",
               "invoice price",
               "invoice qty",
               "total amount",

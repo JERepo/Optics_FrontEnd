@@ -15,6 +15,7 @@ import Loader from "../../../components/ui/Loader";
 import { useSelector } from "react-redux";
 import HasPermission from "../../../components/HasPermission";
 import toast from "react-hot-toast";
+import ConnectionStatus from "../../../components/ErrorHandling/ConnectionStatus";
 
 const OrderList = () => {
   const navigate = useNavigate();
@@ -94,8 +95,9 @@ const OrderList = () => {
       orderValue: order.TotalValue,
       totalQty: order.TotalQty,
       Status: order.Status,
-    }));
-    // .filter((order) => order.CompanyId == hasMultipleLocations[0]);
+      CompanyId :order.CompanyId
+    }))
+    .filter((order) => order.CompanyId === parseInt(hasMultipleLocations[0]));
   }, [allOrders, fromDate, toDate, searchQuery]);
 
   const startIndex = (currentPage - 1) * pageSize;
@@ -161,6 +163,7 @@ const OrderList = () => {
     <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {/* Header */}
+        <ConnectionStatus />
         <div className="px-6 py-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Order List</h1>
