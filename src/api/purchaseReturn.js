@@ -95,6 +95,13 @@ export const purchaseReturnApi = createApi({
         body: formData
       })
     }),
+    issueCN: builder.mutation({
+      query: (payload) => ({
+        url: `/api/v1/purchase-Return/issue/cn`,
+        method: 'POST',
+        body: payload
+      })
+    })
   }),
 });
 
@@ -112,5 +119,6 @@ export const {
   useGetOlSupplierNoQuery,
   useBulkUploadFrameMutation,
   useBulkUploadAccessoryMutation,
-  useBulkUploadContactLensMutation
+  useBulkUploadContactLensMutation,
+  useIssueCNMutation
 } = purchaseReturnApi;

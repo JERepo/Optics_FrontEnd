@@ -257,7 +257,7 @@ export function GRNListPage() {
                                     onClick={handleCreateGRN}
                                 >
                                     <Plus />
-                                    Create GRN Order
+                                    Create New GRN
                                 </button>
                             </HasPermission>
                         </div>

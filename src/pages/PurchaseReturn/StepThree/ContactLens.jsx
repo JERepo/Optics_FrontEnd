@@ -439,6 +439,7 @@ const ContactLens = () => {
       setSearchFetched(false);
       setDetailId(false);
       setOpenBatch(false);
+      toast.error(error.data.error.message || "Product not found.");
     }
   };
 

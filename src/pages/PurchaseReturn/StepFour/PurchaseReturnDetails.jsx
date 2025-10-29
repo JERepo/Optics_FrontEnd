@@ -152,9 +152,9 @@ const getProductName = (item) => {
           joinNonEmpty(
             [
               formatPowerValue(eye?.sphericalPower) &&
-                `SPH: ${formatPowerValue(eye?.sphericalPower)}`,
+              `SPH: ${formatPowerValue(eye?.sphericalPower)}`,
               formatPowerValue(eye?.addition) &&
-                `Add: ${formatPowerValue(eye?.addition)}`,
+              `Add: ${formatPowerValue(eye?.addition)}`,
               clean(eye?.diameter) && `Dia: ${clean(eye?.diameter)}`,
             ],
             ", "
@@ -220,6 +220,8 @@ const getStockOutPrice = (item) => {
     return parseFloat(item.ProductDetails.Stock.MRP);
   } else if (item.ProductType === 2) {
     return parseFloat(item.ProductDetails.Stock.OPMRP);
+  } else if (item.ProductType === 0) {
+    return parseFloat(item?.ProductDetails[0]?.pricing?.mrp);
   }
 
   return 0;
@@ -310,11 +312,11 @@ const CompleteStockTransfer = () => {
 
       const fittingPrice = parseFloat(item.FittingReturnPrice || 0);
       const fgst = parseFloat(item.FittingTaxPercentage || 0);
-      const fittingTotal = fittingPrice * (fgst/100);
+      const fittingTotal = fittingPrice * (fgst / 100);
 
-      const basicValue = (unitPrice * qty) + fittingTotal;
+      const basicValue = (unitPrice * qty) + fittingPrice;
       const gst = unitPrice * qty * gstRate + fittingTotal;
-      const returnTotal = basicValue + gst +fittingPrice;
+      const returnTotal = basicValue + gst;
 
       acc.totalQty += qty;
       acc.totalGST += gst;
@@ -427,7 +429,7 @@ const CompleteStockTransfer = () => {
                   ₹
                   {formatINR(
                     parseFloat(item.DNPrice) *
-                      (parseFloat(item.ProductTaxPercentage) / 100)
+                    (parseFloat(item.ProductTaxPercentage) / 100)
                   )}{" "}
                   ({parseFloat(item.ProductTaxPercentage)}%)
                 </TableCell>
@@ -435,12 +437,12 @@ const CompleteStockTransfer = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    parseFloat(item.DNPrice) * item.DNQty + parseFloat(item?.FittingReturnPrice || 0)+
-                      parseFloat(item.DNPrice) *
-                        item.DNQty *
-                        (parseFloat(item.ProductTaxPercentage) / 100) +
-                      parseFloat(item.FittingReturnPrice || 0) *
-                        (parseFloat(item.FittingTaxPercentage || 0) / 100)
+                    parseFloat(item.DNPrice) * item.DNQty + parseFloat(item?.FittingReturnPrice || 0) +
+                    parseFloat(item.DNPrice) *
+                    item.DNQty *
+                    (parseFloat(item.ProductTaxPercentage) / 100) +
+                    parseFloat(item.FittingReturnPrice || 0) *
+                    (parseFloat(item.FittingTaxPercentage || 0) / 100)
                   )}
                 </TableCell>
 

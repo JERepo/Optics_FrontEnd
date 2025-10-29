@@ -260,7 +260,7 @@ const PurchaseReturn = () => {
                     navigate("/purchase-return/create");
                   }}
                 >
-                  Add
+                  Create Purchase Return
                 </Button>
               </HasPermission>
             </div>

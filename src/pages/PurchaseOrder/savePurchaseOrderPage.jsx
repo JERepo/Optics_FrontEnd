@@ -649,6 +649,12 @@ export default function SavePurchaseOrder() {
         });
         setSearchFetched(false);
         setProductName("");
+        setShowSearchInputs(false);
+        setFormState(prev => ({
+            ...prev,
+            barcode: "",
+            EntryType: "combined"
+        }));
     };
 
     const handleFileSelect = (event) => {
@@ -2093,6 +2099,24 @@ export default function SavePurchaseOrder() {
         }
     };
 
+    const handleRedirectStep4 = async () => {
+        try {
+            let payload = {
+                locationId: selectedLocation,
+                ApplicationUserId: user.Id,
+                vendorId: selectedVendor,
+                againstOrder: formState.shiptoAddress === "against" ? "1" : "0"
+            };
+
+            const poDetailsResponse = await getAllPoDetailsForNewOrder(payload).unwrap();
+            setPoreviewDetails(poDetailsResponse.data);
+            setCurrentStep(4);
+        } catch (err) {
+            console.error("Redirect error:", err);
+            toast.error(err.data.message || "Something went wrong, try again later!");
+        }
+    }
+
 
     return (
         <>
@@ -2351,6 +2375,7 @@ export default function SavePurchaseOrder() {
                             handleOptionChange={handleOptionChange}
                             handleNext={handleNext}
                             handleBack={handleBack}
+                            handleRedirectStep4={handleRedirectStep4}
                         />
 
                     ) : formState.shiptoAddress === "new" ? (
@@ -2361,6 +2386,7 @@ export default function SavePurchaseOrder() {
                             handleOptionChange={handleOptionChange}
                             handleNext={handleNext}
                             handleBack={handleBack}
+                            handleRedirectStep4={handleRedirectStep4}
                         />
                     ) : null
                 )}
@@ -2376,13 +2402,22 @@ export default function SavePurchaseOrder() {
                     >
                         <div className="flex justify-between items-center">
                             <h2 className="text-xl font-bold text-[#000060] mb-6">Step 3: Select Orders</h2>
-                            <button
-                                onClick={handleBack}
-                                className="px-4 py-2 flex text-[#000060] rounded-lg hover:bg-gray-100 transition-colors gap-2"
-                            >
-                                <ArrowLeft />
-                                Back
-                            </button>
+                            <div className="flex">
+                                <button
+                                    onClick={handleBack}
+                                    className="px-4 py-2 flex text-[#000060] rounded-lg hover:bg-gray-100 transition-colors gap-2"
+                                >
+                                    <ArrowLeft />
+                                    Back
+                                </button>
+                                {/* <button
+                                    onClick={handleRefreshForm}
+                                    className="flex gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
+                                >
+                                    <RefreshCcw />
+                                    Refresh
+                                </button> */}
+                            </div>
                         </div>
 
                         {/* Vendor Details Section */}
@@ -2450,15 +2485,15 @@ export default function SavePurchaseOrder() {
                                     <ArrowLeft />
                                     Back
                                 </button>
-                                {showSearchInputs && (
-                                    <button
-                                        onClick={handleRefreshForm}
-                                        className="flex gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
-                                    >
-                                        <RefreshCcw />
-                                        Refresh
-                                    </button>
-                                )}
+                                {/* {showSearchInputs && ( */}
+                                <button
+                                    onClick={handleRefreshForm}
+                                    className="flex gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
+                                >
+                                    <RefreshCcw />
+                                    Refresh
+                                </button>
+                                {/* )} */}
                             </div>
                         </div>
 
@@ -2472,7 +2507,7 @@ export default function SavePurchaseOrder() {
                                             name="EntryType"
                                             value="combined"
                                             checked={formState.EntryType === "combined"}
-                                            onChange={handleInputChange}
+                                            onChange={() => { setFormState(prev => ({ ...prev, barcode: "", EntryType: "combined" })) }}
                                             className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                         />
                                         <span className="text-gray-700 font-medium">Combined Entry</span>
@@ -2483,7 +2518,7 @@ export default function SavePurchaseOrder() {
                                             name="EntryType"
                                             value="seperate"
                                             checked={formState.EntryType === "seperate"}
-                                            onChange={handleInputChange}
+                                            onChange={() => { setFormState(prev => ({ ...prev, barcode: "", EntryType: "seperate" })) }}
                                             className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                         />
                                         <span className="text-gray-700 font-medium">Seperate Entry</span>
@@ -2494,7 +2529,7 @@ export default function SavePurchaseOrder() {
                                             name="EntryType"
                                             value="bulk"
                                             checked={formState.EntryType === "bulk"}
-                                            onChange={handleInputChange}
+                                            onChange={() => { setFormState(prev => ({ ...prev, barcode: "", EntryType: "bulk" })) }}
                                             className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                         />
                                         <span className="text-gray-700 font-medium">Bulk Process</span>
