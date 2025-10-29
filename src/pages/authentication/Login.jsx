@@ -12,6 +12,7 @@ import { setCredentials, setLocations } from "../../features/auth/authSlice";
 import toast from "react-hot-toast";
 import { useGetLocationByIdQuery } from "../../api/roleManagementApi";
 import { skipToken } from "@reduxjs/toolkit/query";
+import logo from '../../assets/client01.jpg'
 
 const Login = () => {
   const [login, { isLoading, isError }] = useLoginMutation();
@@ -62,20 +63,36 @@ const Login = () => {
       }
     } catch (err) {
       console.error("Login error:", err);
-      toast.error(err?.data?.message || "Incorrect UserName or Password Entered!");
+      toast.error(
+        err?.data?.message || "Incorrect UserName or Password Entered!"
+      );
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-neutral-50">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-card">
+      <div className="max-w-2xl w-full space-y-8 bg-white p-6 rounded-lg shadow-card">
+        {/* Logo Section */}
+        <div className="flex justify-center mb-6">
+          <div className="bg-gradient-to-br from-primary/10 to-blue-100 p-4 rounded-2xl shadow-sm border border-primary/20">
+            <img
+              src={logo}
+              alt="Company Logo"
+              className="h-25 w-64 mx-auto object-cover rounded-lg"
+              
+            />
+            <div className="hidden h-16 w-16 bg-gradient-to-r from-primary to-blue-600 rounded-xl items-center justify-center text-white font-bold text-xl">
+              OP
+            </div>
+          </div>
+        </div>
         <div className="text-center">
           <h2 className="mt-6 text-3xl font-semibold text-neutral-900">
             Sign in to your account
           </h2>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
+        <form className="mt-8 space-y-4" onSubmit={handleSubmit(onSubmit)}>
           <div className="rounded-md space-y-4">
             <FormInput
               label="User name"
