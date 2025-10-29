@@ -209,19 +209,19 @@ const getShortTypeName = (id) => {
 const getStockOutPrice = (item) => {
   if (item.ProductType === 3) {
     if (item.ProductDetails.CLBatchCode === 0) {
-      return parseFloat(item.ProductDetails.price?.MRP || 0);
+      return parseFloat(item?.ProductDetails?.price?.MRP || 0);
     }
 
     const stockCheck = Array.isArray(item.ProductDetails.Stock)
-      ? item.ProductDetails.Stock[0].MRP
-      : item.ProductDetails.Stock.MRP;
+      ? item?.ProductDetails?.Stock[0]?.MRP
+      : item?.ProductDetails?.Stock?.MRP;
     return stockCheck;
   } else if (item.ProductType === 1) {
-    return parseFloat(item.ProductDetails.Stock.MRP);
+    return parseFloat(item?.ProductDetails?.Stock?.MRP);
   } else if (item.ProductType === 2) {
-    return parseFloat(item.ProductDetails.Stock.OPMRP);
+    return parseFloat(item?.ProductDetails?.Stock?.OPMRP);
   } else if (item.ProductType === 0) {
-    return parseFloat(item?.ProductDetails[0]?.pricing?.mrp);
+    return parseFloat(item?.ProductDetails[0]?.pricing?.mrp || null);
   }
 
   return 0;

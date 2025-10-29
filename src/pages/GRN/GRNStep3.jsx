@@ -1979,7 +1979,7 @@ export default function GRNStep3() {
                 )}
                 {console.log("clSearchItems - ", clSearchItems)}
                 {console.log("clSearchItems[0]?.stock?.BatchCode - ", clSearchItems[0]?.stock?.BatchCode)}
-                {((formState.productType === "Contact Lens" && clSearchItems.length > 0) && (clSearchItems[0]?.CLBatchCode === 1 && (clSearchItems[0]?.stock?.BatchCode !== null && clSearchItems[0]?.stock?.BatchCode !== undefined))) && (
+                {((formState.productType === "Contact Lens" && clSearchItems.length > 0) && ((clSearchItems[0]?.CLBatchCode === 1) && (CLBatches?.data?.length > 0))) && (
                     <>
                         <div className="mt-6">
                             <div className="flex items-center space-x-10">

@@ -27,7 +27,7 @@ import Radio from "../../../components/Form/Radio";
 
 import { useLazyGetBatchDetailsQuery } from "../../../api/InvoiceApi";
 import { useSelector } from "react-redux";
-import { useGetBatchBarCodeMutation } from "../../../api/salesReturnApi";
+import { useGetBatchBarCodeMutation, useLazyGetBatchesForCLQuery } from "../../../api/salesReturnApi";
 import { formatINR } from "../../../utils/formatINR";
 import Modal from "../../../components/ui/Modal";
 import { useSaveStockDetailsMutation } from "../../../api/stockTransfer";
@@ -65,6 +65,7 @@ const getProductName = (order) => {
     hSN,
     HSN,
     ExpiryDate,
+    Expiry,
     FittingPrice,
     FittingGSTPercentage,
     batchCode,
@@ -113,7 +114,7 @@ const getProductName = (order) => {
     const hsn = clean(hSN || HSN || "");
     const brand = clean(BrandName);
     const barcodeVal = clean(barcode || Barcode);
-    const expiry = clean(ExpiryDate);
+    const expiry = clean(ExpiryDate || Expiry);
     // const batchIsOne = clean(CLBatchCode);
     const batchIsZero = clean(sbatchCode);
     const batchBar = clean(sbatchbarCode);
@@ -160,9 +161,8 @@ const getProductName = (order) => {
       specsList,
       clr && `Color: ${clr}`,
       barcodeVal && `Barcode: ${barcodeVal}`,
-      (batchIsZero || batchBar) &&
-        `Batch Code: ${batchBar || batchIsZero || "-"}`,
-      expiry && `Expiry : ${expiry.split("-").reverse().join("/")}`,
+      (CLBatchCode && (batchIsZero || batchBar)) ? `Batch Code: ${batchBar || batchIsZero || "-"}` : ``,
+      (CLBatchCode && expiry) ? `Expiry : ${expiry.split("-").reverse().join("/")}` : ``,
       hsn && `HSN: ${hsn}`,
     ]
       .filter(Boolean)
@@ -239,7 +239,7 @@ const ContactLens = () => {
     { skip: !lensData.productId }
   );
 
-  const [getCLBatches, { data: CLBatches }] = useLazyGetBatchDetailsQuery();
+  const [getCLBatches, { data: CLBatches }] = useLazyGetBatchesForCLQuery();
   const [getPowerDetails, { isLoading: isPowerDetailsLoading }] =
     useGetPowerDetailsMutation();
 
@@ -368,7 +368,7 @@ const ContactLens = () => {
       const response = await getPowerDetails({ payload }).unwrap();
       if (response?.data?.data) {
         const data = response.data.data;
-        toast.success(`${response?.data.message}`);
+        // toast.success(`${response?.data.message}`);
         setNewItem({
           CLDetailId: data.CLDetailId,
           sphericalPower: data.SphericalPower,
@@ -384,13 +384,13 @@ const ContactLens = () => {
         if (data.CLBatchCode === 1) {
           try {
             await getCLBatches({
-              clBatchId: data.CLDetailId,
+              detailId: data.CLDetailId,
               locationId: parseInt(hasMultipleLocations[0]),
             }).unwrap();
             setDetailId(true);
             setOpenBatch(true);
           } catch (error) {
-            toast.error(error?.data.error);
+            toast.error(error?.data.error || error?.data.message);
             return;
           }
         } else if (data.CLBatchCode === 0) {
@@ -433,13 +433,15 @@ const ContactLens = () => {
         setSearchFetched(false);
         setDetailId(false);
         setOpenBatch(false);
+        toast.error("Product not found.");
+        return
       }
     } catch (error) {
       console.error("error", error);
       setSearchFetched(false);
       setDetailId(false);
       setOpenBatch(false);
-      toast.error(error.data.error.message || "Product not found.");
+      toast.error(error.data.message || "Product not found.");
     }
   };
 
@@ -670,7 +672,7 @@ const ContactLens = () => {
         setProductCodeInput("");
       } else if (response?.data.data.CLBatchCode === 1) {
         const batchCodeData = await getCLBatches({
-          clBatchId: response?.data.data.CLDetailId,
+          detailId: response?.data.data.CLDetailId,
           locationId: parseInt(hasMultipleLocations[0]),
         }).unwrap();
         if (batchCodeData) {
@@ -882,8 +884,8 @@ const ContactLens = () => {
       console.error("Failed to download sample excel:", error);
       toast.error(
         error.data?.message ||
-          error.message ||
-          "Failed to download sample excel"
+        error.message ||
+        "Failed to download sample excel"
       );
     }
   };
@@ -1108,7 +1110,7 @@ const ContactLens = () => {
                       ₹
                       {formatINR(
                         parseFloat(item.BuyingPrice) * item.stkQty +
-                          calculateStockGST(item).gstAmount * item.stkQty
+                        calculateStockGST(item).gstAmount * item.stkQty
                       )}
                       {/* ({calculateStockGST(item).gstPercent}%) */}
                     </TableCell>
@@ -1559,17 +1561,18 @@ const ContactLens = () => {
               />
             </div>
 
-            {CLBatches?.data.batches && selectBatch === 0 && (
+            {selectBatch === 0 && (
               <div className=" mt-5 flex items-center gap-4">
                 <div className="space-y-2 w-1/3">
                   <label className="block text-sm font-medium text-gray-700">
                     Select by BatchCode
                   </label>
+                  {console.log("CLBatches - ", CLBatches)}
                   <Autocomplete
-                    options={CLBatches?.data.batches || []}
+                    options={CLBatches?.data || []}
                     getOptionLabel={(option) => option.CLBatchCode || ""}
                     value={
-                      CLBatches?.data.batches?.find(
+                      CLBatches?.data?.find(
                         (batch) =>
                           batch.CLBatchCode === selectedBatchCode?.CLBatchCode
                       ) || null
@@ -1612,6 +1615,7 @@ const ContactLens = () => {
                   }}
                 />
                 <Button onClick={handleGetBatchBarCodeDetails}>Search</Button>
+                
               </div>
             )}
           </div>

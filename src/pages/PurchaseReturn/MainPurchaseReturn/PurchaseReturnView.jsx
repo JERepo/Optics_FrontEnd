@@ -383,7 +383,7 @@ const PurchaseReturnView = () => {
                 variant="secondary"
                 onClick={() => setIsCNModalOpen(true)}
               >
-                CN Issued
+                Issue CN
               </Button>
             )}
             <Button
