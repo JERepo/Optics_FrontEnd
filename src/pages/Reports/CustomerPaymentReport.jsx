@@ -18,7 +18,7 @@ const PAYMENT_TYPES = [
   "Cheque",
   "Bank Transfer",
   "Gift Voucher",
-  "Advance",
+  // "Advance",
 ];
 
 const CustomerPaymentReport = () => {

@@ -30,7 +30,7 @@ const PoolCreation = () => {
   const [pageSize, setPageSize] = useState(10);
   const [sortConfig, setSortConfig] = useState({
     key: "name",
-    direction: "asc",
+    direction: "desc",
   });
   const [categoryFilter, setCategoryFilter] = useState(null);
   const [isCategoryPopupOpen, setIsCategoryPopupOpen] = useState(false);

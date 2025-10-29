@@ -10,7 +10,7 @@ import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
 import Modal from "../../components/ui/Modal";
 import { useLazyGetStockHistoryQuery } from "../../api/vendorPayment";
 import { FiActivity, FiTag } from "react-icons/fi";
-import { useLazyPrintLabelsQuery } from "../../api/reportApi";
+import { useLazyPrintLabelsAccQuery, useLazyPrintLabelsQuery } from "../../api/reportApi";
 
 const toTitleCase = (str) =>
   str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
@@ -23,7 +23,15 @@ const debounce = (func, delay) => {
   };
 };
 
-const buildQueryParams = ({ brandName, ProductName, barcode, variation, location, page, requiredRow }) => {
+const buildQueryParams = ({
+  brandName,
+  ProductName,
+  barcode,
+  variation,
+  location,
+  page,
+  requiredRow,
+}) => {
   const add = (key, value) =>
     `${key}=${
       value !== undefined && value !== null && value !== ""
@@ -49,10 +57,10 @@ const SearchAccessory = () => {
     "s.no": "",
     "brand name": "",
     "product name": "Lens",
-    "barcode": "",
-    "variation": "",
-    "mrp": "",
-    "stock": "",
+    barcode: "",
+    variation: "",
+    mrp: "",
+    stock: "",
   });
 
   const [searchData, setSearchData] = useState([]);
@@ -75,13 +83,12 @@ const SearchAccessory = () => {
   console.log("user ----- ", user);
   console.log("hasLocation ----- ", hasLocation);
 
-
   const [itemsPerPage, setItemsPerPage] = useState(50);
 
   const [triggerFetchAccessoryStock, { isLoading }] =
     useLazyGetAccessoryStockQuery();
   const [getlabels, { isFetching: isLabelsFetching }] =
-    useLazyPrintLabelsQuery();
+    useLazyPrintLabelsAccQuery();
   const [getStockHistory, { data: stockData }] = useLazyGetStockHistoryQuery();
   const [stockId, setstockId] = useState(null);
   const [printId, setprintId] = useState(null);
@@ -141,37 +148,40 @@ const SearchAccessory = () => {
   }, [hasLocation]);
 
   // Fetch accessories from API with current search terms
-  const fetchAccessories = useCallback(async (searchTerms, page, pageSize) => {
-    setError(null);
-    try {
-      const queryString = buildQueryParams({
-        brandName: searchTerms["brand name"],
-        ProductName: searchTerms["product name"],
-        barcode: searchTerms["barcode"],
-        variation: searchTerms["variation"],
-        location: selectedLocation, // will now be up-to-date
-        page: page,
-        requiredRow: pageSize
-      });
+  const fetchAccessories = useCallback(
+    async (searchTerms, page, pageSize) => {
+      setError(null);
+      try {
+        const queryString = buildQueryParams({
+          brandName: searchTerms["brand name"],
+          ProductName: searchTerms["product name"],
+          barcode: searchTerms["barcode"],
+          variation: searchTerms["variation"],
+          location: selectedLocation, // will now be up-to-date
+          page: page,
+          requiredRow: pageSize,
+        });
 
-      console.log("Fetching with location:", selectedLocation); // Debug
+        console.log("Fetching with location:", selectedLocation); // Debug
 
         const result = await triggerFetchAccessoryStock(queryString).unwrap();
 
-      if (result.status === "success" && result.data) {
-        setSearchData(result.data);
-        setTotalItems(result.total || 0);
-      } else {
+        if (result.status === "success" && result.data) {
+          setSearchData(result.data);
+          setTotalItems(result.total || 0);
+        } else {
+          setSearchData([]);
+          setTotalItems(0);
+        }
+      } catch (err) {
+        console.error("Error fetching accessories:", err);
+        toast.error(err?.data?.error || err?.message || "Failed to fetch data");
         setSearchData([]);
         setTotalItems(0);
       }
-    } catch (err) {
-      console.error("Error fetching accessories:", err);
-      toast.error(err?.data?.error || err?.message || "Failed to fetch data");
-      setSearchData([]);
-      setTotalItems(0);
-    }
-  }, [triggerFetchAccessoryStock, selectedLocation]);
+    },
+    [triggerFetchAccessoryStock, selectedLocation]
+  );
 
   // Debounced search function
   const debouncedSearch = useMemo(
@@ -181,7 +191,6 @@ const SearchAccessory = () => {
       }, 500),
     [fetchAccessories]
   );
-
 
   // Trigger fetch when location changes
   useEffect(() => {
@@ -399,15 +408,23 @@ const SearchAccessory = () => {
                   {item.Quantity !== undefined ? item.Quantity : 0}
                 </span>
               </TableCell> */}
-              <TableCell>{item.Quantity !== undefined ? item.Quantity : 0}</TableCell>
-
               <TableCell>
-                <Button variant="outline" size="sm">
-                  <EyeIcon className="w-4 h-4" />
-                </Button>
-                <Button variant="outline" size="xs">
+                {item.Quantity !== undefined ? item.Quantity : 0}
+              </TableCell>
+
+              <TableCell className="flex gap-2 ">
+                <Button
+                  size="xs"
+                  variant="outline"
+                  title="Barcode Label Printing"
+                  icon={FiTag}
+                  onClick={() => handleLabels(item.DetailId)}
+                  isLoading={printId === item.DetailId}
+                  loadingText=""
+                ></Button>
+                {/* <Button variant="outline" size="xs">
                   <PrinterIcon className="w-4 h-4" />
-                </Button>
+                </Button> */}
                 <Button
                   size="xs"
                   variant="outline"

@@ -102,7 +102,7 @@ const PurchaseReturn = () => {
         CompanyId: s.CompanyId,
         PurchaseReturnDate: s.PurchaseReturnDate,
       }))
-      .filter((order) => order.CompanyId == hasMultipleLocations[0])
+      .filter((order) => hasMultipleLocations.includes(order.CompanyId))
       .sort(
         (a, b) =>
           new Date(b.PurchaseReturnDate) - new Date(a.PurchaseReturnDate)
@@ -131,7 +131,7 @@ const PurchaseReturn = () => {
       );
       const link = document.createElement("a");
       link.href = url;
-      link.download = `DebittNote_${item.p.DNNo} (${item.p.DNPrefix}${item.p.DNNo}).pdf`
+      link.download = `DebittNote_${item.p.DNNo} (${item.p.DNPrefix}${item.p.DNNo}).pdf`;
       document.body.appendChild(link);
       link.click();
       // clean up

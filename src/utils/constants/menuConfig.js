@@ -249,7 +249,7 @@ export const menuItems = [
         path: "/stock-ageing-report",
       },
       {
-        name: "Daily Payment Report",
+        name: "Payment Collection Report",
         icon: IoConstructOutline,
         module: "Daily-Payment-Report",
         path: "/daily-payments",

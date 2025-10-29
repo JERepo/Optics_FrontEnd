@@ -103,7 +103,7 @@ const InvoiceList = () => {
       status: getOrderStatus(invoice.Status),
       CompanyID :invoice?.CompanyID
     }))
-    .filter((order) => order.CompanyID === parseInt(hasMultipleLocations[0]));
+    .filter((order) =>  hasMultipleLocations.includes(order.CompanyID));
   }, [allOrders, fromDate, toDate, searchQuery]);
 
   const startIndex = (currentPage - 1) * pageSize;

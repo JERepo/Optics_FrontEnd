@@ -29,6 +29,13 @@ import Modal from "../../components/ui/Modal";
 import Loader from "../../components/ui/Loader";
 import { useSelector } from "react-redux";
 
+const baseOptions = [
+  { label: "In", value: "0" },
+  { label: "Out", value: "1" },
+  { label: "Up", value: "2" },
+  { label: "Down", value: "3" },
+];
+
 const Prescription = () => {
   const navigate = useNavigate();
   const { user, hasMultipleLocations } = useSelector((state) => state.auth);
@@ -101,24 +108,24 @@ const Prescription = () => {
         ...data[0],
         values: {
           R: {
-            SPH: data[0].RSPH,
-            CYL: data[0].RCYD,
-            Axis: data[0].RAxis,
-            ADD: data[0].RAddOn,
-            Prism: data[0].RPrism,
-            Base: data[0].RBase === 0 ? `IN` : data[0].RBase === 1 ? `OUT` : data[0].RBase === 2 ? `UP` : data[0].RBase === 3 ? `DOWN` : ``,
-            VisualAcuityId: data[0].RVisualAcuity,
-            VisualAcuity: data[0].RightVisual.VisualAcuity,
+            SPH: data[0]?.RSPH,
+            CYL: data[0]?.RCYD,
+            Axis: data[0]?.RAxis,
+            ADD: data[0]?.RAddOn,
+            Prism: data[0]?.RPrism,
+            Base: data[0]?.RBase === 0 ? `IN` : data[0]?.RBase === 1 ? `OUT` : data[0]?.RBase === 2 ? `UP` : data[0]?.RBase === 3 ? `DOWN` : ``,
+            VisualAcuityId: data[0]?.RVisualAcuity,
+            VisualAcuity: data[0]?.RightVisual?.VisualAcuity,
           },
           L: {
-            SPH: data[0].LSPH,
-            CYL: data[0].LCYD,
-            Axis: data[0].LAxis,
-            ADD: data[0].LAddOn,
-            Prism: data[0].LPrism,
-            Base: data[0].LBase === 0 ? `IN` : data[0].LBase === 1 ? `OUT` : data[0].LBase === 2 ? `UP` : data[0].LBase === 3 ? `DOWN` : ``,
-            VisualAcuityId: data[0].LVisualAcuity,
-            VisualAcuity: data[0].LeftVisual.VisualAcuity,
+            SPH: data[0]?.LSPH,
+            CYL: data[0]?.LCYD,
+            Axis: data[0]?.LAxis,
+            ADD: data[0]?.LAddOn,
+            Prism: data[0]?.LPrism,
+            Base: data[0]?.LBase === 0 ? `IN` : data[0]?.LBase === 1 ? `OUT` : data[0]?.LBase === 2 ? `UP` : data[0]?.LBase === 3 ? `DOWN` : ``,
+            VisualAcuityId: data[0]?.LVisualAcuity,
+            VisualAcuity: data[0]?.LeftVisual?.VisualAcuity,
           },
         },
       };
@@ -133,7 +140,6 @@ const Prescription = () => {
   };
 
   const handleView = (prescription) => {
-    console.log("pre", prescription)
     setSelectedId(prescription?.Id);
     const parsedPrescription = {
       name: prescription?.CustomerContactDetail.CustomerName,
@@ -146,7 +152,7 @@ const Prescription = () => {
           ADD: prescription.RAddOn,
           Prism: prescription.RPrism,
           Base: prescription.RBase,
-          VisualAcuity: prescription.RVisualAcuity,
+          VisualAcuity: prescription?.RightVisual?.VisualAcuity,
         },
         L: {
           SPH: prescription.LSPH,
@@ -155,7 +161,7 @@ const Prescription = () => {
           ADD: prescription.LAddOn,
           Prism: prescription.LPrism,
           Base: prescription.LBase,
-          VisualAcuity: prescription.LVisualAcuity,
+          VisualAcuity: prescription?.LeftVisual?.VisualAcuity,
         },
       },
     };
@@ -487,8 +493,12 @@ const DisplayMainData = ({
                                 "--"}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              {selectedPrescription.values?.[side]?.Base ??
-                                "--"}
+                            
+                                 {baseOptions?.find(
+                                  (item) =>
+                                    item.value ==
+                                    selectedPrescription.values?.[side]?.Base
+                                )?.label ?? "--"}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               {selectedPrescription.values?.[side]

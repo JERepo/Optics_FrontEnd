@@ -41,8 +41,7 @@ const StockTransferOut = () => {
   const [pageSize, setPageSize] = useState(10);
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
-    const [printingId, setPrintingId] = useState(null);
-  
+  const [printingId, setPrintingId] = useState(null);
 
   const { data: allLocations, isLoading: isLocationsLoading } =
     useGetStockLocationsQuery({
@@ -54,8 +53,7 @@ const StockTransferOut = () => {
 
   const { data: allStockOut, isLoading: isStockLoading } =
     useGetAllStockOutDetailsQuery();
-      const [generatePrint, { isFetching: isPrinting }] =
-        useLazyPrintPdfQuery();
+  const [generatePrint, { isFetching: isPrinting }] = useLazyPrintPdfQuery();
 
   const StockOut = useMemo(() => {
     if (!allStockOut?.data) return [];
@@ -112,10 +110,10 @@ const StockTransferOut = () => {
         ToCompanyId: s.ToCompanyId,
         STOutCreateDate: s.STOutCreateDate,
         status: getStatus(s.Status),
-        s
+        s,
       }))
-      .filter(
-        (order) => order.FromCompanyId === parseInt(hasMultipleLocations[0])
+      .filter((order) =>
+        hasMultipleLocations.includes(order.FromCompanyId)
       )
       .sort(
         (a, b) => new Date(b.STOutCreateDate) - new Date(a.STOutCreateDate)
@@ -304,8 +302,9 @@ const StockTransferOut = () => {
                 <TableCell className="flex gap-2">
                   <button
                     onClick={() => handleViewSalesReturn(item.id)}
-className="flex items-center  text-lg font-medium rounded-md "
-                    title="View"                  >
+                    className="flex items-center  text-lg font-medium rounded-md "
+                    title="View"
+                  >
                     <FiEye className="" />
                   </button>
                   <button
@@ -316,7 +315,7 @@ className="flex items-center  text-lg font-medium rounded-md "
                       <Loader color="black" />
                     ) : (
                       <div className="flex items-center">
-                        <FiPrinter  />
+                        <FiPrinter />
                       </div>
                     )}
                   </button>

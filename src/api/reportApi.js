@@ -89,6 +89,13 @@ export const reportApi = createApi({
       }),
       transformResponse: (response) => response,
     }),
+    printLabelsAcc: builder.query({
+      query: ({ frameDetailId, companyId }) => ({
+        url: `/api/v1/pdf/acc-qr?accDetailId=${frameDetailId}&companyId=${companyId}`,
+        responseHandler: (response) => response.blob(),
+      }),
+      transformResponse: (response) => response,
+    }),
     getDailyPayments: builder.query({
       query: () => ({
         url: `/api/v1/report/daily-payment`,
@@ -110,5 +117,6 @@ export const {
   useLazyGetStockOutReportQuery,
   useLazyGetStockAgeingReportQuery,
   useLazyPrintLabelsQuery,
-  useLazyGetDailyPaymentsQuery
+  useLazyGetDailyPaymentsQuery,
+  useLazyPrintLabelsAccQuery
 } = reportApi;

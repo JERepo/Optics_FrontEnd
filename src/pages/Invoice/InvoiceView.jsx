@@ -580,11 +580,8 @@ const InvoiceView = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    getPricing(
-                      Array.isArray(invoice?.productDetails?.length > 0)
-                        ? invoice?.productDetails[0]
-                        : invoice?.productDetails || []
-                    )
+                    invoice?.productDetails[0]?.pricing?.mrp ||
+                      invoice?.productDetails[0]?.stock[0]?.mrp || 0
                   )}
                 </TableCell>
                 <TableCell>

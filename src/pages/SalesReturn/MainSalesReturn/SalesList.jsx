@@ -107,9 +107,9 @@ const SalesList = () => {
         CompanyID: parseInt(s.CompanyID),
         CNDate: s.CNDate,
         status: getStatus(s.Status),
-        s
+        s,
       }))
-      .filter((order) => order.CompanyID === parseInt(hasMultipleLocations[0]))
+      .filter((order) => hasMultipleLocations.includes(order.CompanyID))
       .sort((a, b) => new Date(b.CNDate) - new Date(a.CNDate));
   }, [allSalesReturn, fromDate, toDate, searchQuery]);
 
