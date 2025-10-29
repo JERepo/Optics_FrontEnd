@@ -473,6 +473,7 @@ export default function GRNStep3() {
                         timestamp: Date.now()
                     };
                     if (result.data.data.CLBatchCode === 1) {
+                        console.log("search djanda - ", [newItem]);
                         setClSearchItems([newItem]);
                         await getCLBatches({
                             detailId: result?.data?.data?.CLDetailId,
@@ -1051,7 +1052,7 @@ export default function GRNStep3() {
             setSearchFetched(true);
         } catch (error) {
             console.error("Search error:", error);
-            toast.error(error.message || "Failed to search power details");
+            toast.error(error.data.message || "Failed to search power details");
             setSearchFetched(false);
         }
     };
@@ -1185,6 +1186,25 @@ export default function GRNStep3() {
         }
     };
 
+    const handleRefreshForm = () => {
+        // setBrandId(null);
+        setShowSearchInputs(false);
+        setBrandId(null);
+        setBrandInput("");
+        setModalityId(null);
+        setModalityInput("");
+        setProductId(null);
+        setProductInput("");
+        setProductName("");
+        setModelNo("");
+        setFormState(prev => ({
+            ...prev,
+            barcode: "",
+            EntryType: "combined"
+        }));
+        setClSearchItems([]);
+    };
+
 
     return (
         <>
@@ -1196,13 +1216,24 @@ export default function GRNStep3() {
             >
                 <div className="flex justify-between items-center">
                     <h2 className="text-xl font-bold text-[#000060] mb-6">Step 3: Select GRN</h2>
-                    <button
-                        onClick={handleBack}
-                        className="px-4 py-2 flex text-[#000060] rounded-lg hover:bg-gray-100 transition-colors gap-2"
-                    >
-                        <ArrowLeft />
-                        Back
-                    </button>
+                    <div className="flex gap-2 items-center justify-center">
+                        <button
+                            onClick={handleBack}
+                            className="px-4 py-2 flex text-[#000060] rounded-lg hover:bg-gray-100 transition-colors gap-2"
+                        >
+                            <ArrowLeft />
+                            Back
+                        </button>
+                        {/* {showSearchInputs && ( */}
+                        <button
+                            onClick={handleRefreshForm}
+                            className="flex gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
+                        >
+                            <RefreshCcw />
+                            Refresh
+                        </button>
+                        {/* )} */}
+                    </div>
                 </div>
 
                 {formState.productType !== 'Lens' ? (
@@ -1215,7 +1246,18 @@ export default function GRNStep3() {
                                     name="EntryType"
                                     value="combined"
                                     checked={formState.EntryType === "combined"}
-                                    onChange={handleInputChange}
+                                    onChange={() => {
+                                        setBrandId(null);
+                                        setBrandInput("");
+                                        setModalityId(null);
+                                        setModalityInput("");
+                                        setProductId(null);
+                                        setProductInput("");
+                                        setProductName("");
+                                        setModelNo("");
+                                        setFormState(prev => ({ ...prev, barcode: "", EntryType: "combined"}));
+                                        setClSearchItems([]);
+                                    }}
                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                 />
                                 <span className="text-gray-700 font-medium">Combined Entry</span>
@@ -1226,7 +1268,18 @@ export default function GRNStep3() {
                                     name="EntryType"
                                     value="seperate"
                                     checked={formState.EntryType === "seperate"}
-                                    onChange={handleInputChange}
+                                    onChange={() => {
+                                        setBrandId(null);
+                                        setBrandInput("");
+                                        setModalityId(null);
+                                        setModalityInput("");
+                                        setProductId(null);
+                                        setProductInput("");
+                                        setProductName("");
+                                        setModelNo("");
+                                        setFormState(prev => ({ ...prev, barcode: "", EntryType: "seperate"}));
+                                        setClSearchItems([]);
+                                    }}
                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                 />
                                 <span className="text-gray-700 font-medium">Separate Entry</span>
@@ -1237,7 +1290,18 @@ export default function GRNStep3() {
                                     name="EntryType"
                                     value="bulk"
                                     checked={formState.EntryType === "bulk"}
-                                    onChange={handleInputChange}
+                                    onChange={() => {
+                                        setBrandId(null);
+                                        setBrandInput("");
+                                        setModalityId(null);
+                                        setModalityInput("");
+                                        setProductId(null);
+                                        setProductInput("");
+                                        setProductName("");
+                                        setModelNo("");
+                                        setFormState(prev => ({ ...prev, barcode: "", EntryType: "bulk"}));
+                                        setClSearchItems([]);
+                                    }}
                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                 />
                                 <span className="text-gray-700 font-medium">Bulk Process</span>
@@ -1466,7 +1530,7 @@ export default function GRNStep3() {
                                     )}
                                 </button>
                                 <button
-                                    onClick={() => setShowSearchInputs(true)}
+                                    onClick={() => {setShowSearchInputs(true); setClSearchItems([]); setFormState(prev => ({ ...prev, barcode: ""}));}}
                                     className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors whitespace-nowrap flex items-center"
                                 >
                                     <SearchIcon className="h-4 w-4 mr-1" />
@@ -1905,7 +1969,7 @@ export default function GRNStep3() {
                     </div>
                 )}
 
-                {(formState.productType === "Contact Lens" && clSearchItems.length > 0) && (
+                {(formState.productType === "Contact Lens" && clSearchItems.length > 0 && clSearchItems[0]?.stock?.BatchCode !== null) && (
                     <>
                         <div className="mt-6">
                             <div className="flex items-center space-x-10">

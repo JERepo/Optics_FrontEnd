@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { ArrowLeft, CheckCircle, Download, PenIcon, X } from "lucide-react";
+import { ArrowLeft, CheckCircle, Download, PenIcon, Printer, X } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
@@ -513,7 +513,8 @@ export function POViewPage() {
               onClick={() => handlePrint(poData)}
               isLoading={isPrinting}
             >
-              <Download />
+              {/* <Download /> */}
+              <Printer/>
             </button>
           </div>
         </div>

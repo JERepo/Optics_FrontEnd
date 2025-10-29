@@ -349,7 +349,7 @@ export default function GRNStep4() {
 
                     {grnData?.step1?.againstPO === "0" ? (
                         <Table
-                            columns={["Sl No.", "Order No.", "Supplier Order No.", "Type", "Product Details", "GST", "QTY", "Buying Price", "Total Amount", "Action"]}
+                            columns={["Sl No.", "Order No.", "Supplier Order No.", "Type", "Product Details", "QTY", "Buying Price", "GST", "Total Amount", "Action"]}
                             data={grnViewDetails}
                             renderRow={(item, index) => (
                                 <TableRow key={item.Barcode || index}>
@@ -444,9 +444,9 @@ export default function GRNStep4() {
                                                     </TableCell>
                                                     : null
                                     }
-                                    <TableCell>₹{" "} {parseFloat(parseFloat(item?.GRNPrice) * ((parseFloat(item?.TaxPercent) / 100) || 0)).toFixed(2)}{`(` + item?.TaxPercent + `%)`}</TableCell>
                                     <TableCell>{(item.GRNQty || 0)}</TableCell>
                                     <TableCell>{((grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc")) ? "" : (item.GRNPrice || 0)}</TableCell>
+                                    <TableCell>₹{" "} {parseFloat(parseFloat(item?.GRNPrice) * ((parseFloat(item?.TaxPercent) / 100) || 0)).toFixed(2)}{`(` + item?.TaxPercent + `%)`}</TableCell>
                                     <TableCell>₹{" "}{((grnData?.step1?.vendorDetails?.DCGRNPrice === 1 && grnData?.step1?.billingMethod === "dc")) ? "" : (parseFloat(parseFloat(item?.GRNPrice * item?.GRNQty) * (parseFloat(item?.TaxPercent) / 100)) + parseFloat(item?.GRNPrice * item?.GRNQty) + parseFloat(item?.FittingPrice || 0) + ((Number(item?.FittingPrice) * (Number(item?.FittingGSTPercentage) / 100)) || 0)).toFixed(2)}</TableCell>
 
                                     <TableCell className="px-6 py-4 whitespace-nowrap">
