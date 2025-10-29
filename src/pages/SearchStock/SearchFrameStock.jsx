@@ -1393,12 +1393,12 @@ const renderHeader = (column) => (
                     loadingText=""
                   ></Button>
 
-                  <Button
+                  {/* <Button
                     size="xs"
                     variant="outline"
                     title="Stock History"
                     icon={FiBox}
-                  ></Button>
+                  ></Button> */}
                   <Button
                     size="xs"
                     variant="outline"

@@ -13,14 +13,16 @@ import { toast } from "react-hot-toast";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { isBefore, isAfter, subDays, startOfDay, format } from "date-fns";
-import {
-  useSaveAdvanceAmountMutation,
-  useSaveCustomerPaymentMutation,
-} from "../../../api/customerPayment";
+import { isBefore, subDays, startOfDay, format } from "date-fns";
+import { useSaveAdvanceAmountMutation } from "../../../api/customerPayment";
 import { useNavigate } from "react-router";
 import { formatINR } from "../../../utils/formatINR";
 import Textarea from "../../../components/Form/Textarea";
+
+const toFixedNumber = (num) => {
+  const parsed = parseFloat(num);
+  return isNaN(parsed) ? 0 : Number(parsed.toFixed(2));
+};
 
 const methods = [
   { value: 1, type: "Cash" },
@@ -31,8 +33,8 @@ const methods = [
 ];
 
 const CollectAdvance = ({
-  totalValue,
-  amountToPay,
+  totalValue = 0,
+  amountToPay = 0,
   selectedPatient,
   companyId,
   items,
@@ -67,31 +69,8 @@ const CollectAdvance = ({
     EMIBank: null,
   });
   const [errors, setErrors] = useState({});
-  const [advanceRefceNo, setAdvanceRefNo] = useState(null);
+  const [advanceRefceNo, setAdvanceRefNo] = useState("");
   const [remarks, setRemarks] = useState("");
-
-  const updatedDetails = useMemo(() => {
-    const total = totalValue || 0;
-    const advance = amountToPay || 0;
-
-    const totalPaid =
-      fullPayments?.length > 0
-        ? fullPaymentDetails?.reduce((sum, payment) => {
-            const amt = parseFloat(payment.Amount);
-            return sum + (isNaN(amt) ? 0 : amt);
-          }, 0)
-        : 0;
-
-    // Round to 2 decimal places to avoid floating-point precision issues
-    const remainingToPay = Number(Math.max(advance - totalPaid, 0).toFixed(2));
-
-    return {
-      TotalAmount: total,
-      AdvanceAmount: advance,
-      BalanceAmount: total - advance,
-      RemainingToPay: remainingToPay,
-    };
-  }, [paymentDetails, fullPaymentDetails, fullPayments]);
 
   const { data: paymentMachine } = useGetAllPaymentMachinesQuery();
   const { data: allbanks } = useGetAllBankMastersQuery();
@@ -124,6 +103,25 @@ const CollectAdvance = ({
       )
   );
 
+  // Memoized totals with proper rounding
+  const updatedDetails = useMemo(() => {
+    const total = toFixedNumber(totalValue);
+    const advance = toFixedNumber(amountToPay);
+
+    const totalPaid = fullPaymentDetails.reduce((sum, payment) => {
+      return sum + toFixedNumber(payment.Amount);
+    }, 0);
+
+    const remainingToPay = toFixedNumber(Math.max(advance - totalPaid, 0));
+
+    return {
+      TotalAmount: total,
+      AdvanceAmount: advance,
+      BalanceAmount: toFixedNumber(total - advance),
+      RemainingToPay: remainingToPay,
+    };
+  }, [totalValue, amountToPay, fullPaymentDetails]);
+
   const preparePaymentsStructure = () => {
     const payments = {};
 
@@ -146,17 +144,13 @@ const CollectAdvance = ({
 
     fullPaymentDetails.forEach((payment) => {
       const typeKey = normalizeType(payment.Type || "");
-      const amount = parseFloat(payment.Amount);
-      if (isNaN(amount)) return;
+      const amount = toFixedNumber(payment.Amount);
+      if (amount <= 0) return;
 
       if (typeKey === "cash") {
         payments.cash = (payments.cash || 0) + amount;
         return;
       }
-
-      // if (!payments[typeKey]) {
-      //   payments[typeKey] = { amount: 0 };
-      // }
 
       if (["card", "cheque", "bank", "upi"].includes(typeKey)) {
         if (!payments[typeKey]) payments[typeKey] = [];
@@ -169,16 +163,14 @@ const CollectAdvance = ({
             paymentEntry.ApprCode = payment.RefNo;
             if (payment.EMI) {
               paymentEntry.EMI = payment.EMI;
-              paymentEntry.EMIMonths = parseInt(payment.EMIMonths);
+              paymentEntry.EMIMonths = parseInt(payment.EMIMonths) || 0;
               paymentEntry.EMIBank = payment.EMIBank;
             }
             break;
-
           case "upi":
             paymentEntry.PaymentMachineID = payment.PaymentMachineID;
             paymentEntry.ReferenceNo = payment.RefNo || "";
             break;
-
           case "cheque":
             paymentEntry.BankMasterID = payment.BankMasterID;
             paymentEntry.ChequeNo = payment.ChequeDetails;
@@ -186,7 +178,6 @@ const CollectAdvance = ({
               ? format(new Date(payment.ChequeDate), "yyyy-MM-dd")
               : null;
             break;
-
           case "bank":
             paymentEntry.BankAccountID = payment.BankAccountID || null;
             paymentEntry.ReferenceNo = payment.RefNo || "";
@@ -194,12 +185,12 @@ const CollectAdvance = ({
         }
 
         payments[typeKey].push(paymentEntry);
-        return;
       }
     });
 
     return payments;
   };
+
   const handleSave = async () => {
     if (
       selectedPatient?.CreditBilling === 0 &&
@@ -216,20 +207,21 @@ const CollectAdvance = ({
       return;
     }
 
+    const totalAdvance = fullPaymentDetails.reduce(
+      (sum, item) => sum + toFixedNumber(item.Amount),
+      0
+    );
+
     const finalStructure = {
       companyId: parseInt(hasMultipleLocations[0]),
       CreatedBy: user.Id,
       customerId: selectedPatient?.Id,
-      advanceAmount: fullPaymentDetails.reduce(
-        (sum, item) => sum + parseFloat(item.Amount),
-        0
-      ),
+      advanceAmount: totalAdvance,
       payments: preparePaymentsStructure(),
       refdetail: advanceRefceNo,
       remarks: remarks,
       creditBilling: parseInt(selectedPatient?.CreditBilling),
     };
-    console.log("payload", finalStructure);
 
     try {
       await saveFinalPayment({ payload: finalStructure }).unwrap();
@@ -246,25 +238,28 @@ const CollectAdvance = ({
 
     if (!selectedPaymentMethod)
       validationErrors.method = "Please select a payment method";
-    if (!newPayment.Amount || isNaN(newPayment.Amount)) {
-      validationErrors.amount = "Please enter a valid amount";
-    }
+
+    const amount = toFixedNumber(newPayment.Amount);
+    if (amount <= 0) validationErrors.amount = "Please enter a valid amount";
 
     const isDuplicatePayment = (conditionFn) => {
       return (
         fullPaymentDetails.some(conditionFn) || fullPayments.some(conditionFn)
       );
     };
-    if (Object.keys(validationErrors).length) {
+
+    if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       toast.error("Please fill all required fields");
       return;
     }
+
+    // Duplicate checks
     if (selectedPaymentMethod === 2) {
       const isCardDuplicate = isDuplicatePayment(
-        (payment) =>
-          payment.PaymentMachineID === newPayment.PaymentMachineID &&
-          payment.RefNo?.trim().toLowerCase() ===
+        (p) =>
+          p.PaymentMachineID === newPayment.PaymentMachineID &&
+          p.RefNo?.trim().toLowerCase() ===
             newPayment.RefNo?.trim().toLowerCase()
       );
       if (isCardDuplicate) {
@@ -273,77 +268,56 @@ const CollectAdvance = ({
         );
         return;
       }
+      if (!newPayment.PaymentMachineID)
+        validationErrors.paymentMachine = "Please select a payment machine";
+      if (!newPayment.RefNo)
+        validationErrors.refNo = "Approval code is required";
     }
+
+    if (selectedPaymentMethod === 3) {
+      if (!newPayment.PaymentMachineID)
+        validationErrors.paymentMachine = "Please select a payment machine";
+    }
+
     if (selectedPaymentMethod === 4) {
-      const isChequeDuplicate = isDuplicatePayment(
-        (payment) =>
-          payment.BankMasterID === newPayment.BankMasterID &&
-          payment.ChequeDetails?.trim().toLowerCase() ===
-            newPayment.ChequeDetails?.trim().toLowerCase()
-      );
-      if (isChequeDuplicate) {
-        toast.error("This cheque (bank + cheque number) already exists");
-        return;
+      if (!newPayment.BankMasterID)
+        validationErrors.bankName = "Please select a bank";
+      if (!newPayment.ChequeDetails)
+        validationErrors.chequeDetails = "Cheque number is required";
+      if (!newPayment.ChequeDate) {
+        validationErrors.chequeDate = "Cheque date is required";
+      } else {
+        const today = startOfDay(new Date());
+        const minDate = subDays(today, 90);
+        const selectedDate = startOfDay(new Date(newPayment.ChequeDate));
+        if (isBefore(selectedDate, minDate)) {
+          validationErrors.chequeDate =
+            "Cheque date must be within last 90 days";
+        }
       }
     }
 
     if (selectedPaymentMethod === 5) {
-      const isBankDuplicate = isDuplicatePayment(
-        (payment) =>
-          payment.BankAccountID === newPayment.BankAccountID &&
-          payment.RefNo?.trim().toLowerCase() ===
-            newPayment.RefNo?.trim().toLowerCase()
-      );
-      if (isBankDuplicate) {
-        toast.error("This bank transfer (account + reference) already exists");
-        return;
-      }
-    }
-    switch (selectedPaymentMethod) {
-      case 2:
-        if (!newPayment.PaymentMachineID)
-          validationErrors.paymentMachine = "Please select a payment machine";
-        if (!newPayment.RefNo)
-          validationErrors.refNo = "Approval code is required";
-        break;
-      case 3:
-        if (!newPayment.PaymentMachineID)
-          validationErrors.paymentMachine = "Please select a payment machine";
-        break;
-      case 4:
-        if (!newPayment.BankMasterID)
-          validationErrors.bankName = "Please select a bank";
-        if (!newPayment.ChequeDetails)
-          validationErrors.chequeDetails = "Cheque number is required";
-        if (!newPayment.ChequeDate) {
-          validationErrors.chequeDate = "Cheque date is required";
-        } else {
-          const today = startOfDay(new Date());
-          const minDate = subDays(today, 90);
-          const selectedDate = startOfDay(new Date(newPayment.ChequeDate));
-
-          if (isBefore(selectedDate, minDate)) {
-            validationErrors.chequeDate =
-              "Cheque date must be within the last 90 days or in the future";
-          }
-        }
-        break;
-      case 5:
-        if (!newPayment.BankAccountID)
-          validationErrors.accountNumber = "Please select an account";
-        if (!newPayment.RefNo)
-          validationErrors.refNo = "Reference number is required";
-        break;
+      if (!newPayment.BankAccountID)
+        validationErrors.accountNumber = "Please select an account";
+      if (!newPayment.RefNo)
+        validationErrors.refNo = "Reference number is required";
     }
 
-    if (Object.keys(validationErrors).length) {
+    if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       toast.error("Please fill all required fields");
       return;
     }
 
-    setFullPaymentDetails((prev) => [...prev, newPayment]);
-    setFullPayments((prev) => [...prev, newPayment]);
+    // Final rounded amount
+    const finalPayment = {
+      ...newPayment,
+      Amount: amount,
+    };
+
+    setFullPaymentDetails((prev) => [...prev, finalPayment]);
+    setFullPayments((prev) => [...prev, finalPayment]);
     setNewPayment({
       Type: "",
       RefNo: "",
@@ -370,6 +344,20 @@ const CollectAdvance = ({
     toast.success("Payment removed successfully!");
   };
 
+  // Restrict amount input to 2 decimals
+  const handleAmountChange = (e) => {
+    let value = e.target.value.replace(/[^0-9.]/g, "");
+    const parts = value.split(".");
+    if (parts.length > 2) value = parts[0] + "." + parts.slice(1).join("");
+    if (parts[1]) value = parts[0] + "." + parts[1].slice(0, 2);
+    setNewPayment((prev) => ({ ...prev, Amount: value }));
+  };
+
+  const totalAdvance = fullPaymentDetails.reduce(
+    (sum, p) => sum + toFixedNumber(p.Amount),
+    0
+  );
+
   return (
     <div className="">
       <div className="max-w-8xl">
@@ -387,7 +375,7 @@ const CollectAdvance = ({
               </div>
             </div>
 
-            {/* Summary Cards - Only show if collectPayment is false */}
+            {/* Summary Cards */}
             {!collectPayment && (
               <div className="mt-5 grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
@@ -425,7 +413,7 @@ const CollectAdvance = ({
                         <TableCell>{item.Type}</TableCell>
                         <TableCell className="font-medium">
                           ₹
-                          {Number(item.Amount).toLocaleString("en-IN", {
+                          {toFixedNumber(item.Amount).toLocaleString("en-IN", {
                             minimumFractionDigits: 2,
                           })}
                         </TableCell>
@@ -464,15 +452,16 @@ const CollectAdvance = ({
                 </div>
               </div>
             )}
+
             {fullPaymentDetails?.length > 0 && (
               <div className="mt-3 text-lg text-neutral-700 font-semibold">
-                Total Advance :{" "}
-                {fullPaymentDetails?.reduce(
-                  (s, a) => s + (parseFloat(a.Amount) || 0),
-                  0
-                )}
+                Total Advance: ₹
+                {totalAdvance.toLocaleString("en-IN", {
+                  minimumFractionDigits: 2,
+                })}
               </div>
             )}
+
             {/* Add Payment Method */}
             <div className="mt-8">
               <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
@@ -514,7 +503,6 @@ const CollectAdvance = ({
                 </div>
               </div>
 
-              {/* Method-Specific Forms */}
               <MethodForm
                 method={selectedPaymentMethod}
                 newPayment={newPayment}
@@ -525,6 +513,7 @@ const CollectAdvance = ({
                 UPIMachine={filteredUpiPaymentMachines}
                 banks={allbanks?.data.data || []}
                 accounts={filteredBankAccounts}
+                handleAmountChange={handleAmountChange}
               />
 
               <div className="mt-4 flex justify-end">
@@ -556,20 +545,22 @@ const CollectAdvance = ({
                   </div>
                 )}
             </div>
+
             {selectedPatient?.CreditBilling === 0 && (
               <div className="mt-5 grid grid-cols-2 gap-5 w-full">
                 <Textarea
                   label="Advance Reference No *"
-                  value={advanceRefceNo || ""}
+                  value={advanceRefceNo}
                   onChange={(e) => setAdvanceRefNo(e.target.value)}
                 />
                 <Textarea
                   label="Advance Remarks *"
-                  value={remarks || ""}
+                  value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
                 />
               </div>
             )}
+
             {fullPaymentDetails.length > 0 && (
               <div className="mt-4 flex justify-end">
                 <Button
@@ -599,27 +590,26 @@ const MethodForm = ({
   cardMachines,
   banks,
   accounts,
+  handleAmountChange,
 }) => {
   if (!method) return null;
-
-  const handleInputChange = (key) => (e) =>
-    setNewPayment((prev) => ({ ...prev, [key]: e.target.value }));
-
-  const commonAmountInput = (
-    <Input
-      label="Amount *"
-      type="number"
-      value={newPayment.Amount}
-      onChange={handleInputChange("Amount")}
-      error={errors.amount}
-    />
-  );
 
   const uniqueAccounts = useMemo(() => {
     return Array.from(
       new Map(accounts?.map((item) => [item.AccountNo, item])).values()
     );
   }, [accounts]);
+
+  const commonAmountInput = (
+    <Input
+      label="Amount *"
+      type="text"
+      value={newPayment.Amount}
+      onChange={handleAmountChange}
+      error={errors.amount}
+      placeholder="0.00"
+    />
+  );
 
   return (
     <div className="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
@@ -658,10 +648,12 @@ const MethodForm = ({
             <Input
               label="Approval Code *"
               value={newPayment.RefNo}
-              onChange={handleInputChange("RefNo")}
+              onChange={(e) =>
+                setNewPayment((prev) => ({ ...prev, RefNo: e.target.value }))
+              }
               error={errors.refNo}
             />
-            <div className="grid grid-cols-3 gap-5 items-center">
+            <div className="col-span-2 grid grid-cols-3 gap-4 items-center">
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -683,32 +675,30 @@ const MethodForm = ({
                     label="EMI Months"
                     type="number"
                     value={newPayment.EMIMonths || ""}
-                    onChange={handleInputChange("EMIMonths")}
+                    onChange={(e) =>
+                      setNewPayment((prev) => ({
+                        ...prev,
+                        EMIMonths: e.target.value,
+                      }))
+                    }
                   />
-                  <div className="">
-                    <Autocomplete
-                      options={banks}
-                      getOptionLabel={(option) => option.BankName || ""}
-                      value={
-                        banks.find((b) => b.Id === newPayment.EMIBank) || null
-                      }
-                      onChange={(_, newValue) =>
-                        setNewPayment((prev) => ({
-                          ...prev,
-                          BankName: newValue?.BankName || null,
-                          EMIBank: newValue?.Id || null,
-                        }))
-                      }
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label="EMI Bank *"
-                          size="small"
-                        />
-                      )}
-                      fullWidth
-                    />
-                  </div>
+                  <Autocomplete
+                    options={banks}
+                    getOptionLabel={(option) => option.BankName || ""}
+                    value={
+                      banks.find((b) => b.Id === newPayment.EMIBank) || null
+                    }
+                    onChange={(_, newValue) =>
+                      setNewPayment((prev) => ({
+                        ...prev,
+                        EMIBank: newValue?.Id || null,
+                      }))
+                    }
+                    renderInput={(params) => (
+                      <TextField {...params} label="EMI Bank *" size="small" />
+                    )}
+                    fullWidth
+                  />
                 </>
               )}
             </div>
@@ -793,19 +783,14 @@ const MethodForm = ({
                 onChange={(date) => {
                   const today = startOfDay(new Date());
                   const minDate = subDays(today, 90);
-
                   if (date && isBefore(date, minDate)) {
                     setErrors((prev) => ({
                       ...prev,
-                      chequeDate:
-                        "Cheque date must be within the last 90 days or in the future",
+                      chequeDate: "Cheque date must be within last 90 days",
                     }));
                   } else {
                     setErrors((prev) => ({ ...prev, chequeDate: "" }));
-                    setNewPayment((prev) => ({
-                      ...prev,
-                      ChequeDate: date,
-                    }));
+                    setNewPayment((prev) => ({ ...prev, ChequeDate: date }));
                   }
                 }}
                 slotProps={{
@@ -859,7 +844,9 @@ const MethodForm = ({
             <Input
               label="Reference Number *"
               value={newPayment.RefNo}
-              onChange={handleInputChange("RefNo")}
+              onChange={(e) =>
+                setNewPayment((prev) => ({ ...prev, RefNo: e.target.value }))
+              }
               error={errors.refNo}
             />
             {commonAmountInput}

@@ -323,14 +323,34 @@ const CustomerPayment = () => {
   return (
     <div>
       <div className="max-w-8xl p-6 bg-white rounded-lg shadow-sm border border-gray-100">
-        <div className="flex justify-between">
-          <div className="text-xl font-semibold text-neutral-700 mb-4">
+        <div className="">
+         {!selectedCustomer && <div className="text-xl font-semibold text-neutral-700 mb-4 flex flex-col">
             Patient Information
-          </div>
+          </div>}
           {selectedCustomer && (
-            <Button variant="outline" onClick={() => {handleRefresh();setSelectedCustomer(null)}}>
-              Back
-            </Button>
+            <div className="flex justify-between items-center">
+              <div className="flex gap-3">
+                <div className="text-neutral-700 text-lg font-semibold">
+                  Patient Name:{" "}
+                  {selectedCustomer?.CustomerContactDetails[0]?.CustomerName}
+                </div>
+                <div className="text-neutral-700 text-lg font-semibold">
+                  Customer Name: {selectedCustomer?.CustomerName}
+                </div>
+              </div>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  handleRefresh();
+                  setSelectedCustomer(null);
+                  setItems([]);
+                  setCollectPayment(false);
+                }}
+              >
+                Back
+              </Button>
+            </div>
           )}
         </div>
         {!selectedCustomer && (
@@ -354,7 +374,7 @@ const CustomerPayment = () => {
 
               <div className="flex gap-2 sm:gap-3">
                 <button
-                  onClick={() => navigate("/order-list")}
+                  onClick={() => navigate("/customer-payment")}
                   className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-neutral-700 hover:bg-gray-50 text-sm"
                 >
                   <FiArrowLeft />

@@ -590,7 +590,7 @@ const OpticalLens = () => {
       {
         ...lensData,
         ...priceDetails?.data,
-        CLMRP: parseFloat(priceDetails?.data.SellingPrice), // report to abhipsa srp is not coming
+        CLMRP: parseFloat(priceDetails?.data.SellingPrice), 
         returnPrice:
           (parseFloat(priceDetails?.data?.SellingPrice) || 0) +
           addonsTotal / 2 +
@@ -663,6 +663,7 @@ const OpticalLens = () => {
       //   parseInt(selectedInvoice?.InvoiceQty) *
       //     parseFloat(selectedInvoice?.ActualSellingPrice) +
       //   parseFloat(editReturnFittingPrice),
+      SRP :parseFloat(selectedInvoice?.ProductDetails[0]?.pricing?.mrp),
       returnPrice: parseFloat(selectedInvoice?.ActualSellingPrice),
       ReturnQty: selectedInvoice?.InvoiceQty,
       FittingPriceEdit: parseFloat(editReturnFittingPrice),
@@ -792,7 +793,7 @@ const OpticalLens = () => {
               : detail.ReturnQty ?? null,
           SRP:
             referenceApplicable === 0
-              ? parseFloat(detail.returnPrice)
+              ? parseFloat(detail.CLMRP)
               : parseFloat(detail.SRP) ?? null,
           ReturnPrice:
             referenceApplicable === 0

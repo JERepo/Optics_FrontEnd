@@ -263,7 +263,7 @@ const PaymentEntries = ({
         (sum, item) => sum + parseFloat(item.Amount),
         0
       ),
-      remark: "Advance collected from Customer payment",
+      remark: remarks,
       payments: preparePaymentsStructure(),
       entries: items.map((item) => {
         return {

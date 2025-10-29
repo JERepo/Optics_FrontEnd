@@ -307,7 +307,7 @@ const SelectCustomer = () => {
       setSelectedProducts([]);
     }
   };
-  console.log(fullPaymentDetails, selectedPaymentMethod,newPayment);
+  console.log(fullPaymentDetails, selectedPaymentMethod, newPayment);
   const handleAddPayment = () => {
     const validationErrors = {};
 
@@ -322,10 +322,10 @@ const SelectCustomer = () => {
       validationErrors.amount = "Amount cannot exceed remaining balance";
     }
     if (Object.keys(validationErrors).length) {
-  setErrors(validationErrors);
-  toast.error("Please fill all required fields");
-  return;
-}
+      setErrors(validationErrors);
+      toast.error("Please fill all required fields");
+      return;
+    }
     const isDuplicatePayment = (conditionFn) => {
       return fullPaymentDetails.some(conditionFn);
     };
@@ -415,6 +415,7 @@ const SelectCustomer = () => {
     setCollectGiftAmount(false);
     if (data?.submit) {
       const { submit, ...restData } = data;
+      console.log("gif", data);
       setFullPaymentDetails((prev) => [
         ...prev,
         {
@@ -597,7 +598,7 @@ const SelectCustomer = () => {
         hasMultipleLocations.includes(link.CompanyID)
       )
   );
-
+  console.log("cc", selectedCustomer);
   return (
     <div>
       <div className="max-w-8xl p-6 bg-white rounded-lg shadow-sm border border-gray-100">
@@ -691,16 +692,14 @@ const SelectCustomer = () => {
         {selectedCustomer && !amountsSelected && (
           <div>
             <div>
-              <div className=" pb-4 flex justify-end">
-                {/* <span className="text-xl font-medium text-gray-800">
-                  Total Advance Amount: ₹{" "}
-                  {formatINR(
-                    advanceItems.reduce(
-                      (sum, item) => sum + parseFloat(item.AdvanceAmount || 0),
-                      0
-                    )
-                  )}
-                </span> */}
+              <div className=" pb-4 flex justify-between items-center">
+                <div className="flex gap-3">
+                  <div className="text-neutral-700 text-lg font-semibold">
+                    Patient Name:{" "}
+                    {selectedCustomer?.CustomerContactDetails[0]?.CustomerName}
+                  </div>
+                  <div className="text-neutral-700 text-lg font-semibold">Customer Name: {selectedCustomer?.CustomerName}</div>
+                </div>
                 <Button
                   variant="outline"
                   onClick={() => {

@@ -367,7 +367,7 @@ const NewPrescription = ({
           ADD: prescription.RAddOn,
           Prism: prescription.RPrism,
           Base: prescription.RBase,
-          VisualAcuity: prescription.RVisualAcuity,
+          VisualAcuity: prescription?.RightVisual?.VisualAcuity,
         },
         L: {
           SPH: prescription.LSPH,
@@ -376,7 +376,7 @@ const NewPrescription = ({
           ADD: prescription.LAddOn,
           Prism: prescription.LPrism,
           Base: prescription.LBase,
-          VisualAcuity: prescription.LVisualAcuity,
+          VisualAcuity: prescription?.LeftVisual?.VisualAcuity,
         },
       },
     };
@@ -438,42 +438,44 @@ const NewPrescription = ({
         {/* Optometrist Selection */}
         {prescriptionData.prescriptionFrom === 0 && (
           <div className="flex items-center gap-3">
-          <label className="text-sm font-medium text-gray-700 whitespace-nowrap w-28">
-            Optometrist
-          </label>
-          <Autocomplete
-            options={filteredData || []}
-            getOptionLabel={(opt) => opt.PersonName || ""}
-            value={
-              salesPersons?.data.data.find((p) => p.Id === prescriptionData.salesId) ||
-              null
-            }
-            onChange={(_, val) => handleDataChange("salesId", val?.Id || null)}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                size="small"
-                placeholder="Select Optometrist"
-                variant="outlined"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '6px',
-                    backgroundColor: 'white',
-                  },
-                }}
-              />
-            )}
-            fullWidth
-            disablePortal
-            loading={salesPersons?.isLoading}
-          />
-        </div>
+            <label className="text-sm font-medium text-gray-700 whitespace-nowrap w-28">
+              Optometrist
+            </label>
+            <Autocomplete
+              options={filteredData || []}
+              getOptionLabel={(opt) => opt.PersonName || ""}
+              value={
+                salesPersons?.data.data.find(
+                  (p) => p.Id === prescriptionData.salesId
+                ) || null
+              }
+              onChange={(_, val) =>
+                handleDataChange("salesId", val?.Id || null)
+              }
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  size="small"
+                  placeholder="Select Optometrist"
+                  variant="outlined"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "6px",
+                      backgroundColor: "white",
+                    },
+                  }}
+                />
+              )}
+              fullWidth
+              disablePortal
+              loading={salesPersons?.isLoading}
+            />
+          </div>
         )}
       </div>
 
       {/* Prescription Source */}
       <div className="w-1/2 space-y-2">
-
         {/* {prescriptionData.prescriptionFrom === 1 && (
           <div>
             <label
@@ -596,8 +598,8 @@ const NewPrescription = ({
                   ? "Updating..."
                   : "Saving..."
                 : isEditMode
-                  ? "Update Prescription"
-                  : "Save Prescription"}
+                ? "Update Prescription"
+                : "Save Prescription"}
             </Button>
           </HasPermission>
         ) : (
@@ -612,8 +614,8 @@ const NewPrescription = ({
                 ? "Updating..."
                 : "Saving..."
               : isEditMode
-                ? "Update Prescription"
-                : "Save Prescription"}
+              ? "Update Prescription"
+              : "Save Prescription"}
           </Button>
           // </HasPermission>
         )}
@@ -633,7 +635,7 @@ const NewPrescription = ({
                   <TableCell className="">
                     <div className="flex items-center text-gray-900">
                       <FiCalendar className="mr-2 text-gray-400" />
-                      {p.PrescriptionDate}
+                      {p.PrescriptionDate?.split("-").reverse().join("/")}
                     </div>
                   </TableCell>
                   <TableCell className="">
@@ -792,8 +794,11 @@ const NewPrescription = ({
                                   "--"}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                {selectedPrescription.values?.[side]?.Base ??
-                                  "--"}
+                                {baseOptions?.find(
+                                  (item) =>
+                                    item.value ==
+                                    selectedPrescription.values?.[side]?.Base
+                                )?.label ?? "--"}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 {selectedPrescription.values?.[side]

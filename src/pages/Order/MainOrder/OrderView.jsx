@@ -479,6 +479,7 @@ const OrderView = () => {
       const res = await generateInvoice({ payload }).unwrap();
       console.log(res);
       if (res?.warning) {
+        setIsGenerateInvoiceWarning(false);
         setInvoiceWarnings(res?.warnings || []);
         setOpenInvoiceWarning(true);
         return;
@@ -502,15 +503,15 @@ const OrderView = () => {
       return;
     }
   };
-  // const getOrderStatus = (status) => {
-  //   const types = {
-  //     1: "Confirmed",
-  //     2: "Partially Invoiced",
-  //     3: "Invoiced",
-  //     4: "Cancelled",
-  //   };
-  //   return types[status] || "Draft";
-  // };
+  const getOrderMainStatus = (status) => {
+    const types = {
+      1: "Confirmed",
+      2: "Partially Invoiced",
+      3: "Invoiced",
+      4: "Cancelled",
+    };
+    return types[status] || "Draft";
+  };
   const handleOtpComplete = (otp) => {
     console.log("OTP Completed:", otp);
     setOtpValue(otp);
@@ -654,7 +655,7 @@ const OrderView = () => {
 
           <Info
             label="Status"
-            value={getOrderStatus(customerDataById?.data.data?.Status)}
+            value={getOrderMainStatus(customerDataById?.data.data?.Status)}
           />
           <Info
             label="Customer Name"

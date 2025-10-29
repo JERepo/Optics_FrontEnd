@@ -58,11 +58,11 @@ const Login = () => {
         localStorage.setItem("auth", JSON.stringify(res.data.accessToken));
         toast.success(`Welcome ${res.data?.FullName}`);
       } else {
-        toast.error("Invalid credentials");
+        toast.error("Invalid Credentials");
       }
     } catch (err) {
       console.error("Login error:", err);
-      toast.error(err?.data?.message || "Login failed");
+      toast.error(err?.data?.message || "Incorrect UserName or Password Entered!");
     }
   };
 

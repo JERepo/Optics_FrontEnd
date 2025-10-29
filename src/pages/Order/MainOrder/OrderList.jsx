@@ -9,7 +9,10 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import Button from "../../../components/ui/Button";
 import { useOrder } from "../../../features/OrderContext";
 import { Table, TableCell, TableRow } from "../../../components/Table";
-import { useGetAllOrdersQuery, useLazyPrintPdfQuery } from "../../../api/orderApi";
+import {
+  useGetAllOrdersQuery,
+  useLazyPrintPdfQuery,
+} from "../../../api/orderApi";
 import { enGB } from "date-fns/locale";
 import Loader from "../../../components/ui/Loader";
 import { useSelector } from "react-redux";
@@ -78,26 +81,29 @@ const OrderList = () => {
       });
     }
 
-    return filtered.map((order) => ({
-      id: order.Id,
-      order: order,
-      orderNo: order.OrderNo,
-      OrderPrefix: order.OrderPrefix,
-      orderDate: new Intl.DateTimeFormat("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }).format(new Date(order.OrderPlacedDate)),
+    return filtered
+      .map((order) => ({
+        id: order.Id,
+        order: order,
+        orderNo: order.OrderNo,
+        OrderPrefix: order.OrderPrefix,
+        orderDate: new Intl.DateTimeFormat("en-GB", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }).format(new Date(order.OrderPlacedDate)),
 
-      customerName: order.CustomerMaster?.CustomerName,
-      patientName: order.CustomerContactDetail?.CustomerName,
-      mobileNo: order.CustomerContactDetail?.MobNumber,
-      orderValue: order.TotalValue,
-      totalQty: order.TotalQty,
-      Status: order.Status,
-      CompanyId :order.CompanyId
-    }))
-    .filter((order) => order.CompanyId === parseInt(hasMultipleLocations[0]));
+        customerName: order.CustomerMaster?.CustomerName,
+        patientName: order.CustomerContactDetail?.CustomerName,
+        mobileNo: order.CustomerContactDetail?.MobNumber,
+        orderValue: order.TotalValue,
+        totalQty: order.TotalQty,
+        Status: order.Status,
+        CompanyId: order.CompanyId,
+      }))
+      .filter((order) =>
+        hasMultipleLocations.includes(order.CompanyId)
+      );
   }, [allOrders, fromDate, toDate, searchQuery]);
 
   const startIndex = (currentPage - 1) * pageSize;
@@ -129,7 +135,7 @@ const OrderList = () => {
 
     try {
       const blob = await generatePrint({
-       orderId : item.id
+        orderId: item.id,
       }).unwrap();
 
       const url = window.URL.createObjectURL(
@@ -163,7 +169,6 @@ const OrderList = () => {
     <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {/* Header */}
-        <ConnectionStatus />
         <div className="px-6 py-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Order List</h1>
