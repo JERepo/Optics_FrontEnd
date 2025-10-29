@@ -10,6 +10,7 @@ import { useSelector } from "react-redux";
 import {
   useGetPRByIdQuery,
   useGetPRDataForViewQuery,
+  useIssueCNMutation,
   useLazyPrintPdfQuery,
 } from "../../../api/purchaseReturn";
 import {
@@ -198,6 +199,8 @@ const getStockOutPrice = (item) => {
     return parseFloat(item.ProductDetails.Stock.MRP);
   } else if (item.ProductType === 2) {
     return parseFloat(item.ProductDetails.Stock.OPMRP);
+  } else if (item.ProductType === 0) {
+    return parseFloat(item?.ProductDetails[0]?.pricing?.mrp);
   }
 
   return 0;
@@ -238,6 +241,28 @@ const PurchaseReturnView = () => {
     { id: companyId },
     { skip: !companyId }
   );
+
+
+  const [saveIssueCN] = useIssueCNMutation();
+
+  const handleIssueCN = async () => {
+    setIsSubmittingCN(true);
+
+    try {
+      const payload = {
+        cnNo: cnNumber
+      };
+
+      const response = await saveIssueCN(payload).unwrap();
+
+      toast.success("CN Issued successfully.");
+    } catch (error) {
+      console.error("Error issuing CN:", error);
+      toast.error("Failed to issue CN. Please try again.");
+    }
+  }
+
+
   const [generatePrint, { isFetching: isPrinting }] = useLazyPrintPdfQuery();
   const EInvoiceEnable = companySettings?.data?.data.EInvoiceEnable;
   const InvInvoiceEnable = companySettings?.data?.data.DNEInvoiceEnable;
@@ -260,9 +285,9 @@ const PurchaseReturnView = () => {
       const fittingGst = parseFloat(item.FittingTaxPercentage || 0);
       const totalFitting = fittingPrice * (fittingGst / 100);
 
-      const basicValue = (unitPrice * qty) + totalFitting;
+      const basicValue = (unitPrice * qty) + fittingPrice;
       const gst = unitPrice * qty * gstRate + totalFitting;
-      const returnTotal = basicValue + gst + totalFitting;
+      const returnTotal = basicValue + gst; //+ (fittingPrice + totalFitting);
 
       acc.totalQty += qty;
       acc.totalGST += gst;
@@ -352,12 +377,15 @@ const PurchaseReturnView = () => {
               Back
             </Button>
             {/* CN Issued Button */}
-            <Button
-              variant="secondary"
-              onClick={() => setIsCNModalOpen(true)}
-            >
-              CN Issued
-            </Button>
+            {console.log("PRDetails?.data.data - ", PRDetails?.data.data)}
+            {PRDetails?.data?.data?.VendorCNIssued !== 1 && (
+              <Button
+                variant="secondary"
+                onClick={() => setIsCNModalOpen(true)}
+              >
+                CN Issued
+              </Button>
+            )}
             <Button
               onClick={() => handlePrint(PRDetails?.data.data)}
               icon={FiPrinter}
@@ -421,6 +449,10 @@ const PurchaseReturnView = () => {
             }
           />
           <Info label="Status" value="Confirmed" />
+
+          {PRDetails?.data?.data?.VendorCNIssued === 1 && (
+            <Info label="VendorCNNo " value={PRDetails?.data?.data?.VendorCNNo} />
+          )}
         </div>
 
         {/* Product Table */}
@@ -466,8 +498,8 @@ const PurchaseReturnView = () => {
                     parseFloat(item.DNPrice) *
                     item.DNQty *
                     (parseFloat(item.ProductTaxPercentage) / 100) +
-                    parseFloat(item.FittingReturnPrice || 0) *
-                    (parseFloat(item?.FittingTaxPercentage || 0) / 100) +
+                    (parseFloat(item.FittingReturnPrice || 0) *
+                      (parseFloat(item?.FittingTaxPercentage || 0) / 100)) +
                     parseFloat(item?.FittingReturnPrice || 0)
                   )}
                 </TableCell>
@@ -614,7 +646,12 @@ const PurchaseReturnView = () => {
                 setIsSubmittingCN(true);
                 try {
                   // Replace with your actual API call
-                  // await updatePurchaseReturnWithCN({ prId: PR, cnNo: cnNumber });
+                  const payload = {
+                    prId: PR,
+                    cnNo: cnNumber
+                  };
+
+                  await saveIssueCN(payload).unwrap();
                   console.log("Submitting CN:", { prId: PR, cnNo: cnNumber });
 
                   toast.success(`CN ${cnNumber} issued successfully`);
@@ -635,7 +672,7 @@ const PurchaseReturnView = () => {
           </div>
         </div>
       </Modal>
-      
+
     </div>
   );
 };

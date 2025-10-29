@@ -2099,6 +2099,24 @@ export default function SavePurchaseOrder() {
         }
     };
 
+    const handleRedirectStep4 = async () => {
+        try {
+            let payload = {
+                locationId: selectedLocation,
+                ApplicationUserId: user.Id,
+                vendorId: selectedVendor,
+                againstOrder: formState.shiptoAddress === "against" ? "1" : "0"
+            };
+
+            const poDetailsResponse = await getAllPoDetailsForNewOrder(payload).unwrap();
+            setPoreviewDetails(poDetailsResponse.data);
+            setCurrentStep(4);
+        } catch (err) {
+            console.error("Redirect error:", err);
+            toast.error(err.data.message || "Something went wrong, try again later!");
+        }
+    }
+
 
     return (
         <>
@@ -2357,6 +2375,7 @@ export default function SavePurchaseOrder() {
                             handleOptionChange={handleOptionChange}
                             handleNext={handleNext}
                             handleBack={handleBack}
+                            handleRedirectStep4={handleRedirectStep4}
                         />
 
                     ) : formState.shiptoAddress === "new" ? (
@@ -2367,6 +2386,7 @@ export default function SavePurchaseOrder() {
                             handleOptionChange={handleOptionChange}
                             handleNext={handleNext}
                             handleBack={handleBack}
+                            handleRedirectStep4={handleRedirectStep4}
                         />
                     ) : null
                 )}

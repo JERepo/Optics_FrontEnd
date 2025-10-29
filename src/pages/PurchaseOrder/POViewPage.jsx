@@ -514,7 +514,7 @@ export function POViewPage() {
               isLoading={isPrinting}
             >
               {/* <Download /> */}
-              <Printer/>
+              <Printer />
             </button>
           </div>
         </div>
@@ -904,7 +904,7 @@ export function POViewPage() {
       </div>
 
       {showPriceModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-[rgba(0,0,0,0.6)] flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-[#000060]">
@@ -957,7 +957,7 @@ export function POViewPage() {
       )}
 
       {showQtyModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-[rgba(0,0,0,0.6)] flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-[#000060]">
@@ -1059,7 +1059,7 @@ export function POViewPage() {
 
 
       {showApproveConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-[rgba(0,0,0,0.6)] flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-[#000060]">
@@ -1088,7 +1088,7 @@ export function POViewPage() {
                 className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800"
                 onClick={async () => {
                   setShowApproveConfirm(false);
-                  await approvePo();       
+                  await approvePo();
                 }}
               >
                 Approve

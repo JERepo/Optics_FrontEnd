@@ -10,6 +10,7 @@ import { useOrder } from "../../../features/OrderContext";
 import Button from "../../../components/ui/Button";
 import { Autocomplete, TextField } from "@mui/material";
 import toast from "react-hot-toast";
+import { useGetAllvendorByLocationQuery } from "../../../api/vendorApi";
 
 const SelectVendor = () => {
   const navigate = useNavigate();
@@ -22,14 +23,20 @@ const SelectVendor = () => {
     setCustomerPurchase,
   } = useOrder();
   const [selectedVendor, setSelectedVendor] = useState(null);
-  const { data: vendorsData, isLoading } = useGetVendorsQuery({
-    locationId: customerPurchase.vendorPoolId,
-  });
+  // const { data: vendorsData, isLoading } = useGetVendorsQuery({
+  //   locationId: customerPurchase.vendorPoolId,
+  // });
+
+  const { data: vendorsData, isLoading } = useGetAllvendorByLocationQuery(
+    { id: customerPurchase.vendorPoolId },
+    { skip: !customerPurchase.vendorPoolId }
+  );
+
   const [purchaseDraft, { isLoading: isDraftLoading }] =
     useLazyGetDraftDataQuery();
 
   const [saveDraft, { isLoading: draftSaving }] = useSaveDraftMutation();
- 
+
   const handleSaveDraft = async () => {
     if (!selectedVendor) return;
 
@@ -101,16 +108,14 @@ const SelectVendor = () => {
               Select Vendor
             </label>
             <Autocomplete
-              options={vendorsData?.data?.data?.filter((item) => item.CompanyID == customerPurchase.locationId) || []}
+              options={vendorsData?.data?.data || []}
               getOptionLabel={(option) => option.VendorName}
               value={
-                vendorsData?.data?.data?.find(
-                  (contact) => contact.Id === selectedVendor?.Id
-                ) || null
+                vendorsData?.data?.data || null
               }
               onChange={(_, newValue) => {
                 setSelectedVendor(newValue);
-                
+
               }}
               renderInput={(params) => (
                 <TextField

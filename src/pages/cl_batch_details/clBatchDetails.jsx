@@ -372,30 +372,42 @@ export default function ClBatchDetails() {
             setSearchFetched(true);
 
             // Handle batch code logic
-            if (data?.CLBatchCode === 1) {
-                // Fetch batches for this detail
-                await getCLBatches({
-                    detailId: data?.CLDetailId,
-                    locationId: hasMultipleLocations || null,
-                }).unwrap();
-                toast.success("Please select or scan batch code");
+            // if (data?.CLBatchCode === 1) {
+            //     // Fetch batches for this detail
+            //     await getCLBatches({
+            //         detailId: data?.CLDetailId,
+            //         locationId: hasMultipleLocations || null,
+            //     }).unwrap();
+            //     toast.success("Please select or scan batch code");
 
-                // Set product details for batch selection
-                setProductDetails({
-                    ...productDetails,
-                    CLDetailId: data.CLDetailId,
-                    ProductName: data.ProductName,
-                    BrandName: data.BrandName,
-                    SphericalPower: updatedItem.SphericalPower,
-                    CylindricalPower: updatedItem.CylindricalPower,
-                    Axis: updatedItem.Axis,
-                    Additional: updatedItem.Additional,
-                    MRP: data?.priceMaster?.mrp || data.MRP
-                });
-            } else {
-                toast.success("Power details loaded successfully");
-            }
+            //     // Set product details for batch selection
+            //     setProductDetails({
+            //         ...productDetails,
+            //         CLDetailId: data.CLDetailId,
+            //         ProductName: data.ProductName,
+            //         BrandName: data.BrandName,
+            //         SphericalPower: updatedItem.SphericalPower,
+            //         CylindricalPower: updatedItem.CylindricalPower,
+            //         Axis: updatedItem.Axis,
+            //         Additional: updatedItem.Additional,
+            //         MRP: data?.priceMaster?.mrp || data.MRP
+            //     });
+            // } else {
+            // }
 
+            setProductDetails({
+                ...productDetails,
+                CLDetailId: data.CLDetailId,
+                ProductName: data.ProductName,
+                BrandName: data.BrandName,
+                SphericalPower: updatedItem.SphericalPower,
+                CylindricalPower: updatedItem.CylindricalPower,
+                Axis: updatedItem.Axis,
+                Additional: updatedItem.Additional,
+                MRP: data?.priceMaster?.mrp || data.MRP
+            });
+
+            toast.success("Power details loaded successfully");
         } catch (error) {
             console.error("Search error:", error);
             toast.error(error?.data?.message || error.message || "Failed to search power details");

@@ -39,10 +39,10 @@ const getProductName = (order) => {
 
   const clean = (val) =>
     val == null ||
-    val === "undefined" ||
-    val === "null" ||
-    val === "" ||
-    val === "N/A"
+      val === "undefined" ||
+      val === "null" ||
+      val === "" ||
+      val === "N/A"
       ? ""
       : String(val).trim();
 
@@ -66,7 +66,7 @@ const getProductName = (order) => {
       joinNonEmpty(
         [
           cleanPower(eye?.sphericalPower) &&
-            `SPH: ${cleanPower(eye?.sphericalPower)}`,
+          `SPH: ${cleanPower(eye?.sphericalPower)}`,
           cleanPower(eye?.addition) && `Add: ${cleanPower(eye?.addition)}`,
           clean(eye?.diameter) && `Dia: ${clean(eye?.diameter)}`,
         ],
@@ -270,10 +270,10 @@ const OpticalLens = () => {
     // Utility helpers
     const clean = (val) =>
       val == null ||
-      val === "undefined" ||
-      val === "null" ||
-      val === "" ||
-      val === "N/A"
+        val === "undefined" ||
+        val === "null" ||
+        val === "" ||
+        val === "N/A"
         ? ""
         : String(val).trim();
 
@@ -297,7 +297,7 @@ const OpticalLens = () => {
         joinNonEmpty(
           [
             cleanPower(eye?.sphericalPower) &&
-              `SPH: ${cleanPower(eye?.sphericalPower)}`,
+            `SPH: ${cleanPower(eye?.sphericalPower)}`,
             cleanPower(eye?.addition) && `Add: ${cleanPower(eye?.addition)}`,
             clean(eye?.diameter) && `Dia: ${clean(eye?.diameter)}`,
           ],
@@ -346,16 +346,16 @@ const OpticalLens = () => {
     const hsn = clean(detail.HSN);
     const specs = detail.Specs
       ? [
-          detail.Specs.Spherical
-            ? `Sph: ${cleanPower(detail.Specs.Spherical)}`
-            : "",
-          detail.Specs.Cylinder
-            ? `Cyl: ${cleanPower(detail.Specs.Cylinder)}`
-            : "",
-          detail.Specs.Diameter ? `Dia: ${clean(detail.Specs.Diameter)}` : "",
-        ]
-          .filter(Boolean)
-          .join(", ")
+        detail.Specs.Spherical
+          ? `Sph: ${cleanPower(detail.Specs.Spherical)}`
+          : "",
+        detail.Specs.Cylinder
+          ? `Cyl: ${cleanPower(detail.Specs.Cylinder)}`
+          : "",
+        detail.Specs.Diameter ? `Dia: ${clean(detail.Specs.Diameter)}` : "",
+      ]
+        .filter(Boolean)
+        .join(", ")
       : "";
 
     return joinNonEmpty(
@@ -479,7 +479,7 @@ const OpticalLens = () => {
       toast.success("Optical lens Purchase return successfully added!");
       goToPurchaseStep(4);
     } catch (error) {
-      toast.error(error?.data.error  || "Please try again after some time!");
+      toast.error(error?.data.error || "Please try again after some time!");
     }
   };
 
@@ -531,7 +531,8 @@ const OpticalLens = () => {
                         <TableCell className="whitespace-pre-wrap">
                           {getProductName(item)}
                         </TableCell>
-                        <TableCell>₹0</TableCell>
+                        {console.log("MRP- ", item)}
+                        <TableCell>₹{item?.productDetails[0]?.pricing?.mrp}</TableCell>
                         <TableCell>
                           {editMode[index]?.qty ? (
                             <div className="flex items-center gap-2">
@@ -636,19 +637,19 @@ const OpticalLens = () => {
                             item.returnPrice * (item.TaxPercent / 100)
                           )}
                         </TableCell>
-                       <TableCell>
-  ₹
-  {formatINR(
-    // Product total (price × qty)
-    (item.returnPrice * item.returnQty) +
-    // Product GST
-    ((item.returnPrice * item.returnQty) * (item.TaxPercent / 100)) +
-    // Fitting total (fitting price × qty)
-    (parseFloat(item.returnFittingPrice || 0) ) +
-    // Fitting GST
-    ((parseFloat(item.returnFittingPrice || 0)) * (parseFloat(item.fittingGSTPercentage || 0) / 100))
-  )}
-</TableCell>
+                        <TableCell>
+                          ₹
+                          {formatINR(
+                            // Product total (price × qty)
+                            (item.returnPrice * item.returnQty) +
+                            // Product GST
+                            ((item.returnPrice * item.returnQty) * (item.TaxPercent / 100)) +
+                            // Fitting total (fitting price × qty)
+                            (parseFloat(item.returnFittingPrice || 0)) +
+                            // Fitting GST
+                            ((parseFloat(item.returnFittingPrice || 0)) * (parseFloat(item.fittingGSTPercentage || 0) / 100))
+                          )}
+                        </TableCell>
 
                         <TableCell>
                           <button
@@ -725,8 +726,8 @@ const OpticalLens = () => {
                     value={
                       selectedVendor?.GRNPrice * selectedVendor.GRNQty
                         ? (
-                            selectedVendor?.GRNPrice * selectedVendor.GRNQty
-                          ).toFixed(2)
+                          selectedVendor?.GRNPrice * selectedVendor.GRNQty
+                        ).toFixed(2)
                         : ""
                     }
                     readOnly
@@ -788,9 +789,9 @@ const OpticalLens = () => {
                     value={
                       selectedVendor
                         ? (
-                            parseFloat(lensData.returnProductPrice || 0) *
-                            (parseFloat(selectedVendor?.TaxPercent || 0) / 100)
-                          ).toFixed(2)
+                          parseFloat(lensData.returnProductPrice || 0) *
+                          (parseFloat(selectedVendor?.TaxPercent || 0) / 100)
+                        ).toFixed(2)
                         : "0.00"
                     }
                     readOnly
@@ -802,12 +803,12 @@ const OpticalLens = () => {
                     value={
                       selectedVendor
                         ? (
-                            parseFloat(lensData.returnFittingPrice || 0) *
-                            (parseFloat(
-                              selectedVendor?.FittingGSTPercentage || 0
-                            ) /
-                              100)
-                          ).toFixed(2)
+                          parseFloat(lensData.returnFittingPrice || 0) *
+                          (parseFloat(
+                            selectedVendor?.FittingGSTPercentage || 0
+                          ) /
+                            100)
+                        ).toFixed(2)
                         : "0.00"
                     }
                     readOnly

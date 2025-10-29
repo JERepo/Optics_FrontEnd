@@ -987,7 +987,7 @@ export default function GRNStep3() {
 
             const data = response.data.data;
             console.log("data handleSearch ------------ ", data);
-            toast.success(response?.data.message || "Power details found");
+            // toast.success(response?.data.message || "Power details found");
 
             // Create updated item with response data
             const updatedItem = {
@@ -1203,6 +1203,15 @@ export default function GRNStep3() {
             EntryType: "combined"
         }));
         setClSearchItems([]);
+        setNewItem(prev => ({
+            ...prev,
+            sphericalPower: null,
+            cylindricalPower: null,
+            diameter: null,
+            axis: null,
+            additional: null,
+        }));
+        setSearchResults([]);
     };
 
 
@@ -1255,7 +1264,7 @@ export default function GRNStep3() {
                                         setProductInput("");
                                         setProductName("");
                                         setModelNo("");
-                                        setFormState(prev => ({ ...prev, barcode: "", EntryType: "combined"}));
+                                        setFormState(prev => ({ ...prev, barcode: "", EntryType: "combined" }));
                                         setClSearchItems([]);
                                     }}
                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
@@ -1277,7 +1286,7 @@ export default function GRNStep3() {
                                         setProductInput("");
                                         setProductName("");
                                         setModelNo("");
-                                        setFormState(prev => ({ ...prev, barcode: "", EntryType: "seperate"}));
+                                        setFormState(prev => ({ ...prev, barcode: "", EntryType: "seperate" }));
                                         setClSearchItems([]);
                                     }}
                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
@@ -1299,7 +1308,7 @@ export default function GRNStep3() {
                                         setProductInput("");
                                         setProductName("");
                                         setModelNo("");
-                                        setFormState(prev => ({ ...prev, barcode: "", EntryType: "bulk"}));
+                                        setFormState(prev => ({ ...prev, barcode: "", EntryType: "bulk" }));
                                         setClSearchItems([]);
                                     }}
                                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
@@ -1530,7 +1539,7 @@ export default function GRNStep3() {
                                     )}
                                 </button>
                                 <button
-                                    onClick={() => {setShowSearchInputs(true); setClSearchItems([]); setFormState(prev => ({ ...prev, barcode: ""}));}}
+                                    onClick={() => { setShowSearchInputs(true); setClSearchItems([]); setFormState(prev => ({ ...prev, barcode: "" })); }}
                                     className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors whitespace-nowrap flex items-center"
                                 >
                                     <SearchIcon className="h-4 w-4 mr-1" />
@@ -1968,8 +1977,9 @@ export default function GRNStep3() {
                         />
                     </div>
                 )}
-
-                {(formState.productType === "Contact Lens" && clSearchItems.length > 0 && clSearchItems[0]?.stock?.BatchCode !== null) && (
+                {console.log("clSearchItems - ", clSearchItems)}
+                {console.log("clSearchItems[0]?.stock?.BatchCode - ", clSearchItems[0]?.stock?.BatchCode)}
+                {((formState.productType === "Contact Lens" && clSearchItems.length > 0) && (clSearchItems[0]?.CLBatchCode === 1 && (clSearchItems[0]?.stock?.BatchCode !== null && clSearchItems[0]?.stock?.BatchCode !== undefined))) && (
                     <>
                         <div className="mt-6">
                             <div className="flex items-center space-x-10">
