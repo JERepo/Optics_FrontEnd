@@ -104,7 +104,7 @@ const AccessoryFrame = () => {
     referenceApplicable,
     calculateGST,
   } = useOrder();
-  const { user,hasMultipleLocations } = useSelector((state) => state.auth);
+  const { user, hasMultipleLocations } = useSelector((state) => state.auth);
 
   const [barcode, setBarcode] = useState("");
   const [searchMode, setSearchMode] = useState(false);
@@ -165,7 +165,15 @@ const AccessoryFrame = () => {
         barcode,
         locationId: customerSalesId.locationId,
       });
+
       const data = res?.data?.data;
+      const message = res?.data?.message;
+
+      if (!data) {
+        toast.error(message || "Accessory not found");
+        return;
+      }
+
       if (data) {
         if (referenceApplicable === 0) {
           setItems((prev) => {
@@ -199,6 +207,11 @@ const AccessoryFrame = () => {
           }
         }
       }
+      toast.error(
+        referenceApplicable === 0
+          ? "Barcode doesn't exist"
+          : "No eligible Invoice exists for the given product"
+      );
     } catch (error) {
       toast.error(error?.data.message);
     }
@@ -267,38 +280,38 @@ const AccessoryFrame = () => {
   //   }
   // };
 
-    const handleCheckboxChange = async (item) => {
-      const exists = selectedRows.find((i) => i.Barcode === item.Barcode);
-      if (referenceApplicable === 0) {
-        if (exists) {
-          setSelectedRows((prev) =>
-            prev.filter((i) => i.Barcode !== item.Barcode)
-          );
-        } else {
-          setSelectedRows((prev) => [...prev, item]);
-        }
-      } else if (referenceApplicable === 1) {
-        // if (exists) {
-        //   setSelectedRows((prev) =>
-        //     prev.filter((i) => i.Barcode !== item.Barcode)
-        //   );
-        // } else {
-        //   setSelectedRows((prev) => [...prev, item]);
-        // }
-        try {
-          await getInvoiceDetails({
-            productType: 2,
-            detailId: item.Id,
-            batchCode: null,
-            patientId: customerSalesId.patientId,
-            locationId: customerSalesId.locationId,
-          }).unwrap();
-          setOpenReferenceYes(true);
-        } catch (error) {
-          toast.error("No eligible Invoice exists for the given product");
-        }
+  const handleCheckboxChange = async (item) => {
+    const exists = selectedRows.find((i) => i.Barcode === item.Barcode);
+    if (referenceApplicable === 0) {
+      if (exists) {
+        setSelectedRows((prev) =>
+          prev.filter((i) => i.Barcode !== item.Barcode)
+        );
+      } else {
+        setSelectedRows((prev) => [...prev, item]);
       }
-    };
+    } else if (referenceApplicable === 1) {
+      // if (exists) {
+      //   setSelectedRows((prev) =>
+      //     prev.filter((i) => i.Barcode !== item.Barcode)
+      //   );
+      // } else {
+      //   setSelectedRows((prev) => [...prev, item]);
+      // }
+      try {
+        await getInvoiceDetails({
+          productType: 2,
+          detailId: item.Id,
+          batchCode: null,
+          patientId: customerSalesId.patientId,
+          locationId: customerSalesId.locationId,
+        }).unwrap();
+        setOpenReferenceYes(true);
+      } catch (error) {
+        toast.error("No eligible Invoice exists for the given product");
+      }
+    }
+  };
 
   const handleAddSelectedItems = () => {
     setItems((prev) => {
@@ -400,85 +413,85 @@ const AccessoryFrame = () => {
       )
     );
   };
-const toggleEditMode = (id, index, field, action) => {
-  setEditMode((prev) => {
-    const key = `${id}-${index}`;
-    const currentMode = prev[key]?.[field];
+  const toggleEditMode = (id, index, field, action) => {
+    setEditMode((prev) => {
+      const key = `${id}-${index}`;
+      const currentMode = prev[key]?.[field];
 
-    // If entering edit mode, store the current price as originalPrice
-    if (!currentMode) {
-      const item = items.find((i, idx) => i.Id === id && idx === index);
-      let originalPrice = prev[key]?.originalPrice;
-      if (field === "sellingPrice" && referenceApplicable === 0) {
-        originalPrice = item.SellingPrice || item.MRP;
-      } else if (field === "returnPrice" && referenceApplicable === 1) {
-        originalPrice = item.ReturnPricePerUnit || item.ActualSellingPrice;
+      // If entering edit mode, store the current price as originalPrice
+      if (!currentMode) {
+        const item = items.find((i, idx) => i.Id === id && idx === index);
+        let originalPrice = prev[key]?.originalPrice;
+        if (field === "sellingPrice" && referenceApplicable === 0) {
+          originalPrice = item.SellingPrice || item.MRP;
+        } else if (field === "returnPrice" && referenceApplicable === 1) {
+          originalPrice = item.ReturnPricePerUnit || item.ActualSellingPrice;
+        }
+
+        return {
+          ...prev,
+          [key]: {
+            ...prev[key],
+            [field]: true,
+            originalPrice,
+          },
+        };
+      }
+
+      // If exiting edit mode
+      if (currentMode) {
+        if (
+          field === "sellingPrice" &&
+          referenceApplicable === 0 &&
+          action === "cancel"
+        ) {
+          // Revert to original price on cancel
+          setItems((prevItems) =>
+            prevItems.map((i, idx) =>
+              i.Barcode === id && idx === index
+                ? { ...i, SellingPrice: prev[key].originalPrice || i.MRP }
+                : i
+            )
+          );
+        } else if (
+          field === "returnPrice" &&
+          referenceApplicable === 1 &&
+          action === "cancel"
+        ) {
+          // Revert to original price on cancel
+          setItems((prevItems) =>
+            prevItems.map((i, idx) =>
+              i.Id === id && idx === index
+                ? {
+                    ...i,
+                    ReturnPricePerUnit:
+                      prev[key].originalPrice || i.ActualSellingPrice,
+                  }
+                : i
+            )
+          );
+        }
+
+        return {
+          ...prev,
+          [key]: {
+            ...prev[key],
+            [field]: false,
+            originalPrice: prev[key].originalPrice, // Preserve original price
+          },
+        };
       }
 
       return {
         ...prev,
         [key]: {
           ...prev[key],
-          [field]: true,
-          originalPrice,
+          [field]: !currentMode,
+          originalPrice: prev[key]?.originalPrice,
         },
       };
-    }
-
-    // If exiting edit mode
-    if (currentMode) {
-      if (
-        field === "sellingPrice" &&
-        referenceApplicable === 0 &&
-        action === "cancel"
-      ) {
-        // Revert to original price on cancel
-        setItems((prevItems) =>
-          prevItems.map((i, idx) =>
-            i.Barcode === id && idx === index
-              ? { ...i, SellingPrice: prev[key].originalPrice || i.MRP }
-              : i
-          )
-        );
-      } else if (
-        field === "returnPrice" &&
-        referenceApplicable === 1 &&
-        action === "cancel"
-      ) {
-        // Revert to original price on cancel
-        setItems((prevItems) =>
-          prevItems.map((i, idx) =>
-            i.Id === id && idx === index
-              ? {
-                  ...i,
-                  ReturnPricePerUnit:
-                    prev[key].originalPrice || i.ActualSellingPrice,
-                }
-              : i
-          )
-        );
-      }
-
-      return {
-        ...prev,
-        [key]: {
-          ...prev[key],
-          [field]: false,
-          originalPrice: prev[key].originalPrice, // Preserve original price
-        },
-      };
-    }
-
-    return {
-      ...prev,
-      [key]: {
-        ...prev[key],
-        [field]: !currentMode,
-        originalPrice: prev[key]?.originalPrice,
-      },
-    };
-  });
-};
+    });
+  };
 
   const handleConfirmBypassWarnings = async () => {
     if (!warningPayload) return;
@@ -582,7 +595,7 @@ const toggleEditMode = (id, index, field, action) => {
           FittingTaxPercentage: detail.FittingTaxPercentage ?? null,
           InvoiceDetailId: referenceApplicable === 1 ? detail.Id ?? null : null,
           ApplicationUserId: user.Id,
-          companyId :parseInt(hasMultipleLocations[0])
+          companyId: parseInt(hasMultipleLocations[0]),
         };
 
         await saveFinalProducts({ payload }).unwrap();
@@ -799,51 +812,65 @@ const toggleEditMode = (id, index, field, action) => {
                       <TableCell>{item.SKU}</TableCell>
                       <TableCell>₹{item.MRP}</TableCell>
                       <TableCell>
-                       {editMode[`${item.Id}-${index}`]?.sellingPrice ? (
-                         <div className="flex items-center gap-2">
-                           <input
-                             type="number"
-                             value={item.SellingPrice || ""}
-                             onChange={(e) =>
-                               handleSellingPriceChange(item.Barcode, e.target.value, index)
-                             }
-                             className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                             placeholder="Enter price"
-                           />
-                           <button
-                             onClick={() =>
-                               toggleEditMode(item.Id, index, "sellingPrice", "save")
-                             }
-                             className="text-neutral-400 transition"
-                             title="Save"
-                           >
-                             <FiCheck size={18} />
-                           </button>
-                           <button
-                             onClick={() =>
-                               toggleEditMode(item.Id, index, "sellingPrice", "cancel")
-                             }
-                             className="text-neutral-400 transition"
-                             title="Cancel"
-                           >
-                             <FiX size={18} />
-                           </button>
-                         </div>
-                       ) : (
-                         <div className="flex items-center gap-2">
-                           ₹{item.SellingPrice || "N/A"}
-                           <button
-                             onClick={() =>
-                               toggleEditMode(item.Id, index, "sellingPrice")
-                             }
-                             className="text-neutral-400 transition"
-                             title="Edit Price"
-                           >
-                             <FiEdit2 size={14} />
-                           </button>
-                         </div>
-                       )}
-                     </TableCell>
+                        {editMode[`${item.Id}-${index}`]?.sellingPrice ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              value={item.SellingPrice || ""}
+                              onChange={(e) =>
+                                handleSellingPriceChange(
+                                  item.Barcode,
+                                  e.target.value,
+                                  index
+                                )
+                              }
+                              className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                              placeholder="Enter price"
+                            />
+                            <button
+                              onClick={() =>
+                                toggleEditMode(
+                                  item.Id,
+                                  index,
+                                  "sellingPrice",
+                                  "save"
+                                )
+                              }
+                              className="text-neutral-400 transition"
+                              title="Save"
+                            >
+                              <FiCheck size={18} />
+                            </button>
+                            <button
+                              onClick={() =>
+                                toggleEditMode(
+                                  item.Id,
+                                  index,
+                                  "sellingPrice",
+                                  "cancel"
+                                )
+                              }
+                              className="text-neutral-400 transition"
+                              title="Cancel"
+                            >
+                              <FiX size={18} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            ₹{item.SellingPrice || "N/A"}
+                            <button
+                              onClick={() =>
+                                toggleEditMode(item.Id, index, "sellingPrice")
+                              }
+                              className="text-neutral-400 transition"
+                              title="Edit Price"
+                            >
+                              <FiEdit2 size={14} />
+                            </button>
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {editMode[`${item.Barcode}-${index}`]?.qty ? (
                           <div className="flex items-center gap-2">
@@ -881,7 +908,7 @@ const toggleEditMode = (id, index, field, action) => {
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                              {item.Quantity}
+                            {item.Quantity}
                             <button
                               onClick={() =>
                                 toggleEditMode(item.Barcode, index, "qty")
@@ -1064,7 +1091,11 @@ const toggleEditMode = (id, index, field, action) => {
                     "pending qty",
                     "Action",
                   ]}
-                  data={InvoiceDetails?.data?.filter((item) => item["InvoiceMain.Company.Id"] === parseInt(hasMultipleLocations[0]))}
+                  data={InvoiceDetails?.data?.filter(
+                    (item) =>
+                      item["InvoiceMain.Company.Id"] ===
+                      parseInt(hasMultipleLocations[0])
+                  )}
                   renderRow={(item, index) => (
                     <TableRow key={index}>
                       <TableCell>{index + 1}</TableCell>

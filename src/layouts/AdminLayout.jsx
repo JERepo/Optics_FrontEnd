@@ -9,7 +9,7 @@ export default function AdminLayout() {
 
   return (
     <div className="bg-gray-100 min-h-screen">
-      <ConnectionStatus />
+      {/* <ConnectionStatus /> */}
 
       <AdminSidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
       <main

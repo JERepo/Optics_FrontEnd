@@ -20,7 +20,7 @@ export default function App() {
             <CustomerProvider>
               <PersistGate loading={null} persistor={persistor}>
                 <Toaster position="top-center" reverseOrder={false} />
-                <ConnectionStatus /> 
+                {/* <ConnectionStatus />  */}
 
                 <RouterProvider router={router} />
               </PersistGate>

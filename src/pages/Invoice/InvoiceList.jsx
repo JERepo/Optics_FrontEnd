@@ -270,7 +270,7 @@ const InvoiceList = () => {
                   From Order
                 </Button>
               </HasPermission>
-              <HasPermission module="Invoice" action="create">
+              {/* <HasPermission module="Invoice" action="create">
                 <Button
                   icon={FiPlus}
                   className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
@@ -281,7 +281,7 @@ const InvoiceList = () => {
                 >
                   DC Invoice
                 </Button>
-              </HasPermission>
+              </HasPermission> */}
             </div>
           </div>
 

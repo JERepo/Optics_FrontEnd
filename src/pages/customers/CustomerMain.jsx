@@ -54,7 +54,7 @@ const CustomerMain = () => {
           .LocationName,
         phone: customer.MobNumber,
         group: customer.CustomerGroup.GroupName,
-        createdAt: format(new Date(customer.CreatedDate), 'dd/MM/yyyy'),
+        createdAt: format(new Date(customer.CreateDate), 'dd/MM/yyyy'),
         enabled: customer.IsActive === 1,
       }))
       .filter((customer) => {

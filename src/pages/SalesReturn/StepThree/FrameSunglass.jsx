@@ -165,50 +165,59 @@ const FrameSunglass = () => {
     });
   }, [items]);
 
-  const handleBarcodeSubmit = async (e) => {
-    e.preventDefault();
-    if (!barcode) return;
-    try {
-      const res = await fetchByBarcode({
-        barcode,
-        locationId: customerSalesId.locationId,
-      });
-      const data = res?.data?.data;
-      if (data) {
-        if (referenceApplicable === 0) {
-          setItems((prev) => {
-            if (singleOrCombine === 1) {
-              return [{ ...data, Quantity: 1 }, ...prev];
-            } else {
-              const index = prev.findIndex((i) => i.Barcode === data.Barcode);
-              if (index !== -1) {
-                return prev.map((item, idx) =>
-                  idx === index
-                    ? { ...item, Quantity: Number(item.Quantity) + 1 }
-                    : item
-                );
-              } else {
-                return [{ ...data, Quantity: 1 }, ...prev];
-              }
-            }
-          });
-        } else {
-          await getInvoiceDetails({
-            productType: 1,
-            detailId: data.Id,
-            batchCode: null,
-            patientId: customerSalesId.patientId,
-            locationId: customerSalesId.locationId,
-          }).unwrap();
-          setOpenReferenceYes(true);
-        }
-      }
-    } catch (error) {
-      toast.error("No eligible Invoice exists for the given product");
+const handleBarcodeSubmit = async (e) => {
+  e.preventDefault();
+  if (!barcode) return;
+
+  try {
+    const res = await fetchByBarcode({
+      barcode,
+      locationId: customerSalesId.locationId,
+    });
+
+    const data = res?.data?.data;
+    const message = res?.data?.message;
+
+    if (!data) {
+      toast.error(message || "Frame not found");
+      return;
     }
 
+    if (referenceApplicable === 0) {
+      setItems((prev) => {
+        if (singleOrCombine === 1) {
+          return [{ ...data, Quantity: 1 }, ...prev];
+        } else {
+          const index = prev.findIndex((i) => i.Barcode === data.Barcode);
+          if (index !== -1) {
+            return prev.map((item, idx) =>
+              idx === index
+                ? { ...item, Quantity: Number(item.Quantity) + 1 }
+                : item
+            );
+          } else {
+            return [{ ...data, Quantity: 1 }, ...prev];
+          }
+        }
+      });
+    } else {
+      await getInvoiceDetails({
+        productType: 1,
+        detailId: data.Id,
+        batchCode: null,
+        patientId: customerSalesId.patientId,
+        locationId: customerSalesId.locationId,
+      }).unwrap();
+      setOpenReferenceYes(true);
+    }
+  } catch (error) {
+    console.error("Barcode error:", error);
+    toast.error(error?.data?.message || error?.message || "Something went wrong");
+  } finally {
     setBarcode("");
-  };
+  }
+};
+
 
   const handleBrandModelSubmit = async (e) => {
     e.preventDefault();
@@ -985,10 +994,10 @@ const FrameSunglass = () => {
                   <TableCell className="whitespace-pre-line">
                     {getProductDetailsText(item.ProductDetails[0])}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="">
                     ₹{formatINR(parseFloat(item.SRP || 0))}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="">
                     {editMode[`${item.Id}-${index}`]?.returnPrice ? (
                       <div className="flex items-center gap-2">
                         <input
