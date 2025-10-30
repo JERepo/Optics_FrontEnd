@@ -24,6 +24,7 @@ import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import HasPermission from "../../../components/HasPermission";
 import Modal from "../../../components/ui/Modal";
 import OTPScreen from "../../../components/OTPScreen";
+import { getErrorMessage } from "../../../utils/helpers";
 // 0- Order Placed  1- GRN Done 2- Partial Invoice 3- Invoice Completed 4- Cancelled 5- PO Raised 6- Stock Allocation Done for OL
 export const getOrderStatus = (statusCode) => {
   const statusMap = {
@@ -39,7 +40,7 @@ export const getOrderStatus = (statusCode) => {
   return statusMap[statusCode] || "Unknown Status";
 };
 
-const OrderView = () => {
+const OrderView = ({ isFamily = false, orderFamilyId }) => {
   const navigate = useNavigate();
   const { search } = useLocation();
   const { calculateGST } = useOrder();
@@ -47,6 +48,8 @@ const OrderView = () => {
   const params = new URLSearchParams(search);
   const isViewPage = location.pathname.includes("/view");
   const orderId = params.get("orderId");
+  const effectiveOrderId = orderId || orderFamilyId;
+
   const [errors, setErrors] = useState(null);
   const [errorModalOpen, setErrorModalOpen] = useState(false);
   const [isWarningOpen, setIsWarningOpen] = useState(false);
@@ -60,6 +63,8 @@ const OrderView = () => {
   const [selectedItemId, setSelectedItemId] = useState(null);
   const [byPassInvoice, setByPassInvoice] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
+  const [showOtpOrder, setShowOtpOrder] = useState(false);
+
   const [otpValue, setOtpValue] = useState(null);
   const [selectedDiscountItem, setSelectedDiscountItem] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -70,11 +75,11 @@ const OrderView = () => {
   const [generateInvoiceWarning, setIsGenerateInvoiceWarning] = useState(false);
 
   const { data: orderDetails, isLoading } = useGetSavedOrderDetailsQuery(
-    { orderId },
-    { skip: !orderId }
+    { orderId: effectiveOrderId },
+    { skip: !effectiveOrderId }
   );
   const { data: customerDataById, isLoading: isViewLoading } =
-    useGetOrderViewByIdQuery({ id: orderId });
+    useGetOrderViewByIdQuery({ id: effectiveOrderId });
   const [cancelItem, { isLoading: isItemCancelling }] = useItemCancelMutation();
   const [cancelOrder, { isLoading: isOrderCancelling }] =
     useCancelOrderMutation();
@@ -261,7 +266,7 @@ const OrderView = () => {
         applicationUserId: user.Id,
       };
       if (otpValue) {
-        payload.otp = parseInt(otpValue);
+        payload.otp = otpValue;
       }
       const res = await cancelItem({ id: selectedItemId, payload }).unwrap();
       toast.success("Item cancelled successfully");
@@ -280,9 +285,11 @@ const OrderView = () => {
         proceedAfterWarnings: true,
         applicationUserId: user.Id,
       };
-
+      if (otpValue) {
+        payload.otp = otpValue;
+      }
       const res = await cancelOrder({
-        id: parseInt(orderId),
+        id: parseInt(effectiveOrderId),
         payload,
       }).unwrap();
       toast.success("Order cancelled successfully");
@@ -290,11 +297,12 @@ const OrderView = () => {
       setIsCancelOrder(false);
       setWarningMessage("");
       setIsCancelOrderConfirmWarning(false);
+      setShowOtpOrder(false);
     } catch (error) {
       console.log(error);
+      toast.error(getErrorMessage(error));
     }
   };
-
   const handleCancelItem = async () => {
     try {
       const payload = {
@@ -323,7 +331,7 @@ const OrderView = () => {
     }
   };
   const handleCancelOrder = async () => {
-    setSelectedItemId(orderId);
+    setSelectedItemId(effectiveOrderId);
 
     try {
       const payload = {
@@ -332,13 +340,13 @@ const OrderView = () => {
       };
 
       const res = await cancelOrder({
-        id: parseInt(orderId),
+        id: parseInt(effectiveOrderId),
         payload,
       }).unwrap();
       if (res?.otpRequired) {
-        setSelectedDiscountItem(orderId);
+        setSelectedDiscountItem(effectiveOrderId);
         setIsCancelOrderConfirmWarning(false);
-        setShowOtp(true);
+        setShowOtpOrder(true);
         return;
       }
       if (res?.status == "warning") {
@@ -357,8 +365,6 @@ const OrderView = () => {
     }
   };
   const handleGenerateInvoiceConfirm = async (order) => {
-    console.log("order", order);
-
     const discountedSellingPrice =
       parseFloat(order?.DiscountedSellingPrice) || 0;
     const orderQty = parseFloat(order?.OrderQty) || 0;
@@ -513,7 +519,6 @@ const OrderView = () => {
     return types[status] || "Draft";
   };
   const handleOtpComplete = (otp) => {
-    console.log("OTP Completed:", otp);
     setOtpValue(otp);
   };
 
@@ -533,13 +538,17 @@ const OrderView = () => {
     columns.push("Advance Amount", "Balance Amount");
   }
 
-  columns.push("Total", "Status", "Action");
+  columns.push("Total", "Status");
+  if (!isFamily) {
+    columns.push("Action");
+  }
+
   const handlePrintPdf = async (item) => {
     setPrintingId(item.id);
 
     try {
       const blob = await generatePrint({
-        orderId: item.Id,
+        effectiveOrderId: item.Id,
       }).unwrap();
 
       const url = window.URL.createObjectURL(
@@ -610,6 +619,7 @@ const OrderView = () => {
           </div>
           <div className="flex items-center gap-3">
             {orderDetails?.every((item) => item.Status !== 4) &&
+              !isFamily &&
               customerDataById?.data.data?.Status !== 4 && (
                 <HasPermission module="Order" action={["deactivate"]}>
                   <Button
@@ -625,14 +635,18 @@ const OrderView = () => {
                 </HasPermission>
               )}
 
-            <Button variant="outline" onClick={() => navigate("/order-list")}>
-              Back
-            </Button>
-            <Button
-              onClick={() => handlePrintPdf(customerDataById?.data.data)}
-              icon={FiPrinter}
-              isLoading={printingId == customerDataById?.data.data.Id}
-            ></Button>
+            {!isFamily && (
+              <Button variant="outline" onClick={() => navigate("/order-list")}>
+                Back
+              </Button>
+            )}
+            {!isFamily && (
+              <Button
+                onClick={() => handlePrintPdf(customerDataById?.data.data)}
+                icon={FiPrinter}
+                isLoading={printingId == customerDataById?.data.data.Id}
+              ></Button>
+            )}
           </div>
         </div>
         {/* Order Details */}
@@ -765,63 +779,65 @@ const OrderView = () => {
                   )}
                 </TableCell>
                 <TableCell>{getOrderStatus(order.Status)}</TableCell>
-                <TableCell>
-                  <div className="flex gap-2 items-center">
-                    {order.Status !== 3 && (
-                      <HasPermission module="Order" action={["create"]}>
-                        <Button
-                          size="sm"
-                          icon={FiFileText}
-                          onClick={() => {
-                            setIsGenerateInvoiceWarning(true);
-                            setSelectedOrder(order);
-                          }}
-                          // onClick={() => {handleGenerateInvoice(order);setSelectedOrder(order)}}
-                          title="Generate Invoice"
-                          isLoading={isInvoiceGenerating}
-                        ></Button>
-                      </HasPermission>
-                    )}
-                    {order.Status !== 4 && (
-                      <HasPermission module="Order" action="deactivate">
-                        <Button
-                          variant="danger"
-                          onClick={() => {
-                            setIsCancelItemConfirmWarning(true);
-                            setSelectedItemId(order.OrderDetailId);
-                          }}
-                          // onClick={() => handleCancelItem(order.OrderDetailId)}
-                          className="opacity-70"
-                          size="sm"
-                          isLoading={
-                            selectedItemId === order.OrderDetailId
-                              ? isItemCancelling
-                              : false
-                          }
-                          disabled={isOrderCancelling || isItemCancelling}
-                          title="Cancel Item"
-                          icon={FiX}
+                {!isFamily && (
+                  <TableCell>
+                    <div className="flex gap-2 items-center">
+                      {order.Status !== 3 && (
+                        <HasPermission module="Order" action={["create"]}>
+                          <Button
+                            size="sm"
+                            icon={FiFileText}
+                            onClick={() => {
+                              setIsGenerateInvoiceWarning(true);
+                              setSelectedOrder(order);
+                            }}
+                            // onClick={() => {handleGenerateInvoice(order);setSelectedOrder(order)}}
+                            title="Generate Invoice"
+                            isLoading={isInvoiceGenerating}
+                          ></Button>
+                        </HasPermission>
+                      )}
+                      {order.Status !== 4 && (
+                        <HasPermission module="Order" action="deactivate">
+                          <Button
+                            variant="danger"
+                            onClick={() => {
+                              setIsCancelItemConfirmWarning(true);
+                              setSelectedItemId(order.OrderDetailId);
+                            }}
+                            // onClick={() => handleCancelItem(order.OrderDetailId)}
+                            className="opacity-70"
+                            size="sm"
+                            isLoading={
+                              selectedItemId === order.OrderDetailId
+                                ? isItemCancelling
+                                : false
+                            }
+                            disabled={isOrderCancelling || isItemCancelling}
+                            title="Cancel Item"
+                            icon={FiX}
+                          >
+                            {/* Cancel Item */}
+                          </Button>
+                        </HasPermission>
+                      )}
+                      {order.typeid === 0 && (
+                        <button
+                          className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                          onClick={() => handlePrint(order)}
                         >
-                          {/* Cancel Item */}
-                        </Button>
-                      </HasPermission>
-                    )}
-                    {order.typeid === 0 && (
-                      <button
-                        className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                        onClick={() => handlePrint(order)}
-                      >
-                        {printingId === order?.OrderDetailId ? (
-                          <Loader color="black" />
-                        ) : (
-                          <div className="flex items-center">
-                            <FiPrinter className="mr-1.5" />
-                          </div>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </TableCell>
+                          {printingId === order?.OrderDetailId ? (
+                            <Loader color="black" />
+                          ) : (
+                            <div className="flex items-center">
+                              <FiPrinter className="mr-1.5" />
+                            </div>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             )}
             emptyMessage={isLoading ? "Loading..." : "No data available"}
@@ -938,6 +954,29 @@ const OrderView = () => {
             onClick={() => handleConfirmWarnings(selectedDiscountItem)}
             isLoading={isItemCancelling}
             disabled={isItemCancelling}
+          >
+            Submit
+          </Button>
+        </div>
+      </Modal>
+      <Modal isOpen={showOtpOrder} onClose={() => setShowOtpOrder(false)}>
+        <OTPScreen
+          length={6}
+          onComplete={handleOtpComplete}
+          autoFocus={true}
+          // disabled={isLoading}
+          type="number"
+          placeholder="*"
+          className="mb-6"
+        />
+        <div className="grid grid-cols-2 w-full gap-5">
+          <Button variant="outline" onClick={() => setShowOtpOrder(false)}>
+            Clear & Close
+          </Button>
+          <Button
+            onClick={() => handleConfirmWarningsForOrder(selectedDiscountItem)}
+            isLoading={isOrderCancelling}
+            disabled={isOrderCancelling}
           >
             Submit
           </Button>

@@ -11,7 +11,7 @@ import {
   FiX,
 } from "react-icons/fi";
 import { useNavigate } from "react-router";
-import { useGetAllCustomersQuery } from "../../../api/customerApi";
+import { useGetAllCustomersByPoolQuery, useGetAllCustomersQuery } from "../../../api/customerApi";
 import { useGetCustomerContactDetailsQuery } from "../../../api/orderApi";
 import { Table, TableCell, TableRow } from "../../../components/Table";
 import Button from "../../../components/ui/Button";
@@ -92,7 +92,7 @@ const SelectCustomer = () => {
     data: customersResp,
     isLoading,
     isFetching,
-  } = useGetAllCustomersQuery();
+  } = useGetAllCustomersByPoolQuery(parseInt(hasMultipleLocations[0]));
 
   const { data: contactResp, refetch: refetchPatient } =
     useGetCustomerContactDetailsQuery({

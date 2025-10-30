@@ -12,7 +12,9 @@ import { setCredentials, setLocations } from "../../features/auth/authSlice";
 import toast from "react-hot-toast";
 import { useGetLocationByIdQuery } from "../../api/roleManagementApi";
 import { skipToken } from "@reduxjs/toolkit/query";
-import logo from '../../assets/client01.jpg'
+import luxonyxlogo from '../../assets/client01.jpg'
+import optics from '../../assets/JELogo.jpg'
+
 
 const Login = () => {
   const [login, { isLoading, isError }] = useLoginMutation();
@@ -76,9 +78,9 @@ const Login = () => {
         <div className="flex justify-center mb-6">
           <div className="bg-gradient-to-br from-primary/10 to-blue-100 p-4 rounded-2xl shadow-sm border border-primary/20">
             <img
-              src={logo}
-              alt="Company Logo"
-              className="h-25 w-64 mx-auto object-cover rounded-lg"
+              src={luxonyxlogo}
+              alt="Luxonyxlogo"
+              className="h-35 w-64 mx-auto object-cover rounded-lg"
               
             />
             <div className="hidden h-16 w-16 bg-gradient-to-r from-primary to-blue-600 rounded-xl items-center justify-center text-white font-bold text-xl">

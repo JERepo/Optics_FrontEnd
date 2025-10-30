@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import { useNavigate } from "react-router";
 import {
   useGetAllCompanyLocationsQuery,
+  useGetAllCustomersByPoolQuery,
   useGetAllCustomersQuery,
   useGetCompanyIdQuery,
 } from "../../../api/customerApi";
@@ -51,7 +52,7 @@ const CustomerPayment = () => {
     data: customersResp,
     isLoading,
     isFetching,
-  } = useGetAllCustomersQuery();
+  } = useGetAllCustomersByPoolQuery(parseInt(hasMultipleLocations[0]));
   const { data: allCompanies } = useGetAllCompanyLocationsQuery();
   const { data: locationById } = useGetLocationByIdQuery(
     { id: parseInt(hasMultipleLocations[0]) },

@@ -254,6 +254,12 @@ export const menuItems = [
         module: "Daily-Payment-Report",
         path: "/daily-payments",
       },
+      {
+        name: "Customer Family Report",
+        icon: IoConstructOutline,
+        module: "Customer-Family-History",
+        path: "/customer-family-history",
+      },
     ],
   },
   {

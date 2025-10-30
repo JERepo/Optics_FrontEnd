@@ -31,6 +31,12 @@ export const customerApi = createApi({
       }),
       providesTags: ["Customer"],
     }),
+    getAllCustomersByPool: builder.query({
+      query: (id) => ({
+        url: `/api/v1/customer/bylocation/${id}`,
+      }),
+      providesTags: ["Customer"],
+    }),
     getAllCustomerById: builder.query({
       query: ({ id }) => ({
         url: `/api/v1/customer/bylocation/${id}`,
@@ -129,5 +135,6 @@ export const {
   useGetInvoiceDataQuery,
   useUpdateCustomerMutation,
   useUpdatePatientMutation,
-  useGetLoyaltySummaryQuery
+  useGetLoyaltySummaryQuery,
+  useGetAllCustomersByPoolQuery
 } = customerApi;

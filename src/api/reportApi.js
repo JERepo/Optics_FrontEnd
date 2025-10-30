@@ -101,6 +101,12 @@ export const reportApi = createApi({
         url: `/api/v1/report/daily-payment`,
       }),
     }),
+    getFamilyHistoryPayments: builder.query({
+      query: (customerId) => ({
+        url: `/api/v1/order/getOrderDetailsHistory/${customerId}`,
+      }),
+    }),
+
   }),
 });
 
@@ -118,5 +124,6 @@ export const {
   useLazyGetStockAgeingReportQuery,
   useLazyPrintLabelsQuery,
   useLazyGetDailyPaymentsQuery,
-  useLazyPrintLabelsAccQuery
+  useLazyPrintLabelsAccQuery,
+  useGetFamilyHistoryPaymentsQuery
 } = reportApi;

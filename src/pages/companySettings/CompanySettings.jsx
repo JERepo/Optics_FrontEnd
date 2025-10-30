@@ -50,6 +50,7 @@ import { useGetAllCustomerGroupsQuery } from "../../api/customerGroup";
 import toast from "react-hot-toast";
 import { isValidNumericInput } from "../../utils/isValidNumericInput";
 import { useSelector } from "react-redux";
+import { format } from "date-fns";
 
 const API_BASE = import.meta.env.VITE_LOCAL;
 
@@ -81,7 +82,7 @@ const AccOptions = [
 ];
 
 const CompanySettings = () => {
-  const {user,hasMultipleLocations}= useSelector(state => state.auth)
+  const { user, hasMultipleLocations } = useSelector((state) => state.auth);
   const [expandedSection, setExpandedSection] = useState(null); // first accordion open
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [logo, setLogo] = useState(null);
@@ -209,6 +210,15 @@ const CompanySettings = () => {
   useEffect(() => {
     if (companySettingData?.data?.data) {
       const data = companySettingData?.data.data;
+       if (data.PrefixRollOff) {
+      const [day, month] = data.PrefixRollOff.split("-");
+      const currentYear = new Date().getFullYear();
+
+      // create a full valid Date object
+      const fullDate = new Date(`${currentYear}-${month}-${day}`);
+
+      setFromDate(fullDate);
+    }
       setFormData({
         customerPool: data?.CustomerPoolID ?? null,
         vendorPool: data?.VendorPoolID ?? null,
@@ -274,7 +284,12 @@ const CompanySettings = () => {
         // NoOfColumns: allLabels?.data?.find(
         //   (item) => data?.BarcodeLabelId == item.Id
         // ).NoOfColumns || null,
-        NoOfColumns: typeof allLabels.data.find(l => l.Id == data?.BarcodeLabelId)?.NoOfColumns === 'number' ? allLabels.data.find(l => l.Id == data?.BarcodeLabelId)?.NoOfColumns : null,
+        NoOfColumns:
+          typeof allLabels.data.find((l) => l.Id == data?.BarcodeLabelId)
+            ?.NoOfColumns === "number"
+            ? allLabels.data.find((l) => l.Id == data?.BarcodeLabelId)
+                ?.NoOfColumns
+            : null,
         accessoryLabel: data?.AccBarcodeLableId,
         accessoryColumn1: data.AccBL1,
         accessoryColumn2: data.AccBL2,
@@ -309,8 +324,8 @@ const CompanySettings = () => {
         orderDiscountApproval: data?.DiscountApproval,
       });
       setLogoPreview(
-        companySettingData?.data?.data?.Company?.Logo
-          ? `${API_BASE}${companySettingData.data.data.Company.Logo}`
+        companySettingData?.data?.data?.CompanyLogo
+          ? `${API_BASE}${companySettingData.data.data.CompanyLogo}`
           : null
       );
       setQrPreview(
@@ -434,8 +449,9 @@ const CompanySettings = () => {
 
   const ExpandIcon = () => (
     <FiChevronDown
-      className={`transition-transform duration-300 ${expandedSection ? "rotate-180" : ""
-        }`}
+      className={`transition-transform duration-300 ${
+        expandedSection ? "rotate-180" : ""
+      }`}
     />
   );
 
@@ -524,7 +540,7 @@ const CompanySettings = () => {
       DCBilling: formData.dcBilling,
       CreditBilling: formData.creditBilling,
       EnableCustomerLoyalty: formData.loyaltyEnable,
-      PrefixRollOff: formData.prefixRollOff,
+      PrefixRollOff: format(fromDate, "dd-MM"),
       CLMinExpiryPeriod: formData.clMinExpPeriod,
       ClExpiryGracePeriod: formData.clExpiryGracePeriod,
       OrderCancellationAppr: formData.orderCancellationApproval,
@@ -862,11 +878,11 @@ const CompanySettings = () => {
       content: (
         <Box className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Autocomplete
-            options={allPool?.data?.customer?.filter || []}
+            options={allPool?.data?.customer || []}
             getOptionLabel={(option) => option.PoolName || ""}
             value={
               allPool?.data?.customer?.find(
-                (pool) => pool.Id === formData.customerPool
+                (pool) => pool.Id == formData.customerPool
               ) || null
             }
             onChange={(_, newValue) =>
@@ -889,7 +905,7 @@ const CompanySettings = () => {
             getOptionLabel={(option) => option.PoolName || ""}
             value={
               allPool?.data?.vendor?.find(
-                (pool) => pool.Id === formData.vendorPool
+                (pool) => pool.Id == formData.vendorPool
               ) || null
             }
             onChange={(_, newValue) =>
@@ -911,8 +927,8 @@ const CompanySettings = () => {
             options={allPool?.data?.stock || []}
             getOptionLabel={(option) => option.PoolName || ""}
             value={
-              allPool?.data?.vendor?.find(
-                (pool) => pool.Id === formData.stockPool
+              allPool?.data?.stock?.find(
+                (pool) => pool.Id == formData.stockPool
               ) || null
             }
             onChange={(_, newValue) =>
@@ -1619,8 +1635,9 @@ const CompanySettings = () => {
               Fitting Charges Purchase
             </label>
 
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-10">
               <Radio
+                label="Yes"
                 name="fittingChargesPurchase"
                 value="1"
                 checked={formData.fittingChargesPurchase === 1}
@@ -1630,6 +1647,7 @@ const CompanySettings = () => {
                 className="accent-blue-600 w-5 h-5 cursor-pointer"
               />
               <Radio
+                label="No"
                 name="fittingChargesPurchase"
                 value="0"
                 checked={formData.fittingChargesPurchase === 0}
@@ -1723,9 +1741,9 @@ const CompanySettings = () => {
                   value={
                     allLabels?.data
                       ? allLabels.data.find(
-                        (item) =>
-                          String(item.Id) === String(formData.frameLabel)
-                      ) || null
+                          (item) =>
+                            String(item.Id) === String(formData.frameLabel)
+                        ) || null
                       : null
                   }
                   onChange={(_, newValue) =>
@@ -1801,9 +1819,9 @@ const CompanySettings = () => {
                   value={
                     allLabels?.data
                       ? allLabels.data.find(
-                        (item) =>
-                          String(item.Id) === String(formData.accessoryLabel)
-                      ) || null
+                          (item) =>
+                            String(item.Id) === String(formData.accessoryLabel)
+                        ) || null
                       : null
                   }
                   onChange={(_, newValue) =>
@@ -2339,7 +2357,11 @@ const CompanySettings = () => {
       {/* Accordion Sections */}
       <Paper elevation={0} className="">
         <Autocomplete
-          options={allLocations?.data?.filter((loc) => hasMultipleLocations.includes(String(loc.Id))) || []}
+          options={
+            allLocations?.data?.filter((loc) =>
+              hasMultipleLocations.includes(String(loc.Id))
+            ) || []
+          }
           getOptionLabel={(option) => option.LocationName || ""}
           value={
             allLocations?.data?.find((loc) => loc.Id === selectedLocation) ||

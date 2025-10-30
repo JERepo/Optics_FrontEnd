@@ -6,14 +6,15 @@ import { enGB } from "date-fns/locale";
 import React, { useState } from "react";
 import { format, subDays, subMonths, startOfDay, endOfDay } from "date-fns";
 import Button from "../../components/ui/Button";
-import { useLazyGetPurchaseReportQuery} from "../../api/reportApi";
+import { useLazyGetPurchaseReportQuery } from "../../api/reportApi";
 import { useSelector } from "react-redux";
 import toast from "react-hot-toast";
 
 const reportTypes = [
+  { value: 0, label: "Purchase By Product Type" },
+
   { value: 1, label: "Detailed Purchase" },
   // { value: 1, label: "Tally Purchase" },
-  { value: 0, label: "Purchase By Product Type" },
 ];
 
 const dateOptions = [
@@ -31,7 +32,7 @@ const formatDate = (date) => format(date, "yyyy-MM-dd");
 
 const PurchaseReport = () => {
   const { user } = useSelector((state) => state.auth);
-  const [reportType, setReportType] = useState(0);
+  const [reportType, setReportType] = useState(1);
   const [dateType, setDateType] = useState("today");
   const [fromDate, setFromDate] = useState(new Date());
   const [toDate, setToDate] = useState(new Date());
@@ -39,51 +40,51 @@ const PurchaseReport = () => {
   const [getReport, { isFetching: isReportLoading }] =
     useLazyGetPurchaseReportQuery();
 
-const handleDateTypeChange = (_, newValue) => {
-  if (!newValue) return;
-  setDateType(newValue.value);
+  const handleDateTypeChange = (_, newValue) => {
+    if (!newValue) return;
+    setDateType(newValue.value);
 
-  const today = new Date();
-  let start, end;
+    const today = new Date();
+    let start, end;
 
-  switch (newValue.value) {
-    case "today":
-      start = startOfDay(today);
-      end = endOfDay(today);
-      break;
-    case "yesterday":
-      start = startOfDay(subDays(today, 1));
-      end = endOfDay(subDays(today, 1));
-      break;
-    case "7days":
-      start = startOfDay(subDays(today, 6));
-      end = endOfDay(today);
-      break;
-    case "30days":
-      start = startOfDay(subDays(today, 29)); 
-      end = endOfDay(today);
-      break;
-    case "90days":
-      start = startOfDay(subDays(today, 89)); 
-      end = endOfDay(today);
-      break;
-    case "6months":
-      start = startOfDay(subMonths(today, 6));
-      end = endOfDay(today); 
-      break;
-    case "1year":
-      start = startOfDay(subMonths(today, 12));
-      end = endOfDay(today); 
-      break;
-    case "custom":
-    default:
-      start = today;
-      end = today;
-  }
+    switch (newValue.value) {
+      case "today":
+        start = startOfDay(today);
+        end = endOfDay(today);
+        break;
+      case "yesterday":
+        start = startOfDay(subDays(today, 1));
+        end = endOfDay(subDays(today, 1));
+        break;
+      case "7days":
+        start = startOfDay(subDays(today, 6));
+        end = endOfDay(today);
+        break;
+      case "30days":
+        start = startOfDay(subDays(today, 29));
+        end = endOfDay(today);
+        break;
+      case "90days":
+        start = startOfDay(subDays(today, 89));
+        end = endOfDay(today);
+        break;
+      case "6months":
+        start = startOfDay(subMonths(today, 6));
+        end = endOfDay(today);
+        break;
+      case "1year":
+        start = startOfDay(subMonths(today, 12));
+        end = endOfDay(today);
+        break;
+      case "custom":
+      default:
+        start = today;
+        end = today;
+    }
 
-  setFromDate(start);
-  setToDate(end);
-};
+    setFromDate(start);
+    setToDate(end);
+  };
 
   const downloadFile = (blob, filename) => {
     const url = window.URL.createObjectURL(blob);
@@ -108,12 +109,17 @@ const handleDateTypeChange = (_, newValue) => {
         userId: user.Id,
         type: reportType,
       }).unwrap();
-      downloadFile(blob, "Purchase Report.xlsx");
+      downloadFile(
+        blob,
+        `Purchase Report (${format(new Date(fromDate), "dd-MM-yyyy")}-${format(
+          new Date(toDate),
+          "dd-MM-yyyy"
+        )}).xlsx`
+      );
       toast.success("Purchase Report Generated successfully!");
       setFromDate(new Date());
       setToDate(new Date());
-            setDateType("today")
-
+      setDateType("today");
     } catch (error) {
       console.log(error);
 
@@ -133,7 +139,9 @@ const handleDateTypeChange = (_, newValue) => {
         <div className="bg-white rounded-xl shadow-sm overflow-hidden p-6">
           {/* Header */}
           <div className="mb-10">
-            <h2 className="text-2xl font-bold text-gray-900">Purchase Report</h2>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Purchase Report
+            </h2>
           </div>
 
           <div className="grid grid-cols-4 gap-5 items-center">
@@ -141,7 +149,7 @@ const handleDateTypeChange = (_, newValue) => {
               options={reportTypes}
               getOptionLabel={(option) => option.label}
               value={reportTypes.find((item) => item.value === reportType)}
-              onChange={(_, newValue) => setReportType(newValue?.value || null)}
+              onChange={(_, newValue) => setReportType(newValue?.value ?? null)}
               renderInput={(params) => (
                 <TextField
                   {...params}
