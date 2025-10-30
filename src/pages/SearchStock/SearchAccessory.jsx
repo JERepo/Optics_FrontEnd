@@ -56,7 +56,7 @@ const SearchAccessory = () => {
   const [columnSearchTerms, setColumnSearchTerms] = useState({
     "s.no": "",
     "brand name": "",
-    "product name": "Lens",
+    "product name": "",
     barcode: "",
     variation: "",
     mrp: "",
@@ -175,7 +175,7 @@ const SearchAccessory = () => {
         }
       } catch (err) {
         console.error("Error fetching accessories:", err);
-        toast.error(err?.data?.error || err?.message || "Failed to fetch data");
+        // toast.error(err?.data?.error || err?.message || "Failed to fetch data");
         setSearchData([]);
         setTotalItems(0);
       }
