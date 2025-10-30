@@ -565,7 +565,7 @@ const CLMaster = () => {
 
       toast.success(`Contact lens ${id ? "updated" : "saved"} successfully!`);
       handleRefresh();
-      navigate("/contact-lens-master");
+      navigate("/cl-master");
     } catch (error) {
       toast.error(error?.data?.message || "Failed to save Contact Lens Master");
     }
@@ -590,7 +590,7 @@ const CLMaster = () => {
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
-                onClick={() => navigate("/contact-lens-master")}
+                onClick={() => navigate("/cl-master")}
               >
                 Back
               </Button>

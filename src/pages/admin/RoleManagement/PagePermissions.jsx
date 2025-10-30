@@ -198,7 +198,7 @@ const PagePermissions = () => {
         await updatePrevilage({ id, formData: payload }).unwrap();
         toast.success("Role updated successfully!");
       }
-      navigate("/role-management");
+      navigate("/role-privileges");
     } catch (err) {
       console.error("Operation failed:", err);
       toast.error("Something went wrong. Please try again.");

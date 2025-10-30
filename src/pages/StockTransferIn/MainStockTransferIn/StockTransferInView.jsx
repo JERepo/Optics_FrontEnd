@@ -249,7 +249,7 @@ const StockTransferInView = () => {
           <div>
             <Button
               variant="outline"
-              onClick={() => navigate("/stock-transferin")}
+              onClick={() => navigate("/stock-transfer-in")}
             >
               Back
             </Button>

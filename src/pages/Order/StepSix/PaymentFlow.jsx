@@ -333,7 +333,7 @@ console.log("f",filteredBankAccounts)
       updatePaymentDetails([]);
       setFullPaymentDetails([]);
       updateFullPayments([]);
-      navigate("/order-list");
+      navigate("/order");
     } catch (error) {
       console.log("error");
       toast.error("Please try again!");

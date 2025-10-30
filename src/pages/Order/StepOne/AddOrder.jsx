@@ -397,7 +397,7 @@ const AddOrder = ({
                 placeholder="Search by name or mobile number..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                className="w-full pl-10 pr-24 py-2.5 border border-gray-300 rounded-lg focus:outline-none rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-24 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button className="cursor-pointer absolute right-2 bg-neutral-300 hover:bg-neutral-400 text-neutral-700 px-4 py-1.5 rounded-md text-sm font-medium transition-colors">
                 Search
@@ -406,7 +406,7 @@ const AddOrder = ({
 
             <div className="flex gap-2 sm:gap-3">
               <button
-                onClick={() => navigate("/order-list")}
+                onClick={() => navigate("/order")}
                 className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-neutral-700 hover:bg-gray-50 text-sm"
               >
                 <FiArrowLeft />

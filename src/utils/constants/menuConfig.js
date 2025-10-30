@@ -57,7 +57,7 @@ export const menuItems = [
     name: "Order",
     icon: FiBox,
     module: "Order",
-    path: "/order-list",
+    path: "/order",
   },
 
   {
@@ -165,7 +165,7 @@ export const menuItems = [
       },
       {
         name: "Stock Transfer In",
-        path: "/stock-transferin",
+        path: "/stock-transfer-in",
         module: "StockTranserIn",
         icon: IoConstructOutline,
       },
@@ -208,13 +208,13 @@ export const menuItems = [
       },
       {
         name: "Audit Report",
-        path: "audit-report",
+        path: "/audit",
         module: "Audit",
         icon: IoConstructOutline, // Suggests building/setup
       },
       {
         name: "Profit Report",
-        path: "profit-report",
+        path: "profit",
         module: "Profit",
         icon: IoConstructOutline, // Suggests building/setup
       },
@@ -246,7 +246,7 @@ export const menuItems = [
         name: "Stock Ageing Report",
         icon: IoConstructOutline,
         module: "Stock-Ageing",
-        path: "/stock-ageing-report",
+        path: "/stock-ageing",
       },
       {
         name: "Payment Collection Report",
@@ -320,20 +320,20 @@ export const menuItems = [
     subItems: [
       {
         name: "Brand",
-        path: "/settings/brand",
+        path: "/brands",
         module: "Brand",
         icon: IoConstructOutline, // Suggests building/setup
       },
 
       {
         name: "Frame Master",
-        path: "/settings/frame-master",
+        path: "/frame-main",
         module: "Frame Master",
         icon: IoConstructOutline, // Suggests building/setup
       },
       {
         name: "Accessory Master",
-        path: "/settings/accessories-master",
+        path: "/other-products",
         module: "Accessory Master",
         icon: IoConstructOutline, // Suggests building/setup
       },
@@ -341,7 +341,7 @@ export const menuItems = [
         name: "Contact Lens Master",
         icon: IoConstructOutline,
         module: "CLMaster",
-        path: "/contact-lens-master",
+        path: "/cl-master",
       },
     ],
   },
@@ -354,7 +354,7 @@ export const menuItems = [
         name: "Customer Group",
         icon: IoPeopleOutline,
         module: "Customer Group",
-        path: "/customer-group",
+        path: "/customer-groups",
       },
       {
         name: "Sales Person",
@@ -382,38 +382,38 @@ export const menuItems = [
       },
       {
         name: "Brand Group",
-        path: "/settings/brand-group",
+        path: "/brandgroup",
         module: "Brand group",
         icon: IoConstructOutline, // Suggests building/setup
       },
       {
         name: "Brand Category",
-        path: "/settings/brand-category",
+        path: "/brand-category",
         module: "Brand catagory",
         icon: IoConstructOutline, // Suggests building/setup
       },
       {
         name: "Variation Master",
-        path: "/settings/accessories",
+        path: "/other-product-variation",
         module: "Variation Master",
         icon: IoConstructOutline, // Suggests building/setup
       },
 
       {
         name: "Frame Shape Master",
-        path: "/settings/frameshape-master",
+        path: "/shape-master",
         module: "Shape Master",
         icon: IoConstructOutline, // Suggests building/setup
       },
       {
         name: "Season Master",
-        path: "/settings/season-master",
+        path: "/season-master",
         module: "Season Master",
         icon: IoConstructOutline, // Suggests building/setup
       },
       {
         name: "Material Master",
-        path: "/settings/material-master",
+        path: "/material-master",
         module: "Material Master",
         icon: IoConstructOutline, // Suggests building/setup
       },
@@ -434,11 +434,11 @@ export const menuItems = [
         name: "Role Management",
         icon: MdOutlineAdminPanelSettings, // More precise for roles/permissions
         module: "Role Management",
-        path: "/role-management",
+        path: "/role-privileges",
       },
       {
         name: "Pool Creation",
-        path: "/settings/pool-creation",
+        path: "/pool",
         module: "Pool",
         icon: IoConstructOutline, // Suggests building/setup
       },

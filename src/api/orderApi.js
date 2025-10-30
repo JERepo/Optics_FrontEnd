@@ -520,6 +520,13 @@ export const orderApi = createApi({
         body: formData,
       }),
     }),
+
+    getOLOrderData: builder.query({
+      query: (OrderDetailsId) => ({
+        url: `/api/v1/order/getorderdetails-info?OrderDetailsId=${OrderDetailsId}`,
+        method: 'GET'
+      })
+    })
   }),
 });
 
@@ -604,4 +611,5 @@ export const {
   useGetOrderDetailsByIdMutation,
   useGetOrderDetailsAllMutation,
   useGetOrderddMutation,
+  useLazyGetOLOrderDataQuery
 } = orderApi;

@@ -116,7 +116,7 @@ const OrderList = () => {
 
   const handleViewOrder = (order) => {
     updateSelectedOrderDetails(order);
-    navigate(`/add-order/view-order?orderId=${order.Id}`);
+    navigate(`/order/view?orderId=${order.Id}`);
   };
 
   const getOrderStatus = (status) => {
@@ -301,7 +301,7 @@ const OrderList = () => {
                   className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
                   onClick={() => {
                     goToStep(1);
-                    navigate("/add-order");
+                    navigate("/order/create");
                   }}
                 >
                   New Order

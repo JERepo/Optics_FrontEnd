@@ -152,7 +152,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "role-management",
+        path: "role-privileges",
         element: (
           <PermissionRoute module="Role Management" action="view">
             <RoleManagement />
@@ -160,7 +160,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "role-management/add-role",
+        path: "role-privileges/add-role",
         element: (
           <PermissionRoute module="Role Management" action="create">
             <PagePermissions />
@@ -168,7 +168,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "role-management/edit-role/:id",
+        path: "role-privileges/edit-role/:id",
         element: (
           <PermissionRoute module="Role Management" action="edit">
             <PagePermissions />
@@ -176,7 +176,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "role-management/view/:id",
+        path: "role-privileges/view/:id",
         element: (
           <PermissionRoute module="Role Management" action="view">
             <PagePermissions />
@@ -216,7 +216,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/pool-creation",
+        path: "pool",
         element: (
           <PermissionRoute module="Pool" action="view">
             <PoolCreation />
@@ -224,7 +224,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/pool-creation/create",
+        path: "pool/create",
         element: (
           <PermissionRoute module="Pool" action="create">
             <EditPool />
@@ -232,7 +232,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/pool-creation/edit/:id",
+        path: "pool/edit/:id",
         element: (
           <PermissionRoute module="Pool" action="edit">
             <EditPool />
@@ -240,7 +240,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/pool-creation/view/:id",
+        path: "pool/view/:id",
         element: (
           <PermissionRoute module="Pool" action="view">
             <EditPool />
@@ -248,7 +248,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/brand-category",
+        path: "brand-category",
         element: (
           <PermissionRoute module="Brand catagory" action="view">
             <BrandCategory />
@@ -256,7 +256,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/brand-category/create",
+        path: "brand-category/create",
         element: (
           <PermissionRoute module="Brand catagory" action="create">
             <EditBrandCategory />
@@ -264,7 +264,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/brand-category/edit/:id",
+        path: "brand-category/edit/:id",
         element: (
           <PermissionRoute module="Brand catagory" action="edit">
             <EditBrandCategory />
@@ -272,7 +272,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/brand-category/view/:id",
+        path: "brand-category/view/:id",
         element: (
           <PermissionRoute module="Brand catagory" action="view">
             <EditBrandCategory />
@@ -281,7 +281,7 @@ export const router = createBrowserRouter([
       },
 
       {
-        path: "settings/brand-group",
+        path: "brandgroup",
         element: (
           <PermissionRoute module="Brand group" action="view">
             <BrandGroup />
@@ -289,7 +289,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/brand-group/create",
+        path: "brandgroup/create",
         element: (
           <PermissionRoute module="Brand group" action="create">
             <EditBrandGroup />
@@ -297,7 +297,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/brand-group/edit/:id",
+        path: "brandgroup/edit/:id",
         element: (
           <PermissionRoute module="Brand group" action="edit">
             <EditBrandGroup />
@@ -305,7 +305,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/brand-group/view/:id",
+        path: "brandgroup/view/:id",
         element: (
           <PermissionRoute module="Brand group" action="view">
             <EditBrandGroup />
@@ -313,7 +313,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/brand",
+        path: "brands",
         element: (
           <PermissionRoute module="Brand" action="view">
             <Brands />
@@ -321,7 +321,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/brand/create",
+        path: "brands/create",
         element: (
           <PermissionRoute module="Brand" action="create">
             <EditBrands />
@@ -329,7 +329,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/brand/edit/:id",
+        path: "brands/edit/:id",
         element: (
           <PermissionRoute module="Brand" action="edit">
             <EditBrands />
@@ -337,7 +337,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/brand/view/:id",
+        path: "brands/view/:id",
         element: (
           <PermissionRoute module="Brand" action="view">
             <EditBrands />
@@ -345,7 +345,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/accessories",
+        path: "other-product-variation",
         element: (
           <PermissionRoute module="Variation Master" action="view">
             <Accssories />
@@ -353,7 +353,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/accessories/create",
+        path: "other-product-variation/create",
         element: (
           <PermissionRoute module="Variation Master" action="view">
             <EditVariations />
@@ -361,7 +361,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/accessories/edit/:id",
+        path: "other-product-variation/edit/:id",
         element: (
           <PermissionRoute module="Variation Master" action="view">
             <EditVariations />
@@ -369,7 +369,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/accessories/view/:id",
+        path: "other-product-variation/view/:id",
         element: (
           <PermissionRoute module="Variation Master" action="view">
             <EditVariations />
@@ -377,7 +377,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/accessories-master",
+        path: "other-products",
         element: (
           <PermissionRoute module="Accessory Master" action="view">
             <AccessoriesMaster />
@@ -385,7 +385,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/accessories-master/create",
+        path: "other-products/create",
         element: (
           <PermissionRoute module="Accessory Master" action="create">
             <EditAccessoriesMaster />
@@ -394,7 +394,7 @@ export const router = createBrowserRouter([
       },
 
       {
-        path: "settings/accessories-master/edit/:id",
+        path: "other-products/edit/:id",
         element: (
           <PermissionRoute module="Accessory Master" action="edit">
             <EditAccessoriesMaster />
@@ -402,7 +402,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/accessories-master/view/:id",
+        path: "other-products/view/:id",
         element: (
           <PermissionRoute module="Accessory Master" action="view">
             <EditAccessoriesMaster />
@@ -410,7 +410,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/accessories-master/edit/:id/create",
+        path: "other-products/edit/:id/create",
         element: (
           <PermissionRoute module="Accessory Master" action="edit">
             <CreateVariation />
@@ -418,7 +418,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/accessories-master/edit/:id/variation/:id",
+        path: "other-products/edit/:id/variation/:id",
         element: (
           <PermissionRoute module="Accessory Master" action="edit">
             <CreateVariation />
@@ -426,7 +426,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/accessories-master/create/variation",
+        path: "other-products/create/variation",
         element: (
           <PermissionRoute module="Accessory Master" action="create">
             <CreateVariation />
@@ -434,7 +434,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/accessories-master/view/variation",
+        path: "other-products/view/variation",
         element: (
           <PermissionRoute module="Accessory Master" action="view">
             <CreateVariation />
@@ -442,7 +442,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/frameshape-master",
+        path: "shape-master",
         element: (
           <PermissionRoute module="Shape Master" action="view">
             <ShapeMaster />
@@ -450,7 +450,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/frameshape-master/create",
+        path: "shape-master/create",
         element: (
           <PermissionRoute module="Shape Master" action="create">
             <EditShapeMaster />
@@ -458,7 +458,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/frameshape-master/edit/:id",
+        path: "shape-master/edit/:id",
         element: (
           <PermissionRoute module="Shape Master" action="edit">
             <EditShapeMaster />
@@ -466,7 +466,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/frameshape-master/view/:id",
+        path: "shape-master/view/:id",
         element: (
           <PermissionRoute module="Shape Master" action="view">
             <EditShapeMaster />
@@ -474,7 +474,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/season-master",
+        path: "season-master",
         element: (
           <PermissionRoute module="Season Master" action="view">
             <SeasonMaster />
@@ -482,7 +482,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/season-master/create",
+        path: "season-master/create",
         element: (
           <PermissionRoute module="Season Master" action="create">
             <EditSeasonMaster />
@@ -490,7 +490,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/season-master/edit/:id",
+        path: "season-master/edit/:id",
         element: (
           <PermissionRoute module="Season Master" action="edit">
             <EditSeasonMaster />
@@ -498,7 +498,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/season-master/view/:id",
+        path: "season-master/view/:id",
         element: (
           <PermissionRoute module="Season Master" action="view">
             <EditSeasonMaster />
@@ -506,7 +506,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/material-master",
+        path: "material-master",
         element: (
           <PermissionRoute module="Material Master" action="view">
             <MaterialMaster />
@@ -514,7 +514,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/material-master/create",
+        path: "material-master/create",
         element: (
           <PermissionRoute module="Material Master" action="create">
             <EditmaterialMaster />
@@ -522,7 +522,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/material-master/edit/:id",
+        path: "material-master/edit/:id",
         element: (
           <PermissionRoute module="Material Master" action="edit">
             <EditmaterialMaster />
@@ -530,7 +530,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/material-master/view/:id",
+        path: "material-master/view/:id",
         element: (
           <PermissionRoute module="Material Master" action="view">
             <EditmaterialMaster />
@@ -538,7 +538,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/frame-master",
+        path: "frame-main",
         element: (
           <PermissionRoute module="Frame Master" action="view">
             <FrameMaster />
@@ -546,7 +546,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/frame-master/create",
+        path: "frame-main/create",
         element: (
           <PermissionRoute module="Frame Master" action="edit">
             <EditFrameMaster />
@@ -554,7 +554,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/frame-master/edit/:id",
+        path: "frame-main/edit/:id",
         element: (
           <PermissionRoute module="Frame Master" action="edit">
             <EditFrameMaster />
@@ -562,7 +562,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings/frame-master/view/:id",
+        path: "frame-main/view/:id",
         element: (
           <PermissionRoute module="Frame Master" action="view">
             <EditFrameMaster />
@@ -570,19 +570,19 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "customer-group",
+        path: "customer-groups",
         element: <CustomerGroup />,
       },
       {
-        path: "customer-group/create",
+        path: "customer-groups/create",
         element: <EditCustomerGroup />,
       },
       {
-        path: "customer-group/edit/:id",
+        path: "customer-groups/edit/:id",
         element: <EditCustomerGroup />,
       },
       {
-        path: "customer-group/view/:id",
+        path: "customer-groups/view/:id",
         element: <EditCustomerGroup />,
       },
       {
@@ -683,7 +683,7 @@ export const router = createBrowserRouter([
       },
 
       {
-        path: "order-list",
+        path: "order",
         element: (
           <PermissionRoute module="Order" action="view">
             <ErrorBoundary>
@@ -693,7 +693,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "add-order",
+        path: "order/create",
         element: (
           <PermissionRoute module="Order" action="create">
             <ErrorBoundary>
@@ -703,7 +703,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "add-order/view-order",
+        path: "order/view",
         element: (
           <PermissionRoute module="Order" action="view">
             <ErrorBoundary>
@@ -745,7 +745,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "purchase-order/",
+        path: "purchase-order",
         element: (
           <PermissionRoute module="Purchase Order" action="view">
             <PurchaseOrderMainPage />
@@ -867,7 +867,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "stock-transferin",
+        path: "stock-transfer-in",
         element: (
           <PermissionRoute module="StockTranserIn" action="view">
             <StockTransferIn />
@@ -875,7 +875,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "stock-transferin/view",
+        path: "stock-transfer-in/view",
         element: (
           <PermissionRoute module="StockTranserIn" action="view">
             <StockTransferInView />
@@ -883,7 +883,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "stock-transferin/create",
+        path: "stock-transfer-in/create",
         element: (
           <PermissionRoute module="StockTranserIn" action="create">
             <TotalStockTransferIn />
@@ -900,7 +900,7 @@ export const router = createBrowserRouter([
           // </PermissionRoute>
         ),
       },
-      { path: "grn/", element: <GRNListPage /> },
+      { path: "grn", element: <GRNListPage /> },
       { path: "grn/view", element: <GRNViewPage /> },
 
       {
@@ -913,7 +913,7 @@ export const router = createBrowserRouter([
           // </PermissionRoute>
         ),
       },
-      { path: "grn-dc/", element: <GRNDCListPage /> },
+      { path: "grn-dc", element: <GRNDCListPage /> },
       { path: "grn-dc/view", element: <GRNDCViewPage /> },
 
       {
@@ -1009,11 +1009,11 @@ export const router = createBrowserRouter([
         element: <PurchaseReport />,
       },
       {
-        path: "audit-report",
+        path: "audit",
         element: <AuditReport />,
       },
       {
-        path: "profit-report",
+        path: "profit",
         element: <ProfitReport />,
       },
       {
@@ -1029,7 +1029,7 @@ export const router = createBrowserRouter([
         element: <STOUTReport />,
       },
       {
-        path: "stock-ageing-report",
+        path: "stock-ageing",
         element: <StockAgeingReport />,
       },
       {
@@ -1037,15 +1037,15 @@ export const router = createBrowserRouter([
         element: <CustomerPaymentReport />,
       },
       {
-        path: "contact-lens-master",
+        path: "cl-master",
         element: <CLMain />,
       },
       {
-        path: "contact-lens-master/create",
+        path: "cl-master/create",
         element: <CLMaster />,
       },
       {
-        path: "contact-lens-master/:id",
+        path: "cl-master/:id",
         element: <CLMaster />,
       },
       {

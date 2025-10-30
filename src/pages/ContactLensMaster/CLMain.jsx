@@ -118,7 +118,7 @@ const CLMain = () => {
   };
 
   const handleEdit = (id) => {
-    navigate(`/contact-lens-master/${id}`);
+    navigate(`/cl-master/${id}`);
   };
   const handleConfirmToggle = async () => {
     try {
@@ -249,7 +249,7 @@ const CLMain = () => {
                 icon={FiPlus}
                 className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
                 onClick={() => {
-                  navigate("/contact-lens-master/create");
+                  navigate("/cl-master/create");
                 }}
               >
                 Add CL

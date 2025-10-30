@@ -276,7 +276,7 @@ const InvoiceList = () => {
                   className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
                   onClick={() => {
                     goToStep(1);
-                    navigate("/add-order");
+                    navigate("/order/create");
                   }}
                 >
                   DC Invoice

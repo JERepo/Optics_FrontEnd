@@ -8,11 +8,12 @@ import {
   useItemCancelMutation,
   useLazyGenerateOpticalLensReceiptQuery,
   useLazyGetAdvanceAmtQuery,
+  useLazyGetOLOrderDataQuery,
   useLazyPrintPdfQuery,
 } from "../../../api/orderApi";
 import { useOrder } from "../../../features/OrderContext";
 import { Table, TableCell, TableRow } from "../../../components/Table";
-import { FiFileText, FiPrinter, FiTrash2, FiX } from "react-icons/fi";
+import { FiEye, FiFileText, FiPrinter, FiTrash2, FiX } from "react-icons/fi";
 import { format } from "date-fns";
 import Button from "../../../components/ui/Button";
 import Loader from "../../../components/ui/Loader";
@@ -24,6 +25,8 @@ import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import HasPermission from "../../../components/HasPermission";
 import Modal from "../../../components/ui/Modal";
 import OTPScreen from "../../../components/OTPScreen";
+import { motion, AnimatePresence } from "framer-motion";
+
 // 0- Order Placed  1- GRN Done 2- Partial Invoice 3- Invoice Completed 4- Cancelled 5- PO Raised 6- Stock Allocation Done for OL
 export const getOrderStatus = (statusCode) => {
   const statusMap = {
@@ -55,6 +58,10 @@ const OrderView = () => {
   const [generalWarning, setGeneralWarning] = useState(false);
   const [openInvoiceWarning, setOpenInvoiceWarning] = useState(false);
   const [InvoiceWarnings, setInvoiceWarnings] = useState([]);
+
+  const [olOrderDataInfo, setOlOrderDateInfo] = useState([]);
+  const [olOrderDataInfoModel, setOLOrderDataInfoModel] = useState(false);
+
 
   const [printingId, setPrintingId] = useState(null);
   const [selectedItemId, setSelectedItemId] = useState(null);
@@ -158,16 +165,16 @@ const OrderView = () => {
     if (typeid === 3) {
       const specs = PowerSpecs
         ? PowerSpecs.split(",")
-            .map((s) => {
-              const [key, val] = s.split(":");
-              const cleanedValue =
-                val && !["null", "undefined"].includes(val.trim())
-                  ? formatPowerValue(val.trim())
-                  : "";
-              return cleanedValue ? `${key.trim()}: ${cleanedValue}` : "";
-            })
-            .filter(Boolean)
-            .join(", ")
+          .map((s) => {
+            const [key, val] = s.split(":");
+            const cleanedValue =
+              val && !["null", "undefined"].includes(val.trim())
+                ? formatPowerValue(val.trim())
+                : "";
+            return cleanedValue ? `${key.trim()}: ${cleanedValue}` : "";
+          })
+          .filter(Boolean)
+          .join(", ")
         : "";
 
       const lines = [
@@ -418,8 +425,8 @@ const OrderView = () => {
         Array.isArray(error?.data?.validationErrors)
           ? error?.data?.validationErrors
           : typeof errors === "string"
-          ? [error?.data?.validationErrors]
-          : []
+            ? [error?.data?.validationErrors]
+            : []
       );
       setIsGenerateInvoiceWarning(false);
       setErrorModalOpen(true);
@@ -492,8 +499,8 @@ const OrderView = () => {
         Array.isArray(error?.data?.validationErrors)
           ? error?.data?.validationErrors
           : typeof errors === "string"
-          ? [error?.data?.validationErrors]
-          : []
+            ? [error?.data?.validationErrors]
+            : []
       );
       setIsGenerateInvoiceWarning(false);
       setErrorModalOpen(true);
@@ -593,6 +600,40 @@ const OrderView = () => {
       setPrintingId(null);
     }
   };
+
+  const [getOLOrderData, { isError, data, error }] =
+    useLazyGetOLOrderDataQuery();
+
+  const handleOrderDetailsView = async (item) => {
+    // 1. Reset UI
+    setOlOrderDateInfo([]);
+    setOLOrderDataInfoModel(true);        // open modal
+
+    console.log("mabdka item - ", item);
+    try {
+      // 2. Trigger lazy query
+      const olOrderData = await getOLOrderData(item.OrderDetailId).unwrap();
+
+      // 3. Success path
+      if (!olOrderData || (Array.isArray(olOrderData) && olOrderData.length === 0)) {
+        toast.error('No data found for this Order details.');
+        setOlOrderDateInfo([]);
+      } else {
+        setOlOrderDateInfo(olOrderData.data);
+        toast.success('Order details loaded successfully.');
+      }
+    } catch (err) {
+      // 4. Any error (network, server, unwrap)
+      console.error('OL order fetch error:', err);
+      toast.error(
+        err?.data?.message ||
+        'Unable to load optical lens data. Please try again later.'
+      );
+      setOlOrderDateInfo([]);
+    }
+  };
+
+
   // console.log("dd",selectedDiscountItem)
   if (isViewLoading || isLoading) {
     return (
@@ -625,7 +666,7 @@ const OrderView = () => {
                 </HasPermission>
               )}
 
-            <Button variant="outline" onClick={() => navigate("/order-list")}>
+            <Button variant="outline" onClick={() => navigate("/order")}>
               Back
             </Button>
             <Button
@@ -646,9 +687,9 @@ const OrderView = () => {
             value={
               customerDataById?.data.data?.OrderPlacedDate
                 ? format(
-                    new Date(customerDataById?.data.data?.OrderPlacedDate),
-                    "dd/MM/yyyy"
-                  )
+                  new Date(customerDataById?.data.data?.OrderPlacedDate),
+                  "dd/MM/yyyy"
+                )
                 : ""
             }
           />
@@ -672,14 +713,11 @@ const OrderView = () => {
                 (customerDataById?.data.data?.CustomerMaster?.BillAddress1 ||
                   customerDataById?.data.data?.CustomerMaster?.BillAddress2) &&
                 customerDataById?.data.data?.CustomerMaster?.BillCity &&
-                `${
-                  customerDataById?.data.data?.CustomerMaster?.BillAddress1 ??
-                  ""
-                } ${
-                  customerDataById?.data.data?.CustomerMaster?.BillAddress2 ??
-                  ""
-                } ${
-                  customerDataById?.data.data?.CustomerMaster?.BillCity ?? ""
+                `${customerDataById?.data.data?.CustomerMaster?.BillAddress1 ??
+                ""
+                } ${customerDataById?.data.data?.CustomerMaster?.BillAddress2 ??
+                ""
+                } ${customerDataById?.data.data?.CustomerMaster?.BillCity ?? ""
                 }`
               }
             />
@@ -739,29 +777,29 @@ const OrderView = () => {
                 </TableCell>
                 {customerDataById?.data?.data?.CustomerMaster?.CreditBilling ===
                   0 && (
-                  <>
-                    <TableCell>₹{formatINR(order?.AdvanceAmount)}</TableCell>
-                    <TableCell>
-                      ₹
-                      {formatINR(
-                        order?.DiscountedSellingPrice * order.OrderQty +
+                    <>
+                      <TableCell>₹{formatINR(order?.AdvanceAmount)}</TableCell>
+                      <TableCell>
+                        ₹
+                        {formatINR(
+                          order?.DiscountedSellingPrice * order.OrderQty +
                           parseFloat(order.FittingPrice || 0) *
-                            (parseFloat(order.FittingGSTPercentage || 0) /
-                              100) +
+                          (parseFloat(order.FittingGSTPercentage || 0) /
+                            100) +
                           parseFloat(order.FittingPrice || 0) -
                           (order.AdvanceAmount || 0)
-                      )}
-                    </TableCell>
-                  </>
-                )}
+                        )}
+                      </TableCell>
+                    </>
+                  )}
 
                 <TableCell>
                   ₹
                   {formatINR(
                     order?.DiscountedSellingPrice * order.OrderQty +
-                      parseFloat(order.FittingPrice || 0) *
-                        (parseFloat(order.FittingGSTPercentage || 0) / 100) +
-                      parseFloat(order.FittingPrice || 0)
+                    parseFloat(order.FittingPrice || 0) *
+                    (parseFloat(order.FittingGSTPercentage || 0) / 100) +
+                    parseFloat(order.FittingPrice || 0)
                   )}
                 </TableCell>
                 <TableCell>{getOrderStatus(order.Status)}</TableCell>
@@ -807,18 +845,32 @@ const OrderView = () => {
                       </HasPermission>
                     )}
                     {order.typeid === 0 && (
-                      <button
-                        className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                        onClick={() => handlePrint(order)}
-                      >
-                        {printingId === order?.OrderDetailId ? (
-                          <Loader color="black" />
-                        ) : (
-                          <div className="flex items-center">
-                            <FiPrinter className="mr-1.5" />
-                          </div>
-                        )}
-                      </button>
+                      <>
+                        <button
+                          className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                          onClick={() => handlePrint(order)}
+                        >
+                          {printingId === order?.OrderDetailId ? (
+                            <Loader color="black" />
+                          ) : (
+                            <div className="flex items-center">
+                              <FiPrinter className="mr-1.5" />
+                            </div>
+                          )}
+                        </button>
+                        <button
+                          className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-black-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                          onClick={() => handleOrderDetailsView(order)}
+                        >
+                          {printingId === order?.OrderDetailId ? (
+                            <Loader color="black" />
+                          ) : (
+                            <div className="flex items-center">
+                              <FiEye className="mr-1.5" />
+                            </div>
+                          )}
+                        </button>
+                      </>
                     )}
                   </div>
                 </TableCell>
@@ -873,9 +925,9 @@ const OrderView = () => {
                       {formatINR(
                         Number(
                           grandTotal +
-                            parseFloat(
-                              customerDataById?.data?.data?.RoundOff || 0
-                            )
+                          parseFloat(
+                            customerDataById?.data?.data?.RoundOff || 0
+                          )
                         )
                       ) || "0"}
                     </span>
@@ -894,26 +946,26 @@ const OrderView = () => {
 
                   {customerDataById?.data.data?.CustomerMaster
                     ?.CreditBilling === 0 && (
-                    <div className="flex flex-col">
-                      <span className="text-neutral-700 font-semibold text-lg">
-                        Total Advance Amount
-                      </span>
-                      <span className="text-neutral-600 text-xl font-medium">
-                        ₹{formatINR(Number(advanceAmount?.toFixed(2))) || "0"}
-                      </span>
-                    </div>
-                  )}
+                      <div className="flex flex-col">
+                        <span className="text-neutral-700 font-semibold text-lg">
+                          Total Advance Amount
+                        </span>
+                        <span className="text-neutral-600 text-xl font-medium">
+                          ₹{formatINR(Number(advanceAmount?.toFixed(2))) || "0"}
+                        </span>
+                      </div>
+                    )}
                   {customerDataById?.data.data?.CustomerMaster
                     ?.CreditBilling === 0 && (
-                    <div className="flex flex-col">
-                      <span className="text-neutral-700 font-semibold text-lg">
-                        Total Balance Amount
-                      </span>
-                      <span className="text-neutral-600 text-xl font-medium">
-                        ₹{formatINR(Number(balanceAmount?.toFixed(2))) || "0"}
-                      </span>
-                    </div>
-                  )}
+                      <div className="flex flex-col">
+                        <span className="text-neutral-700 font-semibold text-lg">
+                          Total Balance Amount
+                        </span>
+                        <span className="text-neutral-600 text-xl font-medium">
+                          ₹{formatINR(Number(balanceAmount?.toFixed(2))) || "0"}
+                        </span>
+                      </div>
+                    )}
                 </div>
               </div>
             </div>
@@ -1034,6 +1086,183 @@ const OrderView = () => {
         danger={false}
         isLoading={isInvoiceGenerating}
       />
+
+
+
+      {/* ──────────────────────────────────────
+     Additional Lens Details – Animated Modal
+   ────────────────────────────────────── */}
+      {olOrderDataInfoModel && (
+        <AnimatePresence>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.92, y: 30 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.92, y: 30 }}
+              transition={{ type: "spring", damping: 30, stiffness: 350 }}
+              className="bg-white rounded-lg shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-y-auto"
+            >
+              {/* Header */}
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="flex items-center justify-between p-5 border-b border-gray-200"
+              >
+                <h3 className="text-xl font-bold text-neutral-800">
+                  Additional Lens Details
+                </h3>
+                <button
+                  onClick={() => {
+                    setOLOrderDataInfoModel(false);
+                    setOlOrderDateInfo([]);
+                  }}
+                  className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  <FiX className="w-5 h-5 text-neutral-600" />
+                </button>
+              </motion.div>
+
+              {/* Body */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="p-6"
+              >
+                {Object.keys(olOrderDataInfo).length === 0 ? (
+                  <div className="flex items-center justify-center h-64">
+                    <Loader color="black" />
+                  </div>
+                ) : (
+                  <div className="space-y-8">
+                    {(() => {
+                      const d = olOrderDataInfo;
+                      const fmt = (v) => (v == null || v === "" ? "N/A" : v);
+
+                      const ConsumerData = () => (
+                        <Section title="Consumer Data">
+                          <InputRow label="Consumer Card" value={fmt(d.ConsumerCard)} />
+                          <InputRow label="Engraving" value={fmt(d.Engraving)} />
+                          <InputRow label="DOB" value={fmt(d.DOB)} />
+                        </Section>
+                      );
+
+                      const IndividualLensData = () => (
+                        <Section title="Individual Lens Data">
+                          <InputRow label="Panto Angle" value={fmt(d.PantoAngle)} />
+                          <InputRow label="Bow Angle" value={fmt(d.BowAngle)} />
+                          <InputRow label="Frame Fit" value={fmt(d.FrameFit)} />
+                          <InputRow label="Distance Near" value={fmt(d.DistanceNear)} />
+                        </Section>
+                      );
+
+                      const CentrationData = () => (
+                        <Section title="Centration Data">
+                          <div className="grid grid-cols-4 gap-4">
+                            <EyeCheckbox side="R" />
+                            <InputField label="Pupillary Distance (PD)" value={fmt(d.RPD)} />
+                            <InputField label="Viewing Height" value={fmt(d.RVH)} />
+                            <InputField label="BVD" value={fmt(d.RBVD)} />
+                          </div>
+
+                          <div className="grid grid-cols-4 gap-4 mt-3">
+                            <EyeCheckbox side="L" />
+                            <InputField label="Pupillary Distance (PD)" value={fmt(d.LPD)} />
+                            <InputField label="Viewing Height" value={fmt(d.LVH)} />
+                            <InputField label="BVD" value={fmt(d.LBVD)} />
+                          </div>
+                        </Section>
+                      );
+
+                      const ThicknessOptions = () => (
+                        <Section title="Thickness Options">
+                          <div className="grid grid-cols-4 gap-4">
+                            <EyeCheckbox side="R" />
+                            <InputField label="Edge Thickness (ET)" value={fmt(d.RET)} />
+                            <InputField label="Center Thickness (CT)" value={fmt(d.RCT)} />
+                            <InputField label="Optima" value={fmt(d.ROptima)} />
+                          </div>
+
+                          <div className="grid grid-cols-4 gap-4 mt-3">
+                            <EyeCheckbox side="L" />
+                            <InputField label="Edge Thickness (ET)" value={fmt(d.LET)} />
+                            <InputField label="Center Thickness (CT)" value={fmt(d.LCT)} />
+                            <InputField label="Optima" value={fmt(d.LOptima)} />
+                          </div>
+                        </Section>
+                      );
+
+                      const FrameData = () => (
+                        <Section title="Frame Data">
+                          <InputRow label="Length" value={fmt(d.FrameLength)} />
+                          <InputRow label="Height" value={fmt(d.FrameHeight)} />
+                          <InputRow label="DBL" value={fmt(d.FrameDBL)} />
+                        </Section>
+                      );
+
+                      const PowerSpecs = () => (
+                        <Section title="Power Specification">
+                          <div className="grid grid-cols-5 gap-4">
+                            <EyeCheckbox side="R" />
+                            <InputField label="SPH" value={fmt(d.RightSphericalPower)} />
+                            <InputField label="CYL" value={fmt(d.RightCylinderPower)} />
+                            <InputField label="Axis" value={fmt(d.RightAxis)} />
+                            <InputField label="Add" value={fmt(d.RightAddition)} />
+                          </div>
+
+                          <div className="grid grid-cols-5 gap-4 mt-3">
+                            <EyeCheckbox side="L" />
+                            <InputField label="SPH" value={fmt(d.LeftSphericalPower)} />
+                            <InputField label="CYL" value={fmt(d.LeftCylinderPower)} />
+                            <InputField label="Axis" value={fmt(d.LeftAxis)} />
+                            <InputField label="Add" value={fmt(d.LeftAddition)} />
+                          </div>
+                        </Section>
+                      );
+
+                      return (
+                        <>
+                          <ConsumerData />
+                          <IndividualLensData />
+                          <CentrationData />
+                          <ThicknessOptions />
+                          <FrameData />
+                          <PowerSpecs />
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+              </motion.div>
+
+              {/* Footer – optional Close button */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="flex justify-end p-4 border-t border-gray-200"
+              >
+                <button
+                  onClick={() => {
+                    setOLOrderDataInfoModel(false);
+                    setOlOrderDateInfo([]);
+                  }}
+                  className="px-5 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-900 transition-colors"
+                >
+                  Close
+                </button>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>
+      )}
     </div>
   );
 };
@@ -1045,6 +1274,53 @@ const Info = ({ label, value }) => (
     <div className="text-neutral-600">
       {value !== null && value !== undefined && value !== "" ? value : "N/A"}
     </div>
+  </div>
+);
+
+
+/** ──────────────────────────────────────
+ *  Re-usable tiny components for the modal
+ *  ────────────────────────────────────── */
+const Section = ({ title, children }) => (
+  <div className="border-b border-gray-200 pb-5 mb-7">
+    <h3 className="text-lg font-semibold text-neutral-800 mb-3">{title}</h3>
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {children}
+    </div>
+  </div>
+);
+
+const InputRow = ({ label, value }) => (
+  <div className="flex flex-col">
+    <label className="text-sm font-medium text-neutral-600">{label}</label>
+    <input
+      readOnly
+      value={value}
+      className="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+    />
+  </div>
+);
+
+const InputField = ({ label, value }) => (
+  <div className="flex flex-col">
+    <label className="text-sm font-medium text-neutral-600">{label}</label>
+    <input
+      readOnly
+      value={value}
+      className="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+    />
+  </div>
+);
+
+const EyeCheckbox = ({ side }) => (
+  <div className="flex items-center justify-center">
+    <input
+      type="checkbox"
+      checked
+      readOnly
+      className="h-5 w-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+    />
+    <span className="ml-2 text-sm font-medium text-neutral-700">{side}</span>
   </div>
 );
 

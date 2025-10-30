@@ -99,7 +99,7 @@ const StockTransferIn = () => {
   const today = new Date();
 
   const handleViewSalesReturn = (id) => {
-    navigate(`/stock-transferin/view?stockInId=${id}`);
+    navigate(`/stock-transfer-in/view?stockInId=${id}`);
   };
 
   if (isStockLoading) {
@@ -213,7 +213,7 @@ const StockTransferIn = () => {
                   className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
                   onClick={() => {
                     goToStockStep(1);
-                    navigate("/stock-transferin/create");
+                    navigate("/stock-transfer-in/create");
                   }}
                 >
                   Add

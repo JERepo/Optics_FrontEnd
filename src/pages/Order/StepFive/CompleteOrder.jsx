@@ -456,7 +456,7 @@ const CompleteOrder = () => {
 
       toast.success("Order successfully saved");
 
-      navigate("/order-list");
+      navigate("/order");
     } catch (error) {
       toast.error("Please try again after some time or try re-load the page!");
     } finally {
@@ -509,7 +509,7 @@ const CompleteOrder = () => {
 
         toast.success("Order successfully saved");
 
-        navigate("/order-list");
+        navigate("/order");
       } catch (error) {
         toast.error(
           "Please try again after some time or try re-load the page!"
