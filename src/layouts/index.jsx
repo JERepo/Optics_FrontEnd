@@ -121,6 +121,7 @@ import UserProfile from "../pages/Profile/UserProfile";
 import SearchContactLens from "../pages/SearchStock/SearchCLStock";
 import VendorPaymentView from "../pages/LedgerEntries/VendorPayment/VendorPaymentView";
 import CustomerPaymentReport from "../pages/Reports/CustomerPaymentReport";
+import CustomerFamilyHistory from "../pages/Reports/CustomerFamilyHistory";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -774,7 +775,9 @@ export const router = createBrowserRouter([
         path: "invoice/view",
         element: (
           <PermissionRoute module="Invoice" action="view">
-            <InvoiceView />
+            <ErrorBoundary>
+              <InvoiceView />
+            </ErrorBoundary>
           </PermissionRoute>
         ),
       },
@@ -792,7 +795,9 @@ export const router = createBrowserRouter([
         path: "sales-return",
         element: (
           <PermissionRoute module="SalesReturn" action="view">
-            <SalesList />
+            <ErrorBoundary>
+              <SalesList />
+            </ErrorBoundary>
           </PermissionRoute>
         ),
       },
@@ -800,7 +805,9 @@ export const router = createBrowserRouter([
         path: "sales-return/view",
         element: (
           <PermissionRoute module="SalesReturn" action="view">
-            <SalesView />
+            <ErrorBoundary>
+              <SalesView />
+            </ErrorBoundary>
           </PermissionRoute>
         ),
       },
@@ -808,7 +815,9 @@ export const router = createBrowserRouter([
         path: "sales-return/create",
         element: (
           <PermissionRoute module="SalesReturn" action="create">
-            <TotalSales />
+            <ErrorBoundary>
+              <TotalSales />
+            </ErrorBoundary>
           </PermissionRoute>
         ),
       },
@@ -846,7 +855,9 @@ export const router = createBrowserRouter([
         path: "purchase-return/create",
         element: (
           <PermissionRoute module="Purchase-Return" action="create">
-            <TotalPurchaseReturn />
+            <ErrorBoundary>
+              <TotalPurchaseReturn />
+            </ErrorBoundary>
           </PermissionRoute>
         ),
       },
@@ -854,7 +865,9 @@ export const router = createBrowserRouter([
         path: "purchase-return",
         element: (
           <PermissionRoute module="Purchase-Return" action="view">
-            <PurchaseReturn />
+            <ErrorBoundary>
+              <PurchaseReturn />
+            </ErrorBoundary>
           </PermissionRoute>
         ),
       },
@@ -870,7 +883,9 @@ export const router = createBrowserRouter([
         path: "stock-transfer-in",
         element: (
           <PermissionRoute module="StockTranserIn" action="view">
-            <StockTransferIn />
+            <ErrorBoundary>
+              <StockTransferIn />
+            </ErrorBoundary>
           </PermissionRoute>
         ),
       },
@@ -878,7 +893,9 @@ export const router = createBrowserRouter([
         path: "stock-transfer-in/view",
         element: (
           <PermissionRoute module="StockTranserIn" action="view">
-            <StockTransferInView />
+            <ErrorBoundary>
+              <StockTransferInView />
+            </ErrorBoundary>
           </PermissionRoute>
         ),
       },
@@ -886,7 +903,9 @@ export const router = createBrowserRouter([
         path: "stock-transfer-in/create",
         element: (
           <PermissionRoute module="StockTranserIn" action="create">
-            <TotalStockTransferIn />
+            <ErrorBoundary>
+              <TotalStockTransferIn />
+            </ErrorBoundary>
           </PermissionRoute>
         ),
       },
@@ -1071,6 +1090,10 @@ export const router = createBrowserRouter([
       {
         path: "search-stock/contact-lens",
         element: <SearchContactLens />,
+      },
+      {
+        path: "customer-family-history",
+        element: <CustomerFamilyHistory />,
       },
     ],
   },

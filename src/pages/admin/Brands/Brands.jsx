@@ -176,7 +176,7 @@ const Brands = () => {
 
       <Table
         columns={["S.No", "Brand Name", "Brand active for", "created on", ""]}
-        data={paginatedBrands}
+        data={paginatedBrands || []}
         renderHeader={(column) => {
           if (column === "Brand active for") {
             return (
@@ -284,6 +284,7 @@ const Brands = () => {
         pageSize={pageSize}
         onPageSizeChange={setPageSize}
         totalItems={brands.length}
+        // isLoading={isLoading}
       />
 
       <ConfirmationModal

@@ -258,7 +258,7 @@ const CustomerForm = ({
                           type="radio"
                           name="GSTINType"
                           value="1"
-                          checked={formData.GSTINType == 0}
+                          checked={formData.GSTINType == 1}
                           onChange={handleInputChange}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                           disabled={
@@ -272,7 +272,7 @@ const CustomerForm = ({
                           type="radio"
                           name="GSTINType"
                           value="0"
-                          checked={formData.GSTINType == 1}
+                          checked={formData.GSTINType == 0}
                           onChange={handleInputChange}
                           disabled={
                             (invoice?.Status === 1 && customerData?.CustomerType == 1) || isView

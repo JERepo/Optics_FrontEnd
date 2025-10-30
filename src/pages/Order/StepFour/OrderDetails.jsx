@@ -350,7 +350,7 @@ const OrderDetails = () => {
       value: input,
     };
     if (otpValue != null && showOtp) {
-      payload.otp = parseInt(otpValue);
+      payload.otp = otpValue;
     }
 
     try {

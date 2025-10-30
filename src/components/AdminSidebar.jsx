@@ -6,6 +6,8 @@ import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 import { menuItems } from "../utils/constants/menuConfig";
 import { useSelector } from "react-redux";
 import { hasPermission } from "../utils/permissionUtils";
+import luxonyxlogo from '../assets/client01.jpg'
+import optics from '../assets/JELogo.jpg'
 
 const AdminSidebar = ({ isCollapsed, setIsCollapsed }) => {
   const [openDropdowns, setOpenDropdowns] = useState([]);
@@ -97,7 +99,8 @@ const AdminSidebar = ({ isCollapsed, setIsCollapsed }) => {
             }`}
           >
             <div className="w-10 h-10 bg-blue-100 flex justify-center items-center rounded-lg text-blue-600">
-              <FiLayers className="text-lg" />
+              {/* <FiLayers className="text-lg" /> */}
+              <img src={luxonyxlogo} className="rounded-lg" alt="Luxonyx" title="Luxonyx" />
             </div>
             {!isCollapsed && (
               <div>
@@ -157,6 +160,7 @@ const AdminSidebar = ({ isCollapsed, setIsCollapsed }) => {
                 {item.path ? (
                   <NavLink
                     to={item.path}
+                      title={item.name} 
                     className={({ isActive }) =>
                       `flex items-center py-2 px-3 rounded-lg transition-colors group ${
                         isActive
