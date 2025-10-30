@@ -49,6 +49,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { useGetAllCustomerGroupsQuery } from "../../api/customerGroup";
 import toast from "react-hot-toast";
 import { isValidNumericInput } from "../../utils/isValidNumericInput";
+import { useSelector } from "react-redux";
 
 const API_BASE = import.meta.env.VITE_LOCAL;
 
@@ -80,6 +81,7 @@ const AccOptions = [
 ];
 
 const CompanySettings = () => {
+  const {user,hasMultipleLocations}= useSelector(state => state.auth)
   const [expandedSection, setExpandedSection] = useState(null); // first accordion open
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [logo, setLogo] = useState(null);
@@ -269,7 +271,10 @@ const CompanySettings = () => {
         invoiceDcPdf: 0, // 0 show MRP, 1 selling
         editInvoicePrice: 0,
         salesReturnAgainstInvoiceOnly: 0,
-        NoOfColumns :allLabels?.data?.find(item => data?.BarcodeLabelId == item.Id).NoOfColumns,
+        // NoOfColumns: allLabels?.data?.find(
+        //   (item) => data?.BarcodeLabelId == item.Id
+        // ).NoOfColumns || null,
+        NoOfColumns: typeof allLabels.data.find(l => l.Id == data?.BarcodeLabelId)?.NoOfColumns === 'number' ? allLabels.data.find(l => l.Id == data?.BarcodeLabelId)?.NoOfColumns : null,
         accessoryLabel: data?.AccBarcodeLableId,
         accessoryColumn1: data.AccBL1,
         accessoryColumn2: data.AccBL2,
@@ -286,7 +291,7 @@ const CompanySettings = () => {
         gvMultipleUse: data.GVMultipleUse,
         dcBilling: data.DCBilling,
         creditBilling: data.CreditBilling,
-        loyaltyEnable: data.LoyaltyEnable,
+        loyaltyEnable: data.EnableCustomerLoyalty,
         prefixRollOff: data.PrefixRollOff,
         clMinExpPeriod: data.CLMinExpiryPeriod,
         clExpiryGracePeriod: data.ClExpiryGracePeriod,
@@ -301,6 +306,7 @@ const CompanySettings = () => {
         EInvoiceInstanceID: data?.EInvoiceInstanceID,
         discountPercentage: data?.DiscountMaxSlabPerct,
         enableEInStockOut: data?.STEInvoiceEnable,
+        orderDiscountApproval: data?.DiscountApproval,
       });
       setLogoPreview(
         companySettingData?.data?.data?.Company?.Logo
@@ -428,9 +434,8 @@ const CompanySettings = () => {
 
   const ExpandIcon = () => (
     <FiChevronDown
-      className={`transition-transform duration-300 ${
-        expandedSection ? "rotate-180" : ""
-      }`}
+      className={`transition-transform duration-300 ${expandedSection ? "rotate-180" : ""
+        }`}
     />
   );
 
@@ -518,7 +523,7 @@ const CompanySettings = () => {
       GVMultipleUse: formData.gvMultipleUse,
       DCBilling: formData.dcBilling,
       CreditBilling: formData.creditBilling,
-      LoyaltyEnable: formData.loyaltyEnable,
+      EnableCustomerLoyalty: formData.loyaltyEnable,
       PrefixRollOff: formData.prefixRollOff,
       CLMinExpiryPeriod: formData.clMinExpPeriod,
       ClExpiryGracePeriod: formData.clExpiryGracePeriod,
@@ -532,6 +537,7 @@ const CompanySettings = () => {
       EInvoiceInstanceID: formData.EInvoiceInstanceID,
       ClientEmail: formData.ClientEmail,
       DiscountMaxSlabPerct: formData?.discountPercentage,
+      DiscountApproval: formData?.orderDiscountApproval,
     };
 
     // If logo/QR need uploading (assuming multipart form)
@@ -954,17 +960,19 @@ const CompanySettings = () => {
                 label="No"
               />
             </div>
-            <div className="flex-grow flex">
-              <TextField
-                label="GST Search Instance ID"
-                placeholder="Enter GST Search Instance ID"
-                variant="outlined"
-                size="small"
-                fullWidth
-                value={formData.gstSearchInstanceId}
-                onChange={handleChange("gstSearchInstanceId")}
-              />
-            </div>
+            {formData?.enableGstVerification === 1 && (
+              <div className="flex-grow flex">
+                <TextField
+                  label="GST Search Instance ID"
+                  placeholder="Enter GST Search Instance ID"
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                  value={formData.gstSearchInstanceId}
+                  onChange={handleChange("gstSearchInstanceId")}
+                />
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-5">
             <label className="text-neutral-800 font-semibold text-base">
@@ -986,19 +994,20 @@ const CompanySettings = () => {
               label="No"
             />
           </div>
-          <div className="flex-grow flex">
-            <TextField
-              label="E-Invoice Instance ID"
-              placeholder="Enter E-Invoice Instance ID"
-              variant="outlined"
-              size="small"
-              fullWidth
-              value={formData.EInvoiceInstanceID}
-              onChange={handleChange("EInvoiceInstanceID")}
-            />
-          </div>
+
           {formData.enableEInvoice === 1 && (
             <>
+              <div className="flex-grow flex">
+                <TextField
+                  label="E-Invoice Instance ID"
+                  placeholder="Enter E-Invoice Instance ID"
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                  value={formData.EInvoiceInstanceID}
+                  onChange={handleChange("EInvoiceInstanceID")}
+                />
+              </div>
               <div className="grid grid-cols-4 gap-5">
                 <div>
                   <Autocomplete
@@ -1714,9 +1723,9 @@ const CompanySettings = () => {
                   value={
                     allLabels?.data
                       ? allLabels.data.find(
-                          (item) =>
-                            String(item.Id) === String(formData.frameLabel)
-                        ) || null
+                        (item) =>
+                          String(item.Id) === String(formData.frameLabel)
+                      ) || null
                       : null
                   }
                   onChange={(_, newValue) =>
@@ -1740,7 +1749,7 @@ const CompanySettings = () => {
               </div>
               {formData?.frameLabel && formData?.NoOfColumns && (
                 <div className="grid grid-cols-3 gap-5 w-full mt-5">
-                  {Array.from({ length: formData.NoOfColumns }).map(
+                  {Array.from({ length: formData?.NoOfColumns }).map(
                     (_, index) => (
                       <div key={index}>
                         <Autocomplete
@@ -1792,9 +1801,9 @@ const CompanySettings = () => {
                   value={
                     allLabels?.data
                       ? allLabels.data.find(
-                          (item) =>
-                            String(item.Id) === String(formData.accessoryLabel)
-                        ) || null
+                        (item) =>
+                          String(item.Id) === String(formData.accessoryLabel)
+                      ) || null
                       : null
                   }
                   onChange={(_, newValue) =>
@@ -1818,7 +1827,7 @@ const CompanySettings = () => {
               </div>
               {formData?.accessoryLabel && formData?.NoOfColumns && (
                 <div className="grid grid-cols-3 gap-5 w-full mt-5">
-                  {Array.from({ length: formData.NoOfColumns }).map(
+                  {Array.from({ length: formData?.NoOfColumns }).map(
                     (_, index) => (
                       <div key={index}>
                         <Autocomplete
@@ -1898,26 +1907,28 @@ const CompanySettings = () => {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <TextField
-                  label="Discount % above which Approval is Required"
-                  placeholder="Enter Discount %"
-                  variant="outlined"
-                  size="small"
-                  fullWidth
-                  value={formData.discountPercentage}
-                  onChange={handleChange("discountPercentage")}
-                />
-                <TextField
-                  label="Discount Value above which Approval is Required"
-                  placeholder="Enter Discount Value"
-                  variant="outlined"
-                  size="small"
-                  fullWidth
-                  value={formData.discountValue}
-                  onChange={handleChange("discountValue")}
-                />
-              </div>
+              {formData?.orderDiscountApproval == 1 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <TextField
+                    label="Discount % above which Approval is Required"
+                    placeholder="Enter Discount %"
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                    value={formData.discountPercentage}
+                    onChange={handleChange("discountPercentage")}
+                  />
+                  <TextField
+                    label="Discount Value above which Approval is Required"
+                    placeholder="Enter Discount Value"
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                    value={formData.discountValue}
+                    onChange={handleChange("discountValue")}
+                  />
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center gap-5">
                   <label className="text-neutral-800 font-semibold text-base">
@@ -1977,7 +1988,7 @@ const CompanySettings = () => {
                   onChange={handleChange("emailApproval")}
                 />
                 <div className="flex gap-4">
-                  <Autocomplete
+                  {/* <Autocomplete
                     options={countries?.country || []}
                     getOptionLabel={(option) =>
                       `${option.CountryName}(${option.ISDCode})`
@@ -2004,8 +2015,8 @@ const CompanySettings = () => {
                       />
                     )}
                     fullWidth
-                  />
-                  <TextField
+                  /> */}
+                  {/* <TextField
                     label="Mobile No For Whatsapp Approval"
                     placeholder="Enter Mobile No"
                     variant="outlined"
@@ -2013,7 +2024,7 @@ const CompanySettings = () => {
                     fullWidth
                     value={formData.mobileNoApproval}
                     onChange={handleChange("mobileNoApproval")}
-                  />
+                  /> */}
                 </div>
               </div>
             </div>
@@ -2328,7 +2339,7 @@ const CompanySettings = () => {
       {/* Accordion Sections */}
       <Paper elevation={0} className="">
         <Autocomplete
-          options={allLocations?.data || []}
+          options={allLocations?.data?.filter((loc) => hasMultipleLocations.includes(String(loc.Id))) || []}
           getOptionLabel={(option) => option.LocationName || ""}
           value={
             allLocations?.data?.find((loc) => loc.Id === selectedLocation) ||

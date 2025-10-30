@@ -4,6 +4,7 @@ import { FiArrowLeft, FiPlus } from "react-icons/fi";
 import Button from "../../../components/ui/Button";
 import Radio from "../../../components/Form/Radio";
 import toast from "react-hot-toast";
+import { useGetSavedOrderDetailsQuery } from "../../../api/orderApi";
 
 const Products = [
   { value: 6, label: "Frame/Sunglass + lens" },
@@ -15,10 +16,20 @@ const Products = [
 ];
 
 const SelectProduct = () => {
-  const { goToSubStep, goToStep, setSelectedProduct, selectedProduct } =
-    useOrder();
+  const {
+    goToSubStep,
+    goToStep,
+    setSelectedProduct,
+    selectedProduct,
+    customerId,
+  } = useOrder();
+  const { data: savedOrders, isLoading: savedOrdersLoading } =
+    useGetSavedOrderDetailsQuery({ orderId: customerId.orderId });
   const handleAddProduct = () => {
-    console.log(selectedProduct,"ssss")
+     if (savedOrders?.length && savedOrders?.every((item) => item.offer?.offerType === 4)) {
+      toast.error("Offers got applied for all the products in OrderDetails please remove them to add products!");
+      return;
+    }
     if (selectedProduct?.value === 1) {
       setSelectedProduct(selectedProduct);
       goToStep(3);

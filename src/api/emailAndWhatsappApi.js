@@ -4,7 +4,7 @@ import { customBaseQuery } from "./customBaseQuery";
 export const emailAndWhatsaApp = createApi({
   reducerPath: "emailAndWhatsaApp",
   baseQuery: customBaseQuery,
-  tagTypes : ["Email"],
+  tagTypes: ["Email"],
   endpoints: (builder) => ({
     getParameters: builder.query({
       query: ({ type }) => ({
@@ -18,6 +18,7 @@ export const emailAndWhatsaApp = createApi({
         method: "POST",
         body: payload,
       }),
+      invalidatesTags: ["Email"],
     }),
     getEmailByModule: builder.query({
       query: ({ module, companyId }) => ({
@@ -29,7 +30,8 @@ export const emailAndWhatsaApp = createApi({
         url: `/api/v1/communication/update`,
         method: "PUT",
         body: payload,
-      })
+      }),
+      invalidatesTags: ["Email"],
     }),
   }),
 });
@@ -38,5 +40,5 @@ export const {
   useGetParametersQuery,
   useCreateEmailMutation,
   useGetEmailByModuleQuery,
-  useUpdateEmailMutation
+  useUpdateEmailMutation,
 } = emailAndWhatsaApp;

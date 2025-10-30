@@ -9,12 +9,16 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import Button from "../../../components/ui/Button";
 import { useOrder } from "../../../features/OrderContext";
 import { Table, TableCell, TableRow } from "../../../components/Table";
-import { useGetAllOrdersQuery, useLazyPrintPdfQuery } from "../../../api/orderApi";
+import {
+  useGetAllOrdersQuery,
+  useLazyPrintPdfQuery,
+} from "../../../api/orderApi";
 import { enGB } from "date-fns/locale";
 import Loader from "../../../components/ui/Loader";
 import { useSelector } from "react-redux";
 import HasPermission from "../../../components/HasPermission";
 import toast from "react-hot-toast";
+import ConnectionStatus from "../../../components/ErrorHandling/ConnectionStatus";
 
 const OrderList = () => {
   const navigate = useNavigate();
@@ -77,25 +81,29 @@ const OrderList = () => {
       });
     }
 
-    return filtered.map((order) => ({
-      id: order.Id,
-      order: order,
-      orderNo: order.OrderNo,
-      OrderPrefix: order.OrderPrefix,
-      orderDate: new Intl.DateTimeFormat("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }).format(new Date(order.OrderPlacedDate)),
+    return filtered
+      .map((order) => ({
+        id: order.Id,
+        order: order,
+        orderNo: order.OrderNo,
+        OrderPrefix: order.OrderPrefix,
+        orderDate: new Intl.DateTimeFormat("en-GB", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }).format(new Date(order.OrderPlacedDate)),
 
-      customerName: order.CustomerMaster?.CustomerName,
-      patientName: order.CustomerContactDetail?.CustomerName,
-      mobileNo: order.CustomerContactDetail?.MobNumber,
-      orderValue: order.TotalValue,
-      totalQty: order.TotalQty,
-      Status: order.Status,
-    }));
-    // .filter((order) => order.CompanyId == hasMultipleLocations[0]);
+        customerName: order.CustomerMaster?.CustomerName,
+        patientName: order.CustomerContactDetail?.CustomerName,
+        mobileNo: order.CustomerContactDetail?.MobNumber,
+        orderValue: order.TotalValue,
+        totalQty: order.TotalQty,
+        Status: order.Status,
+        CompanyId: order.CompanyId,
+      }))
+      .filter((order) =>
+        hasMultipleLocations.includes(order.CompanyId)
+      );
   }, [allOrders, fromDate, toDate, searchQuery]);
 
   const startIndex = (currentPage - 1) * pageSize;
@@ -127,7 +135,7 @@ const OrderList = () => {
 
     try {
       const blob = await generatePrint({
-       orderId : item.id
+        orderId: item.id,
       }).unwrap();
 
       const url = window.URL.createObjectURL(

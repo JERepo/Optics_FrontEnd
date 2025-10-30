@@ -19,13 +19,14 @@ import {
   useDeActivateMutation,
   useGetAllBrandGroupsQuery,
 } from "../../../api/brandGroup";
+import { format } from "date-fns";
 
 const BrandGroup = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const locale = navigator.language || navigator.languages[0] || "en-IN";
+  const locale = navigator.language || navigator.languages[0] || "en-GB";
 
   const [selectedBrandId, setSelectedBrandId] = useState(null);
   const [currentStatus, setCurrentStatus] = useState(null);
@@ -45,11 +46,12 @@ const BrandGroup = () => {
       id: brand.Id,
       name: brand.BrandGroupName,
 
-      createdAt: new Intl.DateTimeFormat(locale, {
-        year: "numeric",
-        month: "short",
-        day: "2-digit",
-      }).format(new Date(brand.CreatedDate)),
+      // createdAt: new Intl.DateTimeFormat(locale, {
+      //   year: "numeric",
+      //   month: "short",
+      //   day: "2-digit",
+      // }).format(new Date(brand.CreatedDate)),
+      createdAt: format(new Date(brand.CreatedDate), 'dd/MM/yyyy'),
       enabled: brand.IsActive,
     }));
     if (sortConfig.key === "name") {
@@ -179,7 +181,7 @@ const BrandGroup = () => {
                   />
                 </HasPermission>
                 <HasPermission module="Brand group" action="edit">
-                 <button
+                  <button
                     onClick={() => handleEdit(pool.id)}
                     className="text-neutral-600 hover:text-primary transition-colors"
                     aria-label="Edit"

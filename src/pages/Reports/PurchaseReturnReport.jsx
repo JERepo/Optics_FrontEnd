@@ -13,7 +13,7 @@ import toast from "react-hot-toast";
 const reportTypes = [
   { value: 0, label: "Detailed Purchase Return" },
   // { value: 1, label: "Tally Purchase Return" },
-  { value: 1, label: "Purchase Return by Product Type" },
+  // { value: 1, label: "Purchase Return by Product Type" },
 ];
 
 const dateOptions = [
@@ -56,24 +56,24 @@ const handleDateTypeChange = (_, newValue) => {
       end = endOfDay(subDays(today, 1));
       break;
     case "7days":
-      start = startOfDay(subDays(today, 7));
-      end = endOfDay(subDays(today, 1));
+      start = startOfDay(subDays(today, 6));
+      end = endOfDay(today);
       break;
     case "30days":
-      start = startOfDay(subDays(today, 30));
-      end = endOfDay(subDays(today, 1));
+      start = startOfDay(subDays(today, 29)); 
+      end = endOfDay(today);
       break;
     case "90days":
-      start = startOfDay(subDays(today, 90));
-      end = endOfDay(subDays(today, 1));
+      start = startOfDay(subDays(today, 89)); 
+      end = endOfDay(today);
       break;
     case "6months":
       start = startOfDay(subMonths(today, 6));
-      end = endOfDay(subDays(today, 1));
+      end = endOfDay(today); 
       break;
     case "1year":
       start = startOfDay(subMonths(today, 12));
-      end = endOfDay(subDays(today, 1));
+      end = endOfDay(today); 
       break;
     case "custom":
     default:

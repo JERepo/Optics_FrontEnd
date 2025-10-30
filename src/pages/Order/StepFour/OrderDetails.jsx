@@ -58,6 +58,7 @@ const DiscountInput = ({
   isRemovingDiscount,
   isRemovingOffer,
   offerData,
+  savedOrders,
 }) => {
   const fittingPrice = parseFloat(item.FittingPrice) || 0;
   const fittingGst = parseFloat(item.FittingGSTPercentage) || 0;
@@ -189,30 +190,38 @@ const DiscountInput = ({
                   )}
                 </Button>
               ) : (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    item.offer
-                      ? onRemoveOffer(item.OrderDetailId)
-                      : onRemoveDiscount(item.OrderDetailId)
-                  }
-                  disabled={item.offer ? isRemovingOffer : isRemovingDiscount}
-                  className="shrink-0 relative"
-                  title={item.offer ? "Remove Offer" : "Remove Discount"}
-                >
-                  {item.offer ? (
-                    isRemovingOffer ? (
-                      <div className="animate-spin h-4 w-4 border-2 border-t-transparent border-gray-500 rounded-full" />
-                    ) : (
-                      <FiX size={14} />
-                    )
-                  ) : isRemovingDiscount ? (
-                    <div className="animate-spin h-4 w-4 border-2 border-t-transparent border-gray-500 rounded-full" />
-                  ) : (
-                    <FiX size={14} />
+                <div>
+                  {savedOrders?.every(
+                    (item) => item.offer?.offerType !== 4
+                  ) && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        item.offer
+                          ? onRemoveOffer(item.OrderDetailId)
+                          : onRemoveDiscount(item.OrderDetailId)
+                      }
+                      disabled={
+                        item.offer ? isRemovingOffer : isRemovingDiscount
+                      }
+                      className="shrink-0 relative"
+                      title={item.offer ? "Remove Offer" : "Remove Discount"}
+                    >
+                      {item.offer ? (
+                        isRemovingOffer ? (
+                          <div className="animate-spin h-4 w-4 border-2 border-t-transparent border-gray-500 rounded-full" />
+                        ) : (
+                          <FiX size={14} />
+                        )
+                      ) : isRemovingDiscount ? (
+                        <div className="animate-spin h-4 w-4 border-2 border-t-transparent border-gray-500 rounded-full" />
+                      ) : (
+                        <FiX size={14} />
+                      )}
+                    </Button>
                   )}
-                </Button>
+                </div>
               )}
             </div>
           )}
@@ -252,6 +261,7 @@ const OrderDetails = () => {
   const [showOtp, setShowOtp] = useState(false);
   const [otpValue, setOtpValue] = useState(null);
   const [selectedDiscountItem, setSelectedDiscountItem] = useState(null);
+  const [goBackOfferWarning, setGoBackOfferRemoveWarning] = useState(false);
 
   // API queries
   const { data: savedOrders, isLoading: savedOrdersLoading } =
@@ -279,6 +289,13 @@ const OrderDetails = () => {
 
   const handleBack = () => goToStep(currentStep - 1);
   const handleAddProduct = () => {
+    if (
+      savedOrders?.length &&
+      savedOrders?.every((item) => item.offer?.offerType === 4)
+    ) {
+      toast.error("Please Remove the Offers to add Products!");
+      return;
+    }
     goToStep(2);
     // setSubStep(1)
   };
@@ -429,7 +446,7 @@ const OrderDetails = () => {
       });
     }
   };
-
+  console.log("saved or", savedOrders);
   const handleRemoveOfferType3 = async (orderDetailId) => {
     setRemovingOffers((prev) => ({ ...prev, [orderDetailId]: true }));
     try {
@@ -457,6 +474,7 @@ const OrderDetails = () => {
         },
       }).unwrap();
       toast.success("Offer removed successfully");
+      setGoBackOfferRemoveWarning(false);
     } catch (error) {
       toast.error(error?.data?.message || "Failed to remove offer");
     } finally {
@@ -881,25 +899,40 @@ const OrderDetails = () => {
       setOfferCode("");
     }
   };
-const getOtpModalTitle = () => {
-  if (selectedDiscountItem?.isType4) {
-    return "Secure Verification for Order-Level Offer Approval";
-  } 
-  
-  // If offer-related (has an offerCode or is manually opened from offer modal)
-  if (orderDetails && selectedDiscountItem?.OrderDetailId === orderDetails?.OrderDetailId && orderDetails?.offer) {
-    return "Secure Verification for Item-Level Offer Approval";
-  }
+  const getOtpModalTitle = () => {
+    if (selectedDiscountItem?.isType4) {
+      return "Secure Verification for Order-Level Offer Approval";
+    }
 
-  // Default to discount
-  return "Secure Verification for Discount Approval";
-};
+    // If offer-related (has an offerCode or is manually opened from offer modal)
+    if (
+      orderDetails &&
+      selectedDiscountItem?.OrderDetailId === orderDetails?.OrderDetailId &&
+      orderDetails?.offer
+    ) {
+      return "Secure Verification for Item-Level Offer Approval";
+    }
 
+    // Default to discount
+    return "Secure Verification for Discount Approval";
+  };
 
   const offerType4ValueCheck = savedOrders?.reduce(
     (sum, item) => sum + parseFloat(item.DiscountValue),
     0
   );
+
+  const handleOrderBack = async () => {
+    if (
+      savedOrders?.length &&
+      savedOrders?.every((item) => item.offer?.offerType === 4)
+    ) {
+      setGoBackOfferRemoveWarning(true);
+      return;
+    }
+    goToStep(3);
+  };
+
   return (
     <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-md overflow-hidden">
@@ -918,7 +951,7 @@ const getOtpModalTitle = () => {
               <Button
                 icon={FiArrowLeft}
                 variant="outline"
-                onClick={() => goToStep(2)}
+                onClick={handleOrderBack}
                 className="w-full sm:w-auto"
               >
                 Back
@@ -1064,6 +1097,7 @@ const getOtpModalTitle = () => {
                       }
                       isRemovingOffer={!!removingOffers[item.OrderDetailId]}
                       offerData={allOfferDetails?.data?.data}
+                      savedOrders={savedOrders}
                     />
                   </TableCell>
                   <TableCell>
@@ -1387,6 +1421,17 @@ const getOtpModalTitle = () => {
             cancelText="Cancel"
             danger={false}
             isLoading={isOffer4Applying}
+          />
+          <ConfirmationModal
+            isOpen={goBackOfferWarning}
+            onClose={() => setGoBackOfferRemoveWarning(false)}
+            onConfirm={handleRemoveOfferType4}
+            title="Offer Removal warning!"
+            message="If you Go Back the Applied Offers will be removed automatically!"
+            confirmText="Yes, Proceed"
+            cancelText="Cancel"
+            danger={false}
+            isLoading={isOfferType4Removing}
           />
         </div>
       </div>

@@ -87,12 +87,10 @@ const StockTransferIn = () => {
         totalQty: s.TotalQtyIn,
         totalValue: s.TotalValueIn,
         CompanyId: s.CompanyId,
-        STInCreateDate :s.STInCreateDate
+        STInCreateDate: s.STInCreateDate,
       }))
-      .filter((order) => order.CompanyId == hasMultipleLocations[0])
-      .sort(
-        (a, b) => new Date(b.STInCreateDate) - new Date(a.STInCreateDate)
-      );
+      .filter((order) => hasMultipleLocations.includes(order.CompanyId))
+      .sort((a, b) => new Date(b.STInCreateDate) - new Date(a.STInCreateDate));
   }, [allStockIn, fromDate, toDate, searchQuery, allLocations]);
 
   const startIndex = (currentPage - 1) * pageSize;
@@ -210,16 +208,16 @@ const StockTransferIn = () => {
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <HasPermission module="StockTranserIn" action="create">
-              <Button
-                icon={FiPlus}
-                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
-                onClick={() => {
-                  goToStockStep(1);
-                  navigate("/stock-transferin/create");
-                }}
-              >
-                Add
-              </Button>
+                <Button
+                  icon={FiPlus}
+                  className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
+                  onClick={() => {
+                    goToStockStep(1);
+                    navigate("/stock-transferin/create");
+                  }}
+                >
+                  Add
+                </Button>
               </HasPermission>
             </div>
           </div>
@@ -247,8 +245,9 @@ const StockTransferIn = () => {
                 <TableCell>
                   <button
                     onClick={() => handleViewSalesReturn(item.id)}
-className="flex items-center  text-lg font-medium rounded-md "
-                    title="View"                  >
+                    className="flex items-center  text-lg font-medium rounded-md "
+                    title="View"
+                  >
                     <FiEye className="" />
                   </button>
                 </TableCell>

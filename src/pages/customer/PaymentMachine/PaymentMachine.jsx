@@ -11,6 +11,7 @@ import {
   useGetAllPaymentMachinesQuery,
 } from "../../../api/paymentMachineApi";
 import { useGetAllBankMastersQuery } from "../../../api/bankMasterApi";
+import { format } from "date-fns";
 
 const machineType = [
   { value: 0, label: "Card" },
@@ -22,7 +23,7 @@ const PaymentMachine = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const locale = navigator.language || navigator.languages[0] || "en-IN";
+  const locale = navigator.language || navigator.languages[0] || "en-GB";
 
   const [selectedBrandId, setSelectedBrandId] = useState(null);
   const [currentStatus, setCurrentStatus] = useState(null);
@@ -42,11 +43,7 @@ const PaymentMachine = () => {
           .BankName,
         machineName: brand.MachineName,
         type: machineType.find((m) => m.value === brand.MachineType).label,
-        createdAt: new Intl.DateTimeFormat(locale, {
-          year: "numeric",
-          month: "short",
-          day: "2-digit",
-        }).format(new Date(brand.CreatedDate)),
+        createdAt: format(new Date(brand.CreatedDate), 'dd/MM/yyyy'),
         enabled: brand.IsActive === 1,
       }))
       .filter((machine) => {

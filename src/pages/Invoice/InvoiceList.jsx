@@ -101,8 +101,9 @@ const InvoiceList = () => {
       qty: invoice.TotalQty,
       amount: invoice.TotalValue,
       status: getOrderStatus(invoice.Status),
-    }));
-    // .filter((order) => order.CompanyID === parseInt(hasMultipleLocations[0]));
+      CompanyID :invoice?.CompanyID
+    }))
+    .filter((order) =>  hasMultipleLocations.includes(order.CompanyID));
   }, [allOrders, fromDate, toDate, searchQuery]);
 
   const startIndex = (currentPage - 1) * pageSize;
@@ -269,7 +270,7 @@ const InvoiceList = () => {
                   From Order
                 </Button>
               </HasPermission>
-              <HasPermission module="Invoice" action="create">
+              {/* <HasPermission module="Invoice" action="create">
                 <Button
                   icon={FiPlus}
                   className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto justify-center"
@@ -280,7 +281,7 @@ const InvoiceList = () => {
                 >
                   DC Invoice
                 </Button>
-              </HasPermission>
+              </HasPermission> */}
             </div>
           </div>
 

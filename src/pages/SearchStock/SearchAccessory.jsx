@@ -7,6 +7,10 @@ import { useLazyGetAccessoryStockQuery } from "../../api/searchStock";
 import toast from "react-hot-toast";
 import { useSelector } from "react-redux";
 import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
+import Modal from "../../components/ui/Modal";
+import { useLazyGetStockHistoryQuery } from "../../api/vendorPayment";
+import { FiActivity, FiTag } from "react-icons/fi";
+import { useLazyPrintLabelsAccQuery, useLazyPrintLabelsQuery } from "../../api/reportApi";
 
 const toTitleCase = (str) =>
   str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
@@ -19,9 +23,21 @@ const debounce = (func, delay) => {
   };
 };
 
-const buildQueryParams = ({ brandName, ProductName, barcode, variation, location, page, requiredRow }) => {
+const buildQueryParams = ({
+  brandName,
+  ProductName,
+  barcode,
+  variation,
+  location,
+  page,
+  requiredRow,
+}) => {
   const add = (key, value) =>
-    `${key}=${value !== undefined && value !== null && value !== "" ? encodeURIComponent(value) : ""}`;
+    `${key}=${
+      value !== undefined && value !== null && value !== ""
+        ? encodeURIComponent(value)
+        : ""
+    }`;
 
   const params = [
     add("brandName", brandName),
@@ -41,10 +57,10 @@ const SearchAccessory = () => {
     "s.no": "",
     "brand name": "",
     "product name": "",
-    "barcode": "",
-    "variation": "",
-    "mrp": "",
-    "stock": "",
+    barcode: "",
+    variation: "",
+    mrp: "",
+    stock: "",
   });
 
   const [searchData, setSearchData] = useState([]);
@@ -52,74 +68,137 @@ const SearchAccessory = () => {
   const [error, setError] = useState(null);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [totalItems, setTotalItems] = useState(0);
+  const [stockOpen, setStockOpen] = useState(false);
+
   const { data: allLocations } = useGetAllLocationsQuery();
 
   const { user, hasMultipleLocations } = useSelector((state) => state.auth);
 
   // User assigned locations
-  const hasLocation = allLocations?.data ? allLocations?.data?.filter(loc =>
-    hasMultipleLocations.includes(loc.Id)
-  ) : [];
+  const hasLocation = allLocations?.data
+    ? allLocations?.data?.filter((loc) => hasMultipleLocations.includes(loc.Id))
+    : [];
 
   console.log("hasMultipleLocations ----- ", hasMultipleLocations);
   console.log("user ----- ", user);
   console.log("hasLocation ----- ", hasLocation);
 
-
   const [itemsPerPage, setItemsPerPage] = useState(50);
 
   const [triggerFetchAccessoryStock, { isLoading }] =
     useLazyGetAccessoryStockQuery();
+  const [getlabels, { isFetching: isLabelsFetching }] =
+    useLazyPrintLabelsAccQuery();
+  const [getStockHistory, { data: stockData }] = useLazyGetStockHistoryQuery();
+  const [stockId, setstockId] = useState(null);
+  const [printId, setprintId] = useState(null);
+
+  const handleLabels = async (detailId) => {
+    setprintId(detailId);
+    try {
+      const blob = await getlabels({
+        frameDetailId: detailId,
+        companyId: parseInt(hasMultipleLocations[0]),
+      }).unwrap();
+
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "application/pdf" })
+      );
+      const newWindow = window.open(url);
+      if (newWindow) {
+        newWindow.onload = () => {
+          newWindow.focus();
+          newWindow.print();
+        };
+      }
+      setprintId(null);
+    } catch (error) {
+      console.log(error);
+      toast.error(
+        "Unable to print the frame label please try again after some time!"
+      );
+      setprintId(null);
+    }
+  };
+  const handleStockHistory = async (id) => {
+    setstockId(id);
+    try {
+      await getStockHistory({
+        companyId: selectedLocation
+          ? selectedLocation
+          : parseInt(hasMultipleLocations[0]),
+        productType: 3,
+        detailId: id,
+      }).unwrap();
+      setStockOpen(true);
+      setstockId(null);
+    } catch (error) {
+      console.log(error);
+      setstockId(null);
+      setStockOpen(false);
+    }
+  };
 
   // Auto select location if it has only 1.
   useEffect(() => {
+    console.log("hasLocation - ", hasLocation);
     if (hasLocation?.length === 1) {
       setSelectedLocation(hasLocation[0].Id.toString());
     }
   }, [hasLocation]);
 
   // Fetch accessories from API with current search terms
-  const fetchAccessories = useCallback(async (searchTerms, page, pageSize) => {
-    setError(null);
+  const fetchAccessories = useCallback(
+    async (searchTerms, page, pageSize) => {
+      setError(null);
+      try {
+        const queryString = buildQueryParams({
+          brandName: searchTerms["brand name"],
+          ProductName: searchTerms["product name"],
+          barcode: searchTerms["barcode"],
+          variation: searchTerms["variation"],
+          location: selectedLocation, // will now be up-to-date
+          page: page,
+          requiredRow: pageSize,
+        });
 
-    try {
-      const queryString = buildQueryParams({
-        brandName: searchTerms["brand name"],
-        ProductName: searchTerms["product name"],
-        barcode: searchTerms["barcode"],
-        variation: searchTerms["variation"],
-        location: selectedLocation,
-        page: page,
-        requiredRow: pageSize
-      });
+        console.log("Fetching with location:", selectedLocation); // Debug
 
-      console.log("Fetching with params:", queryString); // Debug log
+        const result = await triggerFetchAccessoryStock(queryString).unwrap();
 
-      const result = await triggerFetchAccessoryStock(queryString).unwrap();
-
-      if (result.status === "success" && result.data) {
-        setSearchData(result.data);
-        setTotalItems(result.total || 0);
-        // toast.success("Data fetched successfully");
-      } else {
+        if (result.status === "success" && result.data) {
+          setSearchData(result.data);
+          setTotalItems(result.total || 0);
+        } else {
+          setSearchData([]);
+          setTotalItems(0);
+        }
+      } catch (err) {
+        console.error("Error fetching accessories:", err);
+        // toast.error(err?.data?.error || err?.message || "Failed to fetch data");
         setSearchData([]);
         setTotalItems(0);
       }
-    } catch (err) {
-      console.error("Error fetching accessories:", err);
-      toast.error(err?.data?.error || err?.message || "Failed to fetch data");
-      setSearchData([]);
-      setTotalItems(0);
-    }
-  }, [triggerFetchAccessoryStock]);
+    },
+    [triggerFetchAccessoryStock, selectedLocation]
+  );
 
   // Debounced search function
   const debouncedSearch = useMemo(
-    () => debounce((searchTerms, page, pageSize) => {
-      fetchAccessories(searchTerms, page, pageSize);
-    }, 500),
+    () =>
+      debounce((searchTerms, page, pageSize) => {
+        fetchAccessories(searchTerms, page, pageSize);
+      }, 500),
     [fetchAccessories]
   );
+
+  // Trigger fetch when location changes
+  useEffect(() => {
+    if (selectedLocation) {
+      setCurrentPage(1);
+      fetchAccessories(columnSearchTerms, 1, itemsPerPage);
+    }
+  }, [selectedLocation, fetchAccessories, columnSearchTerms, itemsPerPage]);
 
   // Initial load
   useEffect(() => {
@@ -169,7 +248,7 @@ const SearchAccessory = () => {
         variation: "",
         location: selectedLocation,
         page: 1,
-        requiredRow: itemsPerPage
+        requiredRow: itemsPerPage,
       });
       triggerFetchAccessoryStock(clearedQueryString)
         .unwrap()
@@ -240,7 +319,7 @@ const SearchAccessory = () => {
             Accessory Stock
           </h1>
           <div className="flex gap-4">
-            {(hasLocation && hasLocation.length > 1) && (
+            {hasLocation && hasLocation.length > 1 && (
               <div className="flex items-center space-x-6 mb-6">
                 <label className="text-sm font-medium text-gray-700">
                   Select Location:
@@ -318,25 +397,43 @@ const SearchAccessory = () => {
               </TableCell>
               {/* <TableCell>
                 <span
-                  className={`font-semibold ${item.Quantity > 10
-                    ? "text-green-600"
-                    : item.Quantity > 0
+                  className={`font-semibold ${
+                    item.Quantity > 10
+                      ? "text-green-600"
+                      : item.Quantity > 0
                       ? "text-yellow-600"
                       : "text-red-600"
-                    }`}
+                  }`}
                 >
                   {item.Quantity !== undefined ? item.Quantity : 0}
                 </span>
               </TableCell> */}
-              <TableCell>{item.Quantity !== undefined ? item.Quantity : 0}</TableCell>
-
               <TableCell>
-                <Button variant="outline" size="sm">
-                  <EyeIcon className="w-4 h-4" />
-                </Button>
-                <Button variant="outline" size="sm">
+                {item.Quantity !== undefined ? item.Quantity : 0}
+              </TableCell>
+
+              <TableCell className="flex gap-2 ">
+                <Button
+                  size="xs"
+                  variant="outline"
+                  title="Barcode Label Printing"
+                  icon={FiTag}
+                  onClick={() => handleLabels(item.DetailId)}
+                  isLoading={printId === item.DetailId}
+                  loadingText=""
+                ></Button>
+                {/* <Button variant="outline" size="xs">
                   <PrinterIcon className="w-4 h-4" />
-                </Button>
+                </Button> */}
+                <Button
+                  size="xs"
+                  variant="outline"
+                  title="Transaction History"
+                  icon={FiActivity}
+                  onClick={() => handleStockHistory(item.DetailId)}
+                  isLoading={stockId === item.DetailId}
+                  loadingText=""
+                ></Button>
               </TableCell>
             </TableRow>
           )}
@@ -350,6 +447,48 @@ const SearchAccessory = () => {
           totalItems={totalItems}
         />
       </div>
+      <Modal
+        isOpen={stockOpen}
+        onClose={() => setStockOpen(false)}
+        width="max-w-4xl"
+      >
+        <div className="my-5 mx-3">
+          <div className="my-5 text-lg text-neutral-800 font-semibold">
+            Transaction History
+          </div>
+          <Table
+            expand={true}
+            freeze={true}
+            columns={[
+              "s.no",
+              "transaction date",
+              "grn qty",
+              "stin qty",
+              "sr qty",
+              "salesqty",
+              "stout qty",
+              "pr qty",
+            ]}
+            data={stockData?.data || []}
+            renderRow={(item, index) => {
+              return (
+                <TableRow key={item.DetailId}>
+                  <TableCell>{index + 1}</TableCell>
+                  <TableCell>
+                    {item?.TransactionDate?.split("-").reverse().join("/")}
+                  </TableCell>
+                  <TableCell>{item?.GRNQty}</TableCell>
+                  <TableCell>{item?.STInQty}</TableCell>
+                  <TableCell>{item?.SRQty}</TableCell>
+                  <TableCell>{item?.SalesQty}</TableCell>
+                  <TableCell>{item?.STOutQty}</TableCell>
+                  <TableCell>{item?.PRQty}</TableCell>
+                </TableRow>
+              );
+            }}
+          />
+        </div>
+      </Modal>
     </motion.div>
   );
 };

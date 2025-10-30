@@ -175,12 +175,14 @@ const WhatsappTemplates = () => {
         ModuleType: selectedModule,
         ParamIDs: selectedParamIds,
         WATemplate: editor.getHTML(),
-        // EmailSubject: subject,
         Status: 1,
         IsActive: 1,
         WAAttachment: includeAttachment,
+        EmailTemplate :templateData?.data[0]?.EmailTemplate,
+        EmailSubject:templateData?.data[0]?.EmailSubject,
+        EmailAttachment:templateData?.data[0]?.EmailAttachment
       };
-      console.log("Payload:", payload);
+     
       if (templateData?.data[0]?.CompanyID) {
         await updateEmail({ payload }).unwrap();
         toast.success("Whatsapp successfully updated!");
@@ -434,7 +436,7 @@ const WhatsappTemplates = () => {
                 onChange={(e) => setIncludeAttachment(e.target.checked)}
                 className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
-              Group Attachment
+              Attachment
             </label>
           </div>
           {/* Parameters */}

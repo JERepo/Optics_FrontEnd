@@ -147,7 +147,7 @@ export default function ClBatchDetails() {
 
             if (response?.status === "success") {
                 if (response?.data?.data?.CLBatchCode === 0) {
-                    toast.error("Cannot add Contact Lens Product with CLBatchCode=0");
+                    toast.error("Batch Code details for this brand is disabled.");
                     return;
                 }
                 toast.success("Product details fetched successfully");
@@ -182,7 +182,7 @@ export default function ClBatchDetails() {
 
             if (response?.status === "success") {
                 if (response?.data?.data?.CLBatchCode === 0) {
-                    toast.error("Cannot add Contact Lens Product with CLBatchCode=0");
+                    toast.error("Batch Code details for this brand is disabled.");
                     return;
                 }
 
@@ -339,7 +339,7 @@ export default function ClBatchDetails() {
             const data = response.data.data;
             console.log("data handleSearch ------------ ", data);
             if (data.CLBatchCode === 0) {
-                toast.error("Cannot add Contact Lens Product with CLBatchCode=0");
+                toast.error("Batch Code details for this brand is disabled.");
                 return;
             }
             toast.success(response?.data.message || "Power details found");
@@ -372,30 +372,42 @@ export default function ClBatchDetails() {
             setSearchFetched(true);
 
             // Handle batch code logic
-            if (data?.CLBatchCode === 1) {
-                // Fetch batches for this detail
-                await getCLBatches({
-                    detailId: data?.CLDetailId,
-                    locationId: hasMultipleLocations || null,
-                }).unwrap();
-                toast.success("Please select or scan batch code");
+            // if (data?.CLBatchCode === 1) {
+            //     // Fetch batches for this detail
+            //     await getCLBatches({
+            //         detailId: data?.CLDetailId,
+            //         locationId: hasMultipleLocations || null,
+            //     }).unwrap();
+            //     toast.success("Please select or scan batch code");
 
-                // Set product details for batch selection
-                setProductDetails({
-                    ...productDetails,
-                    CLDetailId: data.CLDetailId,
-                    ProductName: data.ProductName,
-                    BrandName: data.BrandName,
-                    SphericalPower: updatedItem.SphericalPower,
-                    CylindricalPower: updatedItem.CylindricalPower,
-                    Axis: updatedItem.Axis,
-                    Additional: updatedItem.Additional,
-                    MRP: data?.priceMaster?.mrp || data.MRP
-                });
-            } else {
-                toast.success("Power details loaded successfully");
-            }
+            //     // Set product details for batch selection
+            //     setProductDetails({
+            //         ...productDetails,
+            //         CLDetailId: data.CLDetailId,
+            //         ProductName: data.ProductName,
+            //         BrandName: data.BrandName,
+            //         SphericalPower: updatedItem.SphericalPower,
+            //         CylindricalPower: updatedItem.CylindricalPower,
+            //         Axis: updatedItem.Axis,
+            //         Additional: updatedItem.Additional,
+            //         MRP: data?.priceMaster?.mrp || data.MRP
+            //     });
+            // } else {
+            // }
 
+            setProductDetails({
+                ...productDetails,
+                CLDetailId: data.CLDetailId,
+                ProductName: data.ProductName,
+                BrandName: data.BrandName,
+                SphericalPower: updatedItem.SphericalPower,
+                CylindricalPower: updatedItem.CylindricalPower,
+                Axis: updatedItem.Axis,
+                Additional: updatedItem.Additional,
+                MRP: data?.priceMaster?.mrp || data.MRP
+            });
+
+            toast.success("Power details loaded successfully");
         } catch (error) {
             console.error("Search error:", error);
             toast.error(error?.data?.message || error.message || "Failed to search power details");
@@ -1232,15 +1244,15 @@ export default function ClBatchDetails() {
                                 >
                                     <div className="overflow-x-auto">
                                         <table className="min-w-full divide-y divide-gray-200">
-                                            <thead className="bg-[#000060]">
+                                            <thead className="bg-blue-50">
                                                 <tr>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Product Details</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">MRP</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Spherical Power</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Cylindrical Power</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Axis</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Additional</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Colour</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Product Details</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">MRP</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Spherical Power</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Cylindrical Power</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Axis</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Additional</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Colour</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="bg-white divide-y divide-gray-200">

@@ -41,168 +41,11 @@ export const menuItems = [
     module: "Dashboard",
     path: "/dashboard",
   },
-
-  {
-    name: "Product Master",
-    icon: IoOptionsSharp,
-    module: "Product Master",
-    subItems: [
-      {
-        name: "Brand Group",
-        path: "/settings/brand-group",
-        module: "Brand group",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
-      {
-        name: "Frame Master",
-        path: "/settings/frame-master",
-        module: "Frame Master",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
-      {
-        name: "Accessory Master",
-        path: "/settings/accessories-master",
-        module: "Accessory Master",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
-    ],
-  },
-  {
-    name: "Other Masters",
-    icon: IoOptionsSharp,
-    module: "Other Masters",
-    subItems: [
-      {
-        name: "Customer Group",
-        icon: IoPeopleOutline,
-        module: "Customer Group",
-        path: "/customer-group",
-      },
-      {
-        name: "Sales Person",
-        icons: IoBriefcaseOutline,
-        module: "Sales Person",
-        path: "/sales",
-      },
-      {
-        name: "Bank Master",
-        icons: IoBriefcaseOutline,
-        module: "Bank Master",
-        path: "/bank-master",
-      },
-      {
-        name: "Bank Account Details",
-        icons: IoBriefcaseOutline,
-        module: "Bank Account Details",
-        path: "/bank-account-details",
-      },
-      {
-        name: "Payment Machine",
-        icons: IoBriefcaseOutline,
-        module: "Payment Machine",
-        path: "/payment-machine",
-      },
-    ],
-  },
-  {
-    name: "Settings",
-    icon: IoSettingsOutline, // General settings icon
-    module: "Settings",
-    subItems: [
-      {
-        name: "User Management",
-        icon: IoPeopleOutline, // Represents a group of users
-        module: "User Management",
-        path: "/user-management",
-      },
-      {
-        name: "Role Management",
-        icon: MdOutlineAdminPanelSettings, // More precise for roles/permissions
-        module: "Role Management",
-        path: "/role-management",
-      },
-      {
-        name: "Pool Creation",
-        path: "/settings/pool-creation",
-        module: "Pool",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
-      {
-        name: "Brand Category",
-        path: "/settings/brand-category",
-        module: "Brand catagory",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
-
-      {
-        name: "Brand",
-        path: "/settings/brand",
-        module: "Brand",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
-      {
-        name: "Variation Master",
-        path: "/settings/accessories",
-        module: "Variation Master",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
-
-      {
-        name: "Frame Shape Master",
-        path: "/settings/frameshape-master",
-        module: "Shape Master",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
-      {
-        name: "Season Master",
-        path: "/settings/season-master",
-        module: "Season Master",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
-      {
-        name: "Material Master",
-        path: "/settings/material-master",
-        module: "Material Master",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
-      {
-        name: "Email Templates",
-        path: "/email-templates",
-        module: "communication",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
-      {
-        name: "Whatsapp Templates",
-        path: "/whatsapp-templates",
-        module: "communication",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
-      {
-        name: "Location Settings",
-        icon: IoConstructOutline,
-        module: "Location-setting",
-        path: "/location-settings",
-      },
-    ],
-  },
-
   {
     name: "Customer",
     icon: IoPersonOutline,
     module: "Customer",
     path: "/customer",
-  },
-  {
-    name: "Vendor",
-    icon: FiShoppingBag,
-    module: "Vendor",
-    path: "/vendor",
-  },
-  {
-    name: "Order",
-    icon: FiBox,
-    module: "Order",
-    path: "/order-list",
   },
   {
     name: "Prescription",
@@ -211,10 +54,43 @@ export const menuItems = [
     path: "/prescription",
   },
   {
+    name: "Order",
+    icon: FiBox,
+    module: "Order",
+    path: "/order-list",
+  },
+
+  {
     name: "Invoice",
     icon: FiFileText,
     module: "Invoice",
     path: "/invoice",
+  },
+  // Search stock
+  {
+    name: "Search Stock",
+    icon: FiPackage,
+    module: ["Frame-Stock", "Accessory-Stock", "CL-Stock"],
+    subItems: [
+      {
+        name: "Frame",
+        path: "search-stock/frame",
+        module: "Frame-Stock",
+        icon: IoConstructOutline,
+      },
+      {
+        name: "Accessories",
+        path: "search-stock/accessory",
+        module: "Accessory-Stock",
+        icon: IoConstructOutline,
+      },
+      {
+        name: "Contact Lens",
+        path: "search-stock/contact-lens",
+        module: "CL-Stock",
+        icon: IoConstructOutline,
+      },
+    ],
   },
   {
     name: "Sales Return",
@@ -222,6 +98,7 @@ export const menuItems = [
     module: "SalesReturn",
     path: "/sales-return",
   },
+
   {
     name: "Purchase Order",
     icon: FiPackage,
@@ -242,7 +119,39 @@ export const menuItems = [
     //   },
     // ],
   },
+  {
+    name: "GRN",
+    icon: FiArrowRightCircle,
+    module: ["GRN"],
+    // path: "/grn/",
+    subItems: [
+      {
+        name: "New GRN",
+        path: "/grn/",
+        module: "GRN",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+      {
+        name: "Convert DC",
+        path: "/grn-dc",
+        module: "GRN DC",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+    ],
+  },
+  {
+    name: "Purchase Return",
+    icon: FiFileMinus,
+    module: "Purchase-Return",
+    path: "/purchase-return",
+  },
 
+  {
+    name: "Vendor",
+    icon: FiShoppingBag,
+    module: "Vendor",
+    path: "/vendor",
+  },
   {
     name: "Stock Transfer",
     icon: FiRepeat,
@@ -259,65 +168,6 @@ export const menuItems = [
         path: "/stock-transferin",
         module: "StockTranserIn",
         icon: IoConstructOutline,
-      },
-    ],
-  },
-  {
-    name: "GRN",
-    icon: FiArrowRightCircle,
-    module: ["GRN"],
-    // path: "/grn/",
-    subItems: [
-      {
-        name: "From Orders",
-        path: "/grn/",
-        module: "GRN",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
-      {
-        name: "GRN DC",
-        path: "/grn-dc",
-        module: "GRN DC",
-        icon: IoConstructOutline, // Suggests building/setup
-      }
-    ],
-  },
-  {
-    name: "Contact-Lens-Details",
-    icon: FiArrowRightCircle,
-    module: "Contact-Lens-Details",
-    path: "/cl-batch-details",
-   
-  },
-   {
-    name: "Contact Lens Master",
-    icon: FiAperture,
-    module: "CLMaster",
-    path: "/contact-lens-master",
-   
-  },
-  {
-    name: "Purchase Return",
-    icon: FiFileMinus,
-    module: "Purchase-Return",
-    path: "/purchase-return",
-  },
-  {
-    name: "Gift Voucher",
-    icon: FiGift,
-    module: "Gift-Voucher",
-    subItems: [
-      {
-        name: "New GV",
-        path: "gift-voucher",
-        module: "Gift-Voucher",
-        icon: IoConstructOutline, // Suggests building/setup
-      },
-      {
-        name: "Activate GV",
-        path: "activate-gv",
-        module: "Gift-Voucher",
-        icon: IoConstructOutline, // Suggests building/setup
       },
     ],
   },
@@ -398,9 +248,39 @@ export const menuItems = [
         module: "Stock-Ageing",
         path: "/stock-ageing-report",
       },
+      {
+        name: "Payment Collection Report",
+        icon: IoConstructOutline,
+        module: "Daily-Payment-Report",
+        path: "/daily-payments",
+      },
     ],
   },
-
+  {
+    name: "Contact-Lens-Details",
+    icon: FiArrowRightCircle,
+    module: "Contact-Lens-Details",
+    path: "/cl-batch-details",
+  },
+  {
+    name: "Gift Voucher",
+    icon: FiGift,
+    module: "Gift-Voucher",
+    subItems: [
+      {
+        name: "New GV",
+        path: "gift-voucher",
+        module: "Gift-Voucher",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+      {
+        name: "Activate GV",
+        path: "activate-gv",
+        module: "Gift-Voucher",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+    ],
+  },
   {
     name: "Offer",
     icon: FiTag,
@@ -429,6 +309,157 @@ export const menuItems = [
         icon: IoConstructOutline,
         module: "Vendor-Payment",
         path: "/vendor-payment",
+      },
+    ],
+  },
+
+  {
+    name: "Product Master",
+    icon: IoOptionsSharp,
+    module: "Product Master",
+    subItems: [
+      {
+        name: "Brand",
+        path: "/settings/brand",
+        module: "Brand",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+
+      {
+        name: "Frame Master",
+        path: "/settings/frame-master",
+        module: "Frame Master",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+      {
+        name: "Accessory Master",
+        path: "/settings/accessories-master",
+        module: "Accessory Master",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+      {
+        name: "Contact Lens Master",
+        icon: IoConstructOutline,
+        module: "CLMaster",
+        path: "/contact-lens-master",
+      },
+    ],
+  },
+  {
+    name: "Other Masters",
+    icon: IoOptionsSharp,
+    module: "Other Masters",
+    subItems: [
+      {
+        name: "Customer Group",
+        icon: IoPeopleOutline,
+        module: "Customer Group",
+        path: "/customer-group",
+      },
+      {
+        name: "Sales Person",
+        icons: IoBriefcaseOutline,
+        module: "Sales Person",
+        path: "/sales",
+      },
+      {
+        name: "Bank Master",
+        icons: IoBriefcaseOutline,
+        module: "Bank Master",
+        path: "/bank-master",
+      },
+      {
+        name: "Bank Account Details",
+        icons: IoBriefcaseOutline,
+        module: "Bank Account Details",
+        path: "/bank-account-details",
+      },
+      {
+        name: "Payment Machine",
+        icons: IoBriefcaseOutline,
+        module: "Payment Machine",
+        path: "/payment-machine",
+      },
+      {
+        name: "Brand Group",
+        path: "/settings/brand-group",
+        module: "Brand group",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+      {
+        name: "Brand Category",
+        path: "/settings/brand-category",
+        module: "Brand catagory",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+      {
+        name: "Variation Master",
+        path: "/settings/accessories",
+        module: "Variation Master",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+
+      {
+        name: "Frame Shape Master",
+        path: "/settings/frameshape-master",
+        module: "Shape Master",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+      {
+        name: "Season Master",
+        path: "/settings/season-master",
+        module: "Season Master",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+      {
+        name: "Material Master",
+        path: "/settings/material-master",
+        module: "Material Master",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+    ],
+  },
+  {
+    name: "Settings",
+    icon: IoSettingsOutline, // General settings icon
+    module: "Settings",
+    subItems: [
+      {
+        name: "User Management",
+        icon: IoPeopleOutline, // Represents a group of users
+        module: "User Management",
+        path: "/user-management",
+      },
+      {
+        name: "Role Management",
+        icon: MdOutlineAdminPanelSettings, // More precise for roles/permissions
+        module: "Role Management",
+        path: "/role-management",
+      },
+      {
+        name: "Pool Creation",
+        path: "/settings/pool-creation",
+        module: "Pool",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+
+      {
+        name: "Email Templates",
+        path: "/email-templates",
+        module: "communication",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+      {
+        name: "Whatsapp Templates",
+        path: "/whatsapp-templates",
+        module: "communication",
+        icon: IoConstructOutline, // Suggests building/setup
+      },
+      {
+        name: "Location Settings",
+        icon: IoConstructOutline,
+        module: "Location-setting",
+        path: "/location-settings",
       },
     ],
   },

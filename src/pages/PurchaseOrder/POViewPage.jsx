@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { ArrowLeft, CheckCircle, Download, PenIcon, X } from "lucide-react";
+import { ArrowLeft, CheckCircle, Download, PenIcon, Printer, X } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
@@ -46,82 +46,7 @@ export function POViewPage() {
   const [printingId, setPrintingId] = useState(null);
   const [generatePrint, { isFetching: isPrinting }] = useLazyPrintPdfQuery();
 
-  // useEffect(() => {
-  //   const fetchOrderDetails = async () => {
-  //     try {
-  //       // Skip if poData.id is not available
-  //       if (
-  //         !poData.id ||
-  //         !poData.createdCompanyID ||
-  //         !poData.applicationUser ||
-  //         !poData.vendor?.Id
-  //       ) {
-  //         console.error("Missing required poData fields:", poData);
-  //         toast.error("Invalid purchase order data");
-  //         return;
-  //       }
-
-  //       const payload = {
-  //         locationId: poData.createdCompanyID,
-  //         ApplicationUserId: poData.applicationUser,
-  //         vendorId: poData.vendor.Id,
-  //         againstOrder: String(poData.againstOrder),
-  //         status: poData.status === "Approved" ? 2 : 1,
-  //         poMainId: poData.id,
-  //         poMain: poData.id,
-  //       };
-
-  //       // Fetch PO details
-  //       let poDetailsResponse;
-  //       if (poData.againstOrder === 1) {
-  //         poDetailsResponse = await getAllPoDetails(payload);
-  //         console.log("poDetailsResponse-----", poDetailsResponse);
-  //         setPoreviewDetails(poDetailsResponse.data || []);
-  //         setPoMainStatus(poDetailsResponse?.data[0]?.Status || null);
-  //       } else if (poData.againstOrder === 0) {
-  //         poDetailsResponse = await getAllPoDetailsForNewOrder(payload);
-  //         console.log("poDetailsResponse-----", poDetailsResponse);
-  //         setPoreviewDetails(poDetailsResponse.data?.data || []);
-  //         setPoMainStatus(poDetailsResponse.data?.data[0]?.Status || null);
-  //       }
-
-  //       // Fetch PurchaseOrderMain data for calculation summary
-  //       const poMainRes = await fetchPoMain({ poMainId: poData.id, view: true }).unwrap();
-  //       console.log("poMainRes (initial load)", poMainRes);
-  //       if (
-  //         poMainRes.status === "success" &&
-  //         poMainRes.data &&
-  //         poMainRes.data[0]
-  //       ) {
-  //         const mainData = poMainRes.data[0];
-  //         setPoData((prev) => ({
-  //           ...prev,
-  //           vendor: prev.vendor || {}, // Preserve vendor object
-  //           totalQty: mainData.TotalQty || 0,
-  //           totalGrossValue: mainData.TotalBasicValue || 0,
-  //           totalGSTValue: mainData.TotalGSTValue || 0,
-  //           totalValue: mainData.TotalValue || 0,
-  //         }));
-  //       } else {
-  //         console.error("Invalid poMainRes structure:", poMainRes);
-  //         toast.error("Failed to fetch purchase order summary");
-  //       }
-  //     } catch (error) {
-  //       console.error("Error fetching PO details:", error);
-  //       toast.error("Error loading purchase order data");
-  //     }
-  //   };
-
-  //   fetchOrderDetails();
-  // }, [
-  //   poData.id,
-  //   poData.createdCompanyID,
-  //   poData.applicationUser,
-  //   poData.vendor?.Id,
-  //   poData.againstOrder,
-  //   poData.poMain,
-  //   poData.poMainId
-  // ]);
+  const [showApproveConfirm, setShowApproveConfirm] = useState(false);
 
   useEffect(() => {
     // Add a flag to prevent double execution
@@ -569,7 +494,7 @@ export function POViewPage() {
               <div>
                 <button
                   className="flex gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
-                  onClick={approvePo}
+                  onClick={() => setShowApproveConfirm(true)}   // <-- open confirm modal
                 >
                   <CheckCircle />
                   Approve PO
@@ -588,14 +513,19 @@ export function POViewPage() {
               onClick={() => handlePrint(poData)}
               isLoading={isPrinting}
             >
-              <Download />
+              {/* <Download /> */}
+              <Printer />
             </button>
           </div>
         </div>
       </div>
       {console.log("PODATA ----", poData)}
       <div key={poData.vendor?.Id || "vendor"} className="gap-12 my-10">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+          <p className="text-gray-700">
+            <span className="font-bold flex">PO No.</span>
+            <span className="">{poreviewDetails[0]?.POPrefix}/{poreviewDetails[0]?.PONo}</span>
+          </p>
           <p className="text-gray-700">
             <span className="font-bold flex">Vendor Name</span>
             <span>{poData.vendor?.VendorName || "N/A"}</span>
@@ -614,6 +544,10 @@ export function POViewPage() {
           <p className="text-gray-700">
             <span className="font-bold flex">GST Number</span>
             <span>{poData.vendor?.TAXNo || "N/A"}</span>
+          </p>
+          <p className="text-gray-700">
+            <span className="font-bold flex">Status</span>
+            <span className="">{poreviewDetails[0]?.POMainStatus === 0 ? `Draft` : poreviewDetails[0]?.POMainStatus === 1 ? `Pending for Approval` : poreviewDetails[0]?.POMainStatus === 2 ? `Approved` : poreviewDetails[0]?.POMainStatus === 3 ? `Cancelled` : `N/A`}</span>
           </p>
         </div>
       </div>
@@ -797,6 +731,9 @@ export function POViewPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">
                   Total Amount
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">
+                  Status
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -952,6 +889,13 @@ export function POViewPage() {
                       (order?.taxPercent / 100 || 0)
                     ).toFixed(2)}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    {order?.PODetailStatus === 0 ? `PO Created`
+                      : order?.PODetailStatus === 1 ? `Partial GRN`
+                        : order?.PODetailStatus === 2 ? `Complete GRN`
+                          : order?.PODetailStatus === 3 ? `Cancelled`
+                            : `N/A`}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -960,7 +904,7 @@ export function POViewPage() {
       </div>
 
       {showPriceModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-[rgba(0,0,0,0.6)] flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-[#000060]">
@@ -1013,7 +957,7 @@ export function POViewPage() {
       )}
 
       {showQtyModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-[rgba(0,0,0,0.6)] flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-[#000060]">
@@ -1102,6 +1046,58 @@ export function POViewPage() {
           </span>
         </div>
       </div>
+      <div className="flex justify-between px-5 rounded-2xl shadow p-8">
+        <div className="flex justify-between gap-4">
+          <span className="text-gray-600 font-bold text-lg">
+            Comments:
+          </span>
+          <span className="font-bold text-lg">
+            {poreviewDetails[0]?.PORemarks ? poreviewDetails[0]?.PORemarks : `N/A`}
+          </span>
+        </div>
+      </div>
+
+
+      {showApproveConfirm && (
+        <div className="fixed inset-0 bg-[rgba(0,0,0,0.6)] flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-[#000060]">
+                Approve Purchase Order?
+              </h2>
+              <button
+                onClick={() => setShowApproveConfirm(false)}
+              >
+                <X className="w-6 h-6 text-gray-600" />
+              </button>
+            </div>
+
+            <p className="text-gray-700 mb-6">
+              Are you sure you want to approve the PO?
+            </p>
+
+            <div className="flex justify-end gap-4">
+              <button
+                className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400"
+                onClick={() => setShowApproveConfirm(false)}
+              >
+                Cancel
+              </button>
+
+              <button
+                className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800"
+                onClick={async () => {
+                  setShowApproveConfirm(false);
+                  await approvePo();
+                }}
+              >
+                Approve
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </motion.div>
   );
 }

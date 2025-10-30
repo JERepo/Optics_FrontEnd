@@ -17,6 +17,7 @@ import {
   useDeActivateMainMutation,
   useGetAllMasterQuery,
 } from "../../../api/accessoriesMaster";
+import { format } from "date-fns";
 
 const AccessoriesMaster = () => {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ const AccessoriesMaster = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [sortOrder, setSortOrder] = useState("newToOld");
-  const locale = navigator.language || navigator.languages[0] || "en-IN";
+  const locale = navigator.language || navigator.languages[0] || "en-GB";
 
   const [selectedBrandId, setSelectedBrandId] = useState(null);
   const [currentStatus, setCurrentStatus] = useState(null);
@@ -42,12 +43,8 @@ const AccessoriesMaster = () => {
       BrandName: acc.Brand.BrandName,
       ProductName: acc.ProductName,
       code: acc.HSN,
-      createdAt: new Intl.DateTimeFormat(locale, {
-        year: "numeric",
-        month: "short",
-        day: "2-digit",
-      }).format(new Date(acc.CreatedDate)),
-      createdAtRaw: new Date(acc.CreatedDate),
+      createdAt:format(new Date(acc.CreatedDate), 'dd/MM/yyyy'),
+      createdAtRaw: format(new Date(acc.CreatedDate), 'dd/MM/yyyy'),
       enabled: acc.IsActive === 1,
     }));
 

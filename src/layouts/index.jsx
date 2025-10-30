@@ -106,7 +106,7 @@ import { GRNDCListPage } from "../pages/GRN DC/GRNListPage";
 import { GRNDCViewPage } from "../pages/GRN DC/GRNDCView";
 import SalesReturnReport from "../pages/Reports/SalesReturnReport";
 import AuditReport from "../pages/Reports/AuditReport";
-import ProfitReport from "../pages/Reports/ProfileReport";
+import ProfitReport from "../pages/Reports/ProfitReport";
 import LoyaltySummary from "../pages/Reports/LoyaltySummary";
 import EmailTemplates from "../pages/EmailTemplates/EmailTemplates";
 import WhatsappTemplates from "../pages/EmailTemplates/WhatsappTemplates";
@@ -120,6 +120,7 @@ import VendorPaymentList from "../pages/LedgerEntries/VendorPayment/VendorPaymen
 import UserProfile from "../pages/Profile/UserProfile";
 import SearchContactLens from "../pages/SearchStock/SearchCLStock";
 import VendorPaymentView from "../pages/LedgerEntries/VendorPayment/VendorPaymentView";
+import CustomerPaymentReport from "../pages/Reports/CustomerPaymentReport";
 
 // import CreateVariationForm from "../pages/admin/FrameMaster/CreateVariationFrame";
 
@@ -676,7 +677,7 @@ export const router = createBrowserRouter([
         path: "vendor/edit/:id",
         element: <EditVendor />,
       },
-       {
+      {
         path: "vendor/view/:id",
         element: <EditVendor />,
       },
@@ -762,9 +763,11 @@ export const router = createBrowserRouter([
       {
         path: "invoice",
         element: (
-          <PermissionRoute module="Invoice" action="view">
-            <InvoiceList />
-          </PermissionRoute>
+          <ErrorBoundary>
+            <PermissionRoute module="Invoice" action="view">
+              <InvoiceList />
+            </PermissionRoute>
+          </ErrorBoundary>
         ),
       },
       {
@@ -778,9 +781,11 @@ export const router = createBrowserRouter([
       {
         path: "invoice/create",
         element: (
-          <PermissionRoute module="Invoice" action="create">
-            <CustomerSelect />
-          </PermissionRoute>
+          <ErrorBoundary>
+            <PermissionRoute module="Invoice" action="create">
+              <CustomerSelect />
+            </PermissionRoute>
+          </ErrorBoundary>
         ),
       },
       {
@@ -977,11 +982,11 @@ export const router = createBrowserRouter([
       },
       {
         path: "vendor-payment/create",
-        element: <VendorPayment />
+        element: <VendorPayment />,
       },
-       {
-        path : "vendor-payment/view",
-        element : <VendorPaymentView />
+      {
+        path: "vendor-payment/view",
+        element: <VendorPaymentView />,
       },
       {
         path: "order-report",
@@ -1028,6 +1033,10 @@ export const router = createBrowserRouter([
         element: <StockAgeingReport />,
       },
       {
+        path: "daily-payments",
+        element: <CustomerPaymentReport />,
+      },
+      {
         path: "contact-lens-master",
         element: <CLMain />,
       },
@@ -1057,12 +1066,12 @@ export const router = createBrowserRouter([
       },
       {
         path: "profile",
-        element: <UserProfile />
+        element: <UserProfile />,
       },
       {
         path: "search-stock/contact-lens",
-        element: <SearchContactLens />
-      }
+        element: <SearchContactLens />,
+      },
     ],
   },
   {

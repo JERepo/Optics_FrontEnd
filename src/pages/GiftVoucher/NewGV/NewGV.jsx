@@ -153,18 +153,19 @@ const NewGV = ({
       toast.error("Please enter Expiry date!");
       return;
     }
-    if(gvData.partialUse === null){
-      toast.error("Please select Partial use!")
+
+    if (gvData.partialUse === null) {
+      toast.error("Please select Partial use!");
       return;
     }
 
-    if(selectedLocation.length <= 0){
-      toast.error("Please select atleast one location!")
+    if (selectedLocation.length <= 0) {
+      toast.error("Please select atleast one location!");
       return;
     }
 
-    if(collectGiftAmount && !gvData.giftCode){
-      toast.error("Please add Gift Voucher Code!")
+    if (collectGiftAmount && !gvData.giftCode) {
+      toast.error("Please add Gift Voucher Code!");
       return;
     }
     try {
@@ -176,15 +177,15 @@ const NewGV = ({
           partPayment: gvData.partialUse, // 0 = No, 1 = Yes
           activateNow: gvData.activateNow === 0, // true = activate now, false = activate later
           expiryDate: expiryDate
-            ? new Date(expiryDate).toISOString().split("T")[0]
-            : null, // required if activateNow = true
+            ? new Date(expiryDate).toLocaleDateString("en-CA") // "YYYY-MM-DD"
+            : null,
           //"validityDays": 30,            // required if activateNow = false
           customerId: gvData.selectCustomer,
           ApplicationUserID: user.Id,
           locationIds: selectedLocation,
-          submit :true // array of locations to link voucher
+          submit: true, // array of locations to link voucher
         };
-        handleAddGiftAmount({...payload });
+        handleAddGiftAmount({ ...payload });
         toast.success("Gift Voucher collected successfully!");
       } else {
         const payload = {
@@ -209,7 +210,11 @@ const NewGV = ({
       }
     } catch (error) {
       console.error(error);
-      toast.error(error?.data.error || error?.data?.message ||"Something went wrong while creating the Gift Voucher.");
+      toast.error(
+        error?.data.error ||
+          error?.data?.message ||
+          "Something went wrong while creating the Gift Voucher."
+      );
     }
   };
   return (
@@ -274,15 +279,14 @@ const NewGV = ({
               </label>
               <div className="flex items-center gap-5">
                 <Radio
-                name="type"
+                  name="type"
                   value="0"
                   onChange={() => handleChange("gvType", 0, "number")}
                   checked={gvData.gvType === 0}
                   label="One time use"
                 />
                 <Radio
-                                name="type"
-
+                  name="type"
                   value="1"
                   onChange={() => handleChange("gvType", 1, "number")}
                   checked={gvData.gvType === 1}
@@ -299,14 +303,14 @@ const NewGV = ({
               </label>
               <div className="flex items-center gap-5">
                 <Radio
-                name="use"
+                  name="use"
                   value="0"
                   onChange={() => handleChange("partialUse", 0, "number")}
                   checked={gvData.partialUse === 0}
                   label="No"
                 />
                 <Radio
-                name="use"
+                  name="use"
                   value="1"
                   onChange={() => handleChange("partialUse", 1, "number")}
                   checked={gvData.partialUse === 1}
@@ -487,7 +491,7 @@ const NewGV = ({
             <Button
               onClick={handleSubmit}
               isLoading={isCreating || isGVRefundLoading}
-              disabled={isCreating ||isGVRefundLoading}
+              disabled={isCreating || isGVRefundLoading}
             >
               Submit
             </Button>

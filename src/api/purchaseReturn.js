@@ -55,6 +55,7 @@ export const purchaseReturnApi = createApi({
       query: (id) => ({
         url: `/api/v1/purchase-Return/PR/${id}`,
       }),
+      providesTags: ["PurchaseReturn"],
     }),
     getPRDataForView: builder.query({
       query: ({ id, locationId }) => ({
@@ -95,6 +96,14 @@ export const purchaseReturnApi = createApi({
         body: formData
       })
     }),
+    issueCN: builder.mutation({
+      query: (payload) => ({
+        url: `/api/v1/purchase-Return/issue/cn`,
+        method: 'POST',
+        body: payload
+      }),
+      invalidatesTags: ["PurchaseReturn"],
+    })
   }),
 });
 
@@ -112,5 +121,6 @@ export const {
   useGetOlSupplierNoQuery,
   useBulkUploadFrameMutation,
   useBulkUploadAccessoryMutation,
-  useBulkUploadContactLensMutation
+  useBulkUploadContactLensMutation,
+  useIssueCNMutation
 } = purchaseReturnApi;

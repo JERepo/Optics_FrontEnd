@@ -61,7 +61,7 @@ const Customer = ({ isPop, onSubmit }) => {
   const { id } = useParams();
   const isCreate = location.pathname.includes("/create");
   const isEdit = location.pathname.includes("/edit");
-  const isEnabled=location.pathname.includes("/view")
+  const isEnabled = location.pathname.includes("/view")
   const { formData, setFormData, constructPayload, resetFormForCustomerType } =
     useCustomerContext();
   const { hasMultipleLocations, user } = useSelector((state) => state.auth);
@@ -342,8 +342,8 @@ const Customer = ({ isPop, onSubmit }) => {
     const locations = Array.isArray(hasMultipleLocations)
       ? hasMultipleLocations
       : hasMultipleLocations !== undefined && hasMultipleLocations !== null
-      ? [hasMultipleLocations]
-      : [];
+        ? [hasMultipleLocations]
+        : [];
 
     if (locations.length === 1 && !formData.location && !customerById) {
       setFormData((prev) => ({
@@ -910,7 +910,7 @@ const Customer = ({ isPop, onSubmit }) => {
     <div className="max-w-6xl p-6 bg-white rounded-lg shadow-md">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">
-          {isCreate ? "Create Customer" : isEnabled ? "View Customer" :"Update Customer"}
+          {isCreate ? "Create Customer" : isEnabled ? "View Customer" : "Update Customer"}
         </h2>
         {!isPop && (
           <Button className="" variant="outline" onClick={() => navigate(-1)}>
@@ -971,7 +971,7 @@ const Customer = ({ isPop, onSubmit }) => {
                   ? "Other Contact details"
                   : "Patient Details"}
               </h2>
-             {!isEnabled && <Button onClick={() => setIsModalOpen(true)}>Add Details</Button>}
+              {!isEnabled && <Button onClick={() => setIsModalOpen(true)}>Add Details</Button>}
             </div>
 
             <Table
@@ -1004,7 +1004,7 @@ const Customer = ({ isPop, onSubmit }) => {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       {/* <FiEye className="text-xl cursor-pointer text-blue-500 hover:text-blue-700" /> */}
-                    {!isEnabled &&  <button
+                      {!isEnabled && <button
                         className="text-neutral-600 hover:text-green-600"
                         aria-label="Edit"
                         onClick={() => {
@@ -1015,14 +1015,14 @@ const Customer = ({ isPop, onSubmit }) => {
                         <FiEdit2 size={18} />
                       </button>}
                       {/* <HasPermission module="Customer" action="deactivate"> */}
-                    {!isEnabled && <Toggle
+                      {!isEnabled && <Toggle
                         enabled={detail.IsActive === 1}
                         onToggle={() =>
                           requestToggle(detail.Id, detail.IsActive)
                         }
                       />}
                       {/* </HasPermission> */}
-                      {( !isEnabled) && (
+                      {(!isEnabled) && (
                         <button
                           className="text-neutral-600 hover:text-red-600"
                           aria-label="Delete"
@@ -1092,8 +1092,8 @@ const Customer = ({ isPop, onSubmit }) => {
                     checked={fittingType === 0}
                     onChange={() => setFittingType(0)}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  disabled={isEnabled}
-                 />
+                    disabled={isEnabled}
+                  />
                   <span className="ml-2 text-gray-700">Standard Price</span>
                 </label>
                 <label className="inline-flex items-center">
@@ -1132,9 +1132,9 @@ const Customer = ({ isPop, onSubmit }) => {
                   checked={enableLoyalty === 1}
                   onChange={() => setEnableLoyalty(1)}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                                 disabled={isEnabled}
+                  disabled={isEnabled}
 
-               />
+                />
                 <span className="ml-2 text-gray-700">Enable</span>
               </label>
               <label className="inline-flex items-center">
@@ -1145,7 +1145,7 @@ const Customer = ({ isPop, onSubmit }) => {
                   checked={enableLoyalty === 0}
                   onChange={() => setEnableLoyalty(0)}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                                  disabled={isEnabled}
+                  disabled={isEnabled}
 
                 />
                 <span className="ml-2 text-gray-700">Disable</span>
@@ -1164,7 +1164,7 @@ const Customer = ({ isPop, onSubmit }) => {
                   checked={billingMethod === 0}
                   onChange={() => setBillingMethod(0)}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                                  disabled={isEnabled}
+                  disabled={isEnabled}
 
                 />
                 <span className="ml-2 text-gray-700">Invoice</span>
@@ -1178,7 +1178,7 @@ const Customer = ({ isPop, onSubmit }) => {
                   onChange={() => setBillingMethod(1)}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                   disabled={companySettings?.data.data.DCBilling === 0 || isEnabled}
-                
+
                 />
                 <span className="ml-2 text-gray-700">Direct challan(DC)</span>
               </label>
@@ -1217,7 +1217,7 @@ const Customer = ({ isPop, onSubmit }) => {
                     onChange={() => setEnableCreditBilling(1)}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                     disabled={companySettings?.data.data.CreditBilling === 0}
-                                    disabled={isEnabled}
+                  // disabled={isEnabled}
 
                   />
                   <span className="ml-2 text-gray-700">Yes</span>
@@ -1230,7 +1230,7 @@ const Customer = ({ isPop, onSubmit }) => {
                     checked={enableCreditBilling === 0}
                     onChange={() => setEnableCreditBilling(0)}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                                    disabled={isEnabled}
+                    disabled={isEnabled}
 
                   />
                   <span className="ml-2 text-gray-700">No</span>
@@ -1353,13 +1353,13 @@ const Customer = ({ isPop, onSubmit }) => {
                     rows={3}
                     placeholder="Enter payment terms and conditions"
                     disabled={isEnabled}
-                 />
+                  />
                 </div>
               </div>
             )}
           </div>
 
-          {!isEnabled &&<div className="mt-8 flex justify-end">
+          {!isEnabled && <div className="mt-8 flex justify-end">
             <Button
               onClick={handleSave}
               loadingText={
@@ -1427,12 +1427,10 @@ const Customer = ({ isPop, onSubmit }) => {
         isOpen={isPatientStatusModalOpen}
         onClose={() => setIsPatientStatusStatusOpen(false)}
         onConfirm={handleConfirmToggle}
-        title={`Are you sure you want to ${
-          currentStatus ? "deactivate" : "activate"
-        } this patient?`}
-        message={`This will ${
-          currentStatus ? "deactivate" : "activate"
-        } the Patient.`}
+        title={`Are you sure you want to ${currentStatus ? "deactivate" : "activate"
+          } this patient?`}
+        message={`This will ${currentStatus ? "deactivate" : "activate"
+          } the Patient.`}
         confirmText={currentStatus ? "Deactivate" : "Activate"}
         danger={currentStatus}
         isLoading={isDeActivating}
@@ -1477,11 +1475,10 @@ const GstAddressSelector = ({ gstData, onCopy, onCancel }) => {
             <div
               key={index}
               onClick={() => setSelectedIndex(index)}
-              className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${
-                selectedIndex === index
+              className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${selectedIndex === index
                   ? "border-blue-500 bg-blue-50"
                   : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-              }`}
+                }`}
             >
               <div className="flex items-start gap-4">
                 <input
@@ -1494,11 +1491,10 @@ const GstAddressSelector = ({ gstData, onCopy, onCancel }) => {
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
                     <span
-                      className={`px-2 py-1 text-xs font-medium rounded ${
-                        addr.type === "Primary"
+                      className={`px-2 py-1 text-xs font-medium rounded ${addr.type === "Primary"
                           ? "bg-green-100 text-green-800"
                           : "bg-purple-100 text-purple-800"
-                      }`}
+                        }`}
                     >
                       {addr.type}
                     </span>

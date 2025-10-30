@@ -17,13 +17,14 @@ import {
   useDeActivateMutation,
   useGetAllmaterialsQuery,
 } from "../../../api/materialMaster";
+import { format } from "date-fns";
 
 const MaterialMaster = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const locale = navigator.language || navigator.languages[0] || "en-IN";
+  const locale = navigator.language || navigator.languages[0] || "en-GB";
   const [sortOrder, setSortOrder] = useState("asc");
 
   const [selectedBrandId, setSelectedBrandId] = useState(null);
@@ -32,7 +33,6 @@ const MaterialMaster = () => {
 
   const { data, isLoading } = useGetAllmaterialsQuery();
   const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
-  
 
   const brands = useMemo(() => {
     if (!data) return [];
@@ -41,11 +41,7 @@ const MaterialMaster = () => {
       id: brand.Id,
       name: brand.MaterialName,
       applicableFor: brand.MaterialFor == 0 ? "Frame" : "Contact Lens",
-      createdAt: new Intl.DateTimeFormat(locale, {
-        year: "numeric",
-        month: "short",
-        day: "2-digit",
-      }).format(new Date(brand.CreatedDate)),
+      createdAt: format(new Date(brand.CreatedDate), 'dd/MM/yyyy'),
       enabled: brand.IsActive,
     }));
     // Sort by createdAtRaw based on sortOrder
@@ -57,7 +53,7 @@ const MaterialMaster = () => {
       }
     });
 
-     if (searchQuery) {
+    if (searchQuery) {
       processed = processed.filter((brand) =>
         brand.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
@@ -176,7 +172,7 @@ const MaterialMaster = () => {
                   />
                 </HasPermission>
                 <HasPermission module="Material Master" action="edit">
-                 <button
+                  <button
                     onClick={() => handleEdit(pool.id)}
                     className="text-neutral-600 hover:text-primary transition-colors"
                     aria-label="Edit"

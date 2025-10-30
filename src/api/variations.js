@@ -24,7 +24,10 @@ export const variationsApi = createApi({
       query: ({ id }) => ({
         url: `/api/v1/other-product-variation/getbyid/${id}`,
       }),
-      invalidatesTags: ["Variation"],
+      providesTags: (result, error, { id }) => [
+        { type: "Variation", id },
+        "Variation"
+      ],
     }),
     updateVariation: builder.mutation({
       query: ({ id, payload }) => ({
@@ -32,7 +35,10 @@ export const variationsApi = createApi({
         method: "PUT",
         body: payload,
       }),
-      invalidatesTags: ["Variation"],
+      invalidatesTags: (result, error, { id }) => [
+        "Variation",
+        { type: "Variation", id }
+      ],
     }),
     deActivate: builder.mutation({
       query: ({ id, payload }) => ({
@@ -40,7 +46,10 @@ export const variationsApi = createApi({
         method: "PUT",
         body: payload,
       }),
-      invalidatesTags: ["Variation"],
+      invalidatesTags: (result, error, { id }) => [
+        "Variation",
+        { type: "Variation", id }
+      ],
     }),
   }),
 });

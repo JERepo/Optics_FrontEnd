@@ -10,6 +10,7 @@ import { useSelector } from "react-redux";
 import {
   useGetPRByIdQuery,
   useGetPRDataForViewQuery,
+  useIssueCNMutation,
   useLazyPrintPdfQuery,
 } from "../../../api/purchaseReturn";
 import {
@@ -21,6 +22,8 @@ import { useGetLocationByIdQuery } from "../../../api/roleManagementApi";
 import { useGetCompanyIdQuery } from "../../../api/customerApi";
 import HasPermission from "../../../components/HasPermission";
 import { FiPrinter } from "react-icons/fi";
+import Modal from "../../../components/ui/Modal";
+import Input from "../../../components/Form/Input";
 
 const getProductName = (item) => {
   const type = item.ProductType;
@@ -39,6 +42,7 @@ const getProductName = (item) => {
     AddOns,
     FittingPrice,
     productName,
+    CLBatchCode,
     barcode,
     hsncode,
     colour,
@@ -99,13 +103,13 @@ const getProductName = (item) => {
 
     const specs = PowerSpecs
       ? [
-          PowerSpecs.Sph ? `Sph: ${formatPowerValue(PowerSpecs.Sph)}` : "",
-          PowerSpecs.Cyl ? `Cyl: ${formatPowerValue(PowerSpecs.Cyl)}` : "",
-          PowerSpecs.Axis ? `Axis: ${formatPowerValue(PowerSpecs.Axis)}` : "",
-          PowerSpecs.Add ? `Add: ${formatPowerValue(PowerSpecs.Add)}` : "",
-        ]
-          .filter(Boolean)
-          .join(", ")
+        PowerSpecs.Sph ? `Sph: ${formatPowerValue(PowerSpecs.Sph)}` : "",
+        PowerSpecs.Cyl ? `Cyl: ${formatPowerValue(PowerSpecs.Cyl)}` : "",
+        PowerSpecs.Axis ? `Axis: ${formatPowerValue(PowerSpecs.Axis)}` : "",
+        PowerSpecs.Add ? `Add: ${formatPowerValue(PowerSpecs.Add)}` : "",
+      ]
+        .filter(Boolean)
+        .join(", ")
       : "";
 
     const lines = [
@@ -113,8 +117,8 @@ const getProductName = (item) => {
       specs ? `${specs}` : "",
       clean(colour) ? `Colour: ${clean(colour)}` : "",
       barcode ? `Barcode: ${barcode}` : "",
-      clean(batchCode) ? `BatchCode: ${batchCode}` : "",
-      expiry && `Expiry: ${expiry.split("-").reverse().join("/")}`,
+      (clean(batchCode) && CLBatchCode) ? `BatchCode: ${batchCode}` : "",
+      (expiry && CLBatchCode) ? `Expiry: ${expiry.split("-").reverse().join("/")}` : ``,
       clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
 
@@ -137,9 +141,9 @@ const getProductName = (item) => {
           joinNonEmpty(
             [
               formatPowerValue(eye?.sphericalPower) &&
-                `SPH: ${formatPowerValue(eye?.sphericalPower)}`,
+              `SPH: ${formatPowerValue(eye?.sphericalPower)}`,
               formatPowerValue(eye?.addition) &&
-                `Add: ${formatPowerValue(eye?.addition)}`,
+              `Add: ${formatPowerValue(eye?.addition)}`,
               clean(eye?.diameter) && `Dia: ${clean(eye?.diameter)}`,
             ],
             ", "
@@ -195,6 +199,8 @@ const getStockOutPrice = (item) => {
     return parseFloat(item.ProductDetails.Stock.MRP);
   } else if (item.ProductType === 2) {
     return parseFloat(item.ProductDetails.Stock.OPMRP);
+  } else if (item.ProductType === 0) {
+    return parseFloat(item?.ProductDetails[0]?.pricing?.mrp);
   }
 
   return 0;
@@ -207,6 +213,10 @@ const PurchaseReturnView = () => {
   const PR = params.get("purchaseId");
   const [InvoiceEnabled, setInvoiceEnabled] = useState(true);
   const [printingId, setPrintingId] = useState(null);
+
+  const [isCNModalOpen, setIsCNModalOpen] = useState(false);
+  const [cnNumber, setCnNumber] = useState("");
+  const [isSubmittingCN, setIsSubmittingCN] = useState(false);
 
   const { data: PRDetails, isLoading } = useGetPRByIdQuery(PR, {
     skip: !PR,
@@ -231,6 +241,28 @@ const PurchaseReturnView = () => {
     { id: companyId },
     { skip: !companyId }
   );
+
+
+  const [saveIssueCN] = useIssueCNMutation();
+
+  const handleIssueCN = async () => {
+    setIsSubmittingCN(true);
+
+    try {
+      const payload = {
+        cnNo: cnNumber
+      };
+
+      const response = await saveIssueCN(payload).unwrap();
+
+      toast.success("CN Issued successfully.");
+    } catch (error) {
+      console.error("Error issuing CN:", error);
+      toast.error("Failed to issue CN. Please try again.");
+    }
+  }
+
+
   const [generatePrint, { isFetching: isPrinting }] = useLazyPrintPdfQuery();
   const EInvoiceEnable = companySettings?.data?.data.EInvoiceEnable;
   const InvInvoiceEnable = companySettings?.data?.data.DNEInvoiceEnable;
@@ -248,13 +280,14 @@ const PurchaseReturnView = () => {
       const qty = item.DNQty || 0;
       const unitPrice = parseFloat(item.DNPrice) || 0;
       const gstRate = parseFloat(item.ProductTaxPercentage) / 100;
+
       const fittingPrice = parseFloat(item.FittingReturnPrice || 0);
       const fittingGst = parseFloat(item.FittingTaxPercentage || 0);
       const totalFitting = fittingPrice * (fittingGst / 100);
 
-      const basicValue = unitPrice * qty;
-      const gst = unitPrice * qty * gstRate;
-      const returnTotal = basicValue + gst + totalFitting;
+      const basicValue = (unitPrice * qty) + fittingPrice;
+      const gst = unitPrice * qty * gstRate + totalFitting;
+      const returnTotal = basicValue + gst; //+ (fittingPrice + totalFitting);
 
       acc.totalQty += qty;
       acc.totalGST += gst;
@@ -271,7 +304,7 @@ const PurchaseReturnView = () => {
     totalBasicValue: formatINR(totals.totalBasicValue),
     totalReturnValue: formatINR(
       totals.totalReturnValue +
-        (parseFloat(PRDetails?.data?.data?.RoundOff) || 0)
+      (parseFloat(PRDetails?.data?.data?.RoundOff) || 0)
     ),
   };
   const getEInvoiceData = async () => {
@@ -291,8 +324,8 @@ const PurchaseReturnView = () => {
       console.log(error);
       toast.error(
         error?.data?.error?.message ||
-          error?.data?.error?.createdRecord?.ErrorMessage ||
-          "E-Invoice Not enabled for this customer"
+        error?.data?.error?.createdRecord?.ErrorMessage ||
+        "E-Invoice Not enabled for this customer"
       );
     }
   };
@@ -343,6 +376,16 @@ const PurchaseReturnView = () => {
             >
               Back
             </Button>
+            {/* CN Issued Button */}
+            {console.log("PRDetails?.data.data - ", PRDetails?.data.data)}
+            {PRDetails?.data?.data?.VendorCNIssued !== 1 && (
+              <Button
+                variant="secondary"
+                onClick={() => setIsCNModalOpen(true)}
+              >
+                Issue CN
+              </Button>
+            )}
             <Button
               onClick={() => handlePrint(PRDetails?.data.data)}
               icon={FiPrinter}
@@ -399,13 +442,17 @@ const PurchaseReturnView = () => {
             value={
               PRDetails?.data.data.PurchaseReturnDate
                 ? format(
-                    new Date(PRDetails?.data.data.PurchaseReturnDate),
-                    "dd/MM/yyyy"
-                  )
+                  new Date(PRDetails?.data.data.PurchaseReturnDate),
+                  "dd/MM/yyyy"
+                )
                 : ""
             }
           />
           <Info label="Status" value="Confirmed" />
+
+          {PRDetails?.data?.data?.VendorCNIssued === 1 && (
+            <Info label="VendorCNNo " value={PRDetails?.data?.data?.VendorCNNo} />
+          )}
         </div>
 
         {/* Product Table */}
@@ -439,7 +486,7 @@ const PurchaseReturnView = () => {
                   ₹
                   {formatINR(
                     parseFloat(item.DNPrice) *
-                      (parseFloat(item.ProductTaxPercentage) / 100)
+                    (parseFloat(item.ProductTaxPercentage) / 100)
                   )}
                   ({parseFloat(item.ProductTaxPercentage)}%)
                 </TableCell>
@@ -448,12 +495,12 @@ const PurchaseReturnView = () => {
                   ₹
                   {formatINR(
                     parseFloat(item.DNPrice) * item.DNQty +
-                      parseFloat(item.DNPrice) *
-                        item.DNQty *
-                        (parseFloat(item.ProductTaxPercentage) / 100) +
-                      parseFloat(item.FittingReturnPrice || 0) *
-                        (parseFloat(item?.FittingTaxPercentage || 0) / 100) +
-                      parseFloat(item?.FittingReturnPrice || 0)
+                    parseFloat(item.DNPrice) *
+                    item.DNQty *
+                    (parseFloat(item.ProductTaxPercentage) / 100) +
+                    (parseFloat(item.FittingReturnPrice || 0) *
+                      (parseFloat(item?.FittingTaxPercentage || 0) / 100)) +
+                    parseFloat(item?.FittingReturnPrice || 0)
                   )}
                 </TableCell>
               </TableRow>
@@ -559,6 +606,73 @@ const PurchaseReturnView = () => {
             </div>
           )}
       </div>
+
+      {/* CN Issued Modal */}
+      <Modal
+        isOpen={isCNModalOpen}
+        onClose={() => {
+          setIsCNModalOpen(false);
+          setCnNumber("");
+        }}
+        title="Issue Credit Note"
+      >
+        <div className="space-y-4">
+          <Input
+            label="CN No"
+            placeholder="Enter Credit Note Number"
+            value={cnNumber}
+            onChange={(e) => setCnNumber(e.target.value)}
+            disabled={isSubmittingCN}
+          />
+
+          <div className="flex justify-end gap-3 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsCNModalOpen(false);
+                setCnNumber("");
+              }}
+              disabled={isSubmittingCN}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!cnNumber.trim()) {
+                  toast.error("CN No is required");
+                  return;
+                }
+
+                setIsSubmittingCN(true);
+                try {
+                  // Replace with your actual API call
+                  const payload = {
+                    prId: PR,
+                    cnNo: cnNumber
+                  };
+
+                  await saveIssueCN(payload).unwrap();
+                  console.log("Submitting CN:", { prId: PR, cnNo: cnNumber });
+
+                  toast.success(`CN ${cnNumber} issued successfully`);
+                  setIsCNModalOpen(false);
+                  setCnNumber("");
+                  // Optionally refetch data
+                } catch (error) {
+                  toast.error("Failed to issue CN");
+                } finally {
+                  setIsSubmittingCN(false);
+                }
+              }}
+              isLoading={isSubmittingCN}
+              disabled={!cnNumber.trim() || isSubmittingCN}
+            >
+              Submit
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
     </div>
   );
 };

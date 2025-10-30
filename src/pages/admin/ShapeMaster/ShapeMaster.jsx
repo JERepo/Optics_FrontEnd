@@ -10,6 +10,7 @@ import {
   useDeActivateMutation,
   useGetAllShapesQuery,
 } from "../../../api/shapeMasterApi";
+import { format } from "date-fns";
 
 const ShapeMaster = () => {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ const ShapeMaster = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [sortOrder, setSortOrder] = useState("asc"); // State for sorting order (asc/desc)
-  const locale = navigator.language || navigator.languages[0] || "en-IN";
+  const locale = navigator.language || navigator.languages[0] || "en-GB";
 
   const [selectedBrandId, setSelectedBrandId] = useState(null);
   const [currentStatus, setCurrentStatus] = useState(null);
@@ -32,11 +33,7 @@ const ShapeMaster = () => {
     let sortedBrands = data.map((brand) => ({
       id: brand.Id,
       name: brand.ShapeName,
-      createdAt: new Intl.DateTimeFormat(locale, {
-        year: "numeric",
-        month: "short",
-        day: "2-digit",
-      }).format(new Date(brand.CreatedDate)),
+      createdAt: format(new Date(brand.CreatedDate), 'dd/MM/yyyy'),
       enabled: brand.IsActive,
     }));
 

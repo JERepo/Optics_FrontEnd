@@ -12,13 +12,14 @@ import {
   useDeActivateMutation,
   useGetAllBankMastersQuery,
 } from "../../../api/bankMasterApi";
+import { format } from "date-fns";
 
 const BankMaster = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const locale = navigator.language || navigator.languages[0] || "en-IN";
+  const locale = navigator.language || navigator.languages[0] || "en-GB";
 
   const [selectedBrandId, setSelectedBrandId] = useState(null);
   const [currentStatus, setCurrentStatus] = useState(null);
@@ -34,11 +35,7 @@ const BankMaster = () => {
         id: brand.Id,
         name: brand.BankName,
 
-        createdAt: new Intl.DateTimeFormat(locale, {
-          year: "numeric",
-          month: "short",
-          day: "2-digit",
-        }).format(new Date(brand.CreatedDate)),
+        createdAt: format(new Date(brand.CreatedDate), 'dd/MM/yyyy'),
         enabled: brand.IsActive,
       }))
       .filter((bank) => {

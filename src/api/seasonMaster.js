@@ -24,6 +24,10 @@ export const seasonMasterApi = createApi({
       query: ({ id }) => ({
         url: `/api/v1/season-master/getbyid/${id}`,
       }),
+      providesTags: (result, error, { id }) => [
+        { type: "season", id },
+        "season"
+      ],
     }),
     updateseason: builder.mutation({
       query: ({ id, payload }) => ({
@@ -31,7 +35,10 @@ export const seasonMasterApi = createApi({
         method: "PUT",
         body: payload,
       }),
-      invalidatesTags: ["season"],
+      invalidatesTags: (result, error, { id }) => [
+        "season",
+        { type: "season", id }
+      ],
     }),
     deActivate: builder.mutation({
       query: ({ id, payload }) => ({
@@ -39,7 +46,10 @@ export const seasonMasterApi = createApi({
         method: "PUT",
         body: payload,
       }),
-      invalidatesTags: ["season"],
+      invalidatesTags: (result, error, { id }) => [
+        "season",
+        { type: "season", id }
+      ],
     }),
   }),
 });

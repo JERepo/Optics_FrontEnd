@@ -7,6 +7,7 @@ import Toggle from "../../../components/ui/Toggle";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import HasPermission from "../../../components/HasPermission";
 import { useDeActivateMutation, useGetAllseasonsQuery } from "../../../api/seasonMaster";
+import { format } from "date-fns";
 
 const SeasonMaster = () => {
   const navigate = useNavigate();
@@ -14,7 +15,7 @@ const SeasonMaster = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [sortOrder, setSortOrder] = useState("newToOld"); // State for sorting order
-  const locale = navigator.language || navigator.languages[0] || "en-IN";
+  const locale = navigator.language || navigator.languages[0] || "en-GB";
 
   const [selectedBrandId, setSelectedBrandId] = useState(null);
   const [currentStatus, setCurrentStatus] = useState(null);
@@ -29,11 +30,7 @@ const SeasonMaster = () => {
     let sortedBrands = data.data.map((brand) => ({
       id: brand.Id,
       name: brand.SeasonName,
-      createdAt: new Intl.DateTimeFormat(locale, {
-        year: "numeric",
-        month: "short",
-        day: "2-digit",
-      }).format(new Date(brand.CreatedDate)),
+      createdAt: format(new Date(brand.CreatedDate), 'dd/MM/yyyy'),
       createdAtRaw: new Date(brand.CreatedDate), // Store raw date for sorting
       enabled: brand.IsActive,
     }));

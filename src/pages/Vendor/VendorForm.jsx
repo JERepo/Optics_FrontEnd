@@ -63,10 +63,10 @@ const VendorForm = ({
             ? 1
             : 0
           : type === "radio"
-          ? parseInt(value)
-          : name.includes("gst_no") || name.includes("pan_no")
-          ? value.toUpperCase()
-          : value,
+            ? parseInt(value)
+            : name.includes("gst_no") || name.includes("pan_no")
+              ? value.toUpperCase()
+              : value,
     }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
@@ -101,7 +101,7 @@ const VendorForm = ({
           (s) =>
             s.StateCode == location?.StateId ||
             s.StateName.toLowerCase() ===
-              location?.StateName?.trim().toLowerCase()
+            location?.StateName?.trim().toLowerCase()
         );
 
         setFormData((prev) => ({
@@ -134,6 +134,227 @@ const VendorForm = ({
 
   return (
     <div className="space-y-6">
+
+      {/* GST and PAN */}
+      <Section title="GST Details">
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+          <div className="flex flex-col gap-2">
+            <label className="font-medium text-gray-700">GSTIN Status *</label>
+            <div className="flex gap-6">
+              <Radio
+                label="Registered"
+                name="gstStatus"
+                value="1"
+                checked={formData.gstStatus === 1}
+                onChange={handleChange}
+                disabled={isView}
+              />
+              <Radio
+                label="Unregistered"
+                name="gstStatus"
+                value="0"
+                checked={formData.gstStatus === 0}
+                onChange={handleChange}
+                disabled={isView}
+              />
+              <Radio
+                label="Composite"
+                name="gstStatus"
+                value="2"
+                checked={formData.gstStatus === 2}
+                onChange={handleChange}
+                disabled={isView}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-10">
+            {(formData.gstStatus === 1 || formData.gstStatus === 2) && (
+              <div className="flex gap-3 items-center ">
+                <Input
+                  label="GST Number *"
+                  name="gst_no"
+                  value={formData.gst_no}
+                  onChange={handleChange}
+                  placeholder="Enter GSTIN"
+                  error={errors.gst_no}
+                  className="w-full"
+                  disabled={isView}
+                />
+                <Button
+                  onClick={handleVerifyGST}
+                  disabled={isVerifyGSTLoading || isFetchingPincode || isView}
+                >
+                  {isVerifyGSTLoading ? "Verifying..." : "Verify"}
+                </Button>
+              </div>
+            )}
+
+            <Input
+              label={`PAN Number ${formData.vendor_type === 0 ? "*" : ""}`}
+              name="pan_no"
+              value={formData.pan_no}
+              onChange={handleChange}
+              placeholder="Enter PAN Number"
+              error={errors.pan_no}
+              disabled={isView}
+            />
+          </div>
+        </div>
+      </Section>
+
+      {/* Address */}
+      <Section title="Vendor Details">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Input
+            label="Legal Name *"
+            name="legal_name"
+            value={formData.legal_name}
+            onChange={handleChange}
+            placeholder="Enter Legal Name"
+            className=""
+            error={errors.legal_name}
+            disabled={isView}
+          />
+          <div></div>
+          <Input
+            label="Address 1 *"
+            name="vendor_address1"
+            value={formData.vendor_address1}
+            onChange={handleChange}
+            placeholder="Enter Address 1"
+            error={errors.vendor_address1}
+            disabled={isView}
+          />
+          <Input
+            label="Address 2"
+            name="vendor_address2"
+            value={formData.vendor_address2}
+            onChange={handleChange}
+            placeholder="Enter Address 2"
+            disabled={isView}
+          />
+          <Input
+            label="Landmark"
+            name="vendor_landmark"
+            value={formData.vendor_landmark}
+            onChange={handleChange}
+            placeholder="Enter Landmark"
+            disabled={isView}
+          />
+          <div className="flex flex-col gap-2 w-full">
+            <div className="flex gap-3 items-center">
+              <Input
+                label="Pin Code *"
+                name="vendor_pincode"
+                value={formData.vendor_pincode}
+                onChange={handleChange}
+                placeholder="Enter PIN Code"
+                className="w-full"
+                error={errors.vendor_pincode}
+                disabled={isView}
+              />
+              {formData.vendor_type === 0 && (
+                <Button
+                  onClick={fetchLocationByPincode}
+                  disabled={isFetchingPincode}
+                >
+                  {isFetchingPincode ? "Fetching..." : "Fetch"}
+                </Button>
+              )}
+            </div>
+          </div>
+          <Input
+            label="City *"
+            name="vendor_city"
+            value={formData.vendor_city}
+            onChange={handleChange}
+            placeholder="Enter City"
+            error={errors.vendor_city}
+            disabled={isView}
+          />
+          <Select
+            label="State *"
+            name="vendor_state"
+            value={formData.vendor_state}
+            onChange={handleChange}
+            options={states}
+            optionValue="Id"
+            optionLabel="StateName"
+            error={errors.vendor_state}
+            disabled={formData.vendor_type === 1}
+            greyOut={formData.vendor_type === 1}
+            // disabled={isView}
+          />
+          <Select
+            label="Country *"
+            name="vendor_country"
+            value={formData.vendor_country}
+            onChange={handleChange}
+            options={countries}
+            optionValue="Id"
+            optionLabel="CountryName"
+            error={errors.vendor_country}
+            disabled={isView}
+          />
+        </div>
+      </Section>
+
+      {/* Contact */}
+      <Section title="Contact Information">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Input
+            label="Email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="Enter Email"
+            error={errors.email}
+            className=""
+            disabled={isView}
+          />
+          <div></div>
+          <div className="grid grid-cols-2 items-center gap-5 col-span-2">
+            <div className="flex flex-col gap-2">
+              <label className="font-medium text-gray-700">Mobile Number</label>
+              <div className="flex gap-4">
+                <Select
+                  name="mobileISDCode"
+                  value={formData.mobileISDCode}
+                  onChange={handleChange}
+                  options={countries?.map((c) => ({
+                    Id: c.ISDCode,
+                    CountryName: `${c.CountryName} (${c.ISDCode})`,
+                  }))}
+                  optionValue="Id"
+                  optionLabel="CountryName"
+                  className="w-36"
+                  disabled={isView}
+                />
+                <Input
+                  name="mobile_no"
+                  value={formData.mobile_no}
+                  onChange={handleChange}
+                  placeholder="Enter Mobile Number"
+                  error={errors.mobile_no}
+                  className="flex-1"
+                  disabled={isView}
+                />
+              </div>
+            </div>
+
+            <Input
+              label="Telephone"
+              name="telephone"
+              value={formData.telephone}
+              onChange={handleChange}
+              placeholder="Enter Telephone"
+              error={errors.telephone}
+              disabled={isView}
+            />
+          </div>
+        </div>
+      </Section>
+
       {/* Vendor Type */}
       <Section title="Billing Details">
         <div className="flex flex-col gap-6">
@@ -156,7 +377,7 @@ const VendorForm = ({
                 value="1"
                 checked={formData.vendor_type === 1}
                 onChange={handleChange}
-                  disabled={isView}
+                disabled={isView}
               />
             </div>
           </div>
@@ -173,7 +394,7 @@ const VendorForm = ({
                     value="0"
                     checked={formData.isReverseChargeApplicable === 0}
                     onChange={handleChange}
-                      disabled={isView}
+                    disabled={isView}
                   />
                   <Radio
                     label="Yes"
@@ -181,7 +402,7 @@ const VendorForm = ({
                     value="1"
                     checked={formData.isReverseChargeApplicable === 1}
                     onChange={handleChange}
-                      disabled={isView}
+                    disabled={isView}
                   />
                 </div>
               </div>
@@ -197,7 +418,7 @@ const VendorForm = ({
                       value="0"
                       checked={formData.billingMethod === 0}
                       onChange={handleChange}
-                        disabled={isView}
+                      disabled={isView}
                     />
                     <Radio
                       label="Delivery Challan (DC)"
@@ -205,7 +426,7 @@ const VendorForm = ({
                       value="1"
                       checked={formData.billingMethod === 1}
                       onChange={handleChange}
-                        disabled={isView}
+                      disabled={isView}
                     />
                   </div>
                 </div>
@@ -219,7 +440,7 @@ const VendorForm = ({
                 checked={formData.isServiceProvider === 1}
                 onChange={handleChange}
                 className="mt-5"
-                  disabled={isView}
+                disabled={isView}
               />
               {formData.billingMethod === 1 && (
                 <div className="flex items-center gap-3">
@@ -230,7 +451,7 @@ const VendorForm = ({
                     value="0"
                     onChange={handleChange}
                     checked={formData.dCGRNPrice === 0}
-                      disabled={isView}
+                    disabled={isView}
                   />
                   <Radio
                     label="Yes"
@@ -238,231 +459,11 @@ const VendorForm = ({
                     value="1"
                     onChange={handleChange}
                     checked={formData.dCGRNPrice === 1}
-                      disabled={isView}
+                    disabled={isView}
                   />
                 </div>
               )}
             </div>
-          </div>
-        </div>
-      </Section>
-
-      {/* GST and PAN */}
-      <Section title="GST Details">
-        <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
-          <div className="flex flex-col gap-2">
-            <label className="font-medium text-gray-700">GSTIN Status *</label>
-            <div className="flex gap-6">
-              <Radio
-                label="Registered"
-                name="gstStatus"
-                value="1"
-                checked={formData.gstStatus === 1}
-                onChange={handleChange}
-                  disabled={isView}
-              />
-              <Radio
-                label="Unregistered"
-                name="gstStatus"
-                value="0"
-                checked={formData.gstStatus === 0}
-                onChange={handleChange}
-                  disabled={isView}
-              />
-              <Radio
-                label="Composite"
-                name="gstStatus"
-                value="2"
-                checked={formData.gstStatus === 2}
-                onChange={handleChange}
-                  disabled={isView}
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-10">
-            {(formData.gstStatus === 1 || formData.gstStatus === 2) && (
-              <div className="flex gap-3 items-center ">
-                <Input
-                  label="GST Number *"
-                  name="gst_no"
-                  value={formData.gst_no}
-                  onChange={handleChange}
-                  placeholder="Enter GSTIN"
-                  error={errors.gst_no}
-                  className="w-full"
-                    disabled={isView}
-                />
-                <Button
-                  onClick={handleVerifyGST}
-                  disabled={isVerifyGSTLoading || isFetchingPincode || isView}
-                >
-                  {isVerifyGSTLoading ? "Verifying..." : "Verify"}
-                </Button>
-              </div>
-            )}
-
-            <Input
-              label={`PAN Number ${formData.vendor_type === 0 ? "*" : ""}`}
-              name="pan_no"
-              value={formData.pan_no}
-              onChange={handleChange}
-              placeholder="Enter PAN Number"
-              error={errors.pan_no}
-                disabled={isView}
-            />
-          </div>
-        </div>
-      </Section>
-
-      {/* Address */}
-      <Section title="Vendor Details">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Input
-            label="Legal Name *"
-            name="legal_name"
-            value={formData.legal_name}
-            onChange={handleChange}
-            placeholder="Enter Legal Name"
-            className=""
-            error={errors.legal_name}
-              disabled={isView}
-          />
-          <div></div>
-          <Input
-            label="Address 1 *"
-            name="vendor_address1"
-            value={formData.vendor_address1}
-            onChange={handleChange}
-            placeholder="Enter Address 1"
-            error={errors.vendor_address1}
-              disabled={isView}
-          />
-          <Input
-            label="Address 2"
-            name="vendor_address2"
-            value={formData.vendor_address2}
-            onChange={handleChange}
-            placeholder="Enter Address 2"
-              disabled={isView}
-          />
-          <Input
-            label="Landmark"
-            name="vendor_landmark"
-            value={formData.vendor_landmark}
-            onChange={handleChange}
-            placeholder="Enter Landmark"
-              disabled={isView}
-          />
-          <div className="flex flex-col gap-2 w-full">
-            <div className="flex gap-3 items-center">
-              <Input
-                label="Pin Code *"
-                name="vendor_pincode"
-                value={formData.vendor_pincode}
-                onChange={handleChange}
-                placeholder="Enter PIN Code"
-                className="w-full"
-                error={errors.vendor_pincode}
-                  disabled={isView}
-              />
-              {formData.vendor_type === 0 && (
-                <Button
-                  onClick={fetchLocationByPincode}
-                  disabled={isFetchingPincode}
-                >
-                  {isFetchingPincode ? "Fetching..." : "Fetch"}
-                </Button>
-              )}
-            </div>
-          </div>
-          <Input
-            label="City *"
-            name="vendor_city"
-            value={formData.vendor_city}
-            onChange={handleChange}
-            placeholder="Enter City"
-            error={errors.vendor_city}
-              disabled={isView}
-          />
-          <Select
-            label="State *"
-            name="vendor_state"
-            value={formData.vendor_state}
-            onChange={handleChange}
-            options={states}
-            optionValue="Id"
-            optionLabel="StateName"
-            error={errors.vendor_state}
-            disabled={formData.vendor_type === 1}
-            greyOut={formData.vendor_type === 1}
-              disabled={isView}
-          />
-          <Select
-            label="Country *"
-            name="vendor_country"
-            value={formData.vendor_country}
-            onChange={handleChange}
-            options={countries}
-            optionValue="Id"
-            optionLabel="CountryName"
-            error={errors.vendor_country}
-              disabled={isView}
-          />
-        </div>
-      </Section>
-
-      {/* Contact */}
-      <Section title="Contact Information">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Input
-            label="Email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            placeholder="Enter Email"
-            error={errors.email}
-            className=""
-              disabled={isView}
-          />
-          <div></div>
-          <div className="grid grid-cols-2 items-center gap-5 col-span-2">
-            <div className="flex flex-col gap-2">
-              <label className="font-medium text-gray-700">Mobile Number</label>
-              <div className="flex gap-4">
-                <Select
-                  name="mobileISDCode"
-                  value={formData.mobileISDCode}
-                  onChange={handleChange}
-                  options={countries?.map((c) => ({
-                    Id: c.ISDCode,
-                    CountryName: `${c.CountryName} (${c.ISDCode})`,
-                  }))}
-                  optionValue="Id"
-                  optionLabel="CountryName"
-                  className="w-36"
-                    disabled={isView}
-                />
-                <Input
-                  name="mobile_no"
-                  value={formData.mobile_no}
-                  onChange={handleChange}
-                  placeholder="Enter Mobile Number"
-                  error={errors.mobile_no}
-                  className="flex-1"
-                    disabled={isView}
-                />
-              </div>
-            </div>
-
-            <Input
-              label="Telephone"
-              name="telephone"
-              value={formData.telephone}
-              onChange={handleChange}
-              placeholder="Enter Telephone"
-              error={errors.telephone}
-                disabled={isView}
-            />
           </div>
         </div>
       </Section>

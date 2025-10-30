@@ -27,6 +27,11 @@ const methods = [
   { value: 5, type: "Bank Transfer" },
 ];
 
+const toFixedNumber = (num) => {
+  const parsed = parseFloat(num);
+  return isNaN(parsed) ? 0 : Number(parsed.toFixed(2));
+};
+
 const VendorCollectAdvace = ({
   totalValue,
   amountToPay,
@@ -68,27 +73,22 @@ const VendorCollectAdvace = ({
   const [remarks, setRemarks] = useState("");
 
   const updatedDetails = useMemo(() => {
-    const total = totalValue || 0;
-    const advance = amountToPay || 0;
+    const total = toFixedNumber(totalValue);
+    const advance = toFixedNumber(amountToPay);
 
-    const totalPaid =
-      fullPayments?.length > 0
-        ? fullPaymentDetails?.reduce((sum, payment) => {
-            const amt = parseFloat(payment.Amount);
-            return sum + (isNaN(amt) ? 0 : amt);
-          }, 0)
-        : 0;
+    const totalPaid = fullPaymentDetails.reduce((sum, payment) => {
+      return sum + toFixedNumber(payment.Amount);
+    }, 0);
 
-    // Round to 2 decimal places to avoid floating-point precision issues
-    const remainingToPay = Number(Math.max(advance - totalPaid, 0).toFixed(2));
+    const remainingToPay = toFixedNumber(Math.max(advance - totalPaid, 0));
 
     return {
       TotalAmount: total,
       AdvanceAmount: advance,
-      BalanceAmount: total - advance,
+      BalanceAmount: toFixedNumber(total - advance),
       RemainingToPay: remainingToPay,
     };
-  }, [paymentDetails, fullPaymentDetails, fullPayments]);
+  }, [totalValue, amountToPay, fullPaymentDetails]);
 
   const { data: paymentMachine } = useGetAllPaymentMachinesQuery();
   const { data: allbanks } = useGetAllBankMastersQuery();
@@ -143,7 +143,7 @@ const VendorCollectAdvace = ({
 
     fullPaymentDetails.forEach((payment) => {
       const typeKey = normalizeType(payment.Type || "");
-      const amount = parseFloat(payment.Amount);
+      const amount = toFixedNumber(payment.Amount);
       if (isNaN(amount)) return;
 
       if (typeKey === "cash") {
@@ -236,9 +236,8 @@ const VendorCollectAdvace = ({
 
     if (!selectedPaymentMethod)
       validationErrors.method = "Please select a payment method";
-    if (!newPayment.Amount || isNaN(newPayment.Amount)) {
-      validationErrors.amount = "Please enter a valid amount";
-    }
+    const amount = toFixedNumber(newPayment.Amount);
+    if (amount <= 0) validationErrors.amount = "Please enter a valid amount";
     if (Object.keys(validationErrors).length) {
       setErrors(validationErrors);
       toast.error("Please fill all required fields");
@@ -330,9 +329,14 @@ const VendorCollectAdvace = ({
       toast.error("Please fill all required fields");
       return;
     }
+    // Final rounded amount
+    const finalPayment = {
+      ...newPayment,
+      Amount: amount,
+    };
 
-    setFullPaymentDetails((prev) => [...prev, newPayment]);
-    setFullPayments((prev) => [...prev, newPayment]);
+    setFullPaymentDetails((prev) => [...prev, finalPayment]);
+    setFullPayments((prev) => [...prev, finalPayment]);
     setNewPayment({
       Type: "",
       RefNo: "",
@@ -358,7 +362,19 @@ const VendorCollectAdvace = ({
     setFullPaymentDetails((prev) => prev.filter((_, i) => i !== index));
     toast.success("Payment removed successfully!");
   };
+    // Restrict amount input to 2 decimals
+  const handleAmountChange = (e) => {
+    let value = e.target.value.replace(/[^0-9.]/g, "");
+    const parts = value.split(".");
+    if (parts.length > 2) value = parts[0] + "." + parts.slice(1).join("");
+    if (parts[1]) value = parts[0] + "." + parts[1].slice(0, 2);
+    setNewPayment((prev) => ({ ...prev, Amount: value }));
+  };
 
+  const totalAdvance = fullPaymentDetails.reduce(
+  (sum, p) => sum + toFixedNumber(p.Amount),
+  0
+);
   return (
     <div className="">
       <div className="max-w-8xl">
@@ -597,7 +613,7 @@ const MethodForm = ({
   const commonAmountInput = (
     <Input
       label="Amount *"
-      type="number"
+      type="text"
       value={newPayment.Amount}
       onChange={handleInputChange("Amount")}
       error={errors.amount}

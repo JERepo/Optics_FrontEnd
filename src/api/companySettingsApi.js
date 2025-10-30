@@ -35,6 +35,11 @@ export const companySettingsApi = createApi({
         url: `/api/v1/location-settings/labels`,
       }),
     }),
+    getCompany :builder.query({
+      query : (companyId) => ({
+        url : `/api/v1/companies/${companyId}`
+      })
+    })
   }),
 });
 
@@ -43,5 +48,6 @@ export const {
   useGetAllPoolsQuery,
   useUpdateSettingsMutation,
   useGetTaxesQuery,
-  useGetLabelsQuery
+  useGetLabelsQuery,
+  useGetCompanyQuery
 } = companySettingsApi;

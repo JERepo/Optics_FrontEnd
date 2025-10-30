@@ -23,14 +23,14 @@ import { PoolCat } from "../../../utils/constants/PoolCategory";
 
 const PoolCreation = () => {
   const navigate = useNavigate();
-  const locale = "en";
+  const locale = "en-GB";
 
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [sortConfig, setSortConfig] = useState({
     key: "name",
-    direction: "asc",
+    direction: "desc",
   });
   const [categoryFilter, setCategoryFilter] = useState(null);
   const [isCategoryPopupOpen, setIsCategoryPopupOpen] = useState(false);
@@ -50,11 +50,15 @@ const PoolCreation = () => {
       category:
         PoolCat.find((p) => p.Id == pool.PoolCategory)?.PoolCategory ||
         "Unknown",
-      createdAt: new Intl.DateTimeFormat("en-IN", {
-        year: "numeric",
-        month: "short",
+      createdAt: new Intl.DateTimeFormat("en-GB", {
         day: "2-digit",
-      }).format(new Date(pool.CreatedDate)),
+        month: "2-digit",
+        year: "numeric",
+      })
+        .format(new Date(pool.CreatedDate))
+        // .split("/")
+        // .join("-")
+        ,
       enabled: pool.IsActive,
     }));
 
@@ -80,7 +84,8 @@ const PoolCreation = () => {
   const filteredPools = pools.filter(
     (pool) =>
       pool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      pool.category.toLowerCase().includes(searchQuery.toLowerCase())
+      pool.category.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      pool.createdAt.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const startIndex = (currentPage - 1) * pageSize;
@@ -200,7 +205,7 @@ const PoolCreation = () => {
                 <span>{column}</span>
                 <button onClick={() => handleSort("name")}>
                   {sortConfig.key === "name" &&
-                  sortConfig.direction === "asc" ? (
+                    sortConfig.direction === "asc" ? (
                     <FiArrowUp className="text-neutral-500 hover:text-primary" />
                   ) : (
                     <FiArrowDown className="text-neutral-500 hover:text-primary" />
@@ -254,8 +259,8 @@ const PoolCreation = () => {
           isLoading
             ? "Loading pools..."
             : searchQuery || categoryFilter
-            ? "No pools match your search or filter criteria"
-            : "No pools found. Click 'Add Pool' to create one."
+              ? "No pools match your search or filter criteria"
+              : "No pools found. Click 'Add Pool' to create one."
         }
         pagination
         currentPage={currentPage}
@@ -270,12 +275,10 @@ const PoolCreation = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onConfirm={handleConfirmToggle}
-        title={`Are you sure you want to ${
-          currentStatus ? "deactivate" : "activate"
-        } this pool?`}
-        message={`This will ${
-          currentStatus ? "deactivate" : "activate"
-        } the pool. You can change it again later.`}
+        title={`Are you sure you want to ${currentStatus ? "deactivate" : "activate"
+          } this pool?`}
+        message={`This will ${currentStatus ? "deactivate" : "activate"
+          } the pool. You can change it again later.`}
         confirmText={currentStatus ? "Deactivate" : "Activate"}
         danger={currentStatus}
         isLoading={isDeActivating}

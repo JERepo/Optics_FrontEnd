@@ -16,6 +16,7 @@ import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
 import { useSelector } from "react-redux";
 import Modal from "../../components/ui/Modal";
 import Input from "../../components/Form/Input";
+import { format } from "date-fns";
 
 const CustomerMain = () => {
   const navigate = useNavigate();
@@ -23,7 +24,7 @@ const CustomerMain = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const locale = navigator.language || navigator.languages[0] || "en-IN";
+  const locale = navigator.language || navigator.languages[0] || "en-GB";
 
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [currentStatus, setCurrentStatus] = useState(null);
@@ -31,8 +32,12 @@ const CustomerMain = () => {
   const [isCreditLimitOpened, setIsCreditLimitOpened] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
 
+  console.log("hasMultipleLocations : ", hasMultipleLocations);
+  console.log("user : ", user);
+
+
   const { data, isLoading } = useGetAllCustomerByIdQuery({
-    id: hasMultipleLocations[0],
+    id: hasMultipleLocations,
   });
   const [deActivate, { isLoading: isDeActivating }] = useDeActivateMutation();
   const { data: allLocations } = useGetAllLocationsQuery();
@@ -49,11 +54,7 @@ const CustomerMain = () => {
           .LocationName,
         phone: customer.MobNumber,
         group: customer.CustomerGroup.GroupName,
-        createdAt: new Intl.DateTimeFormat(locale, {
-          year: "numeric",
-          month: "short",
-          day: "2-digit",
-        }).format(new Date(customer.CreateDate)),
+        createdAt: format(new Date(customer.CreateDate), 'dd/MM/yyyy'),
         enabled: customer.IsActive === 1,
       }))
       .filter((customer) => {

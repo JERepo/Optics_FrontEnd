@@ -998,29 +998,25 @@ const CustomerSelect = () => {
         selectedGroupItems.length > 0 &&
         selectedGroupItems.length < groupItems.length
       ) {
-        // Find first missing item’s row number
         const missingItem = groupItems.find(
           (x) => !selectedProducts.includes(x.orderDetailId)
         );
-
         const idx = filteredProducts.findIndex(
           (x) => x.orderDetailId === missingItem.orderDetailId
         );
-        if (idx === -1) {
-          continue;
-        }
+        if (idx === -1) continue;
 
         const missingIndex = idx + 1;
 
-        if (groupItems.some((x) => x.productType === 1)) {
-          // Frame + Lens case
+        if (missingItem.productType === 1) {
+          // Frame is missing
           toast.error(
             `Frame in Item No ${missingIndex} should also be invoiced along with the lens`
           );
-        } else {
-          // Optical Lens split case
+        } else if (missingItem.productType === 0) {
+          // Lens is missing
           toast.error(
-            `Both the lens should be invoiced together (missing Item No ${missingIndex})`
+            `Lens in Item No ${missingIndex} should also be invoiced along with the frame`
           );
         }
         return;
@@ -1132,8 +1128,8 @@ const CustomerSelect = () => {
                   value={
                     contactResp?.data?.patients.find(
                       (master) =>
-                        master.CustomerMasterID ===
-                        selectedPatient?.CustomerMasterID
+                        master.Id ===
+                        selectedPatient?.Id
                     ) || null
                   }
                   onChange={(_, newValue) =>
@@ -1202,7 +1198,8 @@ const CustomerSelect = () => {
                     <div className="flex gap-1">
                       <strong>Credit Limit Available:</strong>
                       {parseFloat(
-                        customerData?.data?.data?.CustomerCreditLimit?.CreditLimitAvl || 0
+                        customerData?.data?.data?.CustomerCreditLimit
+                          ?.CreditLimitAvl || 0
                       ).toLocaleString()}
                     </div>
                   </>
@@ -1284,7 +1281,7 @@ const CustomerSelect = () => {
                   "Order No.",
                   "Product Type",
                   "Product Details",
-                  "SRP",
+                  "MRP/Unit",
                   "Selling Price",
                   "Order Qty",
                   "To Bill Qty",

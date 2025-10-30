@@ -259,7 +259,7 @@ const VendorPaymentEntries = ({
         0
       ),
 
-      remark: "Advance collected from Vendor payment",
+      remark: remarks,
       payments: preparePaymentsStructure(),
       entries: items.map((item) => {
         return {

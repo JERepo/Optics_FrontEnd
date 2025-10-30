@@ -26,7 +26,17 @@ export const searchStock = createApi({
         url: `/api/v1/contact-lens/get/clstock${queryString}`,
       }),
     }),
+    syncCl: builder.query({
+      query: () => ({
+        url: `/api/v1/contact-lens/sync/cl`,
+      }),
+    }),
   
+    getFreshData :builder.query({
+      query : () => ({
+        url :`/api/v1/frame-main/elastic`
+      })
+    })
   }),
 });
 
@@ -35,4 +45,6 @@ export const {
   useLazyGetAccessoryStockQuery,
   useLazyGetCLStockQuery,
   useLazyGetAllCLStockQuery,
+  useLazySyncClQuery,
+  useLazyGetFreshDataQuery
 } = searchStock;

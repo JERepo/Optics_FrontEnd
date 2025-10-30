@@ -590,7 +590,7 @@ const OpticalLens = () => {
       {
         ...lensData,
         ...priceDetails?.data,
-        CLMRP: parseFloat(priceDetails?.data.SellingPrice), // report to abhipsa srp is not coming
+        CLMRP: parseFloat(priceDetails?.data.SellingPrice), 
         returnPrice:
           (parseFloat(priceDetails?.data?.SellingPrice) || 0) +
           addonsTotal / 2 +
@@ -663,6 +663,7 @@ const OpticalLens = () => {
       //   parseInt(selectedInvoice?.InvoiceQty) *
       //     parseFloat(selectedInvoice?.ActualSellingPrice) +
       //   parseFloat(editReturnFittingPrice),
+      SRP :parseFloat(selectedInvoice?.ProductDetails[0]?.pricing?.mrp),
       returnPrice: parseFloat(selectedInvoice?.ActualSellingPrice),
       ReturnQty: selectedInvoice?.InvoiceQty,
       FittingPriceEdit: parseFloat(editReturnFittingPrice),
@@ -773,7 +774,6 @@ const OpticalLens = () => {
       console.warn("No details to save");
       return;
     }
-    console.log(mainOLDetails);
     try {
       for (const detail of mainOLDetails) {
         const payload = {
@@ -793,7 +793,7 @@ const OpticalLens = () => {
               : detail.ReturnQty ?? null,
           SRP:
             referenceApplicable === 0
-              ? parseFloat(detail.returnPrice)
+              ? parseFloat(detail.CLMRP)
               : parseFloat(detail.SRP) ?? null,
           ReturnPrice:
             referenceApplicable === 0
@@ -822,6 +822,7 @@ const OpticalLens = () => {
     } catch (error) {
       console.log("error is triggering");
       console.error("Error saving detail:", error);
+      toast.error(error?.data?.error || error?.data?.message)
     }
   };
   // -----------------------------------------------------------------------------------
@@ -1491,7 +1492,8 @@ const OpticalLens = () => {
                             lensData.focality ||
                             lensData.family ||
                             lensData.design ||
-                            lensData.indexValues
+                            lensData.indexValues ||
+                            type.value === 1
                           )
                         }
                       />
@@ -1857,7 +1859,7 @@ const OpticalLens = () => {
                     </div>
                   </>
                 )}
-              {lensData.treatmentId && lensData.productType === 1 && (
+              {lensData.treatmentId && lensData.productType === 0 && (
                 <Button
                   onClick={handleAddToTable}
                   icon={FiPlus}

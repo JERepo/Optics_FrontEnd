@@ -23,6 +23,7 @@ import Radio from "../../components/Form/Radio";
 import HasPermission from "../../components/HasPermission";
 import { FiPrinter } from "react-icons/fi";
 import OTPScreen from "../../components/OTPScreen";
+import ConfirmationModal from "../../components/ui/ConfirmationModal";
 
 const getProductName = (order) => {
   const product = order?.productDetails?.[0];
@@ -216,6 +217,7 @@ const InvoiceView = () => {
   const [showOtp, setShowOtp] = useState(false);
   const [otpValue, setOtpValue] = useState(null);
   const [selectedDiscountItem, setSelectedDiscountItem] = useState(null);
+  const [cancelInvoiceWarning, setIsCancelInvoiceWarning] = useState(false);
 
   const { data: invoiceDetails, isLoading } = useGetInvoiceByIdQuery(
     { id: invoiceId },
@@ -387,6 +389,7 @@ const InvoiceView = () => {
       const result = canCancelInvoice(invoiceDetails?.InvoiceDate);
       if (result.allowed) {
         setIsCancelOpen(true);
+        setIsCancelInvoiceWarning(false);
       } else {
         toast.error(result.message);
         return;
@@ -395,6 +398,7 @@ const InvoiceView = () => {
       const result = canCancelInvoice(invoiceDetails?.InvoiceDate);
       if (result.allowed) {
         setIsCancelOpen(true);
+        setIsCancelInvoiceWarning(false);
       } else {
         toast.error(result.message);
         return;
@@ -425,13 +429,14 @@ const InvoiceView = () => {
     }
     try {
       const res = await cancelInvoice({ payload }).unwrap();
-      console.log("res", res);
       if (res?.otpRequired) {
+        setIsCancelInvoiceWarning(false);
         setIsCancelOpen(false);
         setOtpValue(null);
         setShowOtp(true);
         return;
       }
+      setIsCancelInvoiceWarning(false);
       setIsCancelOpen(false);
       setShowOtp(null);
       setShowOtp(false);
@@ -493,7 +498,13 @@ const InvoiceView = () => {
                 <HasPermission module="Invoice" action="deactivate">
                   <Button
                     variant="danger"
-                    onClick={handleCancelInvoice}
+                    onClick={() => {
+                      if (paymentDetails?.data?.receiptDetails?.length) {
+                        handleCancelInvoice();
+                      } else {
+                        setIsCancelInvoiceWarning(true);
+                      }
+                    }}
                     disabled={cancelDisabled}
                     isLoading={!isCancelOpen ? isCancelling : false}
                   >
@@ -550,7 +561,7 @@ const InvoiceView = () => {
               "order no",
               "product type",
               "product details",
-              "srp",
+              "MRP/Unit",
               "invoice price",
               "invoice qty",
               "total amount",
@@ -569,11 +580,8 @@ const InvoiceView = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    getPricing(
-                      Array.isArray(invoice?.productDetails?.length > 0)
-                        ? invoice?.productDetails[0]
-                        : invoice?.productDetails || []
-                    )
+                    invoice?.productDetails[0]?.pricing?.mrp ||
+                      invoice?.productDetails[0]?.stock[0]?.mrp || 0
                   )}
                 </TableCell>
                 <TableCell>
@@ -602,44 +610,44 @@ const InvoiceView = () => {
         {invoiceDetails && (
           <div className="mt-6 bg-gray-50 rounded-lg p-6 border border-gray-200  ">
             <div className="flex justify-between">
-            <Info label="Comment" value={invoiceDetails?.Comment} />
-            <div className="grid md:grid-cols-4 gap-5">
-              <div className="flex flex-col">
-                <span className="text-neutral-700 font-semibold text-lg">
-                  Total Qty
-                </span>
-                <span className="text-neutral-600 text-xl font-medium">
-                  {totalQty || "0"}
-                </span>
+              <Info label="Comment" value={invoiceDetails?.Comment} />
+              <div className="grid md:grid-cols-4 gap-5">
+                <div className="flex flex-col">
+                  <span className="text-neutral-700 font-semibold text-lg">
+                    Total Qty
+                  </span>
+                  <span className="text-neutral-600 text-xl font-medium">
+                    {totalQty || "0"}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-neutral-700 font-semibold text-lg">
+                    Total GST
+                  </span>
+                  <span className="text-neutral-600 text-xl font-medium">
+                    ₹{formatINR(gstAmount) || "0"}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-neutral-700 font-semibold text-lg">
+                    Round Off
+                  </span>
+                  <span className="text-neutral-600 text-xl font-medium">
+                    ₹{formatINR(invoiceDetails?.RoundOff) || "0"}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-neutral-700 font-semibold text-lg">
+                    Total Amount
+                  </span>
+                  <span className="text-neutral-600 text-xl font-medium">
+                    ₹
+                    {formatINR(
+                      grandTotal + parseFloat(invoiceDetails?.RoundOff || 0)
+                    ) || "0"}
+                  </span>
+                </div>
               </div>
-              <div className="flex flex-col">
-                <span className="text-neutral-700 font-semibold text-lg">
-                  Total GST
-                </span>
-                <span className="text-neutral-600 text-xl font-medium">
-                  ₹{formatINR(gstAmount) || "0"}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-neutral-700 font-semibold text-lg">
-                  Round Off
-                </span>
-                <span className="text-neutral-600 text-xl font-medium">
-                  ₹{formatINR(invoiceDetails?.RoundOff) || "0"}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-neutral-700 font-semibold text-lg">
-                  Total Amount
-                </span>
-                <span className="text-neutral-600 text-xl font-medium">
-                  ₹
-                  {formatINR(
-                    grandTotal + parseFloat(invoiceDetails?.RoundOff || 0)
-                  ) || "0"}
-                </span>
-              </div>
-            </div>
             </div>
           </div>
         )}
@@ -842,7 +850,7 @@ const InvoiceView = () => {
               <div className="flex justify-end">
                 <Button
                   variant="danger"
-                  onClick={handleUpdateCanceInvoice}
+                  onClick={() => setIsCancelInvoiceWarning(true)}
                   isLoading={isCancelling}
                   disabled={isCancelling}
                 >
@@ -853,6 +861,17 @@ const InvoiceView = () => {
           </div>
         </Modal>
       </div>
+      <ConfirmationModal
+        isOpen={cancelInvoiceWarning}
+        onClose={() => setIsCancelInvoiceWarning(false)}
+        onConfirm={handleUpdateCanceInvoice}
+        title="Warning!"
+        message="Are you sure you want to cancel the Invoice?"
+        confirmText="Yes, Proceed"
+        cancelText="Cancel"
+        danger={false}
+        isLoading={isCancelling}
+      />
     </div>
   );
 };

@@ -21,6 +21,8 @@ import { useGetCompanyIdQuery } from "../../../api/customerApi";
 
 const getProductName = (item) => {
   const type = item.ProductType;
+
+  console.log("item --", item);
   const detail = item ? item.ProductDetails : {};
   const {
     ProductName,
@@ -35,6 +37,8 @@ const getProductName = (item) => {
     Tint,
     AddOns,
     FittingPrice,
+    // BatchCode,
+    CLBatchCode,
     productName,
     barcode,
     hsncode,
@@ -123,8 +127,8 @@ const getProductName = (item) => {
       productName,
       specsList,
       barcode && `Barcode: ${barcode}`,
-      batchcode && `Batch Code: ${batchcode || "-"}`,
-      expiry && `Expiry : ${expiry.split("-").reverse().join("/")}`,
+      (item?.BatchCode && CLBatchCode) ? `Batch Code: ${item?.BatchCode || "-"}` : ``,
+      (expiry && CLBatchCode) ? `Expiry : ${expiry.split("-").reverse().join("/")}` : ``,
       HSN && `HSN: ${HSN}`,
     ]
       .filter(Boolean)
@@ -148,9 +152,9 @@ const getProductName = (item) => {
           joinNonEmpty(
             [
               formatPowerValue(eye?.sphericalPower) &&
-                `SPH: ${formatPowerValue(eye?.sphericalPower)}`,
+              `SPH: ${formatPowerValue(eye?.sphericalPower)}`,
               formatPowerValue(eye?.addition) &&
-                `Add: ${formatPowerValue(eye?.addition)}`,
+              `Add: ${formatPowerValue(eye?.addition)}`,
               clean(eye?.diameter) && `Dia: ${clean(eye?.diameter)}`,
             ],
             ", "
@@ -205,17 +209,19 @@ const getShortTypeName = (id) => {
 const getStockOutPrice = (item) => {
   if (item.ProductType === 3) {
     if (item.ProductDetails.CLBatchCode === 0) {
-      return parseFloat(item.ProductDetails.price?.MRP || 0);
+      return parseFloat(item?.ProductDetails?.price?.MRP || 0);
     }
 
     const stockCheck = Array.isArray(item.ProductDetails.Stock)
-      ? item.ProductDetails.Stock[0].MRP
-      : item.ProductDetails.Stock.MRP;
+      ? item?.ProductDetails?.Stock[0]?.MRP
+      : item?.ProductDetails?.Stock?.MRP;
     return stockCheck;
   } else if (item.ProductType === 1) {
-    return parseFloat(item.ProductDetails.Stock.MRP);
+    return parseFloat(item?.ProductDetails?.Stock?.MRP);
   } else if (item.ProductType === 2) {
-    return parseFloat(item.ProductDetails.Stock.OPMRP);
+    return parseFloat(item?.ProductDetails?.Stock?.OPMRP);
+  } else if (item.ProductType === 0) {
+    return parseFloat(item?.ProductDetails[0]?.pricing?.mrp || null);
   }
 
   return 0;
@@ -306,11 +312,11 @@ const CompleteStockTransfer = () => {
 
       const fittingPrice = parseFloat(item.FittingReturnPrice || 0);
       const fgst = parseFloat(item.FittingTaxPercentage || 0);
-      const fittingTotal = fittingPrice * (fgst/100);
+      const fittingTotal = fittingPrice * (fgst / 100);
 
-      const basicValue = unitPrice * qty;
+      const basicValue = (unitPrice * qty) + fittingPrice;
       const gst = unitPrice * qty * gstRate + fittingTotal;
-      const returnTotal = basicValue + gst +fittingPrice;
+      const returnTotal = basicValue + gst;
 
       acc.totalQty += qty;
       acc.totalGST += gst;
@@ -423,7 +429,7 @@ const CompleteStockTransfer = () => {
                   ₹
                   {formatINR(
                     parseFloat(item.DNPrice) *
-                      (parseFloat(item.ProductTaxPercentage) / 100)
+                    (parseFloat(item.ProductTaxPercentage) / 100)
                   )}{" "}
                   ({parseFloat(item.ProductTaxPercentage)}%)
                 </TableCell>
@@ -431,12 +437,12 @@ const CompleteStockTransfer = () => {
                 <TableCell>
                   ₹
                   {formatINR(
-                    parseFloat(item.DNPrice) * item.DNQty + parseFloat(item?.FittingReturnPrice || 0)+
-                      parseFloat(item.DNPrice) *
-                        item.DNQty *
-                        (parseFloat(item.ProductTaxPercentage) / 100) +
-                      parseFloat(item.FittingReturnPrice || 0) *
-                        (parseFloat(item.FittingTaxPercentage || 0) / 100)
+                    parseFloat(item.DNPrice) * item.DNQty + parseFloat(item?.FittingReturnPrice || 0) +
+                    parseFloat(item.DNPrice) *
+                    item.DNQty *
+                    (parseFloat(item.ProductTaxPercentage) / 100) +
+                    parseFloat(item.FittingReturnPrice || 0) *
+                    (parseFloat(item.FittingTaxPercentage || 0) / 100)
                   )}
                 </TableCell>
 

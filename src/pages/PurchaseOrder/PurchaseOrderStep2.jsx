@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
+import { ArrowRightCircleIcon } from "lucide-react";
 
-export function PurchaseOrderStep2({ productOptions, formState, handleOptionChange, handleNext, handleBack }) {
+export function PurchaseOrderStep2({ productOptions, formState, handleOptionChange, handleNext, handleBack, handleRedirectStep4 }) {
     return (
         <motion.div
             initial={{ y: -20, opacity: 0 }}
@@ -8,7 +9,17 @@ export function PurchaseOrderStep2({ productOptions, formState, handleOptionChan
             transition={{ duration: 0.5, delay: 0.2 }}
             className="bg-white rounded-2xl shadow-xl p-6"
         >
-            <h2 className="text-xl font-bold text-[#000060] mb-6">Step 2: Select Product</h2>
+            <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-[#000060] mb-6">Step 2: Select Product</h2>
+                <button
+                    onClick={handleRedirectStep4}
+                    className="flex items-center gap-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-primary transition-colors disabled:opacity-50"
+                    // disabled={!formState.selectedOption}
+                >
+                    <ArrowRightCircleIcon className="w-5 h-5"/>
+                    Product Details
+                </button>
+            </div>
 
             <div className="flex justify-start gap-12">
                 {productOptions.map((option) => (

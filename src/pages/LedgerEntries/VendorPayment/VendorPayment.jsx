@@ -357,9 +357,9 @@ const VendorPayment = () => {
                     ? `${item.GRNMain.GRNPrefix || ""}/${
                         item.GRNMain.GRNNo || ""
                       }`
-                    : item.purchaseMaster
-                    ? `${item.purchaseMaster.DNPrefix || ""}/${
-                        item.purchaseMaster.DNNo || ""
+                    : item.PurchaseReturnMaster
+                    ? `${item.PurchaseReturnMaster.DNPrefix || ""}/${
+                        item.PurchaseReturnMaster.DNNo || ""
                       }`
                     : "-"}{" "}
                   {/* fallback if both are null */}
@@ -369,9 +369,9 @@ const VendorPayment = () => {
                 <TableCell>
                   {item.GRNMain?.GRNDate
                     ? format(new Date(item.GRNMain.GRNDate), "dd/MM/yyyy")
-                    : item.purchaseMaster?.PurchaseReturnDate
+                    : item.PurchaseReturnMaster?.PurchaseReturnDate
                     ? format(
-                        new Date(item.purchaseMaster.PurchaseReturnDate),
+                        new Date(item.PurchaseReturnMaster.PurchaseReturnDate),
                         "dd/MM/yyyy"
                       )
                     : "-"}{" "}
@@ -382,7 +382,7 @@ const VendorPayment = () => {
                   ₹
                   {item.GRNMain
                     ? item.GRNMain?.TotalValue
-                    : item.purchaseMaster?.TotalValue}
+                    : item.PurchaseReturnMaster?.TotalValue}
                 </TableCell>
                 <TableCell>₹{formatINR(item.Amount)}</TableCell>
                 <TableCell>

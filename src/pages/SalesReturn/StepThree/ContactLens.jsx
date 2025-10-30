@@ -35,6 +35,7 @@ import {
 } from "../../../api/salesReturnApi";
 import { formatINR } from "../../../utils/formatINR";
 import Modal from "../../../components/ui/Modal";
+import { getErrorMessage } from "../../../utils/helpers";
 
 // Validation helpers
 const isMultipleOfQuarter = (value) => {
@@ -151,9 +152,11 @@ const getProductName = (order) => {
       specsList,
       clr && `Color: ${clr}`,
       barcodeVal && `Barcode: ${barcodeVal}`,
-      batchc && `BatchCode: ${batchc}`,
-      batchBar && `BatchBarCode: ${batchBar}`,
-      expiry && `Expiry : ${expiry.split("-").reverse().join("/")}`,
+      batchc && CLBatchCode == 1 && `BatchCode: ${batchc}`,
+      batchBar && CLBatchCode == 1 && `BatchBarCode: ${batchBar}`,
+      expiry &&
+        CLBatchCode == 1 &&
+        `Expiry : ${expiry.split("-").reverse().join("/")}`,
       hsn && `HSN: ${hsn}`,
     ]
       .filter(Boolean)
@@ -181,6 +184,7 @@ const getProductNameYes = (data) => {
     CLBatchBarCode,
     sbatchbarCode,
     ExpiryDate,
+    CLBatchCode,
   } = order;
   console.log("order in yes", order);
   const clean = (val) => {
@@ -244,9 +248,11 @@ const getProductNameYes = (data) => {
     specsList,
     clr && `Color: ${clr}`,
     barcodeVal && `Barcode: ${barcodeVal}`,
-    batchc && `BatchCode: ${batchc}`,
-    batchBar && `BatchBarCode: ${batchBar}`,
-    expiry && `Expiry : ${expiry.split("-").reverse().join("/")}`,
+    batchc && CLBatchCode === 1 && `BatchCode: ${batchc}`,
+    batchBar && CLBatchCode === 1 && `BatchBarCode: ${batchBar}`,
+    expiry &&
+      CLBatchCode === 1 &&
+      `Expiry : ${expiry.split("-").reverse().join("/")}`,
     hsn && `HSN: ${hsn}`,
   ]
     .filter(Boolean)
@@ -463,7 +469,6 @@ const ContactLens = () => {
     setDetailId(false);
     setProductCodeInput("");
   };
-  
 
   const handleRefeshPowerTable = () => {
     setNewItem({
@@ -617,6 +622,7 @@ const ContactLens = () => {
       }
     } catch (error) {
       console.error("error", error);
+      toast.error(getErrorMessage(error));
       setSearchFetched(false);
       setDetailId(false);
       setOpenBatch(false);
@@ -822,7 +828,9 @@ const ContactLens = () => {
     } catch (error) {
       console.log(error);
       toast.error(
-        error?.data.error || "No eligible Invoice exists for the given product"
+        error?.data.error ||
+          error?.data?.message ||
+          "No eligible Invoice exists for the given product"
       );
     }
   };
@@ -1020,7 +1028,7 @@ const ContactLens = () => {
           FittingTaxPercentage: detail.FittingTaxPercentage ?? null,
           InvoiceDetailId: detail.Id ?? null,
           ApplicationUserId: user.Id,
-          companyId :parseInt(hasMultipleLocations[0])
+          companyId: parseInt(hasMultipleLocations[0]),
         };
         await saveFinalProducts({ payload }).unwrap();
       }
@@ -1062,7 +1070,7 @@ const ContactLens = () => {
   if (newItem.CLDetailId && !searchFethed && referenceApplicable === 0) {
     inputTableColumns.push("Avl.Qty", "Order Qty", "Action");
   }
-console.log(mainClDetails)
+  console.log(mainClDetails);
   return (
     <div className="max-w-8xl h-auto">
       <div className="bg-white rounded-xl shadow-sm p-2">
@@ -1309,69 +1317,65 @@ console.log(mainClDetails)
                     ₹{formatINR(parseFloat(item.SRP || 0))}
                   </TableCell>
                   <TableCell>
-                      {editMode[`${item.Barcode}-${index}`]?.SellingPrice ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            value={item.returnPrice || ""}
-                            onChange={(e) =>
-                              handleSellingPriceChange(
-                                item.Barcode,
-                                e.target.value,
-                                index
-                              )
-                            }
-                            className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                            placeholder="Enter price"
-                          />
-                          <button
-                            onClick={() =>
-                              toggleEditMode(
-                                item.Barcode,
-                                index,
-                                "SellingPrice",
-                                "save"
-                              )
-                            }
-                            className="text-neutral-400 transition"
-                            title="Save"
-                          >
-                            <FiCheck size={18} />
-                          </button>
-                          <button
-                            onClick={() =>
-                              toggleEditMode(
-                                item.Barcode,
-                                index,
-                                "SellingPrice",
-                                "cancel"
-                              )
-                            }
-                            className="text-neutral-400 transition"
-                            title="Cancel"
-                          >
-                            <FiX size={18} />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          ₹{formatINR(item.returnPrice)}
-                          <button
-                            onClick={() =>
-                              toggleEditMode(
-                                item.Barcode,
-                                index,
-                                "SellingPrice"
-                              )
-                            }
-                            className="text-neutral-400 transition"
-                            title="Edit Price"
-                          >
-                            <FiEdit2 size={14} />
-                          </button>
-                        </div>
-                      )}
-                    </TableCell>
+                    {editMode[`${item.Barcode}-${index}`]?.SellingPrice ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          value={item.returnPrice || ""}
+                          onChange={(e) =>
+                            handleSellingPriceChange(
+                              item.Barcode,
+                              e.target.value,
+                              index
+                            )
+                          }
+                          className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                          placeholder="Enter price"
+                        />
+                        <button
+                          onClick={() =>
+                            toggleEditMode(
+                              item.Barcode,
+                              index,
+                              "SellingPrice",
+                              "save"
+                            )
+                          }
+                          className="text-neutral-400 transition"
+                          title="Save"
+                        >
+                          <FiCheck size={18} />
+                        </button>
+                        <button
+                          onClick={() =>
+                            toggleEditMode(
+                              item.Barcode,
+                              index,
+                              "SellingPrice",
+                              "cancel"
+                            )
+                          }
+                          className="text-neutral-400 transition"
+                          title="Cancel"
+                        >
+                          <FiX size={18} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        ₹{formatINR(item.returnPrice)}
+                        <button
+                          onClick={() =>
+                            toggleEditMode(item.Barcode, index, "SellingPrice")
+                          }
+                          className="text-neutral-400 transition"
+                          title="Edit Price"
+                        >
+                          <FiEdit2 size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell className="">
                     ₹
                     {formatINR(
@@ -1389,11 +1393,13 @@ console.log(mainClDetails)
                     }
                     %)
                   </TableCell>
+                  <TableCell className="">{item.ReturnQty || 0}</TableCell>
                   <TableCell className="">
-                    {item.ReturnQty || 0}
-                  </TableCell>
-                  <TableCell className="">
-                    ₹{formatINR((parseFloat(item.returnPrice || 0) * parseInt(item.ReturnQty)))}
+                    ₹
+                    {formatINR(
+                      parseFloat(item.returnPrice || 0) *
+                        parseInt(item.ReturnQty)
+                    )}
                   </TableCell>
                   <TableCell>
                     <Button
@@ -1439,7 +1445,11 @@ console.log(mainClDetails)
                     "pending return qty",
                     "Action",
                   ]}
-                  data={InvoiceDetails?.data?.filter((item) => item["InvoiceMain.Company.Id"] === parseInt(hasMultipleLocations[0]))}
+                  data={InvoiceDetails?.data?.filter(
+                    (item) =>
+                      item["InvoiceMain.Company.Id"] ===
+                      parseInt(hasMultipleLocations[0])
+                  )}
                   renderRow={(item, index) => (
                     <TableRow key={index}>
                       <TableCell>{index + 1}</TableCell>
@@ -1505,31 +1515,31 @@ console.log(mainClDetails)
             </Modal>
           </div>
         )}
-      
-          <div className="p-6">
-                  <div className="flex items-center gap-4">
-                    <Radio
-                      name="productSearch"
-                      label="Enter Product Barcode"
-                      value="1"
-                      onChange={() => {
-                        handleRefresh();
-                        setProductSearch(1);
-                      }}
-                      checked={productSearch === 1}
-                    />
-                    <Radio
-                      name="productSearch"
-                      label="Search Product"
-                      value="0"
-                      onChange={() => {
-                        handleRefresh();
-                        setProductSearch(0);
-                      }}
-                      checked={productSearch === 0}
-                    />
-                  </div>
-                </div>
+
+        <div className="p-6">
+          <div className="flex items-center gap-4">
+            <Radio
+              name="productSearch"
+              label="Enter Product Barcode"
+              value="1"
+              onChange={() => {
+                handleRefresh();
+                setProductSearch(1);
+              }}
+              checked={productSearch === 1}
+            />
+            <Radio
+              name="productSearch"
+              label="Search Product"
+              value="0"
+              onChange={() => {
+                handleRefresh();
+                setProductSearch(0);
+              }}
+              checked={productSearch === 0}
+            />
+          </div>
+        </div>
 
         {productSearch === 0 && (
           <div className="p-6">

@@ -18,6 +18,7 @@ import {
   useDeActivateMutation,
   useGetAllFrameMasterQuery,
 } from "../../../api/frameMasterApi";
+import { format } from "date-fns";
 
 const FrameMaster = () => {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ const FrameMaster = () => {
   });
   const [brandFilter, setBrandFilter] = useState(null);
   const [isBrandPopupOpen, setIsBrandPopupOpen] = useState(false);
-  const locale = navigator.language || navigator.languages[0] || "en-IN";
+  const locale = navigator.language || navigator.languages[0] || "en-GB";
 
   const [selectedBrandId, setSelectedBrandId] = useState(null);
   const [currentStatus, setCurrentStatus] = useState(null);
@@ -48,11 +49,7 @@ const FrameMaster = () => {
       ModelNo: acc.ModelNo,
       RimType: acc.FrameRimType.FrameRimTypeName,
       RimShape: acc.FrameShapeMaster?.ShapeName,
-      createdAt: new Intl.DateTimeFormat(locale, {
-        year: "numeric",
-        month: "short",
-        day: "2-digit",
-      }).format(new Date(acc.CreatedDate)),
+      createdAt: format(new Date(acc.CreatedDate), 'dd/MM/yyyy'),
       enabled: acc.IsActive === 1,
     }));
 

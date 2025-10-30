@@ -59,8 +59,8 @@ const FrameMasterForm = forwardRef(
 
       if (!formData.HSN) {
         newErrors.HSN = "HSN Code is required.";
-      } else if (formData.HSN.length > 6) {
-        newErrors.HSN = "HSN Code cannot exceed 6 characters";
+      } else if (formData.HSN.length > 8) {
+        newErrors.HSN = "HSN Code cannot exceed 8 characters";
       }
 
       if (!formData.TaxID) newErrors.TaxID = "Tax is required.";

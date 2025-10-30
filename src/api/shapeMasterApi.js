@@ -30,6 +30,10 @@ export const shapeMasterApi = createApi({
       query: ({ id }) => ({
         url: `/api/v1/shape-master/getbyid/${id}`,
       }),
+      providesTags: (result, error, { id }) => [
+        { type: "Shape", id },
+        "Shape"
+      ],
     }),
     updateShape: builder.mutation({
       query: ({ id, payload }) => ({
@@ -37,7 +41,10 @@ export const shapeMasterApi = createApi({
         method: "PUT",
         body: payload,
       }),
-      invalidatesTags: ["Shape"],
+      invalidatesTags: (result, error, { id }) => [
+        "Shape",
+        { type: "Shape", id }
+      ],
     }),
     deActivate: builder.mutation({
       query: ({ id, payload }) => ({
@@ -45,7 +52,10 @@ export const shapeMasterApi = createApi({
         method: "PUT",
         body: payload,
       }),
-      invalidatesTags: ["Shape"],
+      invalidatesTags: (result, error, { id }) => [
+        "Shape",
+        { type: "Shape", id }
+      ],
     }),
   }),
 });

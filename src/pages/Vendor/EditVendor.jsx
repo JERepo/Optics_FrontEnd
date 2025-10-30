@@ -329,7 +329,7 @@ const EditVendor = () => {
       company_id:
         Number(companySettings?.data?.data.CompanyId) ||
         Number(vendorFormData.company_id),
-      tax_registration: vendorFormData.gstStatus,
+      tax_registration: String(vendorFormData.gstStatus),
 
       vendor_state: Number(vendorFormData.vendor_state),
       vendor_country: Number(vendorFormData.vendor_country),

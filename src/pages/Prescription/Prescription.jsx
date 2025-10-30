@@ -29,6 +29,13 @@ import Modal from "../../components/ui/Modal";
 import Loader from "../../components/ui/Loader";
 import { useSelector } from "react-redux";
 
+const baseOptions = [
+  { label: "In", value: "0" },
+  { label: "Out", value: "1" },
+  { label: "Up", value: "2" },
+  { label: "Down", value: "3" },
+];
+
 const Prescription = () => {
   const navigate = useNavigate();
   const { user, hasMultipleLocations } = useSelector((state) => state.auth);
@@ -97,26 +104,28 @@ const Prescription = () => {
       }
       // Set the first prescription as selected and open the modal
       const parsedPrescription = {
-        name:item.CustomerContactDetail.CustomerName,
+        name: item.CustomerContactDetail.CustomerName,
         ...data[0],
         values: {
           R: {
-            SPH: data[0].RSPH,
-            CYL: data[0].RCYD,
-            Axis: data[0].RAxis,
-            ADD: data[0].RAddOn,
-            Prism: data[0].RPrism,
-            Base: data[0].RBase,
-            VisualAcuity: data[0].RVisualAcuity,
+            SPH: data[0]?.RSPH,
+            CYL: data[0]?.RCYD,
+            Axis: data[0]?.RAxis,
+            ADD: data[0]?.RAddOn,
+            Prism: data[0]?.RPrism,
+            Base: data[0]?.RBase === 0 ? `IN` : data[0]?.RBase === 1 ? `OUT` : data[0]?.RBase === 2 ? `UP` : data[0]?.RBase === 3 ? `DOWN` : ``,
+            VisualAcuityId: data[0]?.RVisualAcuity,
+            VisualAcuity: data[0]?.RightVisual?.VisualAcuity,
           },
           L: {
-            SPH: data[0].LSPH,
-            CYL: data[0].LCYD,
-            Axis: data[0].LAxis,
-            ADD: data[0].LAddOn,
-            Prism: data[0].LPrism,
-            Base: data[0].LBase,
-            VisualAcuity: data[0].LVisualAcuity,
+            SPH: data[0]?.LSPH,
+            CYL: data[0]?.LCYD,
+            Axis: data[0]?.LAxis,
+            ADD: data[0]?.LAddOn,
+            Prism: data[0]?.LPrism,
+            Base: data[0]?.LBase === 0 ? `IN` : data[0]?.LBase === 1 ? `OUT` : data[0]?.LBase === 2 ? `UP` : data[0]?.LBase === 3 ? `DOWN` : ``,
+            VisualAcuityId: data[0]?.LVisualAcuity,
+            VisualAcuity: data[0]?.LeftVisual?.VisualAcuity,
           },
         },
       };
@@ -131,10 +140,9 @@ const Prescription = () => {
   };
 
   const handleView = (prescription) => {
-    console.log("pre",prescription)
     setSelectedId(prescription?.Id);
     const parsedPrescription = {
-      name :prescription?.CustomerContactDetail.CustomerName,
+      name: prescription?.CustomerContactDetail.CustomerName,
       ...prescription,
       values: {
         R: {
@@ -144,7 +152,7 @@ const Prescription = () => {
           ADD: prescription.RAddOn,
           Prism: prescription.RPrism,
           Base: prescription.RBase,
-          VisualAcuity: prescription.RVisualAcuity,
+          VisualAcuity: prescription?.RightVisual?.VisualAcuity,
         },
         L: {
           SPH: prescription.LSPH,
@@ -153,7 +161,7 @@ const Prescription = () => {
           ADD: prescription.LAddOn,
           Prism: prescription.LPrism,
           Base: prescription.LBase,
-          VisualAcuity: prescription.LVisualAcuity,
+          VisualAcuity: prescription?.LeftVisual?.VisualAcuity,
         },
       },
     };
@@ -218,7 +226,10 @@ const Prescription = () => {
               {pool.mobile}
             </TableCell>
             <TableCell className="text-sm text-neutral-500">
-              {pool.date}
+              {(() => {
+                const [year, month, day] = pool.date.split("-");
+                return `${day}-${month}-${year}`;
+              })()}
             </TableCell>
             <TableCell>
               <div className="flex items-center gap-3">
@@ -229,7 +240,7 @@ const Prescription = () => {
                     <FiEye
                       onClick={() => handleShowDetails(pool.item)}
                       className="text-xl cursor-pointer"
-                    title="View"
+                      title="View"
                     />
                   )}
                 </HasPermission>
@@ -241,8 +252,8 @@ const Prescription = () => {
           isLoading
             ? "Loading Prescription..."
             : searchQuery
-            ? "No Prescription match your search criteria"
-            : "No Prescription found. Click 'Add Prescription' to create one."
+              ? "No Prescription match your search criteria"
+              : "No Prescription found. Click 'Add Prescription' to create one."
         }
         pagination={true}
         currentPage={currentPage}
@@ -306,38 +317,38 @@ const DisplayMainData = ({
   );
   const totalPages = Math.ceil(allPrescriptionData?.length / pageSize);
 
-const handlePrint = async (item) => {
-  const { Id, PatientID } = item;
-  setPrintingId(Id);
+  const handlePrint = async (item) => {
+    const { Id, PatientID } = item;
+    setPrintingId(Id);
 
-  try {
-    const blob = await getPrescriptionPrint({
-      id: Id,
-      patientId: PatientID,
-      companyId: locationId,
-    }).unwrap();
+    try {
+      const blob = await getPrescriptionPrint({
+        id: Id,
+        patientId: PatientID,
+        companyId: locationId,
+      }).unwrap();
 
-    const url = window.URL.createObjectURL(new Blob([blob], { type: "application/pdf" }));
+      const url = window.URL.createObjectURL(new Blob([blob], { type: "application/pdf" }));
 
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${selectedPrescription?.name}_Prescription.pdf`; 
-    document.body.appendChild(link);
-    link.click();
-    
-    // Clean up
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    setSelectedId(null);
-    console.log(error);
-    toast.error(
-      "Unable to print the prescription. Please try again after some time!"
-    );
-  } finally {
-    setPrintingId(null);
-  }
-};
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${selectedPrescription?.name}_Prescription.pdf`;
+      document.body.appendChild(link);
+      link.click();
+
+      // Clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      setSelectedId(null);
+      console.log(error);
+      toast.error(
+        "Unable to print the prescription. Please try again after some time!"
+      );
+    } finally {
+      setPrintingId(null);
+    }
+  };
 
 
   console.log(selectedPrescription)
@@ -356,7 +367,7 @@ const handlePrint = async (item) => {
               <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                 <h2 className="text-lg font-semibold text-gray-800 flex items-center">
                   <FiClipboard className="mr-2 text-blue-500" />
-                  Prescription Details 
+                  Prescription Details
                 </h2>
                 <button
                   className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
@@ -376,7 +387,7 @@ const handlePrint = async (item) => {
               <div className="p-6">
                 {/* Metadata Section */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                   <div className="flex items-start">
+                  <div className="flex items-start">
                     <FiCalendar className="mt-1 mr-3 text-gray-400" />
                     <div>
                       <p className="text-sm text-gray-500">Patient Name</p>
@@ -482,8 +493,12 @@ const handlePrint = async (item) => {
                                 "--"}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              {selectedPrescription.values?.[side]?.Base ??
-                                "--"}
+                            
+                                 {baseOptions?.find(
+                                  (item) =>
+                                    item.value ==
+                                    selectedPrescription.values?.[side]?.Base
+                                )?.label ?? "--"}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               {selectedPrescription.values?.[side]
