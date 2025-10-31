@@ -109,8 +109,14 @@ const handleDateTypeChange = (_, newValue) => {
         userId: user.Id,
         type :reportType
       }).unwrap();
-      downloadFile(blob, "Sales Return Report.xlsx");
-      toast.success("Sales Return Report Generated successfully!");
+       downloadFile(
+        blob,
+        `${reportTypes?.find(item => item.value === reportType).label} (${format(new Date(fromDate), "dd-MM-yyyy")}-${format(
+          new Date(toDate),
+          "dd-MM-yyyy"
+        )}).xlsx`
+      );
+      toast.success(`${reportTypes?.find(item => item.value === reportType).label} Generated successfully!`);
       setFromDate(new Date())
       setToDate(new Date())
             setDateType("today")

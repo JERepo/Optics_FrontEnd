@@ -57,10 +57,12 @@ const StockAgeingReport = () => {
     try {
       const blob = await getReport({
         companyId: selectedLocation?.Id,
-        productType : selectedProduct?.value
+        productType: selectedProduct?.value,
       }).unwrap();
       downloadFile(blob, `Stock Ageing Report(${selectedProduct?.label}).xlsx`);
-      toast.success(`Stock Ageing Report for ${selectedProduct?.label} Generated successfully!`);
+      toast.success(
+        `Stock Ageing Report for ${selectedProduct?.label} Generated successfully!`
+      );
     } catch (error) {
       console.log(error);
 
@@ -85,62 +87,62 @@ const StockAgeingReport = () => {
             </h2>
           </div>
           <div className="flex items-center justify-between">
-          <div className="flex items-center gap-5">
-            {productTypes?.map((item) => (
-              <Radio
-                key={item.value}
-                name="product"
-                label={item.label}
-                value={item.value}
-                checked={selectedProduct?.value === item.value}
-                onChange={() => setSelectedProduct(item)}
-              />
-            ))}
-          </div>
-          <div className="relative w-full flex justify-end" ref={dropdownRef}>
-            <button
-              onClick={() => setIsLocationOpen(!isLocationOpen)}
-              className="w-64 flex justify-between space-x-1 bg-neutral-50 px-3 py-2 rounded-sm transition-all duration-200"
-              disabled={hasMultipleLocations.length <= 1}
-            >
-              <div className="flex items-center gap-2">
-                <FiMapPin className="text-neutral-500" />
-                <span className="text-sm text-neutral-700 font-medium">
-                  {selectedLocation?.LocationName}
-                </span>
-              </div>
-              <FiChevronDown
-                className={`text-neutral-500 transition-transform duration-200  ${
-                  isLocationOpen ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-
-            {/* Dropdown Menu */}
-            {isLocationOpen && (
-              <div className="absolute right-0 mt-10 w-64 bg-white rounded-md shadow-lg overflow-hidden z-999 border border-gray-100 animate-fadeIn ">
-                <div className="py-1">
-                  {allLocations?.data
-                    ?.filter((loc) =>
-                      hasMultipleLocations?.includes(Number(loc.Id))
-                    )
-                    .map((location) => (
-                      <button
-                        key={location.Id}
-                        onClick={() => handleLocationSelect(location)}
-                        className={`block w-full text-left px-4 py-2 text-sm transition-colors duration-150 ${
-                          selectedLocation.Id === location.Id
-                            ? "bg-neutral-50 text-neutral-700 font-medium"
-                            : "text-neutral-700 hover:bg-gray-50"
-                        }`}
-                      >
-                        {location.LocationName}
-                      </button>
-                    ))}
+            <div className="flex items-center gap-5">
+              {productTypes?.map((item) => (
+                <Radio
+                  key={item.value}
+                  name="product"
+                  label={item.label}
+                  value={item.value}
+                  checked={selectedProduct?.value === item.value}
+                  onChange={() => setSelectedProduct(item)}
+                />
+              ))}
+            </div>
+            <div className="relative w-full flex justify-end" ref={dropdownRef}>
+              <button
+                onClick={() => setIsLocationOpen(!isLocationOpen)}
+                className="w-64 flex justify-between space-x-1 bg-neutral-50 px-3 py-2 rounded-sm transition-all duration-200"
+                disabled={hasMultipleLocations.length <= 1}
+              >
+                <div className="flex items-center gap-2">
+                  <FiMapPin className="text-neutral-500" />
+                  <span className="text-sm text-neutral-700 font-medium">
+                    {selectedLocation?.LocationName}
+                  </span>
                 </div>
-              </div>
-            )}
-          </div>
+                <FiChevronDown
+                  className={`text-neutral-500 transition-transform duration-200  ${
+                    isLocationOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {/* Dropdown Menu */}
+              {isLocationOpen && (
+                <div className="absolute right-0 mt-10 w-64 bg-white rounded-md shadow-lg overflow-hidden z-999 border border-gray-100 animate-fadeIn ">
+                  <div className="py-1">
+                    {allLocations?.data
+                      ?.filter((loc) =>
+                        hasMultipleLocations?.includes(Number(loc.Id))
+                      )
+                      .map((location) => (
+                        <button
+                          key={location.Id}
+                          onClick={() => handleLocationSelect(location)}
+                          className={`block w-full text-left px-4 py-2 text-sm transition-colors duration-150 ${
+                            selectedLocation.Id === location.Id
+                              ? "bg-neutral-50 text-neutral-700 font-medium"
+                              : "text-neutral-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          {location.LocationName}
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           {/* Submit Button */}
           <div className="pt-10 flex justify-end mt-10">

@@ -111,12 +111,12 @@ const PurchaseReport = () => {
       }).unwrap();
       downloadFile(
         blob,
-        `Purchase Report (${format(new Date(fromDate), "dd-MM-yyyy")}-${format(
+        `${reportTypes?.find(item => item.value === reportType).label} (${format(new Date(fromDate), "dd-MM-yyyy")}-${format(
           new Date(toDate),
           "dd-MM-yyyy"
         )}).xlsx`
       );
-      toast.success("Purchase Report Generated successfully!");
+      toast.success(`${reportTypes?.find(item => item.value === reportType).label} Generated successfully!`);
       setFromDate(new Date());
       setToDate(new Date());
       setDateType("today");
