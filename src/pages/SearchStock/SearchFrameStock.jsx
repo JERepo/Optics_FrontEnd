@@ -48,6 +48,11 @@ const rimOptions = [
   { Id: "H", Name: "Half Rim" },
   { Id: "R", Name: "Rimless" },
 ];
+const rimOptionsF = [
+  { Id: 0, Name: "Full Rim" },
+  { Id: 1, Name: "Half Rim" },
+  { Id: 2, Name: "Rimless" },
+];
 
 const categoryOptions = [
   { Id: 0, Name: "Frame(O)" },
@@ -1398,10 +1403,10 @@ const SearchFrameStock = () => {
                 <TableCell className="w-[80px]">
                   <div className="grid grid-cols-2 gap-2 w-auto">
                     {[
-                      item.PO == 1 ? "PH" : null,
-                      item.Ph == 1 ? "PO" : null,
-                      item.NoOfClips ? `CL: ${item.Cl}` : null,
-                      item.IsRxable == "Yes" ? "Rx" : null,
+                      item.IsPolarised ? "PH" : null,
+                      item.IsPhotochromatic ? "PO" : null,
+                      item.NoOfClips ? `CL: ${item.NoOfClips}` : null,
+                      item.IsRxable ? "Rx" : null,
                     ]
                       .filter(Boolean)
                       .map((val, idx) => (
@@ -1504,62 +1509,116 @@ const SearchFrameStock = () => {
           </div>
         </Modal>
         <Modal
-  isOpen={otherStockOpen}
-  onClose={() => setOtherStockOpen(false)}
-  width="max-w-3xl"
->
-  <div className="my-5 mx-3">
-    <div className="my-5 text-lg text-neutral-800 font-semibold">
-      Other Location Frame Stock List
-    </div>
+          isOpen={otherStockOpen}
+          onClose={() => setOtherStockOpen(false)}
+          width="max-w-3xl"
+        >
+          <div className="my-5 mx-3">
+            <div className="my-5 text-lg text-neutral-800 font-semibold">
+              Other Location Frame Stock List
+            </div>
 
-    <Table
-      expand={true}
-      freeze={true}
-      columns={["S.No", "Location Name", "Stock"]}
-      data={otherStockData?.data || []}
-      renderRow={(item, index) => (
-        <TableRow key={item.locationId}>
-          <TableCell>{index + 1}</TableCell>
-          <TableCell>{item.locationName}</TableCell>
-          <TableCell>
-            {item.stock?.LocationQuantity ?? 0}
-          </TableCell>
-        </TableRow>
-      )}
-    />
+            <Table
+              expand={true}
+              freeze={true}
+              columns={["S.No", "Location Name", "Stock"]}
+              data={otherStockData?.data || []}
+              renderRow={(item, index) => (
+                <TableRow key={item.locationId}>
+                  <TableCell>{index + 1}</TableCell>
+                  <TableCell>{item.locationName}</TableCell>
+                  <TableCell>{item.stock?.LocationQuantity ?? 0}</TableCell>
+                </TableRow>
+              )}
+            />
 
-    {otherStockData?.data?.[0]?.stock && (
-      <div className="mt-6 p-4 border rounded-2xl bg-gray-50">
-        <div className="text-lg font-semibold mb-3 text-neutral-700">
-          Frame Details
-        </div>
-        <div className="flex flex-wrap gap-3 text-sm text-gray-700">
-          <p><span className="font-medium">Brand:</span> {otherStockData.data[0].stock.BrandName}</p>
-          <p><span className="font-medium">Category:</span> {otherStockData.data[0].stock.Category}</p>
-          <p><span className="font-medium">Type:</span> {otherStockData.data[0].stock.Type}</p>
-          <p><span className="font-medium">Model No:</span> {otherStockData.data[0].stock.ModelNo}</p>
-          <p><span className="font-medium">Colour Code:</span> {otherStockData.data[0].stock.ColourCode}</p>
-          <p><span className="font-medium">Size-DBL-Length:</span> 
-            {`${otherStockData.data[0].stock.Size || ""}-${otherStockData.data[0].stock.DBL || ""}-${otherStockData.data[0].stock.TempleLength || ""}`}
-          </p>
-          <p><span className="font-medium">Barcode:</span> {otherStockData.data[0].stock.Barcode}</p>
-          <p><span className="font-medium">Shape Name:</span> {otherStockData.data[0].stock.ShapeName || "N/A"}</p>
-          <p><span className="font-medium">Front Material:</span> {otherStockData.data[0].stock.FrontMaterial || "N/A"}</p>
-          <p><span className="font-medium">Temple Material:</span> {otherStockData.data[0].stock.TempleMaterial || "N/A"}</p>
-          <p><span className="font-medium">Frame Colour:</span> {otherStockData.data[0].stock.FrameFrontColor}</p>
-          <p><span className="font-medium">Temple Colour:</span> {otherStockData.data[0].stock.TempleColor || "N/A"}</p>
-          <p><span className="font-medium">Lens Colour:</span> {otherStockData.data[0].stock.LensColor}</p>
-          <p><span className="font-medium">Rxable:</span> {otherStockData.data[0].stock.IsRxable ? "Yes" : "No"}</p>
-          <p><span className="font-medium">Photochromatic:</span> {otherStockData.data[0].stock.IsPhotochromatic ? "Yes" : "No"}</p>
-          <p><span className="font-medium">Polarised:</span> {otherStockData.data[0].stock.IsPolarised ? "Yes" : "No"}</p>
-          <p><span className="font-medium">ClipOn:</span> {otherStockData.data[0].stock.IsClipOn ? "Yes" : "No"}</p>
-        </div>
-      </div>
-    )}
-  </div>
-</Modal>
-
+            {otherStockData?.data?.[0]?.stock && (
+              <div className="mt-6 p-4 border rounded-2xl bg-gray-50">
+                <div className="text-lg font-semibold mb-3 text-neutral-700">
+                  Frame Details
+                </div>
+                <div className="flex flex-wrap gap-3 text-sm text-gray-900">
+                  <p>
+                    <strong className="font-medium">Brand:</strong>{" "}
+                    {otherStockData.data[0].stock.BrandName}
+                  </p>
+                  <p>
+                    <strong className="font-medium">Category:</strong>{" "}
+                    {otherStockData.data[0].stock.Category === 0 ? "O" : "S"}
+                  </p>
+                  <p>
+                    <strong className="font-medium">Type:</strong>{" "}
+                    {
+                      rimOptionsF?.find(
+                        (item) => item.Id == otherStockData.data[0].stock.Type
+                      )?.Name
+                    }
+                  </p>
+                  <p>
+                    <strong className="font-medium">Model No:</strong>{" "}
+                    {otherStockData.data[0].stock.ModelNo}
+                  </p>
+                  <p>
+                    <strong className="font-medium">Colour Code:</strong>{" "}
+                    {otherStockData.data[0].stock.ColourCode}
+                  </p>
+                  <p>
+                    <strong className="font-medium">Size-DBL-Length:</strong>
+                    {`${otherStockData.data[0].stock.Size || ""}-${
+                      otherStockData.data[0].stock.DBL || ""
+                    }-${otherStockData.data[0].stock.TempleLength || ""}`}
+                  </p>
+                  <p>
+                    <strong className="font-medium">Barcode:</strong>{" "}
+                    {otherStockData.data[0].stock.Barcode}
+                  </p>
+                  <p>
+                    <strong className="font-medium">Shape Name:</strong>{" "}
+                    {otherStockData.data[0].stock.ShapeName || "N/A"}
+                  </p>
+                  <p>
+                    <strong className="font-medium">Front Material:</strong>{" "}
+                    {otherStockData.data[0].stock.FrontMaterial || "N/A"}
+                  </p>
+                  <p>
+                    <strong className="font-medium">Temple Material:</strong>{" "}
+                    {otherStockData.data[0].stock.TempleMaterial || "N/A"}
+                  </p>
+                  <p>
+                    <strong className="font-medium">Frame Colour:</strong>{" "}
+                    {otherStockData.data[0].stock.FrameFrontColor}
+                  </p>
+                  <p>
+                    <strong className="font-medium">Temple Colour:</strong>{" "}
+                    {otherStockData.data[0].stock.TempleColor || "N/A"}
+                  </p>
+                  <p>
+                    <strong className="font-medium">Lens Colour:</strong>{" "}
+                    {otherStockData.data[0].stock.LensColor}
+                  </p>
+                  <p>
+                    <strong className="font-medium">Rxable:</strong>{" "}
+                    {otherStockData.data[0].stock.IsRxable ? "Yes" : "No"}
+                  </p>
+                  <p>
+                    <strong className="font-medium">Photochromatic:</strong>{" "}
+                    {otherStockData.data[0].stock.IsPhotochromatic
+                      ? "Yes"
+                      : "No"}
+                  </p>
+                  <p>
+                    <strong className="font-medium">Polarised:</strong>{" "}
+                    {otherStockData.data[0].stock.IsPolarised ? "Yes" : "No"}
+                  </p>
+                  <p>
+                    <strong className="font-medium">ClipOn:</strong>{" "}
+                    {otherStockData.data[0].stock.IsClipOn ? "Yes" : "No"}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </Modal>
       </div>
     </div>
   );

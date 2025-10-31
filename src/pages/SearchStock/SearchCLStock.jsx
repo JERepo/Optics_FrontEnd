@@ -665,21 +665,21 @@ const SearchContactLens = () => {
     <div className="text-lg font-semibold mb-3 text-neutral-700">
       Contact Lens Details
     </div>
-    <div className="grid grid-cols-2 gap-3 text-sm text-gray-700">
-      <p><span className="font-medium">Brand:</span> {otherStockData?.data?.[0]?.stock.BrandName}</p>
-      <p><span className="font-medium">Product Name:</span> {otherStockData?.data?.[0]?.stock.ProductName}</p>
-      <p><span className="font-medium">Product Code:</span> {otherStockData?.data?.[0]?.stock.ProductCode}</p>
-      <p><span className="font-medium">SKU Code:</span> {otherStockData?.data?.[0]?.stock.SKUCode}</p>
-      <p><span className="font-medium">Barcode:</span> {otherStockData?.data?.[0]?.stock.Barcode}</p>
-      <p><span className="font-medium">Batch Code:</span> {otherStockData?.data?.[0]?.stock.CLBatchCode}</p>
-      <p><span className="font-medium">Expiry:</span> {otherStockData?.data?.[0]?.stock.CLBatchExpiry}</p>
-      <p><span className="font-medium">MRP:</span> ₹{otherStockData?.data?.[0]?.stock.CLMRP}</p>
-     <p><span className="font-medium">Spherical Power:</span> {formatPower(otherStockData?.data?.[0]?.stock.SphericalPower)}</p>
-<p><span className="font-medium">Cylindrical Power:</span> {formatPower(otherStockData?.data?.[0]?.stock.CylindricalPower)}</p>
+    <div className="grid grid-cols-2 gap-3 text-sm text-gray-900">
+      <p><strong className="font-medium">Brand:</strong> {otherStockData?.data?.[0]?.stock.BrandName}</p>
+      <p><strong className="font-medium">Product Name:</strong> {otherStockData?.data?.[0]?.stock.ProductName}</p>
+      <p><strong className="font-medium">Product Code:</strong> {otherStockData?.data?.[0]?.stock.ProductCode}</p>
+      <p><strong className="font-medium">SKU Code:</strong> {otherStockData?.data?.[0]?.stock.SKUCode}</p>
+      <p><strong className="font-medium">Barcode:</strong> {otherStockData?.data?.[0]?.stock.Barcode}</p>
+      <p><strong className="font-medium">Batch Code:</strong> {otherStockData?.data?.[0]?.stock.CLBatchCode}</p>
+      <p><strong className="font-medium">Expiry:</strong> {otherStockData?.data?.[0]?.stock.CLBatchExpiry}</p>
+      <p><strong className="font-medium">MRP:</strong> ₹{otherStockData?.data?.[0]?.stock.CLMRP}</p>
+     <p><strong className="font-medium">Spherical Power:</strong> {formatPower(otherStockData?.data?.[0]?.stock.SphericalPower)}</p>
+<p><strong className="font-medium">Cylindrical Power:</strong> {formatPower(otherStockData?.data?.[0]?.stock.CylindricalPower)}</p>
 
-      <p><span className="font-medium">Axis:</span> {otherStockData?.data?.[0]?.stock.Axis || "N/A"}</p>
-      <p><span className="font-medium">Additional:</span> {otherStockData?.data?.[0]?.stock.Additional || "N/A"}</p>
-      <p><span className="font-medium">HSN:</span> {otherStockData?.data?.[0]?.stock.HSN}</p>
+      <p><strong className="font-medium">Axis:</strong> {otherStockData?.data?.[0]?.stock.Axis || "N/A"}</p>
+      <p><strong className="font-medium">Additional:</strong> {otherStockData?.data?.[0]?.stock.Additional || "N/A"}</p>
+      <p><strong className="font-medium">HSN:</strong> {otherStockData?.data?.[0]?.stock.HSN}</p>
      
     </div>
   </div>

@@ -572,15 +572,15 @@ const SearchAccessory = () => {
         <div className="text-lg font-semibold mb-3 text-neutral-700">
           Accessory Details
         </div>
-        <div className="grid grid-cols-2 gap-3 text-sm text-gray-700">
-          <p><span className="font-medium">Brand:</span> {otherStockData.data[0].stock.BrandName}</p>
-          <p><span className="font-medium">Product Name:</span> {otherStockData.data[0].stock.ProductName}</p>
-          <p><span className="font-medium">Product Code:</span> {otherStockData.data[0].stock.ProductCode}</p>
-          <p><span className="font-medium">Variation:</span> {otherStockData.data[0].stock.VariationName}</p>
-          <p><span className="font-medium">SKU Code:</span> {otherStockData.data[0].stock.SKUCode}</p>
-          <p><span className="font-medium">Barcode:</span> {otherStockData.data[0].stock.Barcode}</p>
-          <p><span className="font-medium">HSN:</span> {otherStockData.data[0].stock.HSN}</p>
-          <p><span className="font-medium">Type:</span> 
+        <div className="grid grid-cols-2 gap-3 text-sm text-gray-900">
+          <p><strong className="font-medium">Brand:</strong> {otherStockData.data[0].stock.BrandName}</p>
+          <p><strong className="font-medium">Product Name:</strong> {otherStockData.data[0].stock.ProductName}</p>
+          <p><strong className="font-medium">Product Code:</strong> {otherStockData.data[0].stock.ProductCode}</p>
+          <p><strong className="font-medium">Variation:</strong> {otherStockData.data[0].stock.VariationName}</p>
+          <p><strong className="font-medium">SKU Code:</strong> {otherStockData.data[0].stock.SKUCode}</p>
+          <p><strong className="font-medium">Barcode:</strong> {otherStockData.data[0].stock.Barcode}</p>
+          <p><strong className="font-medium">HSN:</strong> {otherStockData.data[0].stock.HSN}</p>
+          <p><strong className="font-medium">Type:</strong> 
             {otherStockData.data[0].stock.OtherProductType === 0 ? "Accessory" : "Other"}
           </p>
 
