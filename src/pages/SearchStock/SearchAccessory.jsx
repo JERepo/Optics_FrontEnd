@@ -3,7 +3,7 @@ import Button from "../../components/ui/Button";
 import { motion } from "framer-motion";
 import { Table, TableCell, TableRow } from "../../components/Table";
 import { EyeClosedIcon, EyeIcon, PrinterIcon, RefreshCcw } from "lucide-react";
-import { useLazyGetAccessoryStockQuery } from "../../api/searchStock";
+import { useLazyGetAccessoryStockQuery, useLazySyncAccQuery } from "../../api/searchStock";
 import toast from "react-hot-toast";
 import { useSelector } from "react-redux";
 import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
@@ -37,10 +37,9 @@ const buildQueryParams = ({
   requiredRow,
 }) => {
   const add = (key, value) =>
-    `${key}=${
-      value !== undefined && value !== null && value !== ""
-        ? encodeURIComponent(value)
-        : ""
+    `${key}=${value !== undefined && value !== null && value !== ""
+      ? encodeURIComponent(value)
+      : ""
     }`;
 
   const params = [
@@ -94,6 +93,8 @@ const SearchAccessory = () => {
   const [getlabels, { isFetching: isLabelsFetching }] =
     useLazyPrintLabelsAccQuery();
   const [getStockHistory, { data: stockData }] = useLazyGetStockHistoryQuery();
+  const [triggerSync] = useLazySyncAccQuery();
+
     const [getOtherLocationStock, { data: otherStockData }] =
       useLazyGetAccOtherLocationStockQuery();
   const [stockId, setstockId] = useState(null);
@@ -232,6 +233,15 @@ const SearchAccessory = () => {
 
   // Initial load
   useEffect(() => {
+    const syncAcc = async () => {
+      try {
+        await triggerSync();
+      } catch (error) {
+        console.error("Error syncing Acc:", error);
+      }
+    };
+    syncAcc();
+
     fetchAccessories(columnSearchTerms, 1, itemsPerPage);
   }, []); // Empty dependency array - only run once on mount
 
@@ -261,7 +271,11 @@ const SearchAccessory = () => {
   };
 
   // Clear all filters and reload
-  const handleClearFilters = () => {
+  const handleClearFilters = async () => {
+
+    // Sync Acc trigger
+    await triggerSync();
+
     const clearedTerms = Object.keys(columnSearchTerms).reduce((acc, key) => {
       acc[key] = "";
       return acc;

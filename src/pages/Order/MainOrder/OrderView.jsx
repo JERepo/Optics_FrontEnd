@@ -27,6 +27,7 @@ import Modal from "../../../components/ui/Modal";
 import OTPScreen from "../../../components/OTPScreen";
 import { getErrorMessage } from "../../../utils/helpers";
 import { motion, AnimatePresence } from "framer-motion";
+import { EyeIcon } from "lucide-react";
 
 // 0- Order Placed  1- GRN Done 2- Partial Invoice 3- Invoice Completed 4- Cancelled 5- PO Raised 6- Stock Allocation Done for OL
 export const getOrderStatus = (statusCode) => {
@@ -102,6 +103,144 @@ const OrderView = ({ isFamily = false, orderFamilyId }) => {
   const getTypeName = (id) => {
     const types = { 1: "F/S", 2: "ACC", 3: "CL" };
     return types[id] || "OL";
+  };
+
+  const [getOLOrderData, { isError, data, error }] =
+    useLazyGetOLOrderDataQuery();
+
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  console.log("olOrderDataInfo?.data?.", olOrderDataInfo);
+  // State for editable fields
+  const [formData, setFormData] = useState({
+    ConsumerCard: "",
+    Engraving: "",
+    DOB: "",
+    PantoAngle: "",
+    BowAngle: "",
+    FrameFit: "",
+    DistanceNear: "",
+    RPD: "",
+    RVH: "",
+    RBVD: "",
+    LPD: "",
+    LVH: "",
+    LBVD: "",
+    RET: "",
+    RCT: "",
+    ROptima: "",
+    LET: "",
+    LCT: "",
+    LOptima: "",
+    FrameLength: "",
+    FrameHeight: "",
+    FrameDBL: "",
+    RightSphericalPower: "",
+    RightCylinderPower: "",
+    RightAxis: "",
+    RightAddition: "",
+    LeftSphericalPower: "",
+    LeftCylinderPower: "",
+    LeftAxis: "",
+    LeftAddition: "",
+  });
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleDateChange = (date) => {
+    const formattedDate = date ? format(date, 'yyyy-MM-dd') : '';
+    setFormData(prev => ({
+      ...prev,
+      DOB: formattedDate
+    }));
+  };
+
+  const handleUpdate = async () => {
+    try {
+      setIsUpdating(true);
+      console.log("formData -- update", formData);
+      // Call your update API here
+      await updateOLOrderData({
+        orderDetailId: olOrderDataInfo?.OrderDetailId,
+        ...formData
+      }).unwrap();
+
+      // For now, just show success message
+      toast.success("Additional lens details updated successfully!");
+
+      // Close modal after successful update
+      setOLOrderDataInfoModel(false);
+      setOlOrderDateInfo([]);
+    } catch (error) {
+      console.error('Update error:', error);
+      toast.error("Failed to update additional lens details");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Update the handleOrderDetailsView function to set formData
+  const handleOrderDetailsView = async (item) => {
+    setOlOrderDateInfo([]);
+    setOLOrderDataInfoModel(true);
+
+    console.log("mabdka item - ", item);
+    try {
+      const olOrderData = await getOLOrderData(item.OrderDetailId).unwrap();
+
+      if (!olOrderData || (Array.isArray(olOrderData) && olOrderData.length === 0)) {
+        toast.error('No data found for this Order details.');
+        setOlOrderDateInfo([]);
+      } else {
+        setOlOrderDateInfo(olOrderData.data);
+        setFormData({
+          ConsumerCard: olOrderData.data?.ConsumerCard || "",
+          Engraving: olOrderData.data?.Engraving || "",
+          DOB: olOrderData.data?.DOB || "",
+          PantoAngle: olOrderData.data?.PantoAngle || "",
+          BowAngle: olOrderData.data?.BowAngle || "",
+          FrameFit: olOrderData.data?.FrameFit || "",
+          DistanceNear: olOrderData.data?.DistanceNear || "",
+          RPD: olOrderData.data?.RPD || "",
+          RVH: olOrderData.data?.RVH || "",
+          RBVD: olOrderData.data?.RBVD || "",
+          LPD: olOrderData.data?.LPD || "",
+          LVH: olOrderData.data?.LVH || "",
+          LBVD: olOrderData.data?.LBVD || "",
+          RET: olOrderData.data?.RET || "",
+          RCT: olOrderData.data?.RCT || "",
+          ROptima: olOrderData.data?.ROptima || "",
+          LET: olOrderData.data?.LET || "",
+          LCT: olOrderData.data?.LCT || "",
+          LOptima: olOrderData.data?.LOptima || "",
+          FrameLength: olOrderData.data?.FrameLength || "",
+          FrameHeight: olOrderData.data?.FrameHeight || "",
+          FrameDBL: olOrderData.data?.FrameDBL || "",
+          RightSphericalPower: olOrderData.data?.RightSphericalPower || "",
+          RightCylinderPower: olOrderData.data?.RightCylinderPower || "",
+          RightAxis: olOrderData.data?.RightAxis || "",
+          RightAddition: olOrderData.data?.RightAddition || "",
+          LeftSphericalPower: olOrderData.data?.LeftSphericalPower || "",
+          LeftCylinderPower: olOrderData.data?.LeftCylinderPower || "",
+          LeftAxis: olOrderData.data?.LeftAxis || "",
+          LeftAddition: olOrderData.data?.LeftAddition || "",
+        });
+        toast.success('Order details loaded successfully.');
+      }
+    } catch (err) {
+      console.error('OL order fetch error:', err);
+      toast.error(
+        err?.data?.message ||
+        'Unable to load optical lens data. Please try again later.'
+      );
+      setOlOrderDateInfo([]);
+    }
   };
 
   const formatValue = (val) =>
@@ -610,39 +749,6 @@ const OrderView = ({ isFamily = false, orderFamilyId }) => {
     }
   };
 
-  const [getOLOrderData, { isError, data, error }] =
-    useLazyGetOLOrderDataQuery();
-
-  const handleOrderDetailsView = async (item) => {
-    // 1. Reset UI
-    setOlOrderDateInfo([]);
-    setOLOrderDataInfoModel(true);        // open modal
-
-    console.log("mabdka item - ", item);
-    try {
-      // 2. Trigger lazy query
-      const olOrderData = await getOLOrderData(item.OrderDetailId).unwrap();
-
-      // 3. Success path
-      if (!olOrderData || (Array.isArray(olOrderData) && olOrderData.length === 0)) {
-        toast.error('No data found for this Order details.');
-        setOlOrderDateInfo([]);
-      } else {
-        setOlOrderDateInfo(olOrderData.data);
-        toast.success('Order details loaded successfully.');
-      }
-    } catch (err) {
-      // 4. Any error (network, server, unwrap)
-      console.error('OL order fetch error:', err);
-      toast.error(
-        err?.data?.message ||
-        'Unable to load optical lens data. Please try again later.'
-      );
-      setOlOrderDateInfo([]);
-    }
-  };
-
-
   // console.log("dd",selectedDiscountItem)
   if (isViewLoading || isLoading) {
     return (
@@ -860,18 +966,32 @@ const OrderView = ({ isFamily = false, orderFamilyId }) => {
                         </HasPermission>
                       )}
                       {order.typeid === 0 && (
-                        <button
-                          className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                          onClick={() => handlePrint(order)}
-                        >
-                          {printingId === order?.OrderDetailId ? (
-                            <Loader color="black" />
-                          ) : (
-                            <div className="flex items-center">
-                              <FiPrinter className="mr-1.5" />
-                            </div>
-                          )}
-                        </button>
+                        <>
+                          <button
+                            className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                            onClick={() => handlePrint(order)}
+                          >
+                            {printingId === order?.OrderDetailId ? (
+                              <Loader color="black" />
+                            ) : (
+                              <div className="flex items-center">
+                                <FiPrinter className="mr-1.5" />
+                              </div>
+                            )}
+                          </button>
+                          <button
+                            className="inline-flex items-center px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                            onClick={() => handleOrderDetailsView(order)}
+                          >
+                            {printingId === order?.OrderDetailId ? (
+                              <Loader color="black" />
+                            ) : (
+                              <div className="flex items-center">
+                                <EyeIcon className="h-4 w-4" />
+                              </div>
+                            )}
+                          </button>
+                        </>
                       )}
                     </div>
                   </TableCell>
@@ -1114,9 +1234,8 @@ const OrderView = ({ isFamily = false, orderFamilyId }) => {
 
 
 
-      {/* ──────────────────────────────────────
-     Additional Lens Details – Animated Modal
-   ────────────────────────────────────── */}
+      {/* Additional Lens Details – Animated Modal */}
+
       {olOrderDataInfoModel && (
         <AnimatePresence>
           <motion.div
@@ -1131,14 +1250,14 @@ const OrderView = ({ isFamily = false, orderFamilyId }) => {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.92, y: 30 }}
               transition={{ type: "spring", damping: 30, stiffness: 350 }}
-              className="bg-white rounded-lg shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto"
             >
               {/* Header */}
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="flex items-center justify-between p-5 border-b border-gray-200"
+                className="flex items-center justify-between p-6 border-b border-gray-200 bg-gray-50"
               >
                 <h3 className="text-xl font-bold text-neutral-800">
                   Additional Lens Details
@@ -1148,7 +1267,7 @@ const OrderView = ({ isFamily = false, orderFamilyId }) => {
                     setOLOrderDataInfoModel(false);
                     setOlOrderDateInfo([]);
                   }}
-                  className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                  className="p-2 rounded-full hover:bg-gray-200 transition-colors"
                 >
                   <FiX className="w-5 h-5 text-neutral-600" />
                 </button>
@@ -1168,98 +1287,24 @@ const OrderView = ({ isFamily = false, orderFamilyId }) => {
                 ) : (
                   <div className="space-y-8">
                     {(() => {
+                      console.log("olOrderDataInfo", olOrderDataInfo);
                       const d = olOrderDataInfo;
-                      const fmt = (v) => (v == null || v === "" ? "N/A" : v);
 
-                      const ConsumerData = () => (
-                        <Section title="Consumer Data">
-                          <InputRow label="Consumer Card" value={fmt(d.ConsumerCard)} />
-                          <InputRow label="Engraving" value={fmt(d.Engraving)} />
-                          <InputRow label="DOB" value={fmt(d.DOB)} />
-                        </Section>
-                      );
+                      const fmt = (v) => (v == null || v === "" ? "" : v);
 
-                      const IndividualLensData = () => (
-                        <Section title="Individual Lens Data">
-                          <InputRow label="Panto Angle" value={fmt(d.PantoAngle)} />
-                          <InputRow label="Bow Angle" value={fmt(d.BowAngle)} />
-                          <InputRow label="Frame Fit" value={fmt(d.FrameFit)} />
-                          <InputRow label="Distance Near" value={fmt(d.DistanceNear)} />
-                        </Section>
-                      );
-
-                      const CentrationData = () => (
-                        <Section title="Centration Data">
-                          <div className="grid grid-cols-4 gap-4">
-                            <EyeCheckbox side="R" />
-                            <InputField label="Pupillary Distance (PD)" value={fmt(d.RPD)} />
-                            <InputField label="Viewing Height" value={fmt(d.RVH)} />
-                            <InputField label="BVD" value={fmt(d.RBVD)} />
-                          </div>
-
-                          <div className="grid grid-cols-4 gap-4 mt-3">
-                            <EyeCheckbox side="L" />
-                            <InputField label="Pupillary Distance (PD)" value={fmt(d.LPD)} />
-                            <InputField label="Viewing Height" value={fmt(d.LVH)} />
-                            <InputField label="BVD" value={fmt(d.LBVD)} />
-                          </div>
-                        </Section>
-                      );
-
-                      const ThicknessOptions = () => (
-                        <Section title="Thickness Options">
-                          <div className="grid grid-cols-4 gap-4">
-                            <EyeCheckbox side="R" />
-                            <InputField label="Edge Thickness (ET)" value={fmt(d.RET)} />
-                            <InputField label="Center Thickness (CT)" value={fmt(d.RCT)} />
-                            <InputField label="Optima" value={fmt(d.ROptima)} />
-                          </div>
-
-                          <div className="grid grid-cols-4 gap-4 mt-3">
-                            <EyeCheckbox side="L" />
-                            <InputField label="Edge Thickness (ET)" value={fmt(d.LET)} />
-                            <InputField label="Center Thickness (CT)" value={fmt(d.LCT)} />
-                            <InputField label="Optima" value={fmt(d.LOptima)} />
-                          </div>
-                        </Section>
-                      );
-
-                      const FrameData = () => (
-                        <Section title="Frame Data">
-                          <InputRow label="Length" value={fmt(d.FrameLength)} />
-                          <InputRow label="Height" value={fmt(d.FrameHeight)} />
-                          <InputRow label="DBL" value={fmt(d.FrameDBL)} />
-                        </Section>
-                      );
-
-                      const PowerSpecs = () => (
-                        <Section title="Power Specification">
-                          <div className="grid grid-cols-5 gap-4">
-                            <EyeCheckbox side="R" />
-                            <InputField label="SPH" value={fmt(d.RightSphericalPower)} />
-                            <InputField label="CYL" value={fmt(d.RightCylinderPower)} />
-                            <InputField label="Axis" value={fmt(d.RightAxis)} />
-                            <InputField label="Add" value={fmt(d.RightAddition)} />
-                          </div>
-
-                          <div className="grid grid-cols-5 gap-4 mt-3">
-                            <EyeCheckbox side="L" />
-                            <InputField label="SPH" value={fmt(d.LeftSphericalPower)} />
-                            <InputField label="CYL" value={fmt(d.LeftCylinderPower)} />
-                            <InputField label="Axis" value={fmt(d.LeftAxis)} />
-                            <InputField label="Add" value={fmt(d.LeftAddition)} />
-                          </div>
-                        </Section>
-                      );
 
                       return (
                         <>
-                          <ConsumerData />
-                          <IndividualLensData />
-                          <CentrationData />
-                          <ThicknessOptions />
-                          <FrameData />
-                          <PowerSpecs />
+                          <ConsumerData
+                            formData={formData}
+                            handleInputChange={handleInputChange}
+                            handleDateChange={handleDateChange}
+                          />
+                          <IndividualLensData formData={formData} handleInputChange={handleInputChange} handleDateChange={handleDateChange} />
+                          <CentrationData formData={formData} handleInputChange={handleInputChange} handleDateChange={handleDateChange} />
+                          <ThicknessOptions formData={formData} handleInputChange={handleInputChange} handleDateChange={handleDateChange} />
+                          <FrameData formData={formData} handleInputChange={handleInputChange} handleDateChange={handleDateChange} />
+                          <PowerSpecs formData={formData} handleInputChange={handleInputChange} handleDateChange={handleDateChange} />
                         </>
                       );
                     })()}
@@ -1267,21 +1312,35 @@ const OrderView = ({ isFamily = false, orderFamilyId }) => {
                 )}
               </motion.div>
 
-              {/* Footer – optional Close button */}
+              {/* Footer */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
-                className="flex justify-end p-4 border-t border-gray-200"
+                className="flex justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50"
               >
                 <button
                   onClick={() => {
                     setOLOrderDataInfoModel(false);
                     setOlOrderDateInfo([]);
                   }}
-                  className="px-5 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-900 transition-colors"
+                  className="px-6 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors font-medium"
                 >
-                  Close
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdate}
+                  disabled={isUpdating}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isUpdating ? (
+                    <>
+                      <Loader color="white" size="sm" />
+                      Updating...
+                    </>
+                  ) : (
+                    'Update'
+                  )}
                 </button>
               </motion.div>
             </motion.div>
@@ -1306,47 +1365,311 @@ const Info = ({ label, value }) => (
 /** ──────────────────────────────────────
  *  Re-usable tiny components for the modal
  *  ────────────────────────────────────── */
+
+const ConsumerData = ({ formData, handleInputChange, handleDateChange }) => (
+  <Section title="Consumer Data">
+    <div className="space-y-4 flex-row">
+      <div className="space-y-3 grid grid-cols-3 gap-8">
+        {console.log("formData ", formData)}
+        <EditableInputRow
+          label="Consumer Card"
+          name="ConsumerCard"
+          value={formData.ConsumerCard}
+          onChange={handleInputChange}
+        />
+        <EditableInputRow
+          label="Engraving"
+          value={formData.Engraving}
+          onChange={(value) => handleInputChange('Engraving', value)}
+        />
+        <DatePickerRow
+          label="DOB"
+          value={formData.DOB}
+          onChange={handleDateChange}
+        />
+      </div>
+    </div>
+  </Section>
+);
+
+const IndividualLensData = ({ formData, handleInputChange, handleDateChange }) => (
+  <Section title="Individual Lens Data">
+    <div className="grid grid-cols-4 gap-4">
+      <EditableInputRow
+        label="Panto Angle"
+        value={formData.PantoAngle}
+        onChange={(value) => handleInputChange('PantoAngle', value)}
+      />
+      <EditableInputRow
+        label="Bow Angle"
+        value={formData.BowAngle}
+        onChange={(value) => handleInputChange('BowAngle', value)}
+      />
+      <EditableInputRow
+        label="Frame Fit"
+        value={formData.FrameFit}
+        onChange={(value) => handleInputChange('FrameFit', value)}
+      />
+      <EditableInputRow
+        label="Distance Near"
+        value={formData.DistanceNear}
+        onChange={(value) => handleInputChange('DistanceNear', value)}
+      />
+    </div>
+  </Section>
+);
+
+const CentrationData = ({ formData, handleInputChange, handleDateChange }) => (
+  <div>
+    <Section title="Centration Data">
+      <div className="space-y-4">
+        {/* Right Eye Row */}
+        <div className="grid grid-cols-4 gap-4 items-start">
+          <div className="flex items-center gap-2">
+            Right :
+          </div>
+          <EditableInputField
+            label="Pupillary Distance (PD)"
+            value={formData.RPD}
+            onChange={(value) => handleInputChange('RPD', value)}
+          />
+          <EditableInputField
+            label="Viewing Height"
+            value={formData.RVH}
+            onChange={(value) => handleInputChange('RVH', value)}
+          />
+          <EditableInputField
+            label="BVD"
+            value={formData.RBVD}
+            onChange={(value) => handleInputChange('RBVD', value)}
+          />
+          <div></div>
+        </div>
+
+        {/* Left Eye Row */}
+        <div className="grid grid-cols-4 gap-4 items-start">
+          <div className="flex items-center gap-2">
+            Left :
+          </div>
+          <EditableInputField
+            label="Pupillary Distance (PD)"
+            value={formData.LPD}
+            onChange={(value) => handleInputChange('LPD', value)}
+          />
+          <EditableInputField
+            label="Viewing Height"
+            value={formData.LVH}
+            onChange={(value) => handleInputChange('LVH', value)}
+          />
+          <EditableInputField
+            label="BVD"
+            value={formData.LBVD}
+            onChange={(value) => handleInputChange('LBVD', value)}
+          />
+          <div></div>
+        </div>
+      </div>
+    </Section>
+  </div>
+);
+
+const ThicknessOptions = ({ formData, handleInputChange, handleDateChange }) => (
+  <Section title="Thickness Options">
+    <div className="space-y-4">
+      {/* Right Eye Row */}
+      <div className="grid grid-cols-4 gap-4 items-start">
+        <div className="flex items-center gap-2">
+          Right :
+        </div>
+        <EditableInputField
+          label="Edge Thickness (ET)"
+          value={formData.RET}
+          onChange={(value) => handleInputChange('RET', value)}
+        />
+        <EditableInputField
+          label="Center Thickness (CT)"
+          value={formData.RCT}
+          onChange={(value) => handleInputChange('RCT', value)}
+        />
+        <EditableInputField
+          label="Optima"
+          value={formData.ROptima}
+          onChange={(value) => handleInputChange('ROptima', value)}
+        />
+      </div>
+
+      {/* Left Eye Row */}
+      <div className="grid grid-cols-4 gap-4 items-start">
+        <div className="flex items-center gap-2">
+          Left :
+        </div>
+        <EditableInputField
+          label="Edge Thickness (ET)"
+          value={formData.LET}
+          onChange={(value) => handleInputChange('LET', value)}
+        />
+        <EditableInputField
+          label="Center Thickness (CT)"
+          value={formData.LCT}
+          onChange={(value) => handleInputChange('LCT', value)}
+        />
+        <EditableInputField
+          label="Optima"
+          value={formData.LOptima}
+          onChange={(value) => handleInputChange('LOptima', value)}
+        />
+      </div>
+    </div>
+  </Section>
+);
+
+const FrameData = ({ formData, handleInputChange, handleDateChange }) => (
+  <Section title="Frame Data">
+    <div className="grid grid-cols-3 gap-4">
+      <EditableInputRow
+        label="Length"
+        value={formData.FrameLength}
+        onChange={(value) => handleInputChange('FrameLength', value)}
+      />
+      <EditableInputRow
+        label="Height"
+        value={formData.FrameHeight}
+        onChange={(value) => handleInputChange('FrameHeight', value)}
+      />
+      <EditableInputRow
+        label="DBL"
+        value={formData.FrameDBL}
+        onChange={(value) => handleInputChange('FrameDBL', value)}
+      />
+    </div>
+  </Section>
+);
+
+const PowerSpecs = ({ formData, handleInputChange, handleDateChange }) => (
+  <Section title="Power Specification">
+    <div className="space-y-4">
+      {/* Right Eye Row */}
+      <div className="grid grid-cols-6 gap-4 items-start">
+        <div className="flex items-center gap-2">
+          Right :
+        </div>
+        <EditableInputField
+          label="SPH"
+          value={formData.RightSphericalPower}
+          onChange={(value) => handleInputChange('RightSphericalPower', value)}
+        />
+        <EditableInputField
+          label="CYL"
+          value={formData.RightCylinderPower}
+          onChange={(value) => handleInputChange('RightCylinderPower', value)}
+        />
+        <EditableInputField
+          label="Axis"
+          value={formData.RightAxis}
+          onChange={(value) => handleInputChange('RightAxis', value)}
+        />
+        <EditableInputField
+          label="Add"
+          value={formData.RightAddition}
+          onChange={(value) => handleInputChange('RightAddition', value)}
+        />
+        <div></div>
+      </div>
+
+      {/* Left Eye Row */}
+      <div className="grid grid-cols-6 gap-4 items-start">
+        <div className="flex items-center gap-2">
+          Left :
+        </div>
+        <EditableInputField
+          label="SPH"
+          value={formData.LeftSphericalPower}
+          onChange={(value) => handleInputChange('LeftSphericalPower', value)}
+        />
+        <EditableInputField
+          label="CYL"
+          value={formData.LeftCylinderPower}
+          onChange={(value) => handleInputChange('LeftCylinderPower', value)}
+        />
+        <EditableInputField
+          label="Axis"
+          value={formData.LeftAxis}
+          onChange={(value) => handleInputChange('LeftAxis', value)}
+        />
+        <EditableInputField
+          label="Add"
+          value={formData.LeftAddition}
+          onChange={(value) => handleInputChange('LeftAddition', value)}
+        />
+        <div></div>
+      </div>
+    </div>
+  </Section>
+);
+
+
 const Section = ({ title, children }) => (
-  <div className="border-b border-gray-200 pb-5 mb-7">
-    <h3 className="text-lg font-semibold text-neutral-800 mb-3">{title}</h3>
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+  <div className="border border-gray-200 rounded-lg p-6 mb-6 bg-white shadow-sm">
+    <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+      {title}
+    </h3>
+    <div className="space-y-4">
       {children}
     </div>
   </div>
 );
 
-const InputRow = ({ label, value }) => (
+const EditableInputRow = ({ label, name, value, onChange }) => (
   <div className="flex flex-col">
-    <label className="text-sm font-medium text-neutral-600">{label}</label>
-    <input
-      readOnly
-      value={value}
-      className="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-    />
+    <label className="text-sm font-medium text-gray-700 mb-1">{label}</label>
+    <div className="relative">
+      <input
+        value={value || ""}
+        name={name}
+        onChange={onChange}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+      />
+    </div>
   </div>
 );
 
-const InputField = ({ label, value }) => (
+const EditableInputField = ({ label, value, onChange }) => (
   <div className="flex flex-col">
-    <label className="text-sm font-medium text-neutral-600">{label}</label>
-    <input
-      readOnly
-      value={value}
-      className="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-    />
+    <label className="text-sm font-medium text-gray-700 mb-1">{label}</label>
+    <div className="relative">
+      <input
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+      />
+    </div>
   </div>
 );
 
-const EyeCheckbox = ({ side }) => (
-  <div className="flex items-center justify-center">
-    <input
-      type="checkbox"
-      checked
-      readOnly
-      className="h-5 w-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
-    />
-    <span className="ml-2 text-sm font-medium text-neutral-700">{side}</span>
-  </div>
-);
+const DatePickerRow = ({ label, value, onChange }) => {
+  const [dateValue, setDateValue] = useState(value ? new Date(value) : null);
+
+  const handleDateChange = (date) => {
+    setDateValue(date);
+    onChange(date);
+  };
+
+  return (
+    <div className="flex flex-col">
+      <label className="text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <div className="relative">
+        <input
+          type="date"
+          value={value || ""}
+          onChange={(e) => {
+            const newDate = e.target.value ? new Date(e.target.value) : null;
+            handleDateChange(newDate);
+          }}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+        />
+      </div>
+    </div>
+  );
+};
 
 export default OrderView;

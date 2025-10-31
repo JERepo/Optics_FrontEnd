@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   useGetVendorsQuery,
   useLazyGetDraftDataQuery,
@@ -11,6 +11,7 @@ import Button from "../../../components/ui/Button";
 import { Autocomplete, TextField } from "@mui/material";
 import toast from "react-hot-toast";
 import { useGetAllvendorByLocationQuery } from "../../../api/vendorApi";
+import { useGetAllLocationsQuery } from "../../../api/roleManagementApi";
 
 const SelectVendor = () => {
   const navigate = useNavigate();
@@ -26,11 +27,28 @@ const SelectVendor = () => {
   // const { data: vendorsData, isLoading } = useGetVendorsQuery({
   //   locationId: customerPurchase.vendorPoolId,
   // });
+  const [selectedLocation, setSelectedLocation] = useState(null);
+
+  const { data: allLocations } = useGetAllLocationsQuery();
 
   const { data: vendorsData, isLoading } = useGetAllvendorByLocationQuery(
-    { id: customerPurchase.vendorPoolId },
-    { skip: !customerPurchase.vendorPoolId }
+    // { id: customerPurchase.vendorPoolId },
+    // { skip: !customerPurchase.vendorPoolId }
+    { id: selectedLocation },
+    { skip: !selectedLocation }
   );
+
+  const hasLocation = allLocations?.data ? allLocations?.data?.filter(loc =>
+    hasMultipleLocations.includes(loc.Id)
+  ) : [];
+
+  // Auto select location if it has only 1.
+  useEffect(() => {
+    if (hasLocation?.length === 1) {
+      setSelectedLocation(hasLocation[0].Id.toString());
+    }
+  }, [hasLocation]);
+
 
   const [purchaseDraft, { isLoading: isDraftLoading }] =
     useLazyGetDraftDataQuery();

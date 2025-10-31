@@ -35,7 +35,7 @@ export const orderApi = createApi({
       providesTags: ["Order", "Patient"],
     }),
     getCustomerContactDetails: builder.query({
-      query: ({companyId}) => ({
+      query: ({ companyId }) => ({
         url: `/api/v1/customer/getdetailsall/${companyId}`,
       }),
       providesTags: ["Order", "Patient"],
@@ -525,6 +525,14 @@ export const orderApi = createApi({
       query: (OrderDetailsId) => ({
         url: `/api/v1/order/getorderdetails-info?OrderDetailsId=${OrderDetailsId}`,
         method: 'GET'
+      })
+    }),
+
+    updateOLOrderData: builder.query({
+      query: (OrderDetailsId, formData) => ({
+        url: `/api/v1/order/update/orderdetails-info?OrderDetailsId=${OrderDetailsId}`,
+        method: 'POST',
+        body: formData,
       })
     })
   }),

@@ -48,7 +48,7 @@ export function GRNViewPage() {
     const [orderToRemove, setOrderToRemove] = useState(null);
     const [createdPOMainId, setCreatedPOMainId] = useState(null);
     const [grnViewDetails, setGrnViewDetails] = useState([]);
-
+    const [vendorAddress, setVendorAddress] = useState("");
 
     // useEffect(() => {
     //     const fetchGRNDetails = async () => {
@@ -87,7 +87,7 @@ export function GRNViewPage() {
     useEffect(() => {
         // Add a flag to prevent double execution
         let isMounted = true;
-
+        // setVendorAddress(grnData?.Vendor?.Address1 + " " + grnData?.Vendor?.Address1 + ", " + grnData?.Vendor?.City + ", " + grnData?.Vendor?.State?.StateName + ", " + grnData?.Vendor?.Country?.CountryName + ", " + grnData?.Vendor?.Pin);
         const fetchGRNDetails = async () => {
             // Validate required fields before making API call
             if (!grnData?.CompanyID || !grnData?.id) {
