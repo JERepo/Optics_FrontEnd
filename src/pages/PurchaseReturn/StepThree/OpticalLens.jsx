@@ -385,6 +385,8 @@ const OpticalLens = () => {
       toast.error("Please select a supplier order number!");
       return;
     }
+
+    console.log("selectedVendor?.productDetails[0]?.pricing?.quantity", selectedVendor?.productDetails[0]?.pricing?.quantity);
     if (selectedVendor?.productDetails[0]?.pricing?.quantity === 0) {
       toast.error("No stock available for this selected supplier order number, Please select a different supplier order number!");
       return;

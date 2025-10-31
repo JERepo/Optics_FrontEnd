@@ -10,6 +10,7 @@ import {
   useLazyGetAdvanceAmtQuery,
   useLazyGetOLOrderDataQuery,
   useLazyPrintPdfQuery,
+  useUpdateOLOrderDataMutation,
 } from "../../../api/orderApi";
 import { useOrder } from "../../../features/OrderContext";
 import { Table, TableCell, TableRow } from "../../../components/Table";
@@ -108,6 +109,8 @@ const OrderView = ({ isFamily = false, orderFamilyId }) => {
   const [getOLOrderData, { isError, data, error }] =
     useLazyGetOLOrderDataQuery();
 
+  const [triggerOLDetailsUpdate] = useUpdateOLOrderDataMutation();
+
   const [isUpdating, setIsUpdating] = useState(false);
 
   console.log("olOrderDataInfo?.data?.", olOrderDataInfo);
@@ -115,7 +118,7 @@ const OrderView = ({ isFamily = false, orderFamilyId }) => {
   const [formData, setFormData] = useState({
     ConsumerCard: "",
     Engraving: "",
-    DOB: "",
+    DOB: null,
     PantoAngle: "",
     BowAngle: "",
     FrameFit: "",
@@ -154,20 +157,31 @@ const OrderView = ({ isFamily = false, orderFamilyId }) => {
   };
 
   const handleDateChange = (date) => {
-    const formattedDate = date ? format(date, 'yyyy-MM-dd') : '';
-    setFormData(prev => ({
-      ...prev,
-      DOB: formattedDate
-    }));
+    if (date === null || date === "") {
+      // Set to null for database
+      setFormData(prev => ({
+        ...prev,
+        DOB: null
+      }));
+    } else {
+      // Format valid date
+      const formattedDate = format(date, 'yyyy-MM-dd');
+      setFormData(prev => ({
+        ...prev,
+        DOB: formattedDate
+      }));
+    }
   };
 
   const handleUpdate = async () => {
     try {
       setIsUpdating(true);
       console.log("formData -- update", formData);
+      console.log("olOrderDataInfo -- update", olOrderDataInfo);
+
       // Call your update API here
-      await updateOLOrderData({
-        orderDetailId: olOrderDataInfo?.OrderDetailId,
+      await triggerOLDetailsUpdate({
+        orderDetailId: olOrderDataInfo?.OrderDetailsId,
         ...formData
       }).unwrap();
 
@@ -202,7 +216,7 @@ const OrderView = ({ isFamily = false, orderFamilyId }) => {
         setFormData({
           ConsumerCard: olOrderData.data?.ConsumerCard || "",
           Engraving: olOrderData.data?.Engraving || "",
-          DOB: olOrderData.data?.DOB || "",
+          DOB: olOrderData.data?.DOB || null,
           PantoAngle: olOrderData.data?.PantoAngle || "",
           BowAngle: olOrderData.data?.BowAngle || "",
           FrameFit: olOrderData.data?.FrameFit || "",
@@ -1370,7 +1384,6 @@ const ConsumerData = ({ formData, handleInputChange, handleDateChange }) => (
   <Section title="Consumer Data">
     <div className="space-y-4 flex-row">
       <div className="space-y-3 grid grid-cols-3 gap-8">
-        {console.log("formData ", formData)}
         <EditableInputRow
           label="Consumer Card"
           name="ConsumerCard"
@@ -1379,8 +1392,9 @@ const ConsumerData = ({ formData, handleInputChange, handleDateChange }) => (
         />
         <EditableInputRow
           label="Engraving"
+          name="Engraving"
           value={formData.Engraving}
-          onChange={(value) => handleInputChange('Engraving', value)}
+          onChange={handleInputChange}
         />
         <DatePickerRow
           label="DOB"
@@ -1392,34 +1406,38 @@ const ConsumerData = ({ formData, handleInputChange, handleDateChange }) => (
   </Section>
 );
 
-const IndividualLensData = ({ formData, handleInputChange, handleDateChange }) => (
+const IndividualLensData = ({ formData, handleInputChange }) => (
   <Section title="Individual Lens Data">
     <div className="grid grid-cols-4 gap-4">
       <EditableInputRow
         label="Panto Angle"
+        name="PantoAngle"
         value={formData.PantoAngle}
-        onChange={(value) => handleInputChange('PantoAngle', value)}
+        onChange={handleInputChange}
       />
       <EditableInputRow
         label="Bow Angle"
+        name="BowAngle"
         value={formData.BowAngle}
-        onChange={(value) => handleInputChange('BowAngle', value)}
+        onChange={handleInputChange}
       />
       <EditableInputRow
         label="Frame Fit"
+        name="FrameFit"
         value={formData.FrameFit}
-        onChange={(value) => handleInputChange('FrameFit', value)}
+        onChange={handleInputChange}
       />
       <EditableInputRow
         label="Distance Near"
+        name="DistanceNear"
         value={formData.DistanceNear}
-        onChange={(value) => handleInputChange('DistanceNear', value)}
+        onChange={handleInputChange}
       />
     </div>
   </Section>
 );
 
-const CentrationData = ({ formData, handleInputChange, handleDateChange }) => (
+const CentrationData = ({ formData, handleInputChange }) => (
   <div>
     <Section title="Centration Data">
       <div className="space-y-4">
@@ -1430,18 +1448,21 @@ const CentrationData = ({ formData, handleInputChange, handleDateChange }) => (
           </div>
           <EditableInputField
             label="Pupillary Distance (PD)"
+            name="RPD"
             value={formData.RPD}
-            onChange={(value) => handleInputChange('RPD', value)}
+            onChange={handleInputChange}
           />
           <EditableInputField
             label="Viewing Height"
+            name="RVH"
             value={formData.RVH}
-            onChange={(value) => handleInputChange('RVH', value)}
+            onChange={handleInputChange}
           />
           <EditableInputField
             label="BVD"
+            name="RBVD"
             value={formData.RBVD}
-            onChange={(value) => handleInputChange('RBVD', value)}
+            onChange={handleInputChange}
           />
           <div></div>
         </div>
@@ -1453,18 +1474,21 @@ const CentrationData = ({ formData, handleInputChange, handleDateChange }) => (
           </div>
           <EditableInputField
             label="Pupillary Distance (PD)"
+            name="LPD"
             value={formData.LPD}
-            onChange={(value) => handleInputChange('LPD', value)}
+            onChange={handleInputChange}
           />
           <EditableInputField
             label="Viewing Height"
+            name="LVH"
             value={formData.LVH}
-            onChange={(value) => handleInputChange('LVH', value)}
+            onChange={handleInputChange}
           />
           <EditableInputField
             label="BVD"
+            name="LBVD"
             value={formData.LBVD}
-            onChange={(value) => handleInputChange('LBVD', value)}
+            onChange={handleInputChange}
           />
           <div></div>
         </div>
@@ -1473,7 +1497,7 @@ const CentrationData = ({ formData, handleInputChange, handleDateChange }) => (
   </div>
 );
 
-const ThicknessOptions = ({ formData, handleInputChange, handleDateChange }) => (
+const ThicknessOptions = ({ formData, handleInputChange }) => (
   <Section title="Thickness Options">
     <div className="space-y-4">
       {/* Right Eye Row */}
@@ -1483,18 +1507,21 @@ const ThicknessOptions = ({ formData, handleInputChange, handleDateChange }) => 
         </div>
         <EditableInputField
           label="Edge Thickness (ET)"
+          name="RET"
           value={formData.RET}
-          onChange={(value) => handleInputChange('RET', value)}
+          onChange={handleInputChange}
         />
         <EditableInputField
           label="Center Thickness (CT)"
+          name="RCT"
           value={formData.RCT}
-          onChange={(value) => handleInputChange('RCT', value)}
+          onChange={handleInputChange}
         />
         <EditableInputField
           label="Optima"
+          name="ROptima"
           value={formData.ROptima}
-          onChange={(value) => handleInputChange('ROptima', value)}
+          onChange={handleInputChange}
         />
       </div>
 
@@ -1505,47 +1532,53 @@ const ThicknessOptions = ({ formData, handleInputChange, handleDateChange }) => 
         </div>
         <EditableInputField
           label="Edge Thickness (ET)"
+          name="LET"
           value={formData.LET}
-          onChange={(value) => handleInputChange('LET', value)}
+          onChange={handleInputChange}
         />
         <EditableInputField
           label="Center Thickness (CT)"
+          name="LCT"
           value={formData.LCT}
-          onChange={(value) => handleInputChange('LCT', value)}
+          onChange={handleInputChange}
         />
         <EditableInputField
           label="Optima"
+          name="LOptima"
           value={formData.LOptima}
-          onChange={(value) => handleInputChange('LOptima', value)}
+          onChange={handleInputChange}
         />
       </div>
     </div>
   </Section>
 );
 
-const FrameData = ({ formData, handleInputChange, handleDateChange }) => (
+const FrameData = ({ formData, handleInputChange }) => (
   <Section title="Frame Data">
     <div className="grid grid-cols-3 gap-4">
       <EditableInputRow
         label="Length"
+        name="FrameLength"
         value={formData.FrameLength}
-        onChange={(value) => handleInputChange('FrameLength', value)}
+        onChange={handleInputChange}
       />
       <EditableInputRow
         label="Height"
+        name="FrameHeight"
         value={formData.FrameHeight}
-        onChange={(value) => handleInputChange('FrameHeight', value)}
+        onChange={handleInputChange}
       />
       <EditableInputRow
         label="DBL"
+        name="FrameDBL"
         value={formData.FrameDBL}
-        onChange={(value) => handleInputChange('FrameDBL', value)}
+        onChange={handleInputChange}
       />
     </div>
   </Section>
 );
 
-const PowerSpecs = ({ formData, handleInputChange, handleDateChange }) => (
+const PowerSpecs = ({ formData, handleInputChange }) => (
   <Section title="Power Specification">
     <div className="space-y-4">
       {/* Right Eye Row */}
@@ -1555,23 +1588,27 @@ const PowerSpecs = ({ formData, handleInputChange, handleDateChange }) => (
         </div>
         <EditableInputField
           label="SPH"
+          name="RightSphericalPower"
           value={formData.RightSphericalPower}
-          onChange={(value) => handleInputChange('RightSphericalPower', value)}
+          onChange={handleInputChange}
         />
         <EditableInputField
           label="CYL"
+          name="RightCylinderPower"
           value={formData.RightCylinderPower}
-          onChange={(value) => handleInputChange('RightCylinderPower', value)}
+          onChange={handleInputChange}
         />
         <EditableInputField
           label="Axis"
+          name="RightAxis"
           value={formData.RightAxis}
-          onChange={(value) => handleInputChange('RightAxis', value)}
+          onChange={handleInputChange}
         />
         <EditableInputField
           label="Add"
+          name="RightAddition"
           value={formData.RightAddition}
-          onChange={(value) => handleInputChange('RightAddition', value)}
+          onChange={handleInputChange}
         />
         <div></div>
       </div>
@@ -1583,23 +1620,27 @@ const PowerSpecs = ({ formData, handleInputChange, handleDateChange }) => (
         </div>
         <EditableInputField
           label="SPH"
+          name="LeftSphericalPower"
           value={formData.LeftSphericalPower}
-          onChange={(value) => handleInputChange('LeftSphericalPower', value)}
+          onChange={handleInputChange}
         />
         <EditableInputField
           label="CYL"
+          name="LeftCylinderPower"
           value={formData.LeftCylinderPower}
-          onChange={(value) => handleInputChange('LeftCylinderPower', value)}
+          onChange={handleInputChange}
         />
         <EditableInputField
           label="Axis"
+          name="LeftAxis"
           value={formData.LeftAxis}
-          onChange={(value) => handleInputChange('LeftAxis', value)}
+          onChange={handleInputChange}
         />
         <EditableInputField
           label="Add"
+          name="LeftAddition"
           value={formData.LeftAddition}
-          onChange={(value) => handleInputChange('LeftAddition', value)}
+          onChange={handleInputChange}
         />
         <div></div>
       </div>
@@ -1633,13 +1674,14 @@ const EditableInputRow = ({ label, name, value, onChange }) => (
   </div>
 );
 
-const EditableInputField = ({ label, value, onChange }) => (
+const EditableInputField = ({ label, name, value, onChange }) => (
   <div className="flex flex-col">
     <label className="text-sm font-medium text-gray-700 mb-1">{label}</label>
     <div className="relative">
       <input
         value={value || ""}
-        onChange={(e) => onChange(e.target.value)}
+        name={name}
+        onChange={onChange}
         className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
       />
     </div>
@@ -1649,9 +1691,16 @@ const EditableInputField = ({ label, value, onChange }) => (
 const DatePickerRow = ({ label, value, onChange }) => {
   const [dateValue, setDateValue] = useState(value ? new Date(value) : null);
 
-  const handleDateChange = (date) => {
-    setDateValue(date);
-    onChange(date);
+  const handleDateChange = (e) => {
+    const dateValue = e.target.value;
+
+    if (dateValue === "") {
+      // If date is cleared, send null instead of invalid date
+      onChange(null);
+    } else {
+      // If date is selected, send the valid date
+      onChange(new Date(dateValue));
+    }
   };
 
   return (

@@ -686,11 +686,17 @@ const ContactLens = () => {
   };
   const handleSaveBatchData = async () => {
     let sub;
+
+    console.log("selectedBatchCode.Quantity 1 ", selectedBatchCode.Quantity);
+
+    if (parseInt(selectedBatchCode.Quantity) <= 0) {
+      toast.error("Stock quantity must be greater than 0!");
+      return;
+    }
+
     if ((!detailId || openBatch) && productSearch == 0) {
-      if (parseInt(selectedBatchCode.Quantity) <= 0) {
-        toast.error("Stock quantity must be greater than 0!");
-        return;
-      }
+
+      console.log("selectedBatchCode.Quantity 2 ", selectedBatchCode.Quantity);
       sub = {
         ...newItem.powerData,
         sbatchCode: selectedBatchCode.CLBatchCode,
@@ -1615,7 +1621,7 @@ const ContactLens = () => {
                   }}
                 />
                 <Button onClick={handleGetBatchBarCodeDetails}>Search</Button>
-                
+
               </div>
             )}
           </div>

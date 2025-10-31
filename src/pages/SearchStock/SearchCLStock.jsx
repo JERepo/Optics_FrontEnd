@@ -178,16 +178,16 @@ const SearchContactLens = () => {
     }
   }, [selectedLocation]);
 
-  useEffect(() => {
-    const syncCL = async () => {
-      try {
-        await triggerClSync();
-      } catch (error) {
-        console.error("Error syncing CL:", error);
-      }
-    };
-    syncCL();
-  }, []);
+  // useEffect(() => {
+  //   const syncCL = async () => {
+  //     try {
+  //       await triggerClSync();
+  //     } catch (error) {
+  //       console.error("Error syncing CL:", error);
+  //     }
+  //   };
+  //   syncCL();
+  // }, []);
 
   // Fetch data when page changes (but not on mount)
   useEffect(() => {
@@ -412,9 +412,12 @@ const SearchContactLens = () => {
     >
       <div className="items-center mb-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl lg:text-4xl font-bold text-[#000060] mb-2">
-            Contact Lens Stock
-          </h1>
+          <div>
+            <h1 className="text-3xl lg:text-4xl font-bold text-[#000060] mb-2">
+              Contact Lens Stock
+            </h1>
+            {/* <p className="italic text-sm text-red-300"> Please Refresh to get the latest stock data!</p> */}
+          </div>
           <div className="flex gap-4">
             {hasLocation && hasLocation.length > 1 && (
               <div className="flex items-center space-x-6 mb-6">
@@ -435,16 +438,23 @@ const SearchContactLens = () => {
                 </select>
               </div>
             )}
-            <Button
-              onClick={handleClearFilters}
-              variant="outline"
-              disabled={isLoading}
-            >
-              <RefreshCcw className={isLoading ? "animate-spin" : ""} />
-              Refresh
-            </Button>
+            <div className="">
+              <Button
+                onClick={handleClearFilters}
+                variant="outline"
+                disabled={isLoading}
+              >
+                <RefreshCcw className={isLoading ? "animate-spin" : ""} />
+                Refresh
+              </Button>
+            </div>
+
           </div>
         </div>
+        <div className="flex justify-end">
+          <p className="italic text-sm text-red-300"> Please Refresh to get the latest stock data!</p>
+        </div>
+
         <p className="text-gray-600 text-sm mt-2">
           Search results: {totalItems} items found
         </p>

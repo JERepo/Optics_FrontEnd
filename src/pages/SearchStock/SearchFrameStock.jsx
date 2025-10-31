@@ -30,6 +30,7 @@ import { toast } from "react-hot-toast";
 import Modal from "../../components/ui/Modal";
 import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
 import { useLazyGetStockHistoryQuery } from "../../api/vendorPayment";
+import { RefreshCcw } from "lucide-react";
 
 const toTitleCase = (str) =>
   str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
@@ -274,24 +275,24 @@ const SearchFrameStock = () => {
   const [stockOpen, setStockOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [catInputError, setCatInputError] = useState(false);
-const handleCatInputChange = (value) => {
-  const cleaned = value.trim().toUpperCase();
-  setColumnInput((prev) => ({ ...prev, cat: value }));
+  const handleCatInputChange = (value) => {
+    const cleaned = value.trim().toUpperCase();
+    setColumnInput((prev) => ({ ...prev, cat: value }));
 
-  if (cleaned === "") {
-    setCatInputError(false);
-    setColumnSearchTerms((prev) => ({ ...prev, cat: "" }));
-  } else if (cleaned === "F") {
-    setCatInputError(false);
-    setColumnSearchTerms((prev) => ({ ...prev, cat: "0" })); // Frame
-  } else if (cleaned === "S") {
-    setCatInputError(false);
-    setColumnSearchTerms((prev) => ({ ...prev, cat: "1" })); // Sunglass
-  } else {
-    setCatInputError(true);
-    toast.error("Please enter 'F' for Frame or 'S' for Sunglass only.");
-  }
-};
+    if (cleaned === "") {
+      setCatInputError(false);
+      setColumnSearchTerms((prev) => ({ ...prev, cat: "" }));
+    } else if (cleaned === "F") {
+      setCatInputError(false);
+      setColumnSearchTerms((prev) => ({ ...prev, cat: "0" })); // Frame
+    } else if (cleaned === "S") {
+      setCatInputError(false);
+      setColumnSearchTerms((prev) => ({ ...prev, cat: "1" })); // Sunglass
+    } else {
+      setCatInputError(true);
+      toast.error("Please enter 'F' for Frame or 'S' for Sunglass only.");
+    }
+  };
 
 
   // On input change
@@ -545,29 +546,29 @@ const handleCatInputChange = (value) => {
     typesSearchTerm.trim() === ""
       ? rimOptions
       : rimOptions.filter((type) =>
-          type.Name.toLowerCase().includes(typesSearchTerm.toLowerCase())
-        );
+        type.Name.toLowerCase().includes(typesSearchTerm.toLowerCase())
+      );
 
   const filteredCategories =
     categorySearchTerm.trim() === ""
       ? categoryOptions
       : categoryOptions.filter((category) =>
-          category.Name.toLowerCase().includes(categorySearchTerm.toLowerCase())
-        );
+        category.Name.toLowerCase().includes(categorySearchTerm.toLowerCase())
+      );
 
   const filteredOthers =
     othersSearchTerm.trim() === ""
       ? othersOptions
       : othersOptions.filter((other) =>
-          other.Name.toLowerCase().includes(othersSearchTerm.toLowerCase())
-        );
+        other.Name.toLowerCase().includes(othersSearchTerm.toLowerCase())
+      );
 
   const filteredSizes =
     sizeSearchTerm.trim() === ""
       ? allSizes?.data
       : allSizes?.data?.filter((size) =>
-          size.Size.toLowerCase().includes(sizeSearchTerm.toLowerCase())
-        ) || [];
+        size.Size.toLowerCase().includes(sizeSearchTerm.toLowerCase())
+      ) || [];
 
   const filteredBrands =
     allBrands?.filter(
@@ -582,14 +583,14 @@ const handleCatInputChange = (value) => {
   const filteredBrandGroups =
     brandGroupSearchTerm.trim() === ""
       ? (allBrandGroups?.data || []).filter((bg) =>
-          validBrandGroupIds.has(bg.Id)
-        )
+        validBrandGroupIds.has(bg.Id)
+      )
       : (allBrandGroups?.data || []).filter(
-          (brandGroup) =>
-            brandGroup.BrandGroupName.toLowerCase().includes(
-              brandGroupSearchTerm.toLowerCase()
-            ) && validBrandGroupIds.has(brandGroup.Id)
-        );
+        (brandGroup) =>
+          brandGroup.BrandGroupName.toLowerCase().includes(
+            brandGroupSearchTerm.toLowerCase()
+          ) && validBrandGroupIds.has(brandGroup.Id)
+      );
 
   const handleRefresh = async () => {
     // Reset dropdown selections
@@ -706,9 +707,8 @@ const handleCatInputChange = (value) => {
       case "colour code":
         return item.ColourCode || "";
       case "size-dbl-length":
-        return `${item.Size || ""}-${item.DBL || ""}-${
-          item.TempleLength || ""
-        }`;
+        return `${item.Size || ""}-${item.DBL || ""}-${item.TempleLength || ""
+          }`;
       case "barcode":
         return item.Barcode || "";
       case "frame colour":
@@ -743,52 +743,59 @@ const handleCatInputChange = (value) => {
     setPageSize(newSize);
     // page will be reset by the effect above
   };
-const renderHeader = (column) => (
-  <div className="flex flex-col">
-    {toTitleCase(column)}
-    {column !== "s.no" &&
-      column !== "others" &&
-      column !== "mrp" &&
-      column !== "stock" &&
-      column !== "size-dbl-length" &&
-      column !== "action" && (
-        <div className="relative mt-1">
-          <input
-            type="text"
-            placeholder={`Search ${toTitleCase(column)}...`}
-            className={`w-full pl-2 pr-2 py-1 text-sm border rounded-md focus:outline-none focus:ring-1 ${
-              catInputError && column === "cat"
+  const renderHeader = (column) => (
+    <div className="flex flex-col">
+      {toTitleCase(column)}
+      {column !== "s.no" &&
+        column !== "others" &&
+        column !== "mrp" &&
+        column !== "stock" &&
+        column !== "size-dbl-length" &&
+        column !== "action" && (
+          <div className="relative mt-1">
+            <input
+              type="text"
+              placeholder={`Search ${toTitleCase(column)}...`}
+              className={`w-full pl-2 pr-2 py-1 text-sm border rounded-md focus:outline-none focus:ring-1 ${catInputError && column === "cat"
                 ? "border-red-500 focus:ring-red-500"
                 : "border-gray-300 focus:ring-blue-500"
-            }`}
-            value={columnInput[column]}
-            onChange={(e) => {
-              if (column === "cat") handleCatInputChange(e.target.value);
-              else handleColumnInputChange(column, e.target.value);
-            }}
-          />
-        </div>
-      )}
-  </div>
-);
+                }`}
+              value={columnInput[column]}
+              onChange={(e) => {
+                if (column === "cat") handleCatInputChange(e.target.value);
+                else handleColumnInputChange(column, e.target.value);
+              }}
+            />
+          </div>
+        )}
+    </div>
+  );
 
 
   return (
     <div className="max-w-8xl">
       <div className="bg-white rounded-xl shadow-sm p-6">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center ">
           <h2 className="text-2xl font-semibold text-gray-800">
             Frame Stock Search
           </h2>
           <div className="flex flex-col gap-3">
             <div className="flex gap-3 items-center">
-              <Button variant="outline" className="flex items-center gap-2">
+              {/* <Button variant="outline" className="flex items-center gap-2">
                 <FiChevronDown className="transform rotate-90" />
                 Back
+              </Button> */}
+              <Button
+                onClick={handleRefresh}
+                variant="outline"
+              >
+                <RefreshCcw className={isLoading ? "animate-spin" : ""} />
+
+                Refresh
               </Button>
-              <Button onClick={handleRefresh}>Refresh</Button>
             </div>
+
             <div className="">
               {Array.isArray(hasMultipleLocations) &&
                 hasMultipleLocations.length > 1 && (
@@ -829,6 +836,10 @@ const renderHeader = (column) => (
           </div>
         </div>
 
+        <div className="flex justify-end mb-6">
+          <p className="italic text-sm text-red-300"> Please Refresh to get the latest stock data!</p>
+        </div>
+
         {/* Filters Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {/* Brand Selector */}
@@ -865,19 +876,17 @@ const renderHeader = (column) => (
                       {filteredBrands.map((brand) => (
                         <div
                           key={brand.Id}
-                          className={`flex items-center p-2 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors ${
-                            tempBrands.some((b) => b.Id === brand.Id)
-                              ? "bg-blue-50"
-                              : ""
-                          }`}
+                          className={`flex items-center p-2 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors ${tempBrands.some((b) => b.Id === brand.Id)
+                            ? "bg-blue-50"
+                            : ""
+                            }`}
                           onClick={() => toggleTempBrand(brand)}
                         >
                           <div
-                            className={`w-5 h-5 rounded border flex items-center justify-center mr-2 ${
-                              tempBrands.some((b) => b.Id === brand.Id)
-                                ? "bg-blue-600 border-blue-600"
-                                : "border-gray-300"
-                            }`}
+                            className={`w-5 h-5 rounded border flex items-center justify-center mr-2 ${tempBrands.some((b) => b.Id === brand.Id)
+                              ? "bg-blue-600 border-blue-600"
+                              : "border-gray-300"
+                              }`}
                           >
                             {tempBrands.some((b) => b.Id === brand.Id) && (
                               <FiCheck className="text-white text-sm" />
@@ -948,23 +957,21 @@ const renderHeader = (column) => (
                       {filteredBrandGroups.map((brandGroup) => (
                         <div
                           key={brandGroup.Id}
-                          className={`flex items-center p-2 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors ${
-                            tempBrandGroups.some(
-                              (bg) => bg.Id === brandGroup.Id
-                            )
-                              ? "bg-blue-50"
-                              : ""
-                          }`}
+                          className={`flex items-center p-2 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors ${tempBrandGroups.some(
+                            (bg) => bg.Id === brandGroup.Id
+                          )
+                            ? "bg-blue-50"
+                            : ""
+                            }`}
                           onClick={() => toggleTempBrandGroup(brandGroup)}
                         >
                           <div
-                            className={`w-5 h-5 rounded border flex items-center justify-center mr-2 ${
-                              tempBrandGroups.some(
-                                (bg) => bg.Id === brandGroup.Id
-                              )
-                                ? "bg-blue-600 border-blue-600"
-                                : "border-gray-300"
-                            }`}
+                            className={`w-5 h-5 rounded border flex items-center justify-center mr-2 ${tempBrandGroups.some(
+                              (bg) => bg.Id === brandGroup.Id
+                            )
+                              ? "bg-blue-600 border-blue-600"
+                              : "border-gray-300"
+                              }`}
                           >
                             {tempBrandGroups.some(
                               (bg) => bg.Id === brandGroup.Id
@@ -1034,19 +1041,17 @@ const renderHeader = (column) => (
                       {filteredTypes.map((type) => (
                         <div
                           key={type.Id}
-                          className={`flex items-center p-2 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors ${
-                            tempTypes.some((t) => t.Id === type.Id)
-                              ? "bg-blue-50"
-                              : ""
-                          }`}
+                          className={`flex items-center p-2 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors ${tempTypes.some((t) => t.Id === type.Id)
+                            ? "bg-blue-50"
+                            : ""
+                            }`}
                           onClick={() => toggleTempType(type)}
                         >
                           <div
-                            className={`w-5 h-5 rounded border flex items-center justify-center mr-2 ${
-                              tempTypes.some((t) => t.Id === type.Id)
-                                ? "bg-blue-600 border-blue-600"
-                                : "border-gray-300"
-                            }`}
+                            className={`w-5 h-5 rounded border flex items-center justify-center mr-2 ${tempTypes.some((t) => t.Id === type.Id)
+                              ? "bg-blue-600 border-blue-600"
+                              : "border-gray-300"
+                              }`}
                           >
                             {tempTypes.some((t) => t.Id === type.Id) && (
                               <FiCheck className="text-white text-sm" />
@@ -1116,19 +1121,17 @@ const renderHeader = (column) => (
                       {filteredCategories.map((category) => (
                         <div
                           key={category.Id}
-                          className={`flex items-center p-2 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors ${
-                            tempCategories.some((c) => c.Id === category.Id)
-                              ? "bg-blue-50"
-                              : ""
-                          }`}
+                          className={`flex items-center p-2 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors ${tempCategories.some((c) => c.Id === category.Id)
+                            ? "bg-blue-50"
+                            : ""
+                            }`}
                           onClick={() => toggleTempCategory(category)}
                         >
                           <div
-                            className={`w-5 h-5 rounded border flex items-center justify-center mr-2 ${
-                              tempCategories.some((c) => c.Id === category.Id)
-                                ? "bg-blue-600 border-blue-600"
-                                : "border-gray-300"
-                            }`}
+                            className={`w-5 h-5 rounded border flex items-center justify-center mr-2 ${tempCategories.some((c) => c.Id === category.Id)
+                              ? "bg-blue-600 border-blue-600"
+                              : "border-gray-300"
+                              }`}
                           >
                             {tempCategories.some(
                               (c) => c.Id === category.Id
@@ -1198,19 +1201,17 @@ const renderHeader = (column) => (
                       {filteredOthers.map((other) => (
                         <div
                           key={other.Id}
-                          className={`flex items-center p-2 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors ${
-                            tempOthers.some((o) => o.Id === other.Id)
-                              ? "bg-blue-50"
-                              : ""
-                          }`}
+                          className={`flex items-center p-2 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors ${tempOthers.some((o) => o.Id === other.Id)
+                            ? "bg-blue-50"
+                            : ""
+                            }`}
                           onClick={() => toggleTempOthers(other)}
                         >
                           <div
-                            className={`w-5 h-5 rounded border flex items-center justify-center mr-2 ${
-                              tempOthers.some((o) => o.Id === other.Id)
-                                ? "bg-blue-600 border-blue-600"
-                                : "border-gray-300"
-                            }`}
+                            className={`w-5 h-5 rounded border flex items-center justify-center mr-2 ${tempOthers.some((o) => o.Id === other.Id)
+                              ? "bg-blue-600 border-blue-600"
+                              : "border-gray-300"
+                              }`}
                           >
                             {tempOthers.some((o) => o.Id === other.Id) && (
                               <FiCheck className="text-white text-sm" />
@@ -1280,19 +1281,17 @@ const renderHeader = (column) => (
                       {filteredSizes.map((size) => (
                         <div
                           key={size.Id}
-                          className={`flex items-center p-2 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors ${
-                            tempSizes.some((s) => s.Id === size.Id)
-                              ? "bg-blue-50"
-                              : ""
-                          }`}
+                          className={`flex items-center p-2 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors ${tempSizes.some((s) => s.Id === size.Id)
+                            ? "bg-blue-50"
+                            : ""
+                            }`}
                           onClick={() => toggleTempSize(size)}
                         >
                           <div
-                            className={`w-5 h-5 rounded border flex items-center justify-center mr-2 ${
-                              tempSizes.some((s) => s.Id === size.Id)
-                                ? "bg-blue-600 border-blue-600"
-                                : "border-gray-300"
-                            }`}
+                            className={`w-5 h-5 rounded border flex items-center justify-center mr-2 ${tempSizes.some((s) => s.Id === size.Id)
+                              ? "bg-blue-600 border-blue-600"
+                              : "border-gray-300"
+                              }`}
                           >
                             {tempSizes.some((s) => s.Id === size.Id) && (
                               <FiCheck className="text-white text-sm" />

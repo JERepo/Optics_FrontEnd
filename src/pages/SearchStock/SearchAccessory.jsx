@@ -202,18 +202,18 @@ const SearchAccessory = () => {
   }, [selectedLocation, fetchAccessories, columnSearchTerms, itemsPerPage]);
 
   // Initial load
-  useEffect(() => {
-    const syncAcc = async () => {
-      try {
-        await triggerSync();
-      } catch (error) {
-        console.error("Error syncing Acc:", error);
-      }
-    };
-    syncAcc();
+  // useEffect(() => {
+  //   const syncAcc = async () => {
+  //     try {
+  //       await triggerSync();
+  //     } catch (error) {
+  //       console.error("Error syncing Acc:", error);
+  //     }
+  //   };
+  //   syncAcc();
 
-    fetchAccessories(columnSearchTerms, 1, itemsPerPage);
-  }, []); // Empty dependency array - only run once on mount
+  //   fetchAccessories(columnSearchTerms, 1, itemsPerPage);
+  // }, []); // Empty dependency array - only run once on mount
 
   // Fetch data when page changes (but not on initial mount)
   useEffect(() => {
@@ -361,6 +361,9 @@ const SearchAccessory = () => {
               Refresh
             </Button>
           </div>
+        </div>
+        <div className="flex justify-end">
+          <p className="italic text-sm text-red-300"> Please Refresh to get the latest stock data!</p>
         </div>
         <p className="text-gray-600 text-sm mt-2">
           Search results: {totalItems} items found

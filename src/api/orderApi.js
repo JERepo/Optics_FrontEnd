@@ -528,12 +528,20 @@ export const orderApi = createApi({
       })
     }),
 
-    updateOLOrderData: builder.query({
-      query: (OrderDetailsId, formData) => ({
-        url: `/api/v1/order/update/orderdetails-info?OrderDetailsId=${OrderDetailsId}`,
-        method: 'POST',
-        body: formData,
-      })
+    updateOLOrderData: builder.mutation({
+      query: (payload) => {
+        const { orderDetailId, ...updateData } = payload; // Separate orderDetailId from update data
+
+        console.log('🔄 Sending update request:');
+        console.log('OrderDetailId:', orderDetailId);
+        console.log('Update data:', updateData);
+
+        return {
+          url: `/api/v1/order/updateorderdetails-info?OrderDetailsId=${orderDetailId}`,
+          method: 'PUT',
+          body: updateData, // Send ONLY the update fields, not the ID
+        }
+      }
     })
   }),
 });
@@ -619,5 +627,6 @@ export const {
   useGetOrderDetailsByIdMutation,
   useGetOrderDetailsAllMutation,
   useGetOrderddMutation,
-  useLazyGetOLOrderDataQuery
+  useLazyGetOLOrderDataQuery,
+  useUpdateOLOrderDataMutation
 } = orderApi;
