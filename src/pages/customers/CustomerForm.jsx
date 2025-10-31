@@ -44,6 +44,12 @@ const CustomerForm = ({
       }));
     }
   }, [formData.GSTNumber, setFormData]);
+  useEffect(() => {
+     setFormData((prev) => ({
+        ...prev,
+        GSTINType: 1,
+      }));
+  },[formData.customerType])
 
   // Validation functions
   const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);

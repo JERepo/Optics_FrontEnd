@@ -186,7 +186,7 @@ const EmailTemplates = () => {
         EmailSubject: subject,
         Status: 1,
         IsActive: 1,
-        IncludeAttachment: includeAttachment,
+        EmailAttachment: includeAttachment ? 1 :0,
         WATemplate :templateData?.data[0]?.WATemplate,
         WAAttachment:templateData?.data[0]?.WAAttachment,
         WAGroupTemplate:templateData?.data[0]?.WAGroupTemplate,

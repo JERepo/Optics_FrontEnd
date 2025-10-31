@@ -100,7 +100,7 @@ const AdminSidebar = ({ isCollapsed, setIsCollapsed }) => {
           >
             <div className="w-10 h-10 bg-blue-100 flex justify-center items-center rounded-lg text-blue-600">
               {/* <FiLayers className="text-lg" /> */}
-              <img src={luxonyxlogo} className="rounded-lg" alt="Luxonyx" title="Luxonyx" />
+              <img src={optics} className="rounded-lg" alt="Luxonyx" title="Luxonyx" />
             </div>
             {!isCollapsed && (
               <div>

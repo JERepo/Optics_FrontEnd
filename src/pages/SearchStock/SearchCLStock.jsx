@@ -13,7 +13,16 @@ import { useSelector } from "react-redux";
 import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
 import Modal from "../../components/ui/Modal";
 import { useLazyGetStockHistoryQuery } from "../../api/vendorPayment";
-import { FiActivity } from "react-icons/fi";
+import { FiActivity, FiEye } from "react-icons/fi";
+import { useLazyGetClOtherLocationStockQuery } from "../../api/contactlensMaster";
+
+const formatPower = (value) => {
+  if (value === null || value === undefined || value === "") return "N/A";
+  const num = parseFloat(value);
+  if (isNaN(num)) return value;
+  return num > 0 ? `+${num}` : num.toString();
+};
+
 
 const toTitleCase = (str) =>
   str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
@@ -242,8 +251,12 @@ const SearchContactLens = () => {
   };
   const [stockOpen, setStockOpen] = useState(false);
   const [getStockHistory, { data: stockData }] = useLazyGetStockHistoryQuery();
+    const [getOtherLocationStock, { data: otherStockData }] =
+      useLazyGetClOtherLocationStockQuery();
   const [stockId, setstockId] = useState(null);
   const [printId, setprintId] = useState(null);
+  const [otherstockId, othersetstockId] = useState(null);
+  const [otherStockOpen, setOtherStockOpen] = useState(false);
   const handleStockHistory = async (id) => {
     setstockId(id);
     try {
@@ -260,6 +273,29 @@ const SearchContactLens = () => {
       console.log(error);
       setstockId(null);
       setStockOpen(false);
+    }
+  };
+  const handleOtherStockHistory = async (item) => {
+    othersetstockId(item.DetailId);
+    try {
+      const res = await getOtherLocationStock({
+        companyId: selectedLocation
+          ? selectedLocation
+          : parseInt(hasMultipleLocations[0]),
+        // companyId : 1,
+        detailId: item.DetailId,
+        batchcode :item.CLBatchCode
+      }).unwrap();
+      if (!res?.data?.length) {
+        toast.error("View access to other locations stock is not allowed");
+        return;
+      }
+      setOtherStockOpen(true);
+      othersetstockId(null);
+    } catch (error) {
+      console.log(error);
+      othersetstockId(null);
+      setOtherStockOpen(false);
     }
   };
 
@@ -302,7 +338,7 @@ const SearchContactLens = () => {
         "Expiry Date",
         "MRP",
         "Stock",
-        // "action",
+        "action",
       ];
     } else {
       return [
@@ -356,7 +392,17 @@ const SearchContactLens = () => {
           <TableCell>
             {item.Quantity !== undefined ? item.Quantity : 0}
           </TableCell>
-          
+          <TableCell>
+            <Button
+              icon={FiEye}
+              size="xs"
+              variant="outline"
+              title="View Frame"
+              onClick={() => handleOtherStockHistory(item)}
+              isLoading={otherstockId === item.DetailId}
+              loadingText=""
+            ></Button>
+          </TableCell>
         </TableRow>
       );
     } else {
@@ -580,6 +626,57 @@ const SearchContactLens = () => {
                 );
               }}
             />
+          </div>
+        </Modal>
+        <Modal
+          isOpen={otherStockOpen}
+          onClose={() => setOtherStockOpen(false)}
+          width="max-w-3xl"
+        >
+          <div className="my-5 mx-3">
+            <div className="my-5 text-lg text-neutral-800 font-semibold">
+              Other Location Contact Lens Stock List
+            </div>
+
+            <Table
+              expand={true}
+              freeze={true}
+              columns={["S.No", "Location Name", "Stock"]}
+              data={otherStockData?.data || []}
+              renderRow={(item, index) => (
+                <TableRow key={item.locationId}>
+                  <TableCell>{index + 1}</TableCell>
+                  <TableCell>{item.locationName}</TableCell>
+                  <TableCell>{item.stock?.LocationQuantity ?? 0}</TableCell>
+                </TableRow>
+              )}
+            />
+
+            {otherStockData?.data?.[0]?.stock && (
+  <div className="mt-6 p-4 border rounded-2xl bg-gray-50">
+    <div className="text-lg font-semibold mb-3 text-neutral-700">
+      Contact Lens Details
+    </div>
+    <div className="grid grid-cols-2 gap-3 text-sm text-gray-700">
+      <p><span className="font-medium">Brand:</span> {otherStockData?.data?.[0]?.stock.BrandName}</p>
+      <p><span className="font-medium">Product Name:</span> {otherStockData?.data?.[0]?.stock.ProductName}</p>
+      <p><span className="font-medium">Product Code:</span> {otherStockData?.data?.[0]?.stock.ProductCode}</p>
+      <p><span className="font-medium">SKU Code:</span> {otherStockData?.data?.[0]?.stock.SKUCode}</p>
+      <p><span className="font-medium">Barcode:</span> {otherStockData?.data?.[0]?.stock.Barcode}</p>
+      <p><span className="font-medium">Batch Code:</span> {otherStockData?.data?.[0]?.stock.CLBatchCode}</p>
+      <p><span className="font-medium">Expiry:</span> {otherStockData?.data?.[0]?.stock.CLBatchExpiry}</p>
+      <p><span className="font-medium">MRP:</span> ₹{otherStockData?.data?.[0]?.stock.CLMRP}</p>
+     <p><span className="font-medium">Spherical Power:</span> {formatPower(otherStockData?.data?.[0]?.stock.SphericalPower)}</p>
+<p><span className="font-medium">Cylindrical Power:</span> {formatPower(otherStockData?.data?.[0]?.stock.CylindricalPower)}</p>
+
+      <p><span className="font-medium">Axis:</span> {otherStockData?.data?.[0]?.stock.Axis || "N/A"}</p>
+      <p><span className="font-medium">Additional:</span> {otherStockData?.data?.[0]?.stock.Additional || "N/A"}</p>
+      <p><span className="font-medium">HSN:</span> {otherStockData?.data?.[0]?.stock.HSN}</p>
+     
+    </div>
+  </div>
+)}
+
           </div>
         </Modal>
       </div>

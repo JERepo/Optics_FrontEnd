@@ -9,8 +9,12 @@ import { useSelector } from "react-redux";
 import { useGetAllLocationsQuery } from "../../api/roleManagementApi";
 import Modal from "../../components/ui/Modal";
 import { useLazyGetStockHistoryQuery } from "../../api/vendorPayment";
-import { FiActivity, FiTag } from "react-icons/fi";
-import { useLazyPrintLabelsAccQuery, useLazyPrintLabelsQuery } from "../../api/reportApi";
+import { FiActivity, FiEye, FiTag } from "react-icons/fi";
+import {
+  useLazyPrintLabelsAccQuery,
+  useLazyPrintLabelsQuery,
+} from "../../api/reportApi";
+import { useLazyGetAccOtherLocationStockQuery } from "../../api/accessoriesMaster";
 
 const toTitleCase = (str) =>
   str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
@@ -90,8 +94,12 @@ const SearchAccessory = () => {
   const [getlabels, { isFetching: isLabelsFetching }] =
     useLazyPrintLabelsAccQuery();
   const [getStockHistory, { data: stockData }] = useLazyGetStockHistoryQuery();
+    const [getOtherLocationStock, { data: otherStockData }] =
+      useLazyGetAccOtherLocationStockQuery();
   const [stockId, setstockId] = useState(null);
   const [printId, setprintId] = useState(null);
+    const [otherstockId, othersetstockId] = useState(null);
+    const [otherStockOpen, setOtherStockOpen] = useState(false);
 
   const handleLabels = async (detailId) => {
     setprintId(detailId);
@@ -138,6 +146,28 @@ const SearchAccessory = () => {
       setStockOpen(false);
     }
   };
+    const handleOtherStockHistory = async (id) => {
+      othersetstockId(id);
+      try {
+        const res = await getOtherLocationStock({
+          companyId: selectedLocation
+            ? selectedLocation
+            : parseInt(hasMultipleLocations[0]),
+          // companyId : 1,
+          detailId: id,
+        }).unwrap();
+        if (!res?.data?.length) {
+          toast.error("View access to other locations stock is not allowed");
+          return;
+        }
+        setOtherStockOpen(true);
+        othersetstockId(null);
+      } catch (error) {
+        console.log(error);
+        othersetstockId(null);
+        setOtherStockOpen(false);
+      }
+    };
 
   // Auto select location if it has only 1.
   useEffect(() => {
@@ -414,6 +444,15 @@ const SearchAccessory = () => {
 
               <TableCell className="flex gap-2 ">
                 <Button
+                  icon={FiEye}
+                  size="xs"
+                  variant="outline"
+                  title="View Frame"
+                  onClick={() => handleOtherStockHistory(item.DetailId)}
+                  isLoading={otherstockId === item.DetailId}
+                  loadingText=""
+                ></Button>
+                <Button
                   size="xs"
                   variant="outline"
                   title="Barcode Label Printing"
@@ -487,6 +526,54 @@ const SearchAccessory = () => {
               );
             }}
           />
+        </div>
+      </Modal>
+       <Modal
+        isOpen={otherStockOpen}
+        onClose={() => setOtherStockOpen(false)}
+        width="max-w-3xl"
+      >
+        <div className="my-5 mx-3">
+          <div className="my-5 text-lg text-neutral-800 font-semibold">
+           Other Location Accessory Stock List
+          </div>
+      
+          <Table
+            expand={true}
+            freeze={true}
+            columns={["S.No", "Location Name", "Stock"]}
+            data={otherStockData?.data || []}
+            renderRow={(item, index) => (
+              <TableRow key={item.locationId}>
+                <TableCell>{index + 1}</TableCell>
+                <TableCell>{item.locationName}</TableCell>
+                <TableCell>
+                  {item.stock?.LocationQuantity ?? 0}
+                </TableCell>
+              </TableRow>
+            )}
+          />
+       {otherStockData?.data?.[0]?.stock && (
+      <div className="mt-6 p-4 border rounded-2xl bg-gray-50">
+        <div className="text-lg font-semibold mb-3 text-neutral-700">
+          Accessory Details
+        </div>
+        <div className="grid grid-cols-2 gap-3 text-sm text-gray-700">
+          <p><span className="font-medium">Brand:</span> {otherStockData.data[0].stock.BrandName}</p>
+          <p><span className="font-medium">Product Name:</span> {otherStockData.data[0].stock.ProductName}</p>
+          <p><span className="font-medium">Product Code:</span> {otherStockData.data[0].stock.ProductCode}</p>
+          <p><span className="font-medium">Variation:</span> {otherStockData.data[0].stock.VariationName}</p>
+          <p><span className="font-medium">SKU Code:</span> {otherStockData.data[0].stock.SKUCode}</p>
+          <p><span className="font-medium">Barcode:</span> {otherStockData.data[0].stock.Barcode}</p>
+          <p><span className="font-medium">HSN:</span> {otherStockData.data[0].stock.HSN}</p>
+          <p><span className="font-medium">Type:</span> 
+            {otherStockData.data[0].stock.OtherProductType === 0 ? "Accessory" : "Other"}
+          </p>
+
+        </div>
+      </div>
+    )}
+          
         </div>
       </Modal>
     </motion.div>
