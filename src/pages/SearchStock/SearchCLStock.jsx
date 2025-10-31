@@ -40,10 +40,9 @@ const buildQueryParams = ({
   requiredRow,
 }) => {
   const add = (key, value) =>
-    `${key}=${
-      value !== undefined && value !== null && value !== ""
-        ? encodeURIComponent(value)
-        : ""
+    `${key}=${value !== undefined && value !== null && value !== ""
+      ? encodeURIComponent(value)
+      : ""
     }`;
 
   const params = [
@@ -153,7 +152,7 @@ const SearchContactLens = () => {
         }
       } catch (err) {
         console.error("Error fetching data:", err);
-        toast.error(err?.data?.error || err?.message || "Failed to fetch data");
+        // toast.error(err?.data?.error || err?.message || "Failed to fetch data");
         setSearchData([]);
         setTotalItems(0);
       } finally {
@@ -178,6 +177,17 @@ const SearchContactLens = () => {
       fetchData(columnSearchTerms, activeTab, 1, itemsPerPage);
     }
   }, [selectedLocation]);
+
+  useEffect(() => {
+    const syncCL = async () => {
+      try {
+        await triggerClSync();
+      } catch (error) {
+        console.error("Error syncing CL:", error);
+      }
+    };
+    syncCL();
+  }, []);
 
   // Fetch data when page changes (but not on mount)
   useEffect(() => {
@@ -356,7 +366,7 @@ const SearchContactLens = () => {
           <TableCell>
             {item.Quantity !== undefined ? item.Quantity : 0}
           </TableCell>
-          
+
         </TableRow>
       );
     } else {
@@ -458,11 +468,10 @@ const SearchContactLens = () => {
             disabled={isLoading}
             className={`
             relative px-6 py-3 font-medium text-sm transition-all duration-200
-            ${
-              activeTab === "all"
+            ${activeTab === "all"
                 ? "text-blue-600 border-t-2 border-l border-r border-blue-600 rounded-t-lg -mb-px bg-blue-200"
                 : "text-gray-600 hover:text-gray-800 hover:bg-gray-50 border-b border-transparent rounded-t-lg bg-blue-100"
-            }
+              }
             disabled:opacity-50 disabled:cursor-not-allowed
         `}
           >
@@ -492,11 +501,10 @@ const SearchContactLens = () => {
             disabled={isLoading}
             className={`
             relative px-6 py-3 font-medium text-sm transition-all duration-200
-            ${
-              activeTab === "barcode"
+            ${activeTab === "barcode"
                 ? "text-blue-600 border-t-2 border-l border-r border-blue-600 rounded-t-lg -mb-px bg-blue-200"
                 : "text-gray-600 hover:text-gray-800 hover:bg-gray-50 border-b border-transparent rounded-t-lg bg-blue-100"
-            }
+              }
             disabled:opacity-50 disabled:cursor-not-allowed
         `}
           >

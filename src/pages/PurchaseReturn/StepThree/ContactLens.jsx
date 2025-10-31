@@ -681,7 +681,7 @@ const ContactLens = () => {
       }
     } catch (error) {
       console.log(error);
-      toast.error(error?.data.error);
+      toast.error(error?.data.message || "Error fetching product");
     }
   };
   const handleSaveBatchData = async () => {

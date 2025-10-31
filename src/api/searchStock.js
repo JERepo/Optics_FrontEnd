@@ -36,6 +36,12 @@ export const searchStock = createApi({
       query : () => ({
         url :`/api/v1/frame-main/elastic`
       })
+    }),
+
+    syncAcc: builder.query({
+      query: () => ({
+        url: `/api/v1/other-products/sync/stocks`,
+      })
     })
   }),
 });
@@ -46,5 +52,6 @@ export const {
   useLazyGetCLStockQuery,
   useLazyGetAllCLStockQuery,
   useLazySyncClQuery,
-  useLazyGetFreshDataQuery
+  useLazyGetFreshDataQuery,
+  useLazySyncAccQuery
 } = searchStock;

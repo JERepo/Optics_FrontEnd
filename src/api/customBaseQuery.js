@@ -3,7 +3,7 @@ import { logout, setCredentials } from "../features/auth/authSlice";
 
 // prepare headers for authorization
 const baseQuery = fetchBaseQuery({
-  baseUrl:
+  baseUrl: 
     import.meta.env.MODE === "development"
       ? import.meta.env.VITE_LOCAL
       : // : "http://uat.opticstest.in",
