@@ -34,10 +34,10 @@ export const accessoriesMaster = createApi({
       query: ({ id }) => ({
         url: `/api/v1/other-products/getbyid/${id}`,
       }),
-      providesTags : ["Accessory"]
+      providesTags: ["Accessory"],
     }),
     updateMaster: builder.mutation({
-      query: ({ id,appId, payload }) => ({
+      query: ({ id, appId, payload }) => ({
         url: `/api/v1/other-products/update/${id}?ApplicationUserId=${appId}`,
         method: "PUT",
         body: payload,
@@ -60,6 +60,11 @@ export const accessoriesMaster = createApi({
       }),
       invalidatesTags: ["Accessory"],
     }),
+    getAccOtherLocationStock: builder.query({
+      query: ({ companyId, detailId }) => ({
+        url: `/api/v1/other-products/otherlocationsAccStock/${companyId}/${detailId}`,
+      }),
+    }),
   }),
 });
 
@@ -72,4 +77,5 @@ export const {
   useUpdateMasterMutation,
   useDeActivateMutation,
   useDeActivateMainMutation,
+  useLazyGetAccOtherLocationStockQuery
 } = accessoriesMaster;

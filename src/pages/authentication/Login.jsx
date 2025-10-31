@@ -78,7 +78,7 @@ const Login = () => {
         <div className="flex justify-center mb-6">
           <div className="bg-gradient-to-br from-primary/10 to-blue-100 p-4 rounded-2xl shadow-sm border border-primary/20">
             <img
-              src={luxonyxlogo}
+              src={optics}
               alt="Luxonyxlogo"
               className="h-35 w-64 mx-auto object-cover rounded-lg"
               

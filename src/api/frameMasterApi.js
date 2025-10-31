@@ -55,6 +55,11 @@ export const frameMasterApi = createApi({
       query : () => ({
         url : `/api/v1/frame-main/getSizes`,
       })
+    }),
+     getFrameOtherLocationStock : builder.query({
+      query : ({companyId,detailId}) => ({
+        url : `/api/v1/frame-main/otherlocationstock/${companyId}/${detailId}`
+      })
     })
   }),
 });
@@ -66,5 +71,6 @@ export const {
   useGetFrameMasterByIdQuery,
   useUpdateFramemasterMutation,
   useGetFrameSizesQuery,
-  useDeActivateDetailMutation
+  useDeActivateDetailMutation,
+  useLazyGetFrameOtherLocationStockQuery
 } = frameMasterApi;

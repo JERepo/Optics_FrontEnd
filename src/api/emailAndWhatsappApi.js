@@ -10,6 +10,7 @@ export const emailAndWhatsaApp = createApi({
       query: ({ type }) => ({
         url: `/api/v1/communication/params?moduleType=${type}`,
       }),
+      providesTags: ["Email"],
     }),
 
     createEmail: builder.mutation({
@@ -24,6 +25,7 @@ export const emailAndWhatsaApp = createApi({
       query: ({ module, companyId }) => ({
         url: `/api/v1/communication/all?moduleType=${module}&companyId=${companyId}`,
       }),
+      providesTags: ["Email"],
     }),
     updateEmail: builder.mutation({
       query: ({ payload }) => ({

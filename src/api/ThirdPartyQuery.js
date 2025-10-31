@@ -3,13 +3,8 @@ import { logout, setCredentials } from "../features/auth/authSlice";
 
 // prepare headers for authorization
 const baseQuery = fetchBaseQuery({
-  baseUrl: 
-    import.meta.env.MODE === "development"
-      // ? import.meta.env.VITE_LOCAL
-      ? "https://yourposbuddy.in"
-      : // : "http://uat.opticstest.in",
-        // : "https://site62300-r9514o.scloudsite101.com",
-        "https://erp.luxonyx.co.in",
+  baseUrl:import.meta.env.VITE_OPTICS,
+
   credentials: "include",
   prepareHeaders: (headers, { getState, endpoint }) => {
     const token = getState().auth.token;

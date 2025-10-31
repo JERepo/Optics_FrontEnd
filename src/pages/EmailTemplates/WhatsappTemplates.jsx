@@ -64,7 +64,7 @@ const WhatsappTemplates = () => {
     ],
     content:
       templateData?.data?.WATemplate ||
-      "<p>Start composing your email template...</p>",
+      "<p>Start composing your whatsapp template...</p>",
     onFocus: () => setActiveField("editor"),
     onUpdate: ({ editor }) => {
       setEditorCharCount(editor.getText().length);
@@ -177,7 +177,7 @@ const WhatsappTemplates = () => {
         WATemplate: editor.getHTML(),
         Status: 1,
         IsActive: 1,
-        WAAttachment: includeAttachment,
+        WAAttachment: includeAttachment ?  1: 0,
         EmailTemplate :templateData?.data[0]?.EmailTemplate,
         EmailSubject:templateData?.data[0]?.EmailSubject,
         EmailAttachment:templateData?.data[0]?.EmailAttachment

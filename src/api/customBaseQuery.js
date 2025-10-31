@@ -6,9 +6,7 @@ const baseQuery = fetchBaseQuery({
   baseUrl: 
     import.meta.env.MODE === "development"
       ? import.meta.env.VITE_LOCAL
-      : // : "http://uat.opticstest.in",
-      // : "https://site62300-r9514o.scloudsite101.com",
-      "https://yourposbuddy.in",
+      :import.meta.env.VITE_OPTICS,
   credentials: "include",
   prepareHeaders: (headers, { getState, endpoint }) => {
     const token = getState().auth.token;

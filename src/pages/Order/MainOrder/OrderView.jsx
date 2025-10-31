@@ -797,7 +797,7 @@ const OrderView = ({ isFamily = false, orderFamilyId }) => {
               )}
 
             {!isFamily && (
-              <Button variant="outline" onClick={() => navigate("/order-list")}>
+              <Button variant="outline" onClick={() => navigate("/order")}>
                 Back
               </Button>
             )}
