@@ -1318,7 +1318,7 @@ const OrderView = ({ isFamily = false, orderFamilyId }) => {
                           <CentrationData formData={formData} handleInputChange={handleInputChange} handleDateChange={handleDateChange} />
                           <ThicknessOptions formData={formData} handleInputChange={handleInputChange} handleDateChange={handleDateChange} />
                           <FrameData formData={formData} handleInputChange={handleInputChange} handleDateChange={handleDateChange} />
-                          <PowerSpecs formData={formData} handleInputChange={handleInputChange} handleDateChange={handleDateChange} />
+                          {/* <PowerSpecs formData={formData} handleInputChange={handleInputChange} handleDateChange={handleDateChange} /> */}
                         </>
                       );
                     })()}
@@ -1455,7 +1455,7 @@ const CentrationData = ({ formData, handleInputChange }) => (
           <EditableInputField
             label="Viewing Height"
             name="RVH"
-            value={formData.RVH}
+            value={parseFloat(formData.RVH).toFixed(2)}
             onChange={handleInputChange}
           />
           <EditableInputField
@@ -1481,7 +1481,7 @@ const CentrationData = ({ formData, handleInputChange }) => (
           <EditableInputField
             label="Viewing Height"
             name="LVH"
-            value={formData.LVH}
+            value={parseFloat(formData.LVH).toFixed(2)}
             onChange={handleInputChange}
           />
           <EditableInputField
