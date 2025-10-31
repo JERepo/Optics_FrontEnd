@@ -16,11 +16,10 @@ import { useLazyGetStockHistoryQuery } from "../../api/vendorPayment";
 import { FiActivity, FiEye } from "react-icons/fi";
 import { useLazyGetClOtherLocationStockQuery } from "../../api/contactlensMaster";
 
-const formatPower = (value) => {
-  if (value === null || value === undefined || value === "") return "N/A";
-  const num = parseFloat(value);
-  if (isNaN(num)) return value;
-  return num > 0 ? `+${num}` : num.toString();
+const formatPower = (val) => {
+  if (val == null || val === "") return "";
+  const num = parseFloat(val);
+  return num > 0 ? `+${num.toFixed(2)}` : num.toFixed(2);
 };
 
 
@@ -407,7 +406,7 @@ const SearchContactLens = () => {
               icon={FiEye}
               size="xs"
               variant="outline"
-              title="View Frame"
+                    title="Other Location Stock"
               onClick={() => handleOtherStockHistory(item)}
               isLoading={otherstockId === item.DetailId}
               loadingText=""
@@ -654,7 +653,7 @@ const SearchContactLens = () => {
               renderRow={(item, index) => (
                 <TableRow key={item.locationId}>
                   <TableCell>{index + 1}</TableCell>
-                  <TableCell>{item.locationName}</TableCell>
+                  <TableCell>{`${item.companyName} (${item.locationName})`}</TableCell>
                   <TableCell>{item.stock?.LocationQuantity ?? 0}</TableCell>
                 </TableRow>
               )}
@@ -665,14 +664,14 @@ const SearchContactLens = () => {
     <div className="text-lg font-semibold mb-3 text-neutral-700">
       Contact Lens Details
     </div>
-    <div className="grid grid-cols-2 gap-3 text-sm text-gray-900">
+    <div className="grid grid-cols-2 gap-3 text-sm text-neutral-900">
       <p><strong className="font-medium">Brand:</strong> {otherStockData?.data?.[0]?.stock.BrandName}</p>
       <p><strong className="font-medium">Product Name:</strong> {otherStockData?.data?.[0]?.stock.ProductName}</p>
       <p><strong className="font-medium">Product Code:</strong> {otherStockData?.data?.[0]?.stock.ProductCode}</p>
       <p><strong className="font-medium">SKU Code:</strong> {otherStockData?.data?.[0]?.stock.SKUCode}</p>
       <p><strong className="font-medium">Barcode:</strong> {otherStockData?.data?.[0]?.stock.Barcode}</p>
       <p><strong className="font-medium">Batch Code:</strong> {otherStockData?.data?.[0]?.stock.CLBatchCode}</p>
-      <p><strong className="font-medium">Expiry:</strong> {otherStockData?.data?.[0]?.stock.CLBatchExpiry}</p>
+      <p><strong className="font-medium">Expiry:</strong> {otherStockData?.data?.[0]?.stock.CLBatchExpiry?.split("-").reverse().join("/")}</p>
       <p><strong className="font-medium">MRP:</strong> ₹{otherStockData?.data?.[0]?.stock.CLMRP}</p>
      <p><strong className="font-medium">Spherical Power:</strong> {formatPower(otherStockData?.data?.[0]?.stock.SphericalPower)}</p>
 <p><strong className="font-medium">Cylindrical Power:</strong> {formatPower(otherStockData?.data?.[0]?.stock.CylindricalPower)}</p>

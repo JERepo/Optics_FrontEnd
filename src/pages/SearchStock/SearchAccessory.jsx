@@ -461,7 +461,7 @@ const SearchAccessory = () => {
                   icon={FiEye}
                   size="xs"
                   variant="outline"
-                  title="View Frame"
+                    title="Other Location Stock"
                   onClick={() => handleOtherStockHistory(item.DetailId)}
                   isLoading={otherstockId === item.DetailId}
                   loadingText=""
@@ -560,7 +560,7 @@ const SearchAccessory = () => {
             renderRow={(item, index) => (
               <TableRow key={item.locationId}>
                 <TableCell>{index + 1}</TableCell>
-                <TableCell>{item.locationName}</TableCell>
+                  <TableCell>{`${item.companyName} (${item.locationName})`}</TableCell>
                 <TableCell>
                   {item.stock?.LocationQuantity ?? 0}
                 </TableCell>
@@ -572,7 +572,7 @@ const SearchAccessory = () => {
         <div className="text-lg font-semibold mb-3 text-neutral-700">
           Accessory Details
         </div>
-        <div className="grid grid-cols-2 gap-3 text-sm text-gray-900">
+        <div className="grid grid-cols-2 gap-3 text-sm text-neutral-900">
           <p><strong className="font-medium">Brand:</strong> {otherStockData.data[0].stock.BrandName}</p>
           <p><strong className="font-medium">Product Name:</strong> {otherStockData.data[0].stock.ProductName}</p>
           <p><strong className="font-medium">Product Code:</strong> {otherStockData.data[0].stock.ProductCode}</p>

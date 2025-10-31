@@ -1421,7 +1421,7 @@ const SearchFrameStock = () => {
                     icon={FiEye}
                     size="xs"
                     variant="outline"
-                    title="View Frame"
+                    title="Other Location Stock"
                     onClick={() => handleOtherStockHistory(item.DetailId)}
                     isLoading={otherstockId === item.DetailId}
                     loadingText=""
@@ -1526,7 +1526,7 @@ const SearchFrameStock = () => {
               renderRow={(item, index) => (
                 <TableRow key={item.locationId}>
                   <TableCell>{index + 1}</TableCell>
-                  <TableCell>{item.locationName}</TableCell>
+                  <TableCell>{`${item.companyName} (${item.locationName})`}</TableCell>
                   <TableCell>{item.stock?.LocationQuantity ?? 0}</TableCell>
                 </TableRow>
               )}
@@ -1537,14 +1537,14 @@ const SearchFrameStock = () => {
                 <div className="text-lg font-semibold mb-3 text-neutral-700">
                   Frame Details
                 </div>
-                <div className="flex flex-wrap gap-3 text-sm text-gray-900">
+                <div className="flex flex-wrap gap-3 text-sm text-neutral-900">
                   <p>
                     <strong className="font-medium">Brand:</strong>{" "}
                     {otherStockData.data[0].stock.BrandName}
                   </p>
                   <p>
                     <strong className="font-medium">Category:</strong>{" "}
-                    {otherStockData.data[0].stock.Category === 0 ? "O" : "S"}
+                    {otherStockData.data[0].stock.Category === 0 ? "Optical Frame" : "Sunglasses"}
                   </p>
                   <p>
                     <strong className="font-medium">Type:</strong>{" "}
