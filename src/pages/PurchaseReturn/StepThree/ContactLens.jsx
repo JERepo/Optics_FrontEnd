@@ -515,12 +515,13 @@ const ContactLens = () => {
       prev.map((i, idx) => (idx === index ? { ...i, stkQty: newQty } : i))
     );
   };
+  console.log("dd",CLBatches?.data)
   const handleGetBatchBarCodeDetails = async () => {
     if (!batchCodeInput) {
       return;
     }
     try {
-      const batches = CLBatches?.data.batches;
+      const batches = CLBatches?.data;
       const isAvailable = batches?.find(
         (b) => b.CLBatchBarCode.toLowerCase() === batchCodeInput.toLowerCase()
       );

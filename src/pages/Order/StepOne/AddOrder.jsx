@@ -760,7 +760,6 @@ const StepB = ({
   location,
 }) => {
   const { draftData } = useOrder();
-  console.log("location", draftData);
   const { hasMultipleLocations } = useSelector((state) => state.auth);
   const [orderReference, setOrderReference] = useState("");
   const [selectedSalesPerson, setSelectedSalesPerson] = useState(null);
@@ -819,7 +818,7 @@ const StepB = ({
   const filteredData = salesPersons?.data.data
     ?.filter(
       (person) =>
-        person.Type !== 1 &&
+        // person.Type !== 1 &&
         person.IsActive === 1 &&
         person.SalesPersonLinks?.some((link) =>
           hasMultipleLocations.includes(link.Company?.Id)
@@ -831,7 +830,6 @@ const StepB = ({
         hasMultipleLocations.includes(link.Company?.Id)
       ),
     }));
-  console.log("selec", selectedCustomer);
   return (
     <div className="max-w-4xl p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-xl font-semibold text-blue-600 mb-4">

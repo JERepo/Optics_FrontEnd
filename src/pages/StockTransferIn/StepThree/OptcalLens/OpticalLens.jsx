@@ -849,6 +849,36 @@ const OpticalLens = () => {
 
       setBarcode("");
       setShowAdd(false);
+      barCodeOrproduct(0);
+      setLensData({
+        orderReference: null,
+        brandId: null,
+        productType: null,
+        focality: null,
+        family: null,
+        design: null,
+        indexValues: null,
+        masterId: null,
+        coatingId: null,
+        coatingComboId: null,
+        treatmentId: null,
+        treatmentComboId: null,
+        productName: null,
+        tintvalue: 0,
+        tintId: null,
+        tintPrice: null,
+        AddOnData: [],
+        powerSingleORboth: 0,
+        withFitting: 1,
+        prescriptionId: null,
+        selectedPrescription: null,
+        rimType: null,
+        CLMRP: 0,
+        returnPrice: 0,
+        returnQty: 1,
+      });
+      setPowerDetailId(null);
+      setEditMode({});
       handleReset();
     } catch (error) {
       console.log(error?.data?.error);
@@ -882,7 +912,11 @@ const OpticalLens = () => {
       toast.success("Optical Lens transferin successfully added");
       goToStockTransferInStep(4);
     } catch (error) {
-      toast.error(error?.data.error.message || error?.data?.error || "Please try again after some time!");
+      toast.error(
+        error?.data.error.message ||
+          error?.data?.error ||
+          "Please try again after some time!"
+      );
     }
   };
 
@@ -926,9 +960,8 @@ const OpticalLens = () => {
                   <Radio
                     value="0"
                     onChange={() => {
-                      setBarCodeOrProduct(0)
-                     handleRefresh()
-
+                      setBarCodeOrProduct(0);
+                      handleRefresh();
                     }}
                     checked={barCodeOrproduct === 0}
                     label="Stock lenses(By barcode)"

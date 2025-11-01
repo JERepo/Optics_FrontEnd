@@ -38,9 +38,9 @@ const SelectVendor = () => {
     { skip: !selectedLocation }
   );
 
-  const hasLocation = allLocations?.data ? allLocations?.data?.filter(loc =>
-    hasMultipleLocations.includes(loc.Id)
-  ) : [];
+  const hasLocation = allLocations?.data
+    ? allLocations?.data?.filter((loc) => hasMultipleLocations.includes(loc.Id))
+    : [];
 
   // Auto select location if it has only 1.
   useEffect(() => {
@@ -48,7 +48,6 @@ const SelectVendor = () => {
       setSelectedLocation(hasLocation[0].Id.toString());
     }
   }, [hasLocation]);
-
 
   const [purchaseDraft, { isLoading: isDraftLoading }] =
     useLazyGetDraftDataQuery();
@@ -128,12 +127,11 @@ const SelectVendor = () => {
             <Autocomplete
               options={vendorsData?.data?.data || []}
               getOptionLabel={(option) => option.VendorName}
-              value={
-                vendorsData?.data?.data || null
-              }
+              value={vendorsData?.data?.data?.find(
+                (item) => item.Id === selectedVendor?.Id
+              ) || null} 
               onChange={(_, newValue) => {
                 setSelectedVendor(newValue);
-
               }}
               renderInput={(params) => (
                 <TextField

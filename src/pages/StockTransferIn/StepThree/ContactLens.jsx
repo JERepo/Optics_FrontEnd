@@ -51,7 +51,7 @@ const isValidAxis = (value) => {
 };
 
 const getProductName = (order) => {
-  console.log("or",order)
+  console.log("or", order);
   const {
     ProductType,
     productName,
@@ -80,7 +80,6 @@ const getProductName = (order) => {
     sbatchbarCode,
     Spherical,
     Cylindrical,
-    
   } = order;
 
   const clean = (val) => {
@@ -151,9 +150,11 @@ const getProductName = (order) => {
       specsList,
       clr && `Color: ${clr}`,
       barcodeVal && `Barcode: ${barcodeVal}`,
-      (batchc && CLBatchCode === 1) && `BatchCode: ${batchc}`,
-      (batchBar  && CLBatchCode === 1) && `BatchBarCode: ${batchBar}`,
-      (expiry  && CLBatchCode === 1) && `Expiry : ${expiry.split("-").reverse().join("/")}`,
+      batchc && CLBatchCode === 1 && `BatchCode: ${batchc}`,
+      batchBar && CLBatchCode === 1 && `BatchBarCode: ${batchBar}`,
+      expiry &&
+        CLBatchCode === 1 &&
+        `Expiry : ${expiry.split("-").reverse().join("/")}`,
       hsn && `HSN: ${hsn}`,
     ]
       .filter(Boolean)
@@ -595,7 +596,7 @@ const ContactLens = () => {
           toast.error("No pending quantity left for the selected product");
           return;
         }
-       
+
         const newItemCl = {
           sbatchbarCode: isAvailable.CLBatchBarCode,
           sbatchCode: isAvailable.CLBatchCode,
@@ -687,9 +688,16 @@ const ContactLens = () => {
           return;
         }
         const clDetailId = response?.data.data.CLDetailId;
-        const currentProposed = getCurrentProposedQty(clDetailId);
+        // const currentProposed = getPendingQtyByCLDetailId(clDetailId);
+        let currentQty;
+        const existing = mainClDetails?.find(
+          (item) => item.CLDetailId === clDetailId
+        );
+        if (existing) {
+          currentQty = existing.tiq;
+        }
         const remaining =
-          STOProduct.STQtyOut - STOProduct.STQtyIn - currentProposed;
+          STOProduct.STQtyOut - STOProduct.STQtyIn - currentQty;
         if (1 > remaining) {
           toast.error("No Pending Qty left for the given product");
           return;
@@ -697,8 +705,8 @@ const ContactLens = () => {
         const cc = {
           ...response?.data.data,
           ...STOProduct,
-          sbatchCode: response?.data.data.stock.BatchCode,
-          ExpiryDate: response?.data.data.Expiry,
+          sbatchCode: response?.data.data.stock[0].BatchCode,
+          ExpiryDate: response?.data.data.stock[0].Expiry,
           BuyingPrice: parseFloat(STOProduct?.TransferPrice),
           MRP: STOProduct?.SRP,
           tiq: 1,
@@ -755,6 +763,7 @@ const ContactLens = () => {
         toast.error("No Pending Qty left for the given product");
         return;
       }
+      // if()
     } else if (detailId && productSearch == 1) {
       STOProduct = stockOutData?.data?.details?.find(
         (item) =>
@@ -776,6 +785,7 @@ const ContactLens = () => {
       clDetailId,
       selectedBatchCode?.CLBatchCode
     );
+    console.log("praposed qty", currentProposed);
     const remaining =
       STOProduct.STQtyOut - STOProduct.STQtyIn - currentProposed;
     if (1 > remaining) {

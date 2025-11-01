@@ -34,7 +34,7 @@ export const stockTransferApi = createApi({
       query: ({ mainId, locationId }) => ({
         url: `/api/v1/stock-transfer/bymainid/${mainId}?locationId=${locationId}`,
       }),
-      providesTags: ["StockTransfer","StockTransferIn"],
+      providesTags: ["StockTransfer", "StockTransferIn"],
     }),
     updateStockTransferOut: builder.mutation({
       query: ({ payload }) => ({
@@ -74,14 +74,14 @@ export const stockTransferApi = createApi({
       query: ({ mainId, locationId }) => ({
         url: `/api/v1/stock-transfer/inbyout/details?STOutMainId=${mainId}&locationId=${locationId}`,
       }),
-     
+      providesTags :["StockTransferIn"]
     }),
 
     getSelectStock: builder.query({
       query: ({ locationId }) => ({
         url: `/api/v1/stock-transfer/openstocktransfer?locationId=${locationId}`,
       }),
-       providesTags :["StockTransferIn"]
+      providesTags: ["StockTransferIn"],
     }),
     saveSTKIDraft: builder.mutation({
       query: ({ locationId, mainId, userId }) => ({
@@ -120,11 +120,13 @@ export const stockTransferApi = createApi({
       query: () => ({
         url: `/api/v1/stock-transfer/in/all`,
       }),
+      providesTags: ["StockTransferIn"],
     }),
     getStockInById: builder.query({
       query: ({ mainId, locationId }) => ({
         url: `/api/v1/stock-transfer/in/details?STInMainID=${mainId}&locationId=${locationId}`,
       }),
+      providesTags: ["StockTransferIn"],
     }),
     printPdf: builder.query({
       query: ({ mainId, companyId }) => ({
@@ -136,8 +138,8 @@ export const stockTransferApi = createApi({
     printLabels: builder.mutation({
       query: ({ payload }) => ({
         url: `/api/v1/pdf/stout-qr`,
-        method :"POST",
-        body : payload,
+        method: "POST",
+        body: payload,
         responseHandler: (response) => response.blob(),
       }),
       transformResponse: (response) => response,

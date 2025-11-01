@@ -32,6 +32,7 @@ const getProductName = (data) => {
     brandName,
     HSN,
     BatchCode,
+    CLBatchCode
   } = item;
 
   const clean = (val) => {
@@ -96,8 +97,8 @@ const getProductName = (data) => {
       specs ? `${specs}` : "",
       clean(colour) ? `Colour: ${clean(colour)}` : "",
       barcode ? `Barcode: ${barcode}` : "",
-      clean(batchcode) ? `BatchCode: ${batchcode}` : "",
-      clean(expiry) && `Expiry: ${expiry.split("-").reverse().join("/")}`,
+      clean(batchcode) && CLBatchCode === 1 ? `BatchCode: ${batchcode}` : "",
+      clean(expiry) && CLBatchCode === 1 && `Expiry: ${expiry.split("-").reverse().join("/")}`,
       clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
 

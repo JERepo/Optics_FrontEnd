@@ -303,7 +303,7 @@ const NewPrescription = ({
       ApplicationUserId: user.Id,
     };
 
-    if (!payload.SalesPersonId) {
+    if (!payload.SalesPersonId && prescriptionData.prescriptionFrom === 0) {
       toast.error("Can't save the Prescription please select the Optometrist!");
       setIsSubmitting(false);
       return;

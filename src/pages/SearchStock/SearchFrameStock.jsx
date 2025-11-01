@@ -56,7 +56,7 @@ const rimOptionsF = [
 ];
 
 const categoryOptions = [
-  { Id: 0, Name: "Frame(O)" },
+  { Id: 0, Name: "Frame/Sunglass" },
   { Id: 1, Name: "Sunglass(S)" },
 ];
 

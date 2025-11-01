@@ -182,7 +182,7 @@ const AccessoryFrame = () => {
         locationId: customerStockTransferIn.locationId,
       }).unwrap();
 
-      const data = res?.data?.data;
+      const data = res?.data;
 
       if (data && data.length > 0) {
         setSearchResults(data);
