@@ -84,6 +84,7 @@ export const getErrorMessage = (error) => {
     error?.response?.data?.message ||
     error?.data?.message ||
     error?.message ||
+    error?.data?.error?.message ||
     "Something went wrong"
   );
 };

@@ -116,7 +116,6 @@ const FrameSunglass = () => {
                 ? {
                     ...item,
                     stkQty: newStkQty,
-                    // Quantity: qty + 1,
                   }
                 : item
             );
@@ -532,7 +531,7 @@ const FrameSunglass = () => {
                   >
                     Search by Brand & Model *
                   </label>
-                  <div className="flex items-center gap-5">
+                  {/* <div className="flex items-center gap-5">
                     <Radio
                       value="0"
                       onChange={() => setSingleOrCombine(0)}
@@ -545,7 +544,7 @@ const FrameSunglass = () => {
                       checked={singleOrCombine === 1}
                       label="Separate Entry"
                     />
-                  </div>
+                  </div> */}
                 </div>
                 <div className="flex gap-2">
                   <Autocomplete

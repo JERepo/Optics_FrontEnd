@@ -799,7 +799,7 @@ const OpticalLens = () => {
       const requestedQty = parseInt(formValues[eye].transferQty) || 1;
 
       if (requestedQty > remaining) {
-        toast.error("No Pending Qty left for the given product");
+        toast.error("Transfer Qty is greater then Stock transfer out qty");
         return;
       }
 

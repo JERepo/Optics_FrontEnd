@@ -39,6 +39,7 @@ const getProductName = (data) => {
     brandName,
     HSN,
     BatchCode,
+    CLBatchCode,
   } = item;
 
   const clean = (val) => {
@@ -103,8 +104,10 @@ const getProductName = (data) => {
       specs ? `${specs}` : "",
       clean(colour) ? `Colour: ${clean(colour)}` : "",
       barcode ? `Barcode: ${barcode}` : "",
-      clean(batchcode) ? `BatchCode: ${batchcode}` : "",
-      clean(expiry) && `Expiry: ${expiry.split("-").reverse().join("/")}`,
+      clean(batchcode) && CLBatchCode === 1 ? `BatchCode: ${batchcode}` : "",
+      clean(expiry) &&
+        CLBatchCode === 1 &&
+        `Expiry: ${expiry.split("-").reverse().join("/")}`,
       clean(hsncode || HSN) ? `HSN: ${hsncode || HSN}` : "",
     ];
 
@@ -247,7 +250,7 @@ const CompleteStockTransferIn = () => {
   const totals = (stockDetails?.data?.StockTransferInDetails || []).reduce(
     (acc, item) => {
       const qty = item.STQtyIn || 0;
-      const unitPrice = parseFloat(item.TransferPrice)
+      const unitPrice = parseFloat(item.TransferPrice);
       const gstRate = parseFloat(item.ProductTaxPercentage) / 100;
 
       const basicValue = unitPrice * qty;
@@ -288,7 +291,7 @@ const CompleteStockTransferIn = () => {
       navigate("/stock-transfer-in");
       updateCurrentSTINStep(1);
     } catch (error) {
-      console.log(error)
+      console.log(error);
       toast.error(error?.data.message);
     }
   };

@@ -25,7 +25,10 @@ import Input from "../../../components/Form/Input";
 import { toast } from "react-hot-toast";
 import Radio from "../../../components/Form/Radio";
 
-import { useLazyGetBatchDetailsForStinQuery, useLazyGetBatchDetailsQuery } from "../../../api/InvoiceApi";
+import {
+  useLazyGetBatchDetailsForStinQuery,
+  useLazyGetBatchDetailsQuery,
+} from "../../../api/InvoiceApi";
 import { useSelector } from "react-redux";
 import { useGetBatchBarCodeMutation } from "../../../api/salesReturnApi";
 import { formatINR } from "../../../utils/formatINR";
@@ -48,6 +51,7 @@ const isValidAxis = (value) => {
 };
 
 const getProductName = (order) => {
+  console.log("or",order)
   const {
     ProductType,
     productName,
@@ -76,6 +80,7 @@ const getProductName = (order) => {
     sbatchbarCode,
     Spherical,
     Cylindrical,
+    
   } = order;
 
   const clean = (val) => {
@@ -146,9 +151,9 @@ const getProductName = (order) => {
       specsList,
       clr && `Color: ${clr}`,
       barcodeVal && `Barcode: ${barcodeVal}`,
-      batchc && `BatchCode: ${batchc}`,
-      batchBar && `BatchBarCode: ${batchBar}`,
-      expiry && `Expiry : ${expiry.split("-").reverse().join("/")}`,
+      (batchc && CLBatchCode === 1) && `BatchCode: ${batchc}`,
+      (batchBar  && CLBatchCode === 1) && `BatchBarCode: ${batchBar}`,
+      (expiry  && CLBatchCode === 1) && `Expiry : ${expiry.split("-").reverse().join("/")}`,
       hsn && `HSN: ${hsn}`,
     ]
       .filter(Boolean)
@@ -227,7 +232,8 @@ const ContactLens = () => {
   );
 
   // const [getCLBatches, { data: CLBatches }] = useLazyGetBatchDetailsQuery();
-    const [getCLBatches, { data: CLBatches }] = useLazyGetBatchDetailsForStinQuery();
+  const [getCLBatches, { data: CLBatches }] =
+    useLazyGetBatchDetailsForStinQuery();
 
   const [getPowerDetails, { isLoading: isPowerDetailsLoading }] =
     useGetPowerDetailsMutation();
@@ -242,16 +248,45 @@ const ContactLens = () => {
   const [saveStockTransfer, { isLoading: isStockTransferLoading }] =
     useSaveSTIMutation();
 
-    console.log("main",mainClDetails)
-  const getCurrentProposedQty = (clDetailId,batchcode) => {
+  const getCurrentProposedQty = (clDetailId, batchcode) => {
     return mainClDetails.reduce((sum, item) => {
-      if ((item.CLDetailId === clDetailId) && item.BatchCode == batchcode) {
+      if (item.CLDetailId === clDetailId && item.BatchCode == batchcode) {
         return sum + item.tiq;
       }
       return sum;
     }, 0);
   };
+  const getPendingQtyByCLDetailId = (clDetailId) => {
+    // Find all stock transfer details that match the CLDetailId
+    const matchingStockDetails =
+      stockOutData?.data?.details?.filter(
+        (item) =>
+          item.ContactLensDetailId === clDetailId && item.ProductType === 3
+      ) || [];
 
+    // If no matching stock details, return 0
+    if (!matchingStockDetails.length) {
+      return 0;
+    }
+
+    // Calculate total pending quantity across all matching stock details
+    const totalPending = matchingStockDetails.reduce((sum, STOProduct) => {
+      // Sum of proposed quantities (tiq) in mainClDetails for this CLDetailId
+      const proposedQty = mainClDetails.reduce((total, item) => {
+        if (item.CLDetailId === clDetailId) {
+          return total + (item.tiq || 0);
+        }
+        return total;
+      }, 0);
+
+      // Pending = STQtyOut - STQtyIn - proposedQty
+      const pendingForProduct =
+        (STOProduct.STQtyOut || 0) - (STOProduct.STQtyIn || 0) - proposedQty;
+      return sum + (pendingForProduct > 0 ? pendingForProduct : 0);
+    }, 0);
+
+    return totalPending;
+  };
   useEffect(() => {
     setEditMode((prev) => {
       const newEditMode = { ...prev };
@@ -514,7 +549,7 @@ const ContactLens = () => {
     const clDetailId = existing.CLDetailId;
     const batchcode = existing.BatchCode;
     const oldTiq = existing.tiq;
-    const currentProposed = getCurrentProposedQty(clDetailId,batchcode);
+    const currentProposed = getCurrentProposedQty(clDetailId, batchcode);
     const alreadyReceived = existing.STQtyIn;
     const maxAllowed = existing.STQtyOut - alreadyReceived;
     const effectiveRemaining = maxAllowed - (currentProposed - oldTiq);
@@ -555,13 +590,12 @@ const ContactLens = () => {
           return;
         }
         const clDetailId = batchBarCodeDetails?.data?.data.CLDetailId;
-        const currentProposed = getCurrentProposedQty(clDetailId);
-        const remaining =
-          STOProduct.STQtyOut - STOProduct.STQtyIn - currentProposed;
-        if (1 > remaining) {
-          toast.error("No Pending Qty left for the given product");
+        const pending = getPendingQtyByCLDetailId(clDetailId);
+        if (pending < 1) {
+          toast.error("No pending quantity left for the selected product");
           return;
         }
+       
         const newItemCl = {
           sbatchbarCode: isAvailable.CLBatchBarCode,
           sbatchCode: isAvailable.CLBatchCode,
@@ -700,15 +734,16 @@ const ContactLens = () => {
       toast.error(error?.data.error);
     }
   };
-  console.log("batc",selectedBatchCode,stockOutData,batchBarCodeDetails?.data.data)
   const handleSaveBatchData = async () => {
     let sub;
     let STOProduct;
     let clDetailId;
-    
+
     if ((!detailId || openBatch) && productSearch == 0) {
       STOProduct = stockOutData?.data?.details?.find(
-        (item) => ((item.ContactLensDetailId === newItem.CLDetailId) && (selectedBatchCode?.CLBatchCode == item.BatchCode))
+        (item) =>
+          item.ContactLensDetailId === newItem.CLDetailId &&
+          selectedBatchCode?.CLBatchCode == item.BatchCode
       );
       clDetailId = newItem.CLDetailId;
       if (!STOProduct) {
@@ -723,7 +758,9 @@ const ContactLens = () => {
     } else if (detailId && productSearch == 1) {
       STOProduct = stockOutData?.data?.details?.find(
         (item) =>
-          (item.ContactLensDetailId === batchBarCodeDetails?.data.data.CLDetailId) && (selectedBatchCode?.CLBatchCode == item.BatchCode)
+          item.ContactLensDetailId ===
+            batchBarCodeDetails?.data.data.CLDetailId &&
+          selectedBatchCode?.CLBatchCode == item.BatchCode
       );
       clDetailId = batchBarCodeDetails?.data.data.CLDetailId;
       if (!STOProduct) {
@@ -735,7 +772,10 @@ const ContactLens = () => {
         return;
       }
     }
-    const currentProposed = getCurrentProposedQty(clDetailId);
+    const currentProposed = getCurrentProposedQty(
+      clDetailId,
+      selectedBatchCode?.CLBatchCode
+    );
     const remaining =
       STOProduct.STQtyOut - STOProduct.STQtyIn - currentProposed;
     if (1 > remaining) {

@@ -31,6 +31,7 @@ import { useGetBatchBarCodeMutation } from "../../../api/salesReturnApi";
 import { formatINR } from "../../../utils/formatINR";
 import Modal from "../../../components/ui/Modal";
 import { useSaveStockDetailsMutation } from "../../../api/stockTransfer";
+import { getErrorMessage } from "../../../utils/helpers";
 
 // Validation helpers
 const isMultipleOfQuarter = (value) => {
@@ -407,6 +408,7 @@ const ContactLens = () => {
       }
     } catch (error) {
       console.error("error", error);
+      toast.error(getErrorMessage(error))
       setSearchFetched(false);
       setDetailId(false);
       setOpenBatch(false);
@@ -626,6 +628,10 @@ const ContactLens = () => {
         }
         setProductCodeInput("");
       } else if (response?.data.data.CLBatchCode === 1) {
+         if (response?.data.data.stock.Quantity <= 0) {
+          toast.error("Stock quantity must be greater than 0!");
+          return;
+        }
         const batchCodeData = await getCLBatches({
           clBatchId: response?.data.data.CLDetailId,
           locationId: parseInt(hasMultipleLocations[0]),
