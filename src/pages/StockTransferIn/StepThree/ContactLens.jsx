@@ -705,8 +705,8 @@ const ContactLens = () => {
         const cc = {
           ...response?.data.data,
           ...STOProduct,
-          sbatchCode: response?.data.data.stock[0].BatchCode,
-          ExpiryDate: response?.data.data.stock[0].Expiry,
+          sbatchCode: response?.data.data?.stock?.BatchCode,
+          ExpiryDate: response?.data.data?.stock?.Expiry,
           BuyingPrice: parseFloat(STOProduct?.TransferPrice),
           MRP: STOProduct?.SRP,
           tiq: 1,
@@ -928,7 +928,7 @@ const ContactLens = () => {
           return {
             ProductType: 3,
             detailId: item.CLDetailId,
-            BatchCode: item.sbatchCode || item.sbatchbarCode,
+            BatchCode: item.sbatchCode || item.sbatchbarCode || null,
             STQtyIn: item.tiq,
             STQtyOut: item.STQtyOut,
             transferPrice: parseFloat(item.BuyingPrice),

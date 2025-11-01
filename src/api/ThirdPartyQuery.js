@@ -3,7 +3,7 @@ import { logout, setCredentials } from "../features/auth/authSlice";
 
 // prepare headers for authorization
 const baseQuery = fetchBaseQuery({
-  baseUrl:import.meta.env.VITE_OPTICS,
+  baseUrl:import.meta.env.VITE_LUXONYX,
 
   credentials: "include",
   prepareHeaders: (headers, { getState, endpoint }) => {

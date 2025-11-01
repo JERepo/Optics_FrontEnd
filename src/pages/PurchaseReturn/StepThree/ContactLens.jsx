@@ -42,6 +42,7 @@ import {
   useLazyDownloadFrameSampleExcelQuery,
 } from "../../../api/purchaseOrderApi";
 import { useLazyDownloadCLSampleExcelQuery } from "../../../api/grnApi";
+import { getErrorMessage } from "../../../utils/helpers";
 
 // Validation helpers
 const isMultipleOfQuarter = (value) => {
@@ -395,7 +396,7 @@ const ContactLens = () => {
           }
         } else if (data.CLBatchCode === 0) {
           if (data.stock[0]?.quantity <= 0) {
-            toast.error("Stock quantity must be greater than 0!");
+            toast.error("Stock not available");
             return;
           }
           const cc = {
@@ -515,7 +516,6 @@ const ContactLens = () => {
       prev.map((i, idx) => (idx === index ? { ...i, stkQty: newQty } : i))
     );
   };
-  console.log("dd",CLBatches?.data)
   const handleGetBatchBarCodeDetails = async () => {
     if (!batchCodeInput) {
       return;
@@ -682,7 +682,7 @@ const ContactLens = () => {
       }
     } catch (error) {
       console.log(error);
-      toast.error(error?.data.message || "Error fetching product");
+      toast.error(getErrorMessage(error));
     }
   };
   const handleSaveBatchData = async () => {

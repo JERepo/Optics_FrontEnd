@@ -366,7 +366,7 @@ const ContactLens = () => {
           }
         } else if (data.CLBatchCode === 0) {
           if (data.stock[0]?.quantity <= 0) {
-            toast.error("Stock quantity must be greater than 0!");
+            toast.error("Stock not available");
             return;
           }
           const cc = {
@@ -590,7 +590,7 @@ const ContactLens = () => {
 
       if (response?.data.data.CLBatchCode === 0) {
         if (response?.data.data.stock.Quantity <= 0) {
-          toast.error("Stock quantity must be greater than 0!");
+          toast.error("Stock not available");
           return;
         }
         const cc = {
@@ -792,7 +792,7 @@ const ContactLens = () => {
           return {
             ProductType: 3,
             detailId: item.CLDetailId,
-            BatchCode: item.sbatchCode || item.sbatchbarCode,
+            BatchCode: item.sbatchCode || item.sbatchbarCode || null,
             STQtyOut: item.stkQty,
             TransferPrice: parseFloat(item.BuyingPrice),
             gstPercentage: calculateStockGST(item).gstPercent,

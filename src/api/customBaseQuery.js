@@ -6,7 +6,7 @@ const baseQuery = fetchBaseQuery({
   baseUrl: 
     import.meta.env.MODE === "development"
       ? import.meta.env.VITE_LOCAL
-      :import.meta.env.VITE_DEV,
+      :import.meta.env.VITE_LUXONYX,
   credentials: "include",
   prepareHeaders: (headers, { getState, endpoint }) => {
     const token = getState().auth.token;
