@@ -5,6 +5,7 @@ import { ThirdPartyQuery } from "./ThirdPartyQuery";
 export const searchStock = createApi({
   reducerPath: "searchStock",
   baseQuery: ThirdPartyQuery,
+  tagTypes : ["sync"],
   endpoints: (builder) => ({
     getFrameStock: builder.query({
       query: (queryString) => ({
@@ -35,7 +36,8 @@ export const searchStock = createApi({
     getFreshData :builder.query({
       query : () => ({
         url :`/api/v1/frame-main/elastic`
-      })
+      }),
+      // providesTags :["sync"]
     }),
 
     syncAcc: builder.query({

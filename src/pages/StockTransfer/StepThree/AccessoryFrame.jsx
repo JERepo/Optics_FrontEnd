@@ -192,33 +192,46 @@ const AccessoryFrame = () => {
   };
 
   const handleAddSelectedItems = () => {
-    setItems((prev) => {
-      let updated = [...prev];
-      selectedRows.forEach((selected) => {
-        if (!validateQuantity(selected)) return;
+    // Use current state directly so you can safely handle side effects
+    let updated = [...items];
+    let hasError = false;
 
-        // Combine Entry: Increment stkQty or add new item
-        const index = updated.findIndex((i) => i.Barcode === selected.Barcode);
-        if (index !== -1) {
-          const newStkQty = Number(updated[index].stkQty) + 1;
-          const qty = Number(prev[index].Quantity);
-          if (!validateStockQty(updated[index], newStkQty)) {
-            return; // Skip this item if stkQty exceeds AvlQty
-          }
-          if (newStkQty > qty) {
-            toast.error("Stock quantity cannot exceed available quantity!");
-            return prev;
-          }
-          updated = updated.map((item, idx) =>
-            idx === index ? { ...item, stkQty: newStkQty } : item
-          );
-          // index.Quantity index.Quantity
-        } else {
-          updated = [{ ...selected, stkQty: 1 }, ...updated];
+    selectedRows.forEach((selected) => {
+      if (!validateQuantity(selected)) return;
+
+      const index = updated.findIndex((i) => i.Barcode === selected.Barcode);
+      if (index !== -1) {
+        const newStkQty = Number(updated[index].stkQty) + 1;
+        const qty = Number(updated[index].Quantity);
+
+        // Validate available quantity first
+        if (!validateStockQty(updated[index], newStkQty)) {
+          hasError = true;
+          return;
         }
-      });
-      return updated;
+
+        if (newStkQty > qty) {
+          hasError = true;
+          return;
+        }
+
+        updated[index] = { ...updated[index], stkQty: newStkQty };
+      } else {
+        updated.unshift({ ...selected, stkQty: 1 });
+      }
     });
+
+    // Only show one toast if there was an error
+    if (hasError) {
+      if (!toast.isActive("stkQtyError")) {
+        toast.error("Stock quantity cannot exceed available quantity!", {
+          id: "stkQtyError",
+        });
+      }
+    }
+
+    // Only update state once after all checks
+    setItems(updated);
     setSelectedRows([]);
     setSearchResults([]);
   };
@@ -493,8 +506,6 @@ const AccessoryFrame = () => {
                   >
                     Enter Barcode
                   </label>
-
-                 
                 </div>
                 <div className="flex gap-2">
                   <div className="relative flex items-center">

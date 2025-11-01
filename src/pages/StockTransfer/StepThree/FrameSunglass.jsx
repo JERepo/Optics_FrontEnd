@@ -189,37 +189,41 @@ const FrameSunglass = () => {
     }
   };
 
-  const handleAddSelectedItems = () => {
-    setItems((prev) => {
-      let updated = [...prev];
-      selectedRows.forEach((selected) => {
-        if (!validateQuantity(selected)) return;
+ const handleAddSelectedItems = () => {
+  let hasError = false;
+  let newItems = [...items]; // use current state directly
 
-        // Combine Entry: Increment stkQty or add new item
-        const index = updated.findIndex((i) => i.Barcode === selected.Barcode);
-        if (index !== -1) {
-          const newStkQty = Number(updated[index].stkQty) + 1;
-          const qty = Number(prev[index].Quantity);
-          if (newStkQty > qty) {
-            toast.error("Stock quantity cannot exceed available quantity!");
-            return prev;
-          }
-          if (!validateStockQty(updated[index], newStkQty)) {
-            return; // Skip this item if stkQty exceeds AvlQty
-          }
-          updated = updated.map((item, idx) =>
-            idx === index ? { ...item, stkQty: newStkQty } : item
-          );
-          //  Quantity: qty + 1
-        } else {
-          updated = [{ ...selected, stkQty: 1 }, ...updated];
-        }
-      });
-      return updated;
-    });
-    setSelectedRows([]);
-    setSearchResults([]);
-  };
+  selectedRows.forEach((selected) => {
+    if (!validateQuantity(selected)) return;
+
+    const index = newItems.findIndex((i) => i.Barcode === selected.Barcode);
+    if (index !== -1) {
+      const newStkQty = Number(newItems[index].stkQty) + 1;
+      const qty = Number(newItems[index].Quantity);
+
+      if (newStkQty > qty) {
+        if (!hasError) toast.error("Stock quantity cannot exceed available quantity!");
+        hasError = true;
+        return;
+      }
+
+      if (!validateStockQty(newItems[index], newStkQty)) {
+        hasError = true;
+        return;
+      }
+
+      newItems[index] = { ...newItems[index], stkQty: newStkQty };
+    } else {
+      newItems.unshift({ ...selected, stkQty: 1 });
+    }
+  });
+
+  if (!hasError) setItems(newItems);
+
+  setSelectedRows([]);
+  setSearchResults([]);
+};
+
 
   const handleQtyChange = (barcode, qty, index) => {
     const newQty = Number(qty);

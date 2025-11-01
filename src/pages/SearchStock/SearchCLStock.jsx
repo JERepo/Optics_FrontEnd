@@ -48,10 +48,9 @@ const buildQueryParams = ({
   requiredRow,
 }) => {
   const add = (key, value) =>
-    `${key}=${value !== undefined && value !== null && value !== ""
-      ? encodeURIComponent(value)
-      : ""
-    }`;
+    value !== undefined && value !== null && value.toString().trim() !== ""
+      ? `${key}=${encodeURIComponent(value)}`
+      : null;
 
   const params = [
     add("BrandName", BrandName),
@@ -65,10 +64,11 @@ const buildQueryParams = ({
     add("location", location),
     add("page", page),
     add("requiredRow", requiredRow),
-  ];
+  ].filter(Boolean);
 
-  return `?${params.join("&")}`;
+  return params.length ? `?${params.join("&")}` : "";
 };
+
 
 const SearchContactLens = () => {
   const [activeTab, setActiveTab] = useState("all"); // "all" or "barcode"

@@ -113,7 +113,6 @@ const OrderView = ({ isFamily = false, orderFamilyId }) => {
 
   const [isUpdating, setIsUpdating] = useState(false);
 
-  console.log("olOrderDataInfo?.data?.", olOrderDataInfo);
   // State for editable fields
   const [formData, setFormData] = useState({
     ConsumerCard: "",
@@ -704,11 +703,12 @@ const OrderView = ({ isFamily = false, orderFamilyId }) => {
   }
 
   const handlePrintPdf = async (item) => {
-    setPrintingId(item.id);
+    console.log("ii",item)
+    setPrintingId(item.Id);
 
     try {
       const blob = await generatePrint({
-        effectiveOrderId: item.Id,
+        orderId: item.Id,
       }).unwrap();
 
       const url = window.URL.createObjectURL(

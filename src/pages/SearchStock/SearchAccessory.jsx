@@ -37,10 +37,9 @@ const buildQueryParams = ({
   requiredRow,
 }) => {
   const add = (key, value) =>
-    `${key}=${value !== undefined && value !== null && value !== ""
-      ? encodeURIComponent(value)
-      : ""
-    }`;
+    value !== undefined && value !== null && value !== ""
+      ? `${key}=${encodeURIComponent(value)}`
+      : null;
 
   const params = [
     add("brandName", brandName),
@@ -50,10 +49,11 @@ const buildQueryParams = ({
     add("location", location),
     add("page", page),
     add("requiredRow", requiredRow),
-  ];
+  ].filter(Boolean); 
 
-  return `?${params.join("&")}`;
+  return params.length ? `?${params.join("&")}` : "";
 };
+
 
 const SearchAccessory = () => {
   const [columnSearchTerms, setColumnSearchTerms] = useState({
@@ -82,9 +82,6 @@ const SearchAccessory = () => {
     ? allLocations?.data?.filter((loc) => hasMultipleLocations.includes(loc.Id))
     : [];
 
-  console.log("hasMultipleLocations ----- ", hasMultipleLocations);
-  console.log("user ----- ", user);
-  console.log("hasLocation ----- ", hasLocation);
 
   const [itemsPerPage, setItemsPerPage] = useState(50);
 
@@ -172,7 +169,6 @@ const SearchAccessory = () => {
 
   // Auto select location if it has only 1.
   useEffect(() => {
-    console.log("hasLocation - ", hasLocation);
     if (hasLocation?.length === 1) {
       setSelectedLocation(hasLocation[0].Id.toString());
     }
@@ -231,21 +227,7 @@ const SearchAccessory = () => {
     }
   }, [selectedLocation, fetchAccessories, columnSearchTerms, itemsPerPage]);
 
-  // Initial load
-  // useEffect(() => {
-  //   const syncAcc = async () => {
-  //     try {
-  //       await triggerSync();
-  //     } catch (error) {
-  //       console.error("Error syncing Acc:", error);
-  //     }
-  //   };
-  //   syncAcc();
 
-  //   fetchAccessories(columnSearchTerms, 1, itemsPerPage);
-  // }, []); // Empty dependency array - only run once on mount
-
-  // Fetch data when page changes (but not on initial mount)
   useEffect(() => {
     // Skip if it's the initial render (page 1)
     if (currentPage !== 1 || searchData.length > 0) {
